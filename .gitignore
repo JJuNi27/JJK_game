@@ -7,3 +7,28 @@ __pycache__/
 
 # 로컬에서 내려받는 음성인식 모델은 용량이 커서 Git에 올리지 않는다.
 models/
+
+# Unity 프로젝트에서 자동 생성되는 폴더와 로컬 설정
+unity/[Ll]ibrary/
+unity/[Tt]emp/
+unity/[Oo]bj/
+unity/[Bb]uild/
+unity/[Bb]uilds/
+unity/[Ll]ogs/
+unity/[Uu]ser[Ss]ettings/
+unity/[Mm]emoryCaptures/
+unity/[Rr]ecordings/
+unity/.idea/
+unity/.vs/
+unity/*.csproj
+unity/*.sln
+unity/*.suo
+unity/*.user
+unity/*.userprefs
+unity/*.pidb
+unity/*.booproj
+unity/*.svd
+unity/*.pdb
+unity/*.mdb
+unity/*.opendb
+unity/*.VC.db
