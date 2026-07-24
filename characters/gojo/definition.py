@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from characters.base import CharacterProfile, CharacterRuntime
-from effects.muryang_effect import MuryangEffect
-from game.domain_controller import DomainController
-from game_input.mouse_seal_input import MouseSealInput
+from characters.gojo.controller import GojoDomainController
+from characters.gojo.effect import GojoDomainEffect
+from characters.gojo.input import GojoSealInput
 
 
 PROFILE = CharacterProfile(
@@ -22,8 +22,10 @@ PROFILE = CharacterProfile(
 
 
 def build_runtime() -> CharacterRuntime:
+    """고죠 전용 모듈만 조립해 독립적인 런타임을 만든다."""
+
     return CharacterRuntime(
-        controller=DomainController(),
-        seal_input=MouseSealInput(),
-        effect=MuryangEffect(),
+        controller=GojoDomainController(),
+        seal_input=GojoSealInput(),
+        effect=GojoDomainEffect(),
     )
