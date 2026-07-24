@@ -26,7 +26,6 @@ class MegumiDomainEffect:
 
         surface.fill((7, 10, 15))
 
-        # 바닥을 덮는 유동적인 그림자 층
         shadow_layer = pygame.Surface((width, height), pygame.SRCALPHA)
         for index in range(7):
             phase = elapsed * 1.8 + index * 0.85
@@ -40,7 +39,6 @@ class MegumiDomainEffect:
             pygame.draw.polygon(shadow_layer, (12, 20, 30, alpha), points)
         surface.blit(shadow_layer, (0, 0))
 
-        # 식신과 분신을 암시하는 실루엣
         silhouette = (19, 28, 38)
         edge = (76, 101, 125)
         for offset, scale in [(-300, 0.8), (-145, 1.1), (145, 1.1), (300, 0.8)]:
@@ -65,7 +63,6 @@ class MegumiDomainEffect:
                 width=2,
             )
 
-        # 그림자에서 솟는 파동
         pulse_layer = pygame.Surface((width, height), pygame.SRCALPHA)
         for index in range(6):
             radius = int((elapsed * 170 + index * 110) % 720)
@@ -73,14 +70,15 @@ class MegumiDomainEffect:
             pygame.draw.ellipse(
                 pulse_layer,
                 (80, 115, 145, alpha),
-                (center_x - radius, int(height * 0.55) - radius // 5, radius * 2, max(20, radius // 2)),
+                (
+                    center_x - radius,
+                    int(height * 0.55) - radius // 5,
+                    radius * 2,
+                    max(20, radius // 2),
+                ),
                 width=2,
             )
         surface.blit(pulse_layer, (0, 0))
 
         title = title_font.render("영역전개 · 감합암예정", True, (218, 230, 240))
         surface.blit(title, title.get_rect(center=(center_x, 74)))
-
-        subtitle_font = pygame.font.Font(title_font.get_linesize() and title_font.get_height() and None, 24)
-        subtitle = subtitle_font.render("미완성 영역", True, (137, 156, 176))
-        surface.blit(subtitle, subtitle.get_rect(center=(center_x, 124)))
