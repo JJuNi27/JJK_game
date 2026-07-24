@@ -6,7 +6,7 @@ import threading
 import time
 from pathlib import Path
 
-from game.domain_controller import DomainController
+from game.domain_protocol import DomainControllerProtocol
 
 
 DEFAULT_MODEL_PATH = Path("models/vosk-model-small-ja-0.22")
@@ -41,7 +41,6 @@ class VoiceDomainTrigger:
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
 
-        # 일본어 모델이 출력할 수 있는 표기 차이를 모두 정규화해 허용한다.
         self._accepted_phrases = {
             "領域展開",
             "りょういきてんかい",
@@ -49,7 +48,6 @@ class VoiceDomainTrigger:
         }
 
     def start(self) -> None:
-        """필요 파일을 확인하고 음성인식 스레드를 시작한다."""
         if self._thread is not None and self._thread.is_alive():
             return
 
@@ -77,8 +75,8 @@ class VoiceDomainTrigger:
         )
         self._thread.start()
 
-    def update(self, controller: DomainController) -> None:
-        """메인 스레드에서 인식된 명령을 Controller에 전달한다."""
+    def update(self, controller: DomainControllerProtocol) -> None:
+        """메인 스레드에서 인식된 명령을 현재 캐릭터 Controller에 전달한다."""
         while True:
             try:
                 command = self._command_queue.get_nowait()
@@ -89,7 +87,6 @@ class VoiceDomainTrigger:
                 controller.request_domain()
 
     def stop(self) -> None:
-        """음성인식 스레드 종료를 요청한다."""
         self._stop_event.set()
         if self._thread is not None and self._thread.is_alive():
             self._thread.join(timeout=1.0)
@@ -103,7 +100,6 @@ class VoiceDomainTrigger:
 
     @staticmethod
     def _extract_confidence(payload: dict[str, object]) -> float:
-        """Vosk의 단어별 confidence 평균을 0~1 값으로 반환한다."""
         words = payload.get("result")
         if not isinstance(words, list) or not words:
             return 0.0
@@ -125,7 +121,6 @@ class VoiceDomainTrigger:
         payload: dict[str, object],
         last_triggered_at: float,
     ) -> float:
-        """확정 결과를 검사하고, 발동했다면 최신 발동 시각을 반환한다."""
         raw_text = payload.get("text", "")
         text = raw_text.strip() if isinstance(raw_text, str) else ""
         if not text:
@@ -147,13 +142,10 @@ class VoiceDomainTrigger:
             )
             return now
 
-        self.status_message = (
-            f'명령 아님: "{text}" · 신뢰도 {confidence:.0%}'
-        )
+        self.status_message = f'명령 아님: "{text}" · 신뢰도 {confidence:.0%}'
         return last_triggered_at
 
     def _listen_loop(self) -> None:
-        """백그라운드에서 마이크 스트림을 일본어 Vosk로 처리한다."""
         try:
             import sounddevice as sd
             from vosk import KaldiRecognizer, Model, SetLogLevel
@@ -164,8 +156,6 @@ class VoiceDomainTrigger:
             input_device = sd.query_devices(kind="input")
             sample_rate = int(input_device["default_samplerate"])
 
-            # 일본어 표기의 후보를 제한해 짧은 게임 명령의 인식률을 높인다.
-            # 실제 발동은 확정 결과의 정확한 일치와 신뢰도 기준으로 다시 검사한다.
             grammar = json.dumps(
                 [
                     "領域 展開",
@@ -181,7 +171,6 @@ class VoiceDomainTrigger:
             def audio_callback(indata, frames, time_info, status) -> None:  # type: ignore[no-untyped-def]
                 del frames, time_info
                 if status:
-                    # 순간적인 오디오 경고로 게임을 종료하지는 않는다.
                     pass
                 self._audio_queue.put(bytes(indata))
 
@@ -205,7 +194,6 @@ class VoiceDomainTrigger:
                     except queue.Empty:
                         continue
 
-                    # 말이 끝난 뒤 만들어지는 확정 결과만 판정한다.
                     if not recognizer.AcceptWaveform(data):
                         continue
 
@@ -218,7 +206,7 @@ class VoiceDomainTrigger:
                         last_triggered_at,
                     )
 
-        except Exception as exc:  # 음성 기능 실패가 게임 전체 실패로 번지지 않게 한다.
+        except Exception as exc:
             self.status_message = f"일본어 음성인식 사용 불가: {type(exc).__name__}"
         finally:
             self.is_available = False
