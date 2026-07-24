@@ -19,12 +19,21 @@ NUMBER_KEYS = (
     pygame.K_9,
 )
 
+GRID_COLUMNS = 2
+CARD_WIDTH = 455
+CARD_HEIGHT = 180
+CARD_GAP_X = 35
+CARD_GAP_Y = 22
+GRID_START_X = 77
+GRID_START_Y = 215
+
 
 def character_card_rect(index: int) -> pygame.Rect:
-    card_width = 300
-    gap = 35
-    start_x = 65
-    return pygame.Rect(start_x + index * (card_width + gap), 245, card_width, 285)
+    column = index % GRID_COLUMNS
+    row = index // GRID_COLUMNS
+    x = GRID_START_X + column * (CARD_WIDTH + CARD_GAP_X)
+    y = GRID_START_Y + row * (CARD_HEIGHT + CARD_GAP_Y)
+    return pygame.Rect(x, y, CARD_WIDTH, CARD_HEIGHT)
 
 
 def draw_character_select_screen(
@@ -36,19 +45,19 @@ def draw_character_select_screen(
 ) -> None:
     surface.fill((15, 18, 28))
 
-    draw_text(surface, title_font, "캐릭터 선택", (54, 42))
+    draw_text(surface, title_font, "캐릭터 선택", (54, 35))
     draw_text(
         surface,
         body_font,
         "연습할 캐릭터를 선택하세요",
-        (58, 120),
+        (58, 105),
         (196, 207, 228),
     )
     draw_text(
         surface,
         small_font,
-        "고죠: 한 손 · 스쿠나: 양손 · 메구미: 그림자 궤적 장인",
-        (60, 175),
+        "각 캐릭터는 서로 다른 장인 입력과 영역 판정을 사용합니다.",
+        (60, 160),
         (145, 158, 184),
     )
 
@@ -72,36 +81,38 @@ def draw_character_select_screen(
         pygame.draw.rect(surface, background, rect, border_radius=18)
         pygame.draw.rect(surface, border, rect, width=2, border_radius=18)
 
-        content_x = rect.x + 22
-        content_width = rect.width - 44
+        content_x = rect.x + 20
+        content_width = rect.width - 40
 
         draw_wrapped_text(
             surface,
             body_font,
             character.name,
-            (content_x, rect.y + 25),
+            (content_x, rect.y + 12),
             content_width,
             name_color,
-            line_gap=2,
-            max_lines=2,
+            line_gap=0,
+            max_lines=1,
         )
         draw_wrapped_text(
             surface,
             card_font,
             f"생득술식: {character.technique}",
-            (content_x, rect.y + 94),
+            (content_x, rect.y + 57),
             content_width,
             detail_color,
-            max_lines=2,
+            line_gap=1,
+            max_lines=1,
         )
         draw_wrapped_text(
             surface,
             card_font,
             f"영역전개: {character.domain}",
-            (content_x, rect.y + 145),
+            (content_x, rect.y + 84),
             content_width,
             detail_color,
-            max_lines=2,
+            line_gap=1,
+            max_lines=1,
         )
 
         status_color = (153, 191, 227) if character.available else (132, 138, 157)
@@ -109,10 +120,11 @@ def draw_character_select_screen(
             surface,
             card_font,
             character.status,
-            (content_x, rect.y + 198),
+            (content_x, rect.y + 111),
             content_width,
             status_color,
-            max_lines=2,
+            line_gap=1,
+            max_lines=1,
         )
 
         if character.available:
@@ -122,14 +134,14 @@ def draw_character_select_screen(
                 action_text = "1 / ENTER / 클릭으로 선택"
             action_color = (220, 229, 247)
         else:
-            action_text = "아직 선택 불가"
+            action_text = "설정 검토 후 해금"
             action_color = (105, 110, 126)
 
         draw_text(
             surface,
             card_font,
             action_text,
-            (content_x, rect.bottom - 42),
+            (content_x, rect.bottom - 35),
             action_color,
         )
 
