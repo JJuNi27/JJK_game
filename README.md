@@ -23,6 +23,7 @@
 - 타이밍 연습 UI
 - 성공 시 코드로 그린 임시 무량공처 이펙트
 - 한국어 UI 및 실패 사유 표시
+- 키보드 영역 선언과 마우스 장인 입력 모듈 분리
 - `R` 키 초기화, `ESC` 종료
 
 ## 실행 방법
@@ -75,19 +76,29 @@ python main.py
 - 웹캠이 생기면 마우스 장인 입력을 실제 손동작 인식 모듈로 교체 가능하게 설계
 - 장기적으로 Unity에서 봇과 싸우는 전투 게임으로 확장
 
-## 목표 입력 모듈 구조
+## 현재 입력 모듈 구조
+
+```text
+game_input/
+├─ keyboard_domain_trigger.py
+│  └─ V 키 영역 준비, R 키 초기화
+└─ mouse_seal_input.py
+   └─ 우클릭·좌클릭·해제 장인 입력
+
+game/domain_controller.py
+└─ 구체적인 입력 장치를 모르고 상태 전이와 성공/실패만 판정
+```
+
+향후 확장:
 
 ```text
 DomainIntentTrigger
 ├─ KeyboardDomainTrigger
-└─ VoiceDomainTrigger        # 추후
+└─ VoiceDomainTrigger        # 다음 단계
 
 SealInput
 ├─ MouseSealInput
-└─ CameraSealInput           # 추후
-
-DomainController
-EffectPlayer
+└─ CameraSealInput           # 웹캠 확보 후
 ```
 
 ## 1차 개발 순서
@@ -98,8 +109,9 @@ EffectPlayer
 - [x] 자유 연습장 기본 UI
 - [x] 임시 무량공처 이펙트 연결
 - [x] 한국어 UI 적용
+- [x] 키보드·마우스 입력 모듈 분리
+- [ ] 입력 모듈 분리 후 로컬 회귀 테스트
 - [ ] 실제 플레이 후 타이밍 수치 조절
-- [ ] 입력 모듈 인터페이스 분리
 - [ ] 음성인식 모듈 추가
 - [ ] 캐릭터 선택 시스템
 - [ ] 카메라 장인 모듈 확장
@@ -107,4 +119,4 @@ EffectPlayer
 
 ## 기술 스택
 
-첫 프로토타입은 빠르게 검증하기 위해 **Python + Pygame**을 사용합니다. 입력과 이펙트 모듈을 단계적으로 분리해, 필요할 경우 이후 게임 엔진으로 옮길 수 있도록 구성합니다.
+첫 프로토타입은 빠르게 검증하기 위해 **Python + Pygame**을 사용합니다. 입력과 판정 로직을 분리해, 음성·카메라 입력 추가와 Unity 이전이 쉽도록 구성합니다.
