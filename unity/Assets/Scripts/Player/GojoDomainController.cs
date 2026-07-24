@@ -35,6 +35,18 @@ namespace JJKGame.Player
             || State == DomainState.WaitLeftClick
             || State == DomainState.ReleaseTiming;
 
+        public bool IsReleaseTiming => State == DomainState.ReleaseTiming;
+        public float ReleaseElapsed =>
+            IsReleaseTiming ? Mathf.Max(0f, Time.time - leftClickedAt) : 0f;
+        public float ReleaseTimelineDuration =>
+            Mathf.Max(0.1f, targetReleaseTime + releaseTolerance + 0.25f);
+        public float ReleaseProgressNormalized =>
+            Mathf.Clamp01(ReleaseElapsed / ReleaseTimelineDuration);
+        public float ReleaseWindowStartNormalized =>
+            Mathf.Clamp01((targetReleaseTime - releaseTolerance) / ReleaseTimelineDuration);
+        public float ReleaseWindowEndNormalized =>
+            Mathf.Clamp01((targetReleaseTime + releaseTolerance) / ReleaseTimelineDuration);
+
         private float stateStartedAt;
         private float rightPressedAt;
         private float leftClickedAt;
