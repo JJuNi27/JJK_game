@@ -6,6 +6,7 @@ import pygame
 
 from effects.muryang_effect import MuryangEffect
 from game.domain_controller import DomainController
+from game.practice_stats import PracticeStats
 from game.state import GameState
 from game_input.keyboard_domain_trigger import KeyboardDomainTrigger
 from game_input.mouse_seal_input import MouseSealInput
@@ -67,7 +68,7 @@ def draw_timing_bar(
 ) -> None:
     """우클릭 해제 타이밍을 확인하는 연습용 UI."""
 
-    x, y, width, height = 190, 500, 720, 34
+    x, y, width, height = 190, 525, 720, 34
     pygame.draw.rect(surface, (38, 42, 56), (x, y, width, height), border_radius=10)
 
     total = (
@@ -103,9 +104,50 @@ def draw_timing_bar(
     )
 
 
+def format_release_error(value: float | None) -> str:
+    if value is None:
+        return "측정 없음"
+    return f"{value:.3f}초"
+
+
+def draw_stats_panel(
+    surface: pygame.Surface,
+    stats: PracticeStats,
+    body_font: pygame.font.Font,
+    small_font: pygame.font.Font,
+) -> None:
+    """연습 세션의 성공률과 타이밍 기록을 표시한다."""
+
+    panel_rect = pygame.Rect(750, 250, 300, 255)
+    pygame.draw.rect(surface, (27, 31, 44), panel_rect, border_radius=16)
+    pygame.draw.rect(surface, (55, 63, 82), panel_rect, width=2, border_radius=16)
+
+    draw_text(surface, body_font, "연습 기록", (780, 270), (220, 228, 245))
+
+    lines = [
+        f"시도: {stats.attempts}회",
+        f"성공 / 실패: {stats.successes} / {stats.failures}",
+        f"성공률: {stats.success_rate:.1%}",
+        f"현재 연속 성공: {stats.current_streak}회",
+        f"최고 연속 성공: {stats.best_streak}회",
+        f"최근 해제 오차: {format_release_error(stats.last_release_error)}",
+        f"평균 해제 오차: {format_release_error(stats.average_release_error)}",
+    ]
+
+    for index, line in enumerate(lines):
+        draw_text(
+            surface,
+            small_font,
+            line,
+            (778, 320 + index * 25),
+            (184, 194, 215),
+        )
+
+
 def draw_practice_screen(
     surface: pygame.Surface,
     controller: DomainController,
+    stats: PracticeStats,
     voice_status: str,
     title_font: pygame.font.Font,
     body_font: pygame.font.Font,
@@ -119,15 +161,18 @@ def draw_practice_screen(
     draw_text(surface, body_font, controller.result_message, (58, 185))
 
     instructions = [
-        '1. V 키 또는 음성 "영역전개"로 준비 상태에 들어갑니다',
+        '1. V 키 또는 음성 "료이키 텐카이"로 영역을 준비합니다',
         "2. 마우스 오른쪽 버튼을 누르고 유지합니다",
         "3. 오른쪽 버튼을 유지한 채 왼쪽 버튼을 클릭합니다",
         "4. 초록색 타이밍 구간에서 오른쪽 버튼을 놓습니다",
-        "R: 초기화    ESC: 종료",
+        "R: 현재 시도 초기화    T: 연습 통계 초기화",
+        "ESC: 종료",
     ]
 
     for index, line in enumerate(instructions):
-        draw_text(surface, small_font, line, (62, 280 + index * 38), (190, 197, 214))
+        draw_text(surface, small_font, line, (62, 270 + index * 34), (190, 197, 214))
+
+    draw_stats_panel(surface, stats, body_font, small_font)
 
     if controller.state == GameState.RELEASE_TIMING:
         draw_timing_bar(surface, controller)
@@ -136,7 +181,7 @@ def draw_practice_screen(
             surface,
             small_font,
             f"해제 타이머: {elapsed:.2f}초",
-            (190, 552),
+            (190, 575),
         )
 
     draw_text(surface, small_font, voice_status, (58, 642), (145, 173, 205))
@@ -147,6 +192,22 @@ def draw_practice_screen(
         surface.blit(overlay, (0, 0))
 
 
+def record_finished_attempt(
+    previous_state: GameState,
+    controller: DomainController,
+    stats: PracticeStats,
+) -> None:
+    """상태가 성공 또는 실패로 새로 전환된 순간에만 통계를 기록한다."""
+
+    if controller.state == previous_state:
+        return
+
+    if controller.state == GameState.DOMAIN_ACTIVE:
+        stats.record_success(controller.last_release_error)
+    elif controller.state == GameState.FAILED:
+        stats.record_failure(controller.last_release_error)
+
+
 def main() -> int:
     pygame.init()
     pygame.display.set_caption("JJK 게임 - 무량공처 프로토타입")
@@ -155,13 +216,15 @@ def main() -> int:
 
     title_font = load_korean_font(54)
     body_font = load_korean_font(35)
-    small_font = load_korean_font(27)
+    small_font = load_korean_font(23)
 
     controller = DomainController()
+    stats = PracticeStats()
     keyboard_trigger = KeyboardDomainTrigger()
     mouse_seal_input = MouseSealInput()
     voice_trigger = VoiceDomainTrigger()
     effect = MuryangEffect()
+    previous_state = controller.state
     was_domain_active = False
 
     voice_trigger.start()
@@ -179,12 +242,16 @@ def main() -> int:
                     continue
 
                 # 실제 입력 장치는 각 모듈이 처리하고, Controller에는 의미만 전달한다.
-                keyboard_trigger.handle_event(event, controller)
+                should_reset_stats = keyboard_trigger.handle_event(event, controller)
+                if should_reset_stats:
+                    stats.reset()
+
                 mouse_seal_input.handle_event(event, controller)
 
             # 음성 스레드가 감지한 명령은 Pygame 메인 스레드에서 적용한다.
             voice_trigger.update(controller)
             controller.update()
+            record_finished_attempt(previous_state, controller, stats)
 
             is_domain_active = controller.state == GameState.DOMAIN_ACTIVE
             if is_domain_active and not was_domain_active:
@@ -196,12 +263,14 @@ def main() -> int:
                 draw_practice_screen(
                     screen,
                     controller,
+                    stats,
                     voice_trigger.status_message,
                     title_font,
                     body_font,
                     small_font,
                 )
 
+            previous_state = controller.state
             was_domain_active = is_domain_active
             pygame.display.flip()
             clock.tick(FPS)
