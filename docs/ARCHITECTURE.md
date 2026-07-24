@@ -45,8 +45,10 @@ JJK_game/
 │  │  └─ effect.py
 │  │
 │  └─ yuta/
-│     └─ definition.py
-│        └─ 설정 검토용 잠금 프로필
+│     ├─ definition.py
+│     ├─ controller.py
+│     ├─ input.py
+│     └─ effect.py
 │
 ├─ game/
 │  ├─ state.py
@@ -65,7 +67,8 @@ JJK_game/
 │
 ├─ tests/
 │  ├─ test_character_registry.py
-│  └─ test_megumi_gesture.py
+│  ├─ test_megumi_gesture.py
+│  └─ test_yuta_gesture.py
 │
 └─ docs/characters/
    ├─ gojo.md
@@ -101,6 +104,8 @@ effect.py
 
 설정 검토 중인 캐릭터는 `definition.py`만 만들고 `available=False`로 둔다. 승인 후 나머지 세 파일과 `build_runtime()`을 추가한다.
 
+현재 고죠·스쿠나·메구미·유타는 모두 네 파일 구조를 사용한다.
+
 ## 등록소 방식
 
 `characters/registry.py`는 다음만 담당한다.
@@ -112,7 +117,7 @@ effect.py
 잠긴 캐릭터의 런타임 생성 차단
 ```
 
-현재 유타는 카드 목록에는 있지만 builder 등록은 없으므로 선택할 수 없다.
+현재 네 캐릭터 모두 프로필과 builder가 등록되어 선택할 수 있다.
 
 ## UI의 캐릭터별 차이
 
@@ -128,7 +133,12 @@ effect.py
 - 해제 오차 통계 표시
 
 메구미
-- 그림자 궤적 거리 판정
+- 아래→옆 그림자 궤적 판정
+- 타이밍 바 숨김
+- 초 단위 오차 통계 숨김
+
+유타
+- 아래→위 검 뽑기 궤적 판정
 - 타이밍 바 숨김
 - 초 단위 오차 통계 숨김
 ```
@@ -149,6 +159,24 @@ effect.py
 8. 기존 캐릭터 회귀 테스트
 9. 로컬 조작감 확인 후 수치 조절
 
+## 변형 캐릭터 원칙
+
+같은 인물이라도 시기·몸·능력 구성이 크게 다르면 별도 `character_id`를 사용한다.
+
+```text
+sukuna_itadori
+sukuna_megumi
+sukuna_heian
+
+yuta
+└─ 본편 2학년 유타
+
+yuta_zero
+└─ 주술회전 0의 1학년 유타
+```
+
+본편 유타와 제로 유타의 리카 상태·능력 범위를 한 캐릭터에 섞지 않는다.
+
 ## 금지할 구조
 
 ```text
@@ -159,6 +187,7 @@ main.py 안에 캐릭터별 판정 조건 추가
 음성인식 모듈이 특정 캐릭터의 영역을 직접 결정
 한 캐릭터 변경이 다른 캐릭터 파일 수정으로 이어지는 구조
 옛 경로와 새 경로에 실제 구현을 동시에 유지
+시기나 몸이 다른 캐릭터 능력을 하나의 definition에 혼합
 ```
 
 ## 자동 검사
@@ -170,6 +199,7 @@ main.py 안에 캐릭터별 판정 조건 추가
 - 런타임 구성 요소가 해당 `characters/<id>/` 패키지에 위치
 - 잠긴 캐릭터 런타임 생성 차단
 - 메구미 그림자 궤적 성공·실패 상태 전이
+- 유타 검 뽑기 궤적 성공·실패 상태 전이
 
 GitHub Actions는 Python 문법 검사와 단위 테스트를 함께 실행한다.
 
