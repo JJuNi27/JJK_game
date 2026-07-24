@@ -13,6 +13,7 @@ class CharacterProfile:
     domain: str
     voice_command: str
     available: bool = True
+    status: str = "선택 가능"
 
 
 GOJO = CharacterProfile(
@@ -21,25 +22,32 @@ GOJO = CharacterProfile(
     technique="무하한 주술",
     domain="무량공처",
     voice_command="료이키 텐카이",
+    status='음성: "료이키 텐카이"',
+)
+
+SUKUNA_DRAFT = CharacterProfile(
+    character_id="sukuna_draft",
+    name="료멘 스쿠나",
+    technique="설정 카드 검토 중",
+    domain="복마어주자",
+    voice_command="료이키 텐카이",
+    available=False,
+    status="설정 카드 초안 검토 필요",
+)
+
+FUTURE_SLOT = CharacterProfile(
+    character_id="future_slot",
+    name="다음 캐릭터",
+    technique="후보 미정",
+    domain="미정",
+    voice_command="-",
+    available=False,
+    status="스쿠나 이후 추가 예정",
 )
 
 
 CHARACTER_SLOTS = (
     GOJO,
-    CharacterProfile(
-        character_id="locked_1",
-        name="준비 중",
-        technique="설정 카드 승인 후 추가",
-        domain="영역 미정",
-        voice_command="-",
-        available=False,
-    ),
-    CharacterProfile(
-        character_id="locked_2",
-        name="준비 중",
-        technique="설정 카드 승인 후 추가",
-        domain="영역 미정",
-        voice_command="-",
-        available=False,
-    ),
+    SUKUNA_DRAFT,
+    FUTURE_SLOT,
 )
