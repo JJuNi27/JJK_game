@@ -51,5 +51,5 @@ class MuryangEffect:
             size = 1 + index % 3
             pygame.draw.circle(surface, (220, 230, 255), (int(x), int(y)), size)
 
-        title = font.render("UNLIMITED VOID", True, (245, 247, 255))
+        title = font.render("영역전개 · 무량공처", True, (245, 247, 255))
         surface.blit(title, title.get_rect(center=(center[0], center[1] - 10)))
