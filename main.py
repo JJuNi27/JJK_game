@@ -13,6 +13,39 @@ WIDTH = 1100
 HEIGHT = 700
 FPS = 60
 
+STATE_LABELS = {
+    GameState.NORMAL: "대기",
+    GameState.DOMAIN_READY: "영역 준비",
+    GameState.WAIT_LEFT_CLICK: "장인 결합 대기",
+    GameState.RELEASE_TIMING: "해제 타이밍",
+    GameState.DOMAIN_ACTIVE: "무량공처 발동",
+    GameState.FAILED: "실패",
+}
+
+
+def load_korean_font(size: int) -> pygame.font.Font:
+    """운영체제에 설치된 한글 폰트를 찾아 반환한다.
+
+    Windows에서는 기본 설치된 맑은 고딕을 우선 사용한다.
+    """
+
+    candidates = [
+        "malgungothic",
+        "malgun gothic",
+        "nanumgothic",
+        "nanum gothic",
+        "noto sans cjk kr",
+        "applegothic",
+    ]
+
+    for name in candidates:
+        font_path = pygame.font.match_font(name)
+        if font_path:
+            return pygame.font.Font(font_path, size)
+
+    # 한글 폰트를 찾지 못한 경우 기본 폰트로 실행은 계속한다.
+    return pygame.font.Font(None, size)
+
 
 def draw_text(
     surface: pygame.Surface,
@@ -76,16 +109,17 @@ def draw_practice_screen(
 ) -> None:
     surface.fill((18, 21, 31))
 
-    draw_text(surface, title_font, "Unlimited Void Seal Practice", (54, 44))
-    draw_text(surface, body_font, f"STATE: {controller.state.name}", (58, 135))
+    draw_text(surface, title_font, "무량공처 장인 연습", (54, 44))
+    state_label = STATE_LABELS.get(controller.state, controller.state.name)
+    draw_text(surface, body_font, f"현재 상태: {state_label}", (58, 135))
     draw_text(surface, body_font, controller.result_message, (58, 185))
 
     instructions = [
-        "1. Press V to enter DOMAIN_READY",
-        "2. Hold RIGHT mouse button",
-        "3. While holding RIGHT, click LEFT",
-        "4. Release RIGHT inside the green timing zone",
-        "R: reset    ESC: quit",
+        "1. V 키를 눌러 영역전개 준비 상태로 들어갑니다",
+        "2. 마우스 오른쪽 버튼을 누르고 유지합니다",
+        "3. 오른쪽 버튼을 유지한 채 왼쪽 버튼을 클릭합니다",
+        "4. 초록색 타이밍 구간에서 오른쪽 버튼을 놓습니다",
+        "R: 초기화    ESC: 종료",
     ]
 
     for index, line in enumerate(instructions):
@@ -97,7 +131,7 @@ def draw_practice_screen(
         draw_text(
             surface,
             small_font,
-            f"release timer: {elapsed:.2f}s",
+            f"해제 타이머: {elapsed:.2f}초",
             (190, 552),
         )
 
@@ -109,13 +143,13 @@ def draw_practice_screen(
 
 def main() -> int:
     pygame.init()
-    pygame.display.set_caption("JJK Game - Unlimited Void Prototype")
+    pygame.display.set_caption("JJK 게임 - 무량공처 프로토타입")
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     clock = pygame.time.Clock()
 
-    title_font = pygame.font.Font(None, 54)
-    body_font = pygame.font.Font(None, 35)
-    small_font = pygame.font.Font(None, 27)
+    title_font = load_korean_font(54)
+    body_font = load_korean_font(35)
+    small_font = load_korean_font(27)
 
     controller = DomainController()
     effect = MuryangEffect()
