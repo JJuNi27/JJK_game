@@ -1,12 +1,12 @@
 # JJK Game 프로젝트 인수인계서
 
-> 새 ChatGPT 대화에서 사용자가 저장소 링크와 함께 `이 깃허브 읽고 우리 하던 거 계속하자`라고 말하면 **README, 이 문서, 아키텍처 문서, 캐릭터 설정 카드, 최신 코드를 먼저 읽고 현재 상태에서 이어간다.**
+> 새 ChatGPT 대화에서 사용자가 저장소 링크와 함께 `이 깃허브 읽고 우리 하던 거 계속하자`라고 말하면 **README, 이 문서, ARCHITECTURE, 캐릭터 설정 카드, 최신 코드를 먼저 읽고 현재 상태에서 이어간다.**
 
 ## 1. 프로젝트 정의
 
 주술회전의 **술식 선언, 장인(손동작), 영역전개, 공간 변화 연출**을 실제 게임 입력으로 옮기는 개인 프로젝트다.
 
-현재는 Python + Pygame으로 캐릭터별 장인 입력의 조작감과 성공·실패 판정을 검증한다. 장기적으로 Unity에서 캐릭터를 선택하고 봇과 싸우는 3D 전투 게임으로 확장한다.
+현재는 Python + Pygame 자유 연습장으로 캐릭터별 장인 입력의 조작감과 성공·실패 판정을 검증한다. 장기적으로 Unity에서 캐릭터를 선택하고 봇과 싸우는 3D 전투 게임으로 확장한다.
 
 ## 2. 사용자와 작업 방식
 
@@ -65,10 +65,10 @@ Assistant가 GitHub 수정
 
 설정 카드:
 
-- [`characters/gojo.md`](characters/gojo.md): 고죠 v1.0, 검토 완료
-- [`characters/sukuna.md`](characters/sukuna.md): 스쿠나(이타도리) v1.0, 검토 완료
-- [`characters/megumi.md`](characters/megumi.md): 메구미 v1.0, 검토 완료
-- [`characters/yuta.md`](characters/yuta.md): 유타 v0.1, 검토 전
+- [`characters/gojo.md`](characters/gojo.md): 고죠 v1.0
+- [`characters/sukuna.md`](characters/sukuna.md): 스쿠나(이타도리) v1.0
+- [`characters/megumi.md`](characters/megumi.md): 메구미 v1.0
+- [`characters/yuta.md`](characters/yuta.md): 본편 2학년 유타 v1.0
 
 ## 5. 공통 영역 음성
 
@@ -151,42 +151,72 @@ V 또는 료이키 텐카이
 → 감합암예정
 ```
 
-세 캐릭터 모두 사용자가 로컬에서 정상 작동을 확인했다.
+고죠·스쿠나·메구미는 사용자가 로컬에서 정상 작동을 확인했다.
 
-## 7. 다음 캐릭터 — 옷코츠 유타
+### 옷코츠 유타(본편 2학년)
 
-중요한 정정:
+중요한 분리 원칙:
 
 ```text
-진안상애 = 옷코츠 유타의 영역전개
-자폐원돈과 = 마히토의 영역전개
+현재 yuta
+= 본편 2학년 유타
+
+추후 yuta_zero
+= 주술회전 0의 1학년 유타
 ```
 
-원래 프로젝트에서 계획한 네 번째 영역은 유타의 **진안상애**다. 마히토가 아니다.
+제로 버전은 나중에 별도 캐릭터로 추가한다. 본편 유타와 제로 유타의 리카 상태·능력 범위를 섞지 않는다.
 
-현재 상태:
+현재 장인:
 
-- `characters/yuta/definition.py`에 잠금 프로필 존재
-- 선택 화면 네 번째 카드에 표시
-- `docs/characters/yuta.md` 설정 카드 v0.1 작성 완료
-- 아직 builder가 없어 선택·실행 불가
+```text
+V 또는 료이키 텐카이
+→ C 키로 반지 연결 유지
+→ 화면 아래쪽을 좌클릭
+→ 검을 뽑듯 위로 드래그
+→ C 유지 상태에서 좌클릭 해제
+→ 진안상애
+```
 
-설정 카드의 현재 권장 방향:
+초기 수치:
 
-- 첫 구현은 본편 2학년 유타
-- 주술회전 0 유타는 필요하면 추후 별도 변형
-- 모방과 리카를 핵심으로 운영
-- 진안상애의 필중 술식 1개 선택 유지
-- 나머지 복사 술식은 무작위 검에 배정
-- 검은 1회 사용 후 소멸
-- 첫 장인 후보는 `왼손 키 유지 + 아래에서 위로 검 뽑기 드래그`
-- 리카 완전 현현 5분 시스템은 영역 장인 이후 별도 단계
+```text
+C 후 드래그 시작 제한 0.80초
+위쪽 최소 이동 190px
+좌우 흔들림 허용 100px
+전체 검 뽑기 제한 1.60초
+```
 
-사용자 검토가 필요한 항목은 `docs/characters/yuta.md` 8절을 따른다.
+진안상애 전투에서 보존할 정체성:
 
-## 8. 현재 아키텍처
+```text
+필중 복사 술식 1개 선택
++
+나머지 복사 술식은 무작위 검에 배정
++
+검을 뽑아야 술식 확인
++
+한 검은 1회 사용
+```
 
-구현 캐릭터는 모두 동일한 패키지 구조를 사용한다.
+첫 복사 술식 우선순위:
+
+- 주언
+- 하늘 조작
+- 우스라비
+
+후순위:
+
+- 드루브 술식
+- 야곱의 사다리
+- 주복사 참격
+- 리카 완전 현현 5분 시스템
+
+유타 코드는 구현 완료했지만 사용자 로컬 조작 테스트는 아직 필요하다.
+
+## 7. 현재 아키텍처
+
+네 캐릭터 모두 동일한 패키지 구조를 사용한다.
 
 ```text
 characters/<character_id>/
@@ -200,32 +230,19 @@ characters/<character_id>/
 
 ```text
 characters/
-├─ gojo/             # 네 파일 구현
-├─ sukuna_itadori/   # 네 파일 구현
-├─ megumi/           # 네 파일 구현
-└─ yuta/             # 잠금 definition.py만 존재
+├─ gojo/
+├─ sukuna_itadori/
+├─ megumi/
+└─ yuta/
 ```
 
 `characters/registry.py`가 카드 순서와 런타임 builder를 연결한다. `main.py`와 UI는 캐릭터별 구현 클래스를 직접 알지 않는다.
 
-과거의 다음 호환 파일은 삭제 완료했다.
-
-```text
-game/character.py
-game/runtime.py
-game/domain_controller.py
-game/sukuna_domain_controller.py
-game_input/mouse_seal_input.py
-game_input/sukuna_two_hand_input.py
-effects/muryang_effect.py
-effects/fukuma_effect.py
-```
-
-실제 캐릭터 구현은 `characters/<id>/`에만 둔다.
+과거 공용 경로에 있던 고죠·스쿠나 호환 파일은 삭제했다. 실제 캐릭터 구현은 `characters/<id>/`에만 둔다.
 
 상세 기준: [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
-## 9. UI 구조
+## 8. UI 구조
 
 ```text
 ui/common.py
@@ -234,7 +251,6 @@ ui/common.py
 ui/character_select_screen.py
 - 현재 네 캐릭터용 2×2 카드
 - 숫자·ENTER·클릭 선택
-- 잠긴 유타 카드 표시
 
 ui/practice_screen.py
 - 프로필의 seal_steps를 읽어 안내
@@ -243,7 +259,7 @@ ui/practice_screen.py
 
 다섯 번째 캐릭터 추가 전에는 선택 화면 페이지 기능을 추가한다.
 
-## 10. 자동 테스트
+## 9. 자동 테스트
 
 ```bash
 python -m unittest discover -s tests -v
@@ -254,14 +270,14 @@ python -m unittest discover -s tests -v
 - 캐릭터 ID 중복 없음
 - 선택 가능한 캐릭터 런타임 생성
 - 컨트롤러·입력·이펙트가 해당 캐릭터 패키지에 위치
-- 잠긴 유타 런타임 생성 차단
 - 메구미 그림자 궤적 성공·실패
+- 유타 검 뽑기 궤적 성공·실패
 
 GitHub Actions는 Python compileall과 단위 테스트를 실행한다.
 
-## 11. 바로 다음 작업
+## 10. 바로 다음 작업
 
-사용자에게 먼저 다음을 실행하게 한다.
+사용자에게 다음을 실행하게 한다.
 
 ```bash
 git pull origin master
@@ -273,42 +289,49 @@ python main.py
 
 ```text
 1. 테스트가 OK인지
-2. 2×2 선택 카드가 깨지지 않는지
-3. 고죠·스쿠나·메구미가 이전과 동일하게 작동하는지
-4. 유타 카드가 보이지만 선택되지 않는지
-5. B로 캐릭터를 바꿔도 입력 상태가 남지 않는지
+2. 네 캐릭터 카드가 2×2로 정상인지
+3. 고죠·스쿠나·메구미 회귀 이상이 없는지
+4. 4키 또는 클릭으로 유타가 선택되는지
+5. V/음성 → C 유지 → 아래에서 위로 드래그가 되는지
+6. 190px 이상 뽑고 좌클릭을 놓으면 진안상애가 발동하는지
+7. C 조기 해제·짧은 드래그·큰 좌우 흔들림이 실패하는지
+8. 임시 진안상애 화면에 십자 구조와 여러 검이 보이는지
 ```
 
-그 다음 `docs/characters/yuta.md`의 결정사항을 사용자와 검토하고, 승인되면 다음 구조를 만든다.
+조작감에 따라 우선 조절할 값:
 
 ```text
-characters/yuta/
-├─ definition.py
-├─ controller.py
-├─ input.py
-└─ effect.py
+ring_to_draw_timeout
+upward_min_distance
+upward_horizontal_tolerance
+total_gesture_timeout
 ```
 
-## 12. 이후 순서
+## 11. 이후 순서
 
 ```text
-유타 설정 카드 승인
-→ 진안상애 장인 프로토타입
-→ 유타 복사 술식·리카 단계 설계
-→ 캐릭터별 일반 술식
+유타 장인 난이도 안정화
+→ 네 캐릭터 일반 술식 설계
+→ 고죠 창·혁·자
+→ 스쿠나 해·팔·푸가
+→ 메구미 옥견 「혼」·누에 등
+→ 유타 검술·리카 부분 현현·주언·하늘 조작
 → Unity 전투 MVP
 → 카메라 장인 입력
 → 영역 충돌·번아웃·흑섬
 ```
 
-## 13. 새 대화 절차
+제로 유타는 본편 유타의 일반 술식과 영역 시스템이 안정된 뒤 별도 캐릭터로 추가한다.
+
+## 12. 새 대화 절차
 
 ```text
 1. README.md
 2. docs/HANDOFF.md
 3. docs/ARCHITECTURE.md
 4. docs/characters/gojo.md, sukuna.md, megumi.md, yuta.md
-5. characters/registry.py와 최신 캐릭터 패키지
-6. 코드와 문서 차이 확인
-7. 바로 다음 작업부터 진행
+5. characters/registry.py
+6. characters/<id>/ 최신 코드
+7. 테스트와 사용자 최신 발언 확인
+8. 바로 다음 작업부터 진행
 ```
