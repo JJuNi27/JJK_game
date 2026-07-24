@@ -9,16 +9,19 @@ from pathlib import Path
 from game.domain_controller import DomainController
 
 
-DEFAULT_MODEL_PATH = Path("models/vosk-model-small-ko-0.22")
+DEFAULT_MODEL_PATH = Path("models/vosk-model-small-ja-0.22")
 MIN_COMMAND_CONFIDENCE = 0.88
 
 
 class VoiceDomainTrigger:
-    """마이크에서 영역전개 선언을 감지해 Controller에 전달한다.
+    """마이크에서 일본어 영역전개 선언을 감지한다.
 
-    음성인식 의존성이나 한국어 모델이 없어도 프로그램 전체가 실패하지 않도록
-    선택 기능으로 동작한다. 확정된 인식 결과가 정확한 명령 문구와 일치하고,
-    신뢰도 기준까지 통과했을 때만 영역 준비 요청을 전달한다.
+    프로젝트 분위기에 맞춰 일본어 「領域展開」(료이키 텐카이)를 주 명령으로
+    사용한다. 확정된 인식 결과가 허용 문구와 정확히 일치하고 신뢰도 기준까지
+    통과했을 때만 Controller에 영역 준비 요청을 전달한다.
+
+    음성인식 의존성, 일본어 모델 또는 마이크가 없어도 프로그램 전체는 계속
+    실행되며 V 키 대체 입력을 사용할 수 있다.
     """
 
     def __init__(
@@ -28,7 +31,7 @@ class VoiceDomainTrigger:
     ) -> None:
         self.model_path = Path(model_path)
         self.min_confidence = min_confidence
-        self.status_message = "음성인식: 준비 확인 중"
+        self.status_message = "일본어 음성인식: 준비 확인 중"
         self.is_available = False
         self.last_recognized_text = ""
         self.last_confidence = 0.0
@@ -38,10 +41,11 @@ class VoiceDomainTrigger:
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
 
-        # 띄어쓰기를 제거한 뒤 아래 두 문구와 정확히 같을 때만 발동한다.
+        # 일본어 모델이 출력할 수 있는 표기 차이를 모두 정규화해 허용한다.
         self._accepted_phrases = {
-            "영역전개",
-            "료이키텐카이",
+            "領域展開",
+            "りょういきてんかい",
+            "リョウイキテンカイ",
         }
 
     def start(self) -> None:
@@ -54,18 +58,18 @@ class VoiceDomainTrigger:
             import vosk  # noqa: F401
         except ImportError:
             self.status_message = (
-                "음성인식: 라이브러리 없음 (V 키는 정상 사용 가능)"
+                "일본어 음성인식: 라이브러리 없음 (V 키는 정상 사용 가능)"
             )
             return
 
         if not self.model_path.is_dir():
             self.status_message = (
-                "음성인식: 한국어 모델 없음 (setup_voice_model.py 실행 필요)"
+                "일본어 음성인식: 모델 없음 (setup_voice_model.py 실행 필요)"
             )
             return
 
         self._stop_event.clear()
-        self.status_message = "음성인식: 마이크 시작 중"
+        self.status_message = "일본어 음성인식: 마이크 시작 중"
         self._thread = threading.Thread(
             target=self._listen_loop,
             name="voice-domain-trigger",
@@ -130,9 +134,6 @@ class VoiceDomainTrigger:
         confidence = self._extract_confidence(payload)
         self.last_recognized_text = text
         self.last_confidence = confidence
-        self.status_message = (
-            f'음성인식: "{text}" · 신뢰도 {confidence:.0%}'
-        )
 
         now = time.monotonic()
         is_exact_phrase = self._is_exact_activation_phrase(text)
@@ -146,10 +147,13 @@ class VoiceDomainTrigger:
             )
             return now
 
+        self.status_message = (
+            f'명령 아님: "{text}" · 신뢰도 {confidence:.0%}'
+        )
         return last_triggered_at
 
     def _listen_loop(self) -> None:
-        """백그라운드에서 마이크 스트림을 Vosk로 처리한다."""
+        """백그라운드에서 마이크 스트림을 일본어 Vosk로 처리한다."""
         try:
             import sounddevice as sd
             from vosk import KaldiRecognizer, Model, SetLogLevel
@@ -160,12 +164,13 @@ class VoiceDomainTrigger:
             input_device = sd.query_devices(kind="input")
             sample_rate = int(input_device["default_samplerate"])
 
-            # 후보 문구와 미지의 단어를 함께 허용하되, 실제 발동 판정은
-            # 확정 결과의 정확한 문구 일치와 신뢰도 기준으로 다시 검사한다.
+            # 일본어 표기의 후보를 제한해 짧은 게임 명령의 인식률을 높인다.
+            # 실제 발동은 확정 결과의 정확한 일치와 신뢰도 기준으로 다시 검사한다.
             grammar = json.dumps(
                 [
-                    "영역 전개",
-                    "료이키 텐카이",
+                    "領域 展開",
+                    "りょういき てんかい",
+                    "リョウイキ テンカイ",
                     "[unk]",
                 ],
                 ensure_ascii=False,
@@ -183,7 +188,7 @@ class VoiceDomainTrigger:
             last_triggered_at = 0.0
             self.is_available = True
             self.status_message = (
-                f'음성인식: 듣는 중 (최소 신뢰도 {self.min_confidence:.0%})'
+                f'일본어 음성인식: 듣는 중 ("료이키 텐카이", 최소 {self.min_confidence:.0%})'
             )
 
             with sd.RawInputStream(
@@ -200,8 +205,7 @@ class VoiceDomainTrigger:
                     except queue.Empty:
                         continue
 
-                    # 부분 인식은 화면 표시와 발동 판정에 사용하지 않는다.
-                    # 말이 끝나 AcceptWaveform이 True가 된 확정 결과만 검사한다.
+                    # 말이 끝난 뒤 만들어지는 확정 결과만 판정한다.
                     if not recognizer.AcceptWaveform(data):
                         continue
 
@@ -215,6 +219,6 @@ class VoiceDomainTrigger:
                     )
 
         except Exception as exc:  # 음성 기능 실패가 게임 전체 실패로 번지지 않게 한다.
-            self.status_message = f"음성인식 사용 불가: {type(exc).__name__}"
+            self.status_message = f"일본어 음성인식 사용 불가: {type(exc).__name__}"
         finally:
             self.is_available = False
