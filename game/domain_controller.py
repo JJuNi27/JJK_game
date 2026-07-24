@@ -36,7 +36,7 @@ class DomainController:
         self.right_pressed_at: float | None = None
         self.left_clicked_at: float | None = None
         self.last_release_error: float | None = None
-        self.result_message = "Press V to prepare Domain Expansion"
+        self.result_message = "V 키를 눌러 영역전개를 준비하세요"
 
     def _change_state(self, state: GameState, message: str) -> None:
         self.state = state
@@ -49,7 +49,7 @@ class DomainController:
         self.last_release_error = None
         self._change_state(
             GameState.DOMAIN_READY,
-            "Domain ready: hold RIGHT mouse button",
+            "영역 준비: 마우스 오른쪽 버튼을 누르고 유지하세요",
         )
 
     def _fail(self, message: str) -> None:
@@ -58,7 +58,7 @@ class DomainController:
     def _activate_domain(self) -> None:
         self._change_state(
             GameState.DOMAIN_ACTIVE,
-            "UNLIMITED VOID ACTIVATED",
+            "영역전개 · 무량공처",
         )
 
     def handle_event(self, event: pygame.event.Event) -> None:
@@ -76,38 +76,38 @@ class DomainController:
                 self.right_pressed_at = now
                 self._change_state(
                     GameState.WAIT_LEFT_CLICK,
-                    "Keep holding RIGHT and click LEFT",
+                    "오른쪽 버튼을 유지한 채 왼쪽 버튼을 클릭하세요",
                 )
 
             # 좌클릭: 장인 결합 입력
             elif event.button == 1 and self.state == GameState.WAIT_LEFT_CLICK:
                 if not pygame.mouse.get_pressed(num_buttons=3)[2]:
-                    self._fail("Failed: RIGHT mouse button was not held")
+                    self._fail("실패: 오른쪽 버튼을 유지하지 않았습니다")
                     return
 
                 if self.right_pressed_at is None:
-                    self._fail("Failed: missing RIGHT press time")
+                    self._fail("실패: 오른쪽 버튼 입력 시간이 없습니다")
                     return
 
                 elapsed = now - self.right_pressed_at
                 if elapsed > self.config.right_to_left_timeout:
-                    self._fail("Failed: LEFT click was too late")
+                    self._fail("실패: 왼쪽 클릭이 너무 늦었습니다")
                     return
 
                 self.left_clicked_at = now
                 self._change_state(
                     GameState.RELEASE_TIMING,
-                    "Release RIGHT inside the target timing zone",
+                    "초록색 타이밍 구간에서 오른쪽 버튼을 놓으세요",
                 )
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 3:
             if self.state == GameState.WAIT_LEFT_CLICK:
-                self._fail("Failed: RIGHT was released before LEFT click")
+                self._fail("실패: 왼쪽 클릭 전에 오른쪽 버튼을 놓았습니다")
                 return
 
             if self.state == GameState.RELEASE_TIMING:
                 if self.left_clicked_at is None:
-                    self._fail("Failed: missing LEFT click time")
+                    self._fail("실패: 왼쪽 클릭 시간이 없습니다")
                     return
 
                 release_time = now - self.left_clicked_at
@@ -118,7 +118,7 @@ class DomainController:
                     self._activate_domain()
                 else:
                     self._fail(
-                        f"Failed timing: released at {release_time:.2f}s"
+                        f"타이밍 실패: {release_time:.2f}초에 버튼을 놓았습니다"
                     )
 
     def update(self) -> None:
@@ -129,12 +129,12 @@ class DomainController:
             self.state == GameState.DOMAIN_READY
             and elapsed > self.config.domain_ready_timeout
         ):
-            self._fail("Failed: command input timed out")
+            self._fail("실패: 장인 입력 제한시간을 초과했습니다")
 
         elif self.state == GameState.WAIT_LEFT_CLICK:
             if self.right_pressed_at is not None:
                 if now - self.right_pressed_at > self.config.right_to_left_timeout:
-                    self._fail("Failed: LEFT click was too late")
+                    self._fail("실패: 왼쪽 클릭이 너무 늦었습니다")
 
         elif self.state == GameState.RELEASE_TIMING:
             if self.left_clicked_at is not None:
@@ -144,7 +144,7 @@ class DomainController:
                     + 0.5
                 )
                 if now - self.left_clicked_at > max_wait:
-                    self._fail("Failed: RIGHT release was too late")
+                    self._fail("실패: 오른쪽 버튼을 너무 늦게 놓았습니다")
 
         elif (
             self.state == GameState.DOMAIN_ACTIVE
