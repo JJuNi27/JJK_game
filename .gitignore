@@ -1,5 +1,9 @@
 .venv/
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .vscode/
 .DS_Store
+
+# 로컬에서 내려받는 음성인식 모델은 용량이 커서 Git에 올리지 않는다.
+models/
