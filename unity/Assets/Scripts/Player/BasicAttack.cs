@@ -10,6 +10,8 @@ namespace JJKGame.Player
         [SerializeField, Min(0.1f)] private float attackRadius = 1.6f;
         [SerializeField, Min(0.1f)] private float attackDamage = 18f;
         [SerializeField, Min(0.05f)] private float attackCooldown = 0.45f;
+        [SerializeField, Min(0f)] private float knockbackSpeed = 7.5f;
+        [SerializeField, Min(0f)] private float hitStunDuration = 0.22f;
         [SerializeField] private GojoDomainController domainController;
 
         private Health ownHealth;
@@ -71,6 +73,28 @@ namespace JJKGame.Player
                 }
 
                 targetHealth.TakeDamage(attackDamage);
+                ApplyHitReaction(targetHealth);
+            }
+        }
+
+        private void ApplyHitReaction(Health targetHealth)
+        {
+            Vector3 direction = targetHealth.transform.position - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= 0.001f)
+            {
+                direction = transform.forward;
+            }
+
+            Vector3 impulse = direction.normalized * knockbackSpeed;
+            MonoBehaviour[] behaviours = targetHealth.GetComponents<MonoBehaviour>();
+            foreach (MonoBehaviour behaviour in behaviours)
+            {
+                if (behaviour is IHitReactable hitReactable)
+                {
+                    hitReactable.ApplyHitReaction(impulse, hitStunDuration);
+                    break;
+                }
             }
         }
 
