@@ -41,6 +41,7 @@ namespace JJKGame.Player
 
         private void Awake()
         {
+            EnsureRuntimeVisual();
             SetDomainVisual(false);
             ResetCommand();
         }
@@ -207,6 +208,23 @@ namespace JJKGame.Player
             State = nextState;
             stateStartedAt = Time.time;
             StatusText = message;
+        }
+
+        private void EnsureRuntimeVisual()
+        {
+            if (domainVisualRoot != null)
+            {
+                return;
+            }
+
+            GameObject runtimeVisual = new GameObject("UnlimitedVoidPrototypeVisual");
+            runtimeVisual.transform.SetParent(transform, false);
+            runtimeVisual.SetActive(false);
+
+            UnlimitedVoidPrototypeVisual visual =
+                runtimeVisual.AddComponent<UnlimitedVoidPrototypeVisual>();
+            visual.Configure(domainRadius);
+            domainVisualRoot = runtimeVisual;
         }
 
         private void SetDomainVisual(bool visible)
