@@ -1,3 +1,3 @@
-from characters.yuta.definition import PROFILE
+from characters.yuta.definition import PROFILE, build_runtime
 
-__all__ = ["PROFILE"]
+__all__ = ["PROFILE", "build_runtime"]
