@@ -9,7 +9,7 @@ from characters.sukuna_itadori import (
     PROFILE as SUKUNA_ITADORI,
     build_runtime as build_sukuna_runtime,
 )
-from characters.yuta import PROFILE as YUTA
+from characters.yuta import PROFILE as YUTA, build_runtime as build_yuta_runtime
 
 
 RuntimeBuilder = Callable[[], CharacterRuntime]
@@ -25,6 +25,7 @@ _RUNTIME_BUILDERS: dict[str, RuntimeBuilder] = {
     GOJO.character_id: build_gojo_runtime,
     SUKUNA_ITADORI.character_id: build_sukuna_runtime,
     MEGUMI.character_id: build_megumi_runtime,
+    YUTA.character_id: build_yuta_runtime,
 }
 
 
