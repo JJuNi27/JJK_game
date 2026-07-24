@@ -20,6 +20,9 @@ class CharacterProfile:
     seal_steps: tuple[str, ...] = ()
     available: bool = True
     status: str = "선택 가능"
+    progress_state_label: str = "해제 타이밍"
+    show_timing_bar: bool = True
+    show_error_stats: bool = True
 
 
 class SealInputProtocol(Protocol):
