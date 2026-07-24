@@ -4,11 +4,11 @@ import sys
 
 import pygame
 
+from characters.base import CharacterProfile, CharacterRuntime
+from characters.registry import create_character_runtime
 from game.app_scene import AppScene
-from game.character import CharacterProfile
 from game.domain_protocol import DomainControllerProtocol
 from game.practice_stats import PracticeStats
-from game.runtime import CharacterRuntime, create_character_runtime
 from game.state import GameState
 from game_input.keyboard_domain_trigger import KeyboardDomainTrigger
 from game_input.voice_domain_trigger import VoiceDomainTrigger
