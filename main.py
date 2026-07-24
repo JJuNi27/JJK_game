@@ -5,6 +5,8 @@ import sys
 import pygame
 
 from effects.muryang_effect import MuryangEffect
+from game.app_scene import AppScene
+from game.character import CHARACTER_SLOTS, CharacterProfile
 from game.domain_controller import DomainController
 from game.practice_stats import PracticeStats
 from game.state import GameState
@@ -28,10 +30,7 @@ STATE_LABELS = {
 
 
 def load_korean_font(size: int) -> pygame.font.Font:
-    """운영체제에 설치된 한글 폰트를 찾아 반환한다.
-
-    Windows에서는 기본 설치된 맑은 고딕을 우선 사용한다.
-    """
+    """운영체제에 설치된 한글 폰트를 찾아 반환한다."""
 
     candidates = [
         "malgungothic",
@@ -47,7 +46,6 @@ def load_korean_font(size: int) -> pygame.font.Font:
         if font_path:
             return pygame.font.Font(font_path, size)
 
-    # 한글 폰트를 찾지 못한 경우 기본 폰트로 실행은 계속한다.
     return pygame.font.Font(None, size)
 
 
@@ -60,6 +58,127 @@ def draw_text(
 ) -> None:
     rendered = font.render(text, True, color)
     surface.blit(rendered, position)
+
+
+def character_card_rect(index: int) -> pygame.Rect:
+    card_width = 300
+    gap = 35
+    start_x = 65
+    return pygame.Rect(start_x + index * (card_width + gap), 245, card_width, 285)
+
+
+def draw_character_select_screen(
+    surface: pygame.Surface,
+    title_font: pygame.font.Font,
+    body_font: pygame.font.Font,
+    small_font: pygame.font.Font,
+) -> None:
+    surface.fill((15, 18, 28))
+
+    draw_text(surface, title_font, "캐릭터 선택", (54, 42))
+    draw_text(
+        surface,
+        body_font,
+        "연습할 캐릭터를 선택하세요",
+        (58, 120),
+        (196, 207, 228),
+    )
+    draw_text(
+        surface,
+        small_font,
+        "현재는 설정 검토가 끝난 고죠 사토루만 선택할 수 있습니다.",
+        (60, 175),
+        (145, 158, 184),
+    )
+
+    for index, character in enumerate(CHARACTER_SLOTS):
+        rect = character_card_rect(index)
+        if character.available:
+            background = (31, 38, 58)
+            border = (102, 138, 194)
+            name_color = (235, 240, 252)
+        else:
+            background = (24, 27, 38)
+            border = (55, 60, 76)
+            name_color = (124, 130, 148)
+
+        pygame.draw.rect(surface, background, rect, border_radius=18)
+        pygame.draw.rect(surface, border, rect, width=2, border_radius=18)
+
+        draw_text(
+            surface,
+            body_font,
+            character.name,
+            (rect.x + 24, rect.y + 28),
+            name_color,
+        )
+        draw_text(
+            surface,
+            small_font,
+            f"생득술식: {character.technique}",
+            (rect.x + 24, rect.y + 92),
+            (175, 187, 211) if character.available else (105, 110, 126),
+        )
+        draw_text(
+            surface,
+            small_font,
+            f"영역전개: {character.domain}",
+            (rect.x + 24, rect.y + 128),
+            (175, 187, 211) if character.available else (105, 110, 126),
+        )
+
+        if character.available:
+            draw_text(
+                surface,
+                small_font,
+                '음성: "료이키 텐카이"',
+                (rect.x + 24, rect.y + 164),
+                (153, 191, 227),
+            )
+            draw_text(
+                surface,
+                small_font,
+                "1 또는 ENTER / 클릭으로 선택",
+                (rect.x + 24, rect.y + 225),
+                (210, 221, 242),
+            )
+        else:
+            draw_text(
+                surface,
+                small_font,
+                "잠김",
+                (rect.x + 24, rect.y + 225),
+                (110, 115, 130),
+            )
+
+    draw_text(
+        surface,
+        small_font,
+        "ESC: 종료",
+        (60, 646),
+        (145, 158, 184),
+    )
+
+
+def select_character_from_event(
+    event: pygame.event.Event,
+) -> CharacterProfile | None:
+    if event.type == pygame.KEYDOWN and event.key in (
+        pygame.K_1,
+        pygame.K_RETURN,
+        pygame.K_KP_ENTER,
+    ):
+        return next(
+            (character for character in CHARACTER_SLOTS if character.available),
+            None,
+        )
+
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        for index, character in enumerate(CHARACTER_SLOTS):
+            if character.available and character_card_rect(index).collidepoint(event.pos):
+                return character
+
+    return None
 
 
 def draw_timing_bar(
@@ -146,6 +265,7 @@ def draw_stats_panel(
 
 def draw_practice_screen(
     surface: pygame.Surface,
+    character: CharacterProfile,
     controller: DomainController,
     stats: PracticeStats,
     voice_status: str,
@@ -155,18 +275,23 @@ def draw_practice_screen(
 ) -> None:
     surface.fill((18, 21, 31))
 
-    draw_text(surface, title_font, "무량공처 장인 연습", (54, 44))
+    draw_text(
+        surface,
+        title_font,
+        f"{character.name} · {character.domain} 장인 연습",
+        (54, 44),
+    )
     state_label = STATE_LABELS.get(controller.state, controller.state.name)
     draw_text(surface, body_font, f"현재 상태: {state_label}", (58, 135))
     draw_text(surface, body_font, controller.result_message, (58, 185))
 
     instructions = [
-        '1. V 키 또는 음성 "료이키 텐카이"로 영역을 준비합니다',
+        f'1. V 키 또는 음성 "{character.voice_command}"로 영역을 준비합니다',
         "2. 마우스 오른쪽 버튼을 누르고 유지합니다",
         "3. 오른쪽 버튼을 유지한 채 왼쪽 버튼을 클릭합니다",
         "4. 초록색 타이밍 구간에서 오른쪽 버튼을 놓습니다",
         "R: 현재 시도 초기화    T: 연습 통계 초기화",
-        "ESC: 종료",
+        "B: 캐릭터 선택    ESC: 종료",
     ]
 
     for index, line in enumerate(instructions):
@@ -208,9 +333,35 @@ def record_finished_attempt(
         stats.record_failure(controller.last_release_error)
 
 
+def enter_practice(
+    character: CharacterProfile,
+    controller: DomainController,
+    stats: PracticeStats,
+    voice_trigger: VoiceDomainTrigger,
+) -> None:
+    controller.reset()
+    stats.reset()
+    voice_trigger.start()
+    pygame.display.set_caption(
+        f"JJK 게임 - {character.name} {character.domain} 프로토타입"
+    )
+
+
+def return_to_character_select(
+    controller: DomainController,
+    stats: PracticeStats,
+    voice_trigger: VoiceDomainTrigger,
+) -> VoiceDomainTrigger:
+    voice_trigger.stop()
+    controller.reset()
+    stats.reset()
+    pygame.display.set_caption("JJK 게임 - 캐릭터 선택")
+    return VoiceDomainTrigger()
+
+
 def main() -> int:
     pygame.init()
-    pygame.display.set_caption("JJK 게임 - 무량공처 프로토타입")
+    pygame.display.set_caption("JJK 게임 - 캐릭터 선택")
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     clock = pygame.time.Clock()
 
@@ -218,16 +369,18 @@ def main() -> int:
     body_font = load_korean_font(35)
     small_font = load_korean_font(23)
 
+    scene = AppScene.CHARACTER_SELECT
+    selected_character: CharacterProfile | None = None
+
     controller = DomainController()
     stats = PracticeStats()
     keyboard_trigger = KeyboardDomainTrigger()
     mouse_seal_input = MouseSealInput()
     voice_trigger = VoiceDomainTrigger()
     effect = MuryangEffect()
+
     previous_state = controller.state
     was_domain_active = False
-
-    voice_trigger.start()
 
     try:
         running = True
@@ -241,37 +394,76 @@ def main() -> int:
                     running = False
                     continue
 
-                # 실제 입력 장치는 각 모듈이 처리하고, Controller에는 의미만 전달한다.
+                if scene == AppScene.CHARACTER_SELECT:
+                    selected = select_character_from_event(event)
+                    if selected is not None:
+                        selected_character = selected
+                        scene = AppScene.PRACTICE
+                        enter_practice(
+                            selected_character,
+                            controller,
+                            stats,
+                            voice_trigger,
+                        )
+                        previous_state = controller.state
+                        was_domain_active = False
+                    continue
+
+                if (
+                    scene == AppScene.PRACTICE
+                    and event.type == pygame.KEYDOWN
+                    and event.key == pygame.K_b
+                ):
+                    scene = AppScene.CHARACTER_SELECT
+                    selected_character = None
+                    voice_trigger = return_to_character_select(
+                        controller,
+                        stats,
+                        voice_trigger,
+                    )
+                    previous_state = controller.state
+                    was_domain_active = False
+                    continue
+
                 should_reset_stats = keyboard_trigger.handle_event(event, controller)
                 if should_reset_stats:
                     stats.reset()
 
                 mouse_seal_input.handle_event(event, controller)
 
-            # 음성 스레드가 감지한 명령은 Pygame 메인 스레드에서 적용한다.
-            voice_trigger.update(controller)
-            controller.update()
-            record_finished_attempt(previous_state, controller, stats)
+            if scene == AppScene.PRACTICE:
+                voice_trigger.update(controller)
+                controller.update()
+                record_finished_attempt(previous_state, controller, stats)
 
-            is_domain_active = controller.state == GameState.DOMAIN_ACTIVE
-            if is_domain_active and not was_domain_active:
-                effect.restart()
+                is_domain_active = controller.state == GameState.DOMAIN_ACTIVE
+                if is_domain_active and not was_domain_active:
+                    effect.restart()
 
-            if is_domain_active:
-                effect.draw(screen, title_font)
+                if is_domain_active:
+                    effect.draw(screen, title_font)
+                elif selected_character is not None:
+                    draw_practice_screen(
+                        screen,
+                        selected_character,
+                        controller,
+                        stats,
+                        voice_trigger.status_message,
+                        title_font,
+                        body_font,
+                        small_font,
+                    )
+
+                previous_state = controller.state
+                was_domain_active = is_domain_active
             else:
-                draw_practice_screen(
+                draw_character_select_screen(
                     screen,
-                    controller,
-                    stats,
-                    voice_trigger.status_message,
                     title_font,
                     body_font,
                     small_font,
                 )
 
-            previous_state = controller.state
-            was_domain_active = is_domain_active
             pygame.display.flip()
             clock.tick(FPS)
     finally:
