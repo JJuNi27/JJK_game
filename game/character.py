@@ -6,14 +6,18 @@
 
 from characters.base import CharacterProfile
 from characters.gojo import PROFILE as GOJO
-from characters.megumi import PROFILE as MEGUMI_DRAFT
+from characters.megumi import PROFILE as MEGUMI
 from characters.registry import CHARACTER_SLOTS
 from characters.sukuna_itadori import PROFILE as SUKUNA_ITADORI
+
+# 과거 이름을 사용하는 외부 import가 당장 깨지지 않도록 잠시 유지한다.
+MEGUMI_DRAFT = MEGUMI
 
 __all__ = [
     "CharacterProfile",
     "GOJO",
     "SUKUNA_ITADORI",
+    "MEGUMI",
     "MEGUMI_DRAFT",
     "CHARACTER_SLOTS",
 ]
