@@ -16,12 +16,11 @@
 - 환경: Windows + VS Code
 - 화면 문구는 가능한 한 한국어
 - 공식 설정은 `[OFFICIAL_CONFIRMED]`, 게임 각색은 `[GAME_ORIGINAL]`
-- 사용자가 직접 수정했다면 GitHub에 push한 뒤 최신 파일을 다시 읽는다.
 
 ```text
 Assistant가 GitHub 수정
 → 사용자 git pull origin master
-→ 사용자 테스트 명령과 python main.py 실행
+→ 사용자 단위 테스트와 python main.py 실행
 → 화면·오류·조작감 전달
 → Assistant가 저장소 수정
 ```
@@ -55,28 +54,23 @@ Assistant가 GitHub 수정
 
 초기 계획은 MediaPipe Hand Landmarker와 직접 수집한 데이터로 실제 손 장인을 인식하는 것이었다. 웹캠 고장으로 후순위로 미뤘으며 폐기하지 않았다.
 
-```text
-현재: 키보드·마우스 장인
-미래: CameraSealInput
-```
-
 ## 4. 설정 운영 원칙
 
 - 원작 만화와 공식 애니메이션·극장판을 통합
 - 팬 해석과 공식 설정 분리
 - 캐릭터 구현 전 설정 카드 작성 → 사용자 검토 → 구현
-- 몸·시기 차이가 큰 형태는 별도 캐릭터 슬롯
-- 영역 이름은 음성으로 요구하지 않음
+- 몸·시기 차이가 크면 별도 캐릭터 슬롯
+- 영역명은 음성으로 요구하지 않음
+- 모든 영역전개 캐릭터는 `료이키 텐카이`까지만 말함
 
 설정 카드:
 
 - [`characters/gojo.md`](characters/gojo.md): 고죠 v1.0, 검토 완료
 - [`characters/sukuna.md`](characters/sukuna.md): 스쿠나(이타도리) v1.0, 검토 완료
 - [`characters/megumi.md`](characters/megumi.md): 메구미 v1.0, 검토 완료
+- [`characters/yuta.md`](characters/yuta.md): 유타 v0.1, 검토 전
 
 ## 5. 공통 영역 음성
-
-모든 영역전개 캐릭터는 **`료이키 텐카이`까지만** 말한다.
 
 ```text
 료이키 텐카이
@@ -107,8 +101,6 @@ V 또는 료이키 텐카이
 → 무량공처
 ```
 
-판정:
-
 ```text
 목표 해제 0.90초
 허용 오차 ±0.22초
@@ -120,8 +112,6 @@ V 또는 료이키 텐카이
 10회 중 8회 성공
 평균 해제 오차 0.123초
 ```
-
-현재 수치 유지.
 
 ### 스쿠나(이타도리)
 
@@ -141,18 +131,6 @@ V 또는 료이키 텐카이
 → 복마어주자
 ```
 
-초기 수치:
-
-```text
-E 후 양쪽 마우스 완성 제한 0.70초
-누름 동시 인정 0.18초
-목표 유지 0.85초
-허용 오차 ±0.22초
-해제 동시 인정 0.18초
-```
-
-사용자가 로컬에서 기본 입력과 발동이 정상 작동한다고 확인했다.
-
 ### 후시구로 메구미
 
 확정 범위:
@@ -168,27 +146,47 @@ E 후 양쪽 마우스 완성 제한 0.70초
 V 또는 료이키 텐카이
 → Q 키 유지
 → 좌클릭 유지 상태로 아래 방향 드래그
-→ 이어서 왼쪽 또는 오른쪽으로 그림자 펼치기
+→ 이어서 좌우로 그림자 펼치기
 → Q 유지 상태에서 좌클릭 해제
 → 감합암예정
 ```
 
-초기 수치:
+세 캐릭터 모두 사용자가 로컬에서 정상 작동을 확인했다.
+
+## 7. 다음 캐릭터 — 옷코츠 유타
+
+중요한 정정:
 
 ```text
-Q 후 드래그 시작 제한 0.80초
-아래 방향 최소 이동 130px
-아래 구간 좌우 흔들림 허용 80px
-수평 펼침 최소 이동 180px
-수평 구간 상하 흔들림 허용 100px
-전체 궤적 제한 1.80초
+진안상애 = 옷코츠 유타의 영역전개
+자폐원돈과 = 마히토의 영역전개
 ```
 
-메구미는 타이밍형이 아니라 방향·거리·궤적 완성도를 판정한다. UI에서 타이밍 바와 초 단위 오차 통계를 숨긴다. 임시 이펙트에는 감합암예정의 그림자 바닥과 식신·분신 실루엣을 표현한다.
+원래 프로젝트에서 계획한 네 번째 영역은 유타의 **진안상애**다. 마히토가 아니다.
 
-## 7. 현재 아키텍처
+현재 상태:
 
-세 캐릭터 모두 동일한 패키지 구조를 사용한다.
+- `characters/yuta/definition.py`에 잠금 프로필 존재
+- 선택 화면 네 번째 카드에 표시
+- `docs/characters/yuta.md` 설정 카드 v0.1 작성 완료
+- 아직 builder가 없어 선택·실행 불가
+
+설정 카드의 현재 권장 방향:
+
+- 첫 구현은 본편 2학년 유타
+- 주술회전 0 유타는 필요하면 추후 별도 변형
+- 모방과 리카를 핵심으로 운영
+- 진안상애의 필중 술식 1개 선택 유지
+- 나머지 복사 술식은 무작위 검에 배정
+- 검은 1회 사용 후 소멸
+- 첫 장인 후보는 `왼손 키 유지 + 아래에서 위로 검 뽑기 드래그`
+- 리카 완전 현현 5분 시스템은 영역 장인 이후 별도 단계
+
+사용자 검토가 필요한 항목은 `docs/characters/yuta.md` 8절을 따른다.
+
+## 8. 현재 아키텍처
+
+구현 캐릭터는 모두 동일한 패키지 구조를 사용한다.
 
 ```text
 characters/<character_id>/
@@ -202,52 +200,30 @@ characters/<character_id>/
 
 ```text
 characters/
-├─ gojo/
-├─ sukuna_itadori/
-└─ megumi/
+├─ gojo/             # 네 파일 구현
+├─ sukuna_itadori/   # 네 파일 구현
+├─ megumi/           # 네 파일 구현
+└─ yuta/             # 잠금 definition.py만 존재
 ```
 
-역할:
+`characters/registry.py`가 카드 순서와 런타임 builder를 연결한다. `main.py`와 UI는 캐릭터별 구현 클래스를 직접 알지 않는다.
+
+과거의 다음 호환 파일은 삭제 완료했다.
 
 ```text
-definition.py
-- CharacterProfile
-- build_runtime()
-
-controller.py
-- 상태 전이
-- 성공·실패 판정
-- 캐릭터 고유 수치
-
-input.py
-- 키·마우스 이벤트를 의미 단위 명령으로 변환
-
-effect.py
-- 임시 영역 성공 연출
-```
-
-`characters/registry.py`가 프로필 순서와 런타임 builder를 연결한다. `main.py`는 캐릭터 ID 조건문을 가지지 않는다.
-
-상세 기준: [`ARCHITECTURE.md`](ARCHITECTURE.md)
-
-## 8. 호환 facade
-
-고죠·스쿠나 실제 구현 원본은 모두 캐릭터 폴더로 이동했다.
-
-아래 예전 경로는 현재 새 클래스를 다시 내보내는 호환용 얇은 파일이다.
-
-```text
+game/character.py
+game/runtime.py
 game/domain_controller.py
 game/sukuna_domain_controller.py
 game_input/mouse_seal_input.py
 game_input/sukuna_two_hand_input.py
 effects/muryang_effect.py
 effects/fukuma_effect.py
-game/character.py
-game/runtime.py
 ```
 
-새 기능을 이 파일에 추가하지 않는다. 기존 import가 모두 제거되고 회귀 테스트가 안정되면 삭제한다.
+실제 캐릭터 구현은 `characters/<id>/`에만 둔다.
+
+상세 기준: [`ARCHITECTURE.md`](ARCHITECTURE.md)
 
 ## 9. UI 구조
 
@@ -256,14 +232,16 @@ ui/common.py
 - 한글 폰트, 텍스트, 자동 줄바꿈
 
 ui/character_select_screen.py
-- 캐릭터 카드와 숫자/클릭 선택
+- 현재 네 캐릭터용 2×2 카드
+- 숫자·ENTER·클릭 선택
+- 잠긴 유타 카드 표시
 
 ui/practice_screen.py
-- 캐릭터 프로필의 seal_steps를 읽어 안내
-- 프로필에 따라 타이밍 바와 오차 통계 표시 여부 결정
+- 프로필의 seal_steps를 읽어 안내
+- 프로필 데이터에 따라 타이밍 바와 오차 통계 표시 여부 결정
 ```
 
-캐릭터별 UI 차이는 `CharacterProfile` 데이터로 결정하며 `main.py`에서 이름 문자열을 비교하지 않는다.
+다섯 번째 캐릭터 추가 전에는 선택 화면 페이지 기능을 추가한다.
 
 ## 10. 자동 테스트
 
@@ -276,41 +254,14 @@ python -m unittest discover -s tests -v
 - 캐릭터 ID 중복 없음
 - 선택 가능한 캐릭터 런타임 생성
 - 컨트롤러·입력·이펙트가 해당 캐릭터 패키지에 위치
-- 잠긴 캐릭터 런타임 차단
-- 메구미 그림자 궤적 성공
-- Q 조기 해제 실패
-- 아래 방향 드래그 부족 실패
+- 잠긴 유타 런타임 생성 차단
+- 메구미 그림자 궤적 성공·실패
 
-GitHub workflow:
+GitHub Actions는 Python compileall과 단위 테스트를 실행한다.
 
-```text
-.github/workflows/python-syntax.yml
-- push 시 Python compileall 문법 검사
-```
+## 11. 바로 다음 작업
 
-## 11. 현재 구현 상태
-
-사용자 로컬 확인 완료:
-
-- Pygame 실행
-- 캐릭터 선택과 B 복귀
-- 고죠 음성·장인·무량공처
-- 스쿠나 음성·양손 장인·복마어주자
-- 성공·실패와 연습 통계
-- 카드 자동 줄바꿈
-
-새로 구현되어 로컬 확인이 필요한 기능:
-
-- 구조 변경 후 고죠 회귀 테스트
-- 구조 변경 후 스쿠나 회귀 테스트
-- 3키 또는 카드 클릭으로 메구미 선택
-- 메구미 Q + 그림자 드래그 성공·실패
-- 임시 감합암예정 화면
-- 캐릭터를 연속으로 바꿔도 입력 상태가 남지 않는지
-
-## 12. 바로 다음 작업
-
-사용자에게 다음을 실행하게 한다.
+사용자에게 먼저 다음을 실행하게 한다.
 
 ```bash
 git pull origin master
@@ -321,51 +272,43 @@ python main.py
 확인 항목:
 
 ```text
-1. 테스트 마지막에 OK가 나오는지
-2. 1번 고죠가 기존처럼 작동하는지
-3. 2번 스쿠나가 기존처럼 작동하는지
-4. 3번 메구미가 선택되는지
-5. V/음성 → Q 유지 → 좌클릭 아래 드래그 → 좌우 펼치기 → 좌클릭 해제로 성공하는지
-6. 아래 이동 부족, 수평 이동 부족, Q 조기 해제 시 실패하는지
-7. 성공 시 감합암예정 임시 화면이 나오는지
-8. B로 돌아가 캐릭터를 교체해도 정상인지
+1. 테스트가 OK인지
+2. 2×2 선택 카드가 깨지지 않는지
+3. 고죠·스쿠나·메구미가 이전과 동일하게 작동하는지
+4. 유타 카드가 보이지만 선택되지 않는지
+5. B로 캐릭터를 바꿔도 입력 상태가 남지 않는지
 ```
 
-메구미 조작이 너무 어렵거나 쉬우면 우선 조절할 값:
+그 다음 `docs/characters/yuta.md`의 결정사항을 사용자와 검토하고, 승인되면 다음 구조를 만든다.
 
 ```text
-q_to_drag_timeout
-downward_min_distance
-downward_horizontal_tolerance
-horizontal_min_distance
-horizontal_vertical_tolerance
-total_gesture_timeout
+characters/yuta/
+├─ definition.py
+├─ controller.py
+├─ input.py
+└─ effect.py
 ```
 
-## 13. 이후 순서
+## 12. 이후 순서
 
 ```text
-세 캐릭터 입력 수치 안정화
-→ 일반 술식 시스템의 공통 인터페이스 설계
-→ 고죠 창·혁·자
-→ 스쿠나 해·팔·푸가
-→ 메구미 옥견 「혼」과 기본 식신
+유타 설정 카드 승인
+→ 진안상애 장인 프로토타입
+→ 유타 복사 술식·리카 단계 설계
+→ 캐릭터별 일반 술식
 → Unity 전투 MVP
 → 카메라 장인 입력
 → 영역 충돌·번아웃·흑섬
 ```
 
-## 14. 새 대화 절차
+## 13. 새 대화 절차
 
 ```text
 1. README.md
 2. docs/HANDOFF.md
 3. docs/ARCHITECTURE.md
-4. docs/characters/gojo.md, sukuna.md, megumi.md
-5. characters/registry.py와 각 characters/<id>/ 폴더
-6. main.py, ui/, 공통 game_input/
-7. 문서와 코드 차이 확인
-8. 바로 다음 작업부터 진행
+4. docs/characters/gojo.md, sukuna.md, megumi.md, yuta.md
+5. characters/registry.py와 최신 캐릭터 패키지
+6. 코드와 문서 차이 확인
+7. 바로 다음 작업부터 진행
 ```
-
-문서보다 최신 코드와 사용자의 최신 발언이 우선이다.
