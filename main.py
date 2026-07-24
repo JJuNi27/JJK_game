@@ -60,6 +60,65 @@ def draw_text(
     surface.blit(rendered, position)
 
 
+def wrap_text(
+    font: pygame.font.Font,
+    text: str,
+    max_width: int,
+    max_lines: int | None = None,
+) -> list[str]:
+    """문자 단위로 줄을 나눠 한글 문장도 카드 안에 안전하게 넣는다."""
+
+    if not text:
+        return []
+
+    lines: list[str] = []
+    current = ""
+
+    for character in text:
+        candidate = current + character
+        if current and font.size(candidate)[0] > max_width:
+            lines.append(current.rstrip())
+            current = character.lstrip()
+            if max_lines is not None and len(lines) >= max_lines:
+                break
+        else:
+            current = candidate
+
+    if current and (max_lines is None or len(lines) < max_lines):
+        lines.append(current.rstrip())
+
+    if max_lines is not None and len(lines) == max_lines:
+        consumed = "".join(lines)
+        if len(consumed.replace(" ", "")) < len(text.replace(" ", "")):
+            while lines[-1] and font.size(lines[-1] + "…")[0] > max_width:
+                lines[-1] = lines[-1][:-1]
+            lines[-1] = lines[-1].rstrip() + "…"
+
+    return lines
+
+
+def draw_wrapped_text(
+    surface: pygame.Surface,
+    font: pygame.font.Font,
+    text: str,
+    position: tuple[int, int],
+    max_width: int,
+    color: tuple[int, int, int] = (235, 238, 245),
+    line_gap: int = 5,
+    max_lines: int | None = None,
+) -> int:
+    """줄바꿈한 문장을 그린 뒤 사용한 세로 높이를 반환한다."""
+
+    x, y = position
+    line_height = font.get_linesize() + line_gap
+    lines = wrap_text(font, text, max_width, max_lines=max_lines)
+
+    for index, line in enumerate(lines):
+        draw_text(surface, font, line, (x, y + index * line_height), color)
+
+    return len(lines) * line_height
+
+
 def character_card_rect(index: int) -> pygame.Rect:
     card_width = 300
     gap = 35
@@ -72,6 +131,7 @@ def draw_character_select_screen(
     title_font: pygame.font.Font,
     body_font: pygame.font.Font,
     small_font: pygame.font.Font,
+    card_font: pygame.font.Font,
 ) -> None:
     surface.fill((15, 18, 28))
 
@@ -86,70 +146,84 @@ def draw_character_select_screen(
     draw_text(
         surface,
         small_font,
-        "현재는 설정 검토가 끝난 고죠 사토루만 선택할 수 있습니다.",
+        "고죠는 플레이 가능 · 스쿠나는 설정 카드 검토 중입니다.",
         (60, 175),
         (145, 158, 184),
     )
 
+    mouse_position = pygame.mouse.get_pos()
+
     for index, character in enumerate(CHARACTER_SLOTS):
         rect = character_card_rect(index)
+        hovered = rect.collidepoint(mouse_position)
+
         if character.available:
-            background = (31, 38, 58)
-            border = (102, 138, 194)
+            background = (35, 43, 65) if hovered else (31, 38, 58)
+            border = (126, 164, 222) if hovered else (102, 138, 194)
             name_color = (235, 240, 252)
+            detail_color = (175, 187, 211)
         else:
-            background = (24, 27, 38)
-            border = (55, 60, 76)
-            name_color = (124, 130, 148)
+            background = (26, 29, 41) if hovered else (24, 27, 38)
+            border = (69, 74, 91) if hovered else (55, 60, 76)
+            name_color = (145, 151, 170)
+            detail_color = (112, 118, 136)
 
         pygame.draw.rect(surface, background, rect, border_radius=18)
         pygame.draw.rect(surface, border, rect, width=2, border_radius=18)
 
-        draw_text(
+        content_x = rect.x + 22
+        content_width = rect.width - 44
+
+        draw_wrapped_text(
             surface,
             body_font,
             character.name,
-            (rect.x + 24, rect.y + 28),
+            (content_x, rect.y + 25),
+            content_width,
             name_color,
-        )
-        draw_text(
-            surface,
-            small_font,
-            f"생득술식: {character.technique}",
-            (rect.x + 24, rect.y + 92),
-            (175, 187, 211) if character.available else (105, 110, 126),
-        )
-        draw_text(
-            surface,
-            small_font,
-            f"영역전개: {character.domain}",
-            (rect.x + 24, rect.y + 128),
-            (175, 187, 211) if character.available else (105, 110, 126),
+            line_gap=2,
+            max_lines=2,
         )
 
-        if character.available:
-            draw_text(
-                surface,
-                small_font,
-                '음성: "료이키 텐카이"',
-                (rect.x + 24, rect.y + 164),
-                (153, 191, 227),
-            )
-            draw_text(
-                surface,
-                small_font,
-                "1 또는 ENTER / 클릭으로 선택",
-                (rect.x + 24, rect.y + 225),
-                (210, 221, 242),
-            )
-        else:
-            draw_text(
-                surface,
-                small_font,
-                "잠김",
-                (rect.x + 24, rect.y + 225),
-                (110, 115, 130),
-            )
+        draw_wrapped_text(
+            surface,
+            card_font,
+            f"생득술식: {character.technique}",
+            (content_x, rect.y + 94),
+            content_width,
+            detail_color,
+            max_lines=2,
+        )
+        draw_wrapped_text(
+            surface,
+            card_font,
+            f"영역전개: {character.domain}",
+            (content_x, rect.y + 145),
+            content_width,
+            detail_color,
+            max_lines=2,
+        )
+
+        status_color = (153, 191, 227) if character.available else (132, 138, 157)
+        draw_wrapped_text(
+            surface,
+            card_font,
+            character.status,
+            (content_x, rect.y + 198),
+            content_width,
+            status_color,
+            max_lines=2,
+        )
+
+        action_text = "1 / ENTER / 클릭" if character.available else "아직 선택 불가"
+        action_color = (220, 229, 247) if character.available else (105, 110, 126)
+        draw_text(
+            surface,
+            card_font,
+            action_text,
+            (content_x, rect.bottom - 40),
+            action_color,
+        )
 
     draw_text(
         surface,
@@ -368,6 +442,7 @@ def main() -> int:
     title_font = load_korean_font(54)
     body_font = load_korean_font(35)
     small_font = load_korean_font(23)
+    card_font = load_korean_font(20)
 
     scene = AppScene.CHARACTER_SELECT
     selected_character: CharacterProfile | None = None
@@ -462,6 +537,7 @@ def main() -> int:
                     title_font,
                     body_font,
                     small_font,
+                    card_font,
                 )
 
             pygame.display.flip()
