@@ -2,7 +2,7 @@
 
 이 폴더는 Python/Pygame 장인 연습장에서 검증한 입력 규칙을 실제 전투로 옮기기 위한 Unity 코드입니다.
 
-현재 `Assets/`만 저장소에서 관리합니다. Unity가 자동 생성하는 `Library`, `Temp`, `Logs` 등은 Git에 올리지 않습니다.
+저장소에서는 `Assets/`, `Packages/`, `ProjectSettings/`를 관리합니다. Unity가 자동 생성하는 `Library`, `Temp`, `Logs`, `UserSettings` 등은 Git에 올리지 않습니다.
 
 ## 권장 에디터
 
@@ -16,13 +16,15 @@ Unity 6.5 Supported도 정식 제작용 버전이지만, 이 프로젝트는 초
 
 ## 최초 프로젝트 준비
 
-현재 저장소의 `unity/Assets`를 유지하면서 Unity 프로젝트 메타데이터를 만드는 절차입니다.
+현재 저장소의 `unity/Assets`에 있는 게임 코드를 유지하면서 URP 프로젝트 설정을 합치는 절차입니다.
 
 1. Unity Hub에서 Unity 6.3 LTS의 `Universal 3D` 프로젝트를 임시 위치에 생성합니다.
-2. 에디터가 열린 뒤 닫습니다.
-3. 임시 프로젝트의 `Packages/`와 `ProjectSettings/` 폴더를 이 저장소의 `unity/` 안으로 복사합니다.
-4. Unity Hub에서 저장소의 `unity/` 폴더를 프로젝트로 추가해 엽니다.
-5. 스크립트 컴파일이 끝나면 상단 메뉴에서 아래 항목을 실행합니다.
+2. 최초 가져오기와 인덱싱이 끝난 뒤 에디터를 닫습니다.
+3. 임시 프로젝트의 `Assets/`, `Packages/`, `ProjectSettings/`를 이 저장소의 `unity/` 안으로 복사합니다.
+4. `Assets/`는 기존 폴더를 삭제하거나 덮어쓰지 말고 폴더 병합으로 복사합니다. URP 설정 파일과 기존 게임 스크립트가 함께 남아야 합니다.
+5. `Library/`, `Temp/`, `Logs/`, `UserSettings/`는 복사하지 않습니다.
+6. Unity Hub에서 저장소의 `unity/` 폴더를 프로젝트로 추가해 엽니다.
+7. 스크립트 컴파일이 끝나고 Console에 빨간 오류가 없으면 상단 메뉴에서 아래 항목을 실행합니다.
 
 ```text
 Tools
