@@ -65,7 +65,7 @@ class MegumiDomainEffect:
 
         pulse_layer = pygame.Surface((width, height), pygame.SRCALPHA)
         for index in range(6):
-            radius = int((elapsed * 170 + index * 110) % 720)
+            radius = max(1, int((elapsed * 170 + index * 110) % 720))
             alpha = max(0, 125 - int(radius * 0.14))
             pygame.draw.ellipse(
                 pulse_layer,
