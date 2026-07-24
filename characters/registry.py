@@ -9,6 +9,7 @@ from characters.sukuna_itadori import (
     PROFILE as SUKUNA_ITADORI,
     build_runtime as build_sukuna_runtime,
 )
+from characters.yuta import PROFILE as YUTA
 
 
 RuntimeBuilder = Callable[[], CharacterRuntime]
@@ -17,6 +18,7 @@ CHARACTER_SLOTS: tuple[CharacterProfile, ...] = (
     GOJO,
     SUKUNA_ITADORI,
     MEGUMI,
+    YUTA,
 )
 
 _RUNTIME_BUILDERS: dict[str, RuntimeBuilder] = {
