@@ -53,6 +53,7 @@ namespace JJKGame.Player
 
         private void Awake()
         {
+            EnsureTechniqueController();
             EnsureRuntimeVisual();
             SetDomainVisual(false);
             ResetCommand();
@@ -220,6 +221,14 @@ namespace JJKGame.Player
             State = nextState;
             stateStartedAt = Time.time;
             StatusText = message;
+        }
+
+        private void EnsureTechniqueController()
+        {
+            if (GetComponent<GojoTechniqueController>() == null)
+            {
+                gameObject.AddComponent<GojoTechniqueController>();
+            }
         }
 
         private void EnsureRuntimeVisual()
