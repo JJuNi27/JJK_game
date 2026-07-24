@@ -4,6 +4,7 @@ import time
 
 import pygame
 
+from game.state import GameState
 from game.sukuna_domain_controller import SukunaDomainController
 
 
@@ -76,7 +77,7 @@ class SukunaTwoHandSealInput:
         other_button = 3 if button == 1 else 1
         self._mouse_held[button] = False
 
-        if controller.state.name == "WAIT_LEFT_CLICK":
+        if controller.state == GameState.WAIT_LEFT_CLICK:
             controller.incomplete_mouse_release()
             self._first_release_at = None
             return
@@ -85,10 +86,11 @@ class SukunaTwoHandSealInput:
             self._first_release_at = now
             return
 
-        if self._first_release_at is None:
-            release_gap = 0.0
-        else:
-            release_gap = now - self._first_release_at
+        release_gap = (
+            0.0
+            if self._first_release_at is None
+            else now - self._first_release_at
+        )
 
         controller.complete_mouse_release(
             left_hand_is_held=self._e_held,
