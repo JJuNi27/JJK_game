@@ -26,13 +26,13 @@ GOJO = CharacterProfile(
 )
 
 SUKUNA_DRAFT = CharacterProfile(
-    character_id="sukuna_draft",
-    name="료멘 스쿠나",
-    technique="설정 카드 검토 중",
+    character_id="sukuna_itadori",
+    name="스쿠나(이타도리)",
+    technique="주복사 · 해/팔 · 푸가",
     domain="복마어주자",
     voice_command="료이키 텐카이",
     available=False,
-    status="설정 카드 초안 검토 필요",
+    status="설정 확정 · 양손 커맨드 구현 중",
 )
 
 FUTURE_SLOT = CharacterProfile(
