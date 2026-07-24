@@ -12,6 +12,7 @@ namespace JJKGame.Enemy
             Idle,
             Chase,
             Attack,
+            AttackWindup,
             Hitstunned,
             Frozen,
             Dead,
@@ -27,6 +28,9 @@ namespace JJKGame.Enemy
         [SerializeField, Min(0.1f)] private float attackRange = 1.7f;
         [SerializeField, Min(0.1f)] private float attackDamage = 12f;
         [SerializeField, Min(0.05f)] private float attackCooldown = 0.9f;
+        [SerializeField, Min(0.05f)] private float attackWindupDuration = 0.55f;
+        [SerializeField, Min(0f)] private float attackReachBuffer = 0.35f;
+        [SerializeField] private Color attackTelegraphColor = new Color(1f, 0.45f, 0.08f);
 
         [Header("Hit Reaction")]
         [SerializeField, Min(0.1f)] private float knockbackDamping = 18f;
@@ -43,8 +47,18 @@ namespace JJKGame.Enemy
         private float hitStunUntil;
         private float flashUntil;
         private float nextAttackAt;
+        private float attackWindupStartedAt;
+        private float attackWindupEndsAt;
         private float verticalVelocity;
         private Vector3 knockbackVelocity;
+
+        public bool IsAttackTelegraphing => state == BotState.AttackWindup;
+        public float AttackWindupProgress => IsAttackTelegraphing
+            ? Mathf.Clamp01(
+                (Time.time - attackWindupStartedAt)
+                    / Mathf.Max(0.01f, attackWindupDuration)
+            )
+            : 0f;
 
         private void Awake()
         {
@@ -82,7 +96,7 @@ namespace JJKGame.Enemy
 
         private void Update()
         {
-            UpdateHitFlash();
+            UpdateBodyColor();
 
             if (state == BotState.Dead)
             {
@@ -91,6 +105,7 @@ namespace JJKGame.Enemy
 
             if (Time.time < frozenUntil)
             {
+                CancelAttackWindup();
                 state = BotState.Frozen;
                 knockbackVelocity = Vector3.zero;
                 ApplyGravityOnly();
@@ -99,6 +114,7 @@ namespace JJKGame.Enemy
 
             if (Time.time < hitStunUntil || knockbackVelocity.sqrMagnitude > 0.04f)
             {
+                CancelAttackWindup();
                 state = BotState.Hitstunned;
                 ApplyHitReactionMovement();
                 return;
@@ -106,6 +122,7 @@ namespace JJKGame.Enemy
 
             if (target == null)
             {
+                CancelAttackWindup();
                 state = BotState.Idle;
                 ApplyGravityOnly();
                 return;
@@ -114,7 +131,15 @@ namespace JJKGame.Enemy
             Health targetHealth = target.GetComponentInParent<Health>();
             if (targetHealth != null && targetHealth.IsDead)
             {
+                CancelAttackWindup();
                 state = BotState.Idle;
+                ApplyGravityOnly();
+                return;
+            }
+
+            if (state == BotState.AttackWindup)
+            {
+                UpdateAttackWindup(targetHealth);
                 ApplyGravityOnly();
                 return;
             }
@@ -132,7 +157,7 @@ namespace JJKGame.Enemy
             {
                 state = BotState.Attack;
                 FaceTarget(flatOffset);
-                TryAttack(targetHealth);
+                TryBeginAttack(targetHealth);
                 ApplyGravityOnly();
             }
         }
@@ -144,6 +169,7 @@ namespace JJKGame.Enemy
                 return;
             }
 
+            CancelAttackWindup();
             frozenUntil = Mathf.Max(frozenUntil, Time.time + duration);
             knockbackVelocity = Vector3.zero;
             hitStunUntil = 0f;
@@ -157,6 +183,7 @@ namespace JJKGame.Enemy
                 return;
             }
 
+            CancelAttackWindup();
             impulse.y = 0f;
             knockbackVelocity = impulse;
             hitStunUntil = Mathf.Max(hitStunUntil, Time.time + Mathf.Max(0f, stunDuration));
@@ -175,12 +202,7 @@ namespace JJKGame.Enemy
             Vector3 direction = flatOffset.normalized;
             FaceTarget(direction);
 
-            if (controller.isGrounded && verticalVelocity < 0f)
-            {
-                verticalVelocity = -2f;
-            }
-
-            verticalVelocity += gravity * Time.deltaTime;
+            ApplyGroundingAndGravity();
             Vector3 velocity = direction * moveSpeed;
             velocity.y = verticalVelocity;
             controller.Move(velocity * Time.deltaTime);
@@ -188,12 +210,7 @@ namespace JJKGame.Enemy
 
         private void ApplyHitReactionMovement()
         {
-            if (controller.isGrounded && verticalVelocity < 0f)
-            {
-                verticalVelocity = -2f;
-            }
-
-            verticalVelocity += gravity * Time.deltaTime;
+            ApplyGroundingAndGravity();
             Vector3 velocity = knockbackVelocity;
             velocity.y = verticalVelocity;
             controller.Move(velocity * Time.deltaTime);
@@ -204,15 +221,48 @@ namespace JJKGame.Enemy
             );
         }
 
-        private void TryAttack(Health targetHealth)
+        private void TryBeginAttack(Health targetHealth)
         {
             if (targetHealth == null || Time.time < nextAttackAt)
             {
                 return;
             }
 
+            state = BotState.AttackWindup;
+            attackWindupStartedAt = Time.time;
+            attackWindupEndsAt = Time.time + attackWindupDuration;
+        }
+
+        private void UpdateAttackWindup(Health targetHealth)
+        {
+            Vector3 flatOffset = target.position - transform.position;
+            flatOffset.y = 0f;
+            FaceTarget(flatOffset);
+
+            if (Time.time < attackWindupEndsAt)
+            {
+                return;
+            }
+
+            float distance = flatOffset.magnitude;
+            if (
+                targetHealth != null
+                && !targetHealth.IsDead
+                && distance <= attackRange + attackReachBuffer
+            )
+            {
+                targetHealth.TakeDamage(attackDamage);
+            }
+
             nextAttackAt = Time.time + attackCooldown;
-            targetHealth.TakeDamage(attackDamage);
+            CancelAttackWindup();
+            state = BotState.Attack;
+        }
+
+        private void CancelAttackWindup()
+        {
+            attackWindupStartedAt = 0f;
+            attackWindupEndsAt = 0f;
         }
 
         private void FaceTarget(Vector3 direction)
@@ -232,23 +282,38 @@ namespace JJKGame.Enemy
 
         private void ApplyGravityOnly()
         {
+            ApplyGroundingAndGravity();
+            controller.Move(Vector3.up * verticalVelocity * Time.deltaTime);
+        }
+
+        private void ApplyGroundingAndGravity()
+        {
             if (controller.isGrounded && verticalVelocity < 0f)
             {
                 verticalVelocity = -2f;
             }
 
             verticalVelocity += gravity * Time.deltaTime;
-            controller.Move(Vector3.up * verticalVelocity * Time.deltaTime);
         }
 
-        private void UpdateHitFlash()
+        private void UpdateBodyColor()
         {
             if (bodyMaterial == null)
             {
                 return;
             }
 
-            Color color = Time.time < flashUntil ? hitFlashColor : baseColor;
+            Color color = baseColor;
+            if (Time.time < flashUntil)
+            {
+                color = hitFlashColor;
+            }
+            else if (IsAttackTelegraphing)
+            {
+                float pulse = 0.55f + Mathf.Sin(Time.time * 30f) * 0.2f;
+                color = Color.Lerp(baseColor, attackTelegraphColor, pulse);
+            }
+
             WriteMaterialColor(bodyMaterial, color);
         }
 
@@ -277,6 +342,7 @@ namespace JJKGame.Enemy
 
         private void HandleDeath(Health _)
         {
+            CancelAttackWindup();
             state = BotState.Dead;
             knockbackVelocity = Vector3.zero;
             if (bodyMaterial != null)
