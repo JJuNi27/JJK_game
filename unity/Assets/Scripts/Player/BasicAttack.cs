@@ -15,6 +15,12 @@ namespace JJKGame.Player
         private Health ownHealth;
         private float nextAttackAt;
 
+        public void Configure(Transform newAttackOrigin, GojoDomainController newDomainController)
+        {
+            attackOrigin = newAttackOrigin;
+            domainController = newDomainController;
+        }
+
         private void Awake()
         {
             ownHealth = GetComponent<Health>();
