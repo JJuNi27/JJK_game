@@ -10,20 +10,23 @@ namespace JJKGame.Core
         public event Action<Health> Died;
         public event Action<Health, float> HealthChanged;
 
+        private float invulnerableUntil;
+
         public float MaxHealth => maxHealth;
         public float CurrentHealth { get; private set; }
         public bool IsDead => CurrentHealth <= 0f;
+        public bool IsInvulnerable => Time.time < invulnerableUntil;
 
         private void Awake()
         {
             CurrentHealth = maxHealth;
         }
 
-        public void TakeDamage(float amount)
+        public bool TakeDamage(float amount)
         {
-            if (IsDead || amount <= 0f)
+            if (IsDead || IsInvulnerable || amount <= 0f)
             {
-                return;
+                return false;
             }
 
             CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
@@ -33,6 +36,18 @@ namespace JJKGame.Core
             {
                 Died?.Invoke(this);
             }
+
+            return true;
+        }
+
+        public void GrantInvulnerability(float duration)
+        {
+            if (IsDead || duration <= 0f)
+            {
+                return;
+            }
+
+            invulnerableUntil = Mathf.Max(invulnerableUntil, Time.time + duration);
         }
 
         public void Restore(float amount)
@@ -49,6 +64,7 @@ namespace JJKGame.Core
         public void ResetHealth()
         {
             CurrentHealth = maxHealth;
+            invulnerableUntil = 0f;
             HealthChanged?.Invoke(this, CurrentHealth);
         }
     }
