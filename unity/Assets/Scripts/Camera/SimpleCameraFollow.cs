@@ -21,7 +21,11 @@ namespace JJKGame.CameraSystem
                 return;
             }
 
-            Vector3 desiredPosition = target.position + target.TransformDirection(offset);
+            // Keep the camera on a stable world-space offset instead of rotating
+            // the offset with the player. This prevents feedback loops where
+            // moving backward turns the player, which then swings the camera,
+            // which changes the camera-relative movement direction again.
+            Vector3 desiredPosition = target.position + offset;
             transform.position = Vector3.Lerp(
                 transform.position,
                 desiredPosition,
