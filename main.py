@@ -3,10 +3,11 @@ from __future__ import annotations
 import sys
 
 import pygame
-
 from effects.muryang_effect import MuryangEffect
 from game.domain_controller import DomainController
 from game.state import GameState
+from game_input.keyboard_domain_trigger import KeyboardDomainTrigger
+from game_input.mouse_seal_input import MouseSealInput
 
 
 WIDTH = 1100
@@ -152,6 +153,8 @@ def main() -> int:
     small_font = load_korean_font(27)
 
     controller = DomainController()
+    keyboard_trigger = KeyboardDomainTrigger()
+    mouse_seal_input = MouseSealInput()
     effect = MuryangEffect()
     was_domain_active = False
 
@@ -160,10 +163,15 @@ def main() -> int:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                continue
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 running = False
-            else:
-                controller.handle_event(event)
+                continue
+
+            # 실제 입력 장치는 각 모듈이 처리하고, Controller에는 의미만 전달한다.
+            keyboard_trigger.handle_event(event, controller)
+            mouse_seal_input.handle_event(event, controller)
 
         controller.update()
 
