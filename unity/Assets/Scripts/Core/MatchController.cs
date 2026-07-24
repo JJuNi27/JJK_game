@@ -13,6 +13,17 @@ namespace JJKGame.Core
         private string resultText = string.Empty;
         private bool matchFinished;
 
+        public void Configure(
+            Health newPlayerHealth,
+            Health newEnemyHealth,
+            GojoDomainController newGojoDomain
+        )
+        {
+            playerHealth = newPlayerHealth;
+            enemyHealth = newEnemyHealth;
+            gojoDomain = newGojoDomain;
+        }
+
         private void Awake()
         {
             if (playerHealth == null || enemyHealth == null)
@@ -70,6 +81,11 @@ namespace JJKGame.Core
 
         private void OnGUI()
         {
+            if (playerHealth == null || enemyHealth == null)
+            {
+                return;
+            }
+
             const float panelWidth = 360f;
             GUI.Box(new Rect(16f, 16f, panelWidth, 118f), "JJK Combat MVP");
             GUI.Label(
