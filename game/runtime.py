@@ -16,6 +16,8 @@ from game_input.sukuna_two_hand_input import SukunaTwoHandSealInput
 
 
 class SealInputProtocol(Protocol):
+    def reset(self) -> None: ...
+
     def handle_event(
         self,
         event: pygame.event.Event,
