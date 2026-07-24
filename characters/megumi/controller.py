@@ -167,15 +167,30 @@ class MegumiDomainController:
 
         if self.state == GameState.DOMAIN_READY and elapsed > self.config.domain_ready_timeout:
             self._fail("실패: Q 키 입력 제한시간을 초과했습니다")
-        elif self.state == GameState.WAIT_LEFT_CLICK and self.q_started_at is not None:
-            if self.drag_started_at is None and now - self.q_started_at > self.config.q_to_drag_timeout:
+
+        elif self.state == GameState.WAIT_LEFT_CLICK:
+            if (
+                self.drag_started_at is None
+                and self.q_started_at is not None
+                and now - self.q_started_at > self.config.q_to_drag_timeout
+            ):
                 self._fail("실패: 그림자 드래그 시작이 너무 늦었습니다")
-        elif self.state in (GameState.WAIT_LEFT_CLICK, GameState.RELEASE_TIMING):
-            if self.drag_started_at is not None:
-                if now - self.drag_started_at > self.config.total_gesture_timeout:
-                    self._fail("실패: 그림자 궤적 입력 시간이 너무 길었습니다")
+            elif (
+                self.drag_started_at is not None
+                and now - self.drag_started_at > self.config.total_gesture_timeout
+            ):
+                self._fail("실패: 그림자 궤적 입력 시간이 너무 길었습니다")
+
+        elif self.state == GameState.RELEASE_TIMING:
+            if (
+                self.drag_started_at is not None
+                and now - self.drag_started_at > self.config.total_gesture_timeout
+            ):
+                self._fail("실패: 그림자 궤적 입력 시간이 너무 길었습니다")
+
         elif self.state == GameState.DOMAIN_ACTIVE and elapsed > self.config.domain_active_duration:
             self.reset()
+
         elif self.state == GameState.FAILED and elapsed > self.config.failed_duration:
             self.reset()
 
