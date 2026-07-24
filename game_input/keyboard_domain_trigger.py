@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pygame
 
-from game.domain_controller import DomainController
+from game.domain_protocol import DomainControllerProtocol
 
 
 class KeyboardDomainTrigger:
@@ -16,7 +16,7 @@ class KeyboardDomainTrigger:
     def handle_event(
         self,
         event: pygame.event.Event,
-        controller: DomainController,
+        controller: DomainControllerProtocol,
     ) -> bool:
         """통계 초기화 요청이 발생했으면 True를 반환한다."""
         if event.type != pygame.KEYDOWN:
