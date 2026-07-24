@@ -10,26 +10,35 @@ from game.domain_controller import DomainController
 
 
 DEFAULT_MODEL_PATH = Path("models/vosk-model-small-ko-0.22")
+MIN_COMMAND_CONFIDENCE = 0.88
 
 
 class VoiceDomainTrigger:
     """마이크에서 영역전개 선언을 감지해 Controller에 전달한다.
 
     음성인식 의존성이나 한국어 모델이 없어도 프로그램 전체가 실패하지 않도록
-    선택 기능으로 동작한다. 음성 스레드는 명령을 큐에 넣고, Pygame 메인
-    스레드가 update()에서 이를 소비한다.
+    선택 기능으로 동작한다. 확정된 인식 결과가 정확한 명령 문구와 일치하고,
+    신뢰도 기준까지 통과했을 때만 영역 준비 요청을 전달한다.
     """
 
-    def __init__(self, model_path: Path | str = DEFAULT_MODEL_PATH) -> None:
+    def __init__(
+        self,
+        model_path: Path | str = DEFAULT_MODEL_PATH,
+        min_confidence: float = MIN_COMMAND_CONFIDENCE,
+    ) -> None:
         self.model_path = Path(model_path)
+        self.min_confidence = min_confidence
         self.status_message = "음성인식: 준비 확인 중"
         self.is_available = False
+        self.last_recognized_text = ""
+        self.last_confidence = 0.0
 
         self._audio_queue: queue.Queue[bytes] = queue.Queue()
         self._command_queue: queue.Queue[str] = queue.Queue()
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
 
+        # 띄어쓰기를 제거한 뒤 아래 두 문구와 정확히 같을 때만 발동한다.
         self._accepted_phrases = {
             "영역전개",
             "료이키텐카이",
@@ -85,9 +94,59 @@ class VoiceDomainTrigger:
     def _normalize(text: str) -> str:
         return "".join(text.lower().split())
 
-    def _contains_activation_phrase(self, text: str) -> bool:
-        normalized = self._normalize(text)
-        return any(phrase in normalized for phrase in self._accepted_phrases)
+    def _is_exact_activation_phrase(self, text: str) -> bool:
+        return self._normalize(text) in self._accepted_phrases
+
+    @staticmethod
+    def _extract_confidence(payload: dict[str, object]) -> float:
+        """Vosk의 단어별 confidence 평균을 0~1 값으로 반환한다."""
+        words = payload.get("result")
+        if not isinstance(words, list) or not words:
+            return 0.0
+
+        confidences: list[float] = []
+        for word in words:
+            if not isinstance(word, dict):
+                continue
+            value = word.get("conf")
+            if isinstance(value, (int, float)):
+                confidences.append(float(value))
+
+        if not confidences:
+            return 0.0
+        return sum(confidences) / len(confidences)
+
+    def _handle_final_result(
+        self,
+        payload: dict[str, object],
+        last_triggered_at: float,
+    ) -> float:
+        """확정 결과를 검사하고, 발동했다면 최신 발동 시각을 반환한다."""
+        raw_text = payload.get("text", "")
+        text = raw_text.strip() if isinstance(raw_text, str) else ""
+        if not text:
+            return last_triggered_at
+
+        confidence = self._extract_confidence(payload)
+        self.last_recognized_text = text
+        self.last_confidence = confidence
+        self.status_message = (
+            f'음성인식: "{text}" · 신뢰도 {confidence:.0%}'
+        )
+
+        now = time.monotonic()
+        is_exact_phrase = self._is_exact_activation_phrase(text)
+        is_confident = confidence >= self.min_confidence
+        cooldown_finished = now - last_triggered_at >= 1.5
+
+        if is_exact_phrase and is_confident and cooldown_finished:
+            self._command_queue.put("request_domain")
+            self.status_message = (
+                f'음성 명령 인식: "{text}" · 신뢰도 {confidence:.0%}'
+            )
+            return now
+
+        return last_triggered_at
 
     def _listen_loop(self) -> None:
         """백그라운드에서 마이크 스트림을 Vosk로 처리한다."""
@@ -101,18 +160,18 @@ class VoiceDomainTrigger:
             input_device = sd.query_devices(kind="input")
             sample_rate = int(input_device["default_samplerate"])
 
-            # 고정 문구 중심으로 판정한다. 띄어쓰기 유무를 모두 포함한다.
+            # 후보 문구와 미지의 단어를 함께 허용하되, 실제 발동 판정은
+            # 확정 결과의 정확한 문구 일치와 신뢰도 기준으로 다시 검사한다.
             grammar = json.dumps(
                 [
                     "영역 전개",
-                    "영역전개",
                     "료이키 텐카이",
-                    "료이키텐카이",
                     "[unk]",
                 ],
                 ensure_ascii=False,
             )
             recognizer = KaldiRecognizer(model, sample_rate, grammar)
+            recognizer.SetWords(True)
 
             def audio_callback(indata, frames, time_info, status) -> None:  # type: ignore[no-untyped-def]
                 del frames, time_info
@@ -123,7 +182,9 @@ class VoiceDomainTrigger:
 
             last_triggered_at = 0.0
             self.is_available = True
-            self.status_message = '음성인식: 듣는 중 ("영역전개")'
+            self.status_message = (
+                f'음성인식: 듣는 중 (최소 신뢰도 {self.min_confidence:.0%})'
+            )
 
             with sd.RawInputStream(
                 samplerate=sample_rate,
@@ -139,21 +200,19 @@ class VoiceDomainTrigger:
                     except queue.Empty:
                         continue
 
-                    if recognizer.AcceptWaveform(data):
-                        result = json.loads(recognizer.Result()).get("text", "")
-                    else:
-                        result = json.loads(recognizer.PartialResult()).get(
-                            "partial", ""
-                        )
+                    # 부분 인식은 화면 표시와 발동 판정에 사용하지 않는다.
+                    # 말이 끝나 AcceptWaveform이 True가 된 확정 결과만 검사한다.
+                    if not recognizer.AcceptWaveform(data):
+                        continue
 
-                    now = time.monotonic()
-                    if (
-                        self._contains_activation_phrase(result)
-                        and now - last_triggered_at >= 1.5
-                    ):
-                        self._command_queue.put("request_domain")
-                        last_triggered_at = now
-                        recognizer.Reset()
+                    payload = json.loads(recognizer.Result())
+                    if not isinstance(payload, dict):
+                        continue
+
+                    last_triggered_at = self._handle_final_result(
+                        payload,
+                        last_triggered_at,
+                    )
 
         except Exception as exc:  # 음성 기능 실패가 게임 전체 실패로 번지지 않게 한다.
             self.status_message = f"음성인식 사용 불가: {type(exc).__name__}"
