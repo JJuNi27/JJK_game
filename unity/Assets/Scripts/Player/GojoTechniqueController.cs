@@ -22,15 +22,31 @@ namespace JJKGame.Player
         private Light blueLight;
         private float nextBlueAt;
         private float visualStartedAt;
+        private GUIStyle skillStyle;
+        private int styledForHeight = -1;
 
         public bool BlueReady => Time.time >= nextBlueAt;
         public float BlueCooldownRemaining => Mathf.Max(0f, nextBlueAt - Time.time);
         public float BlueCooldownProgress => blueCooldown <= 0f
             ? 1f
             : Mathf.Clamp01(1f - BlueCooldownRemaining / blueCooldown);
-        public string BlueStatusText => BlueReady
-            ? "Q · 술식순전 「창」  READY"
-            : $"Q · 술식순전 「창」  {BlueCooldownRemaining:0.0}s";
+        public string BlueStatusText
+        {
+            get
+            {
+                if (
+                    domainController != null
+                    && domainController.State != GojoDomainController.DomainState.Normal
+                )
+                {
+                    return "Q · 술식순전 「창」  영역 입력 중";
+                }
+
+                return BlueReady
+                    ? "Q · 술식순전 「창」  READY"
+                    : $"Q · 술식순전 「창」  {BlueCooldownRemaining:0.0}s";
+            }
+        }
 
         private void Awake()
         {
@@ -238,6 +254,66 @@ namespace JJKGame.Player
             {
                 visualRoot.SetActive(false);
             }
+        }
+
+        private void OnGUI()
+        {
+            if (ownHealth == null || ownHealth.IsDead)
+            {
+                return;
+            }
+
+            EnsureStyle();
+            float width = Mathf.Min(330f, Screen.width - 48f);
+            Rect panel = new Rect(24f, 151f, width, 38f);
+            Color accent = BlueReady
+                ? new Color(0.12f, 0.72f, 1f, 0.98f)
+                : new Color(0.30f, 0.48f, 0.66f, 0.95f);
+
+            DrawRect(panel, new Color(0.012f, 0.035f, 0.075f, 0.92f));
+            Rect fill = new Rect(
+                panel.x + 2f,
+                panel.y + 2f,
+                (panel.width - 4f) * BlueCooldownProgress,
+                panel.height - 4f
+            );
+            DrawRect(fill, new Color(0.05f, 0.34f, 0.68f, 0.70f));
+            DrawBorder(panel, accent, 2f);
+            skillStyle.normal.textColor = Color.white;
+            GUI.Label(panel, BlueStatusText, skillStyle);
+        }
+
+        private void EnsureStyle()
+        {
+            if (styledForHeight == Screen.height)
+            {
+                return;
+            }
+
+            styledForHeight = Screen.height;
+            int fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 48f, 14f, 20f));
+            skillStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = fontSize,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+            };
+        }
+
+        private static void DrawRect(Rect rect, Color color)
+        {
+            Color previousColor = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(rect, Texture2D.whiteTexture);
+            GUI.color = previousColor;
+        }
+
+        private static void DrawBorder(Rect rect, Color color, float thickness)
+        {
+            DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), color);
+            DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
+            DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
+            DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
         }
 
         private void OnDrawGizmosSelected()
