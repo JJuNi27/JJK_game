@@ -3,11 +3,13 @@ from __future__ import annotations
 import sys
 
 import pygame
+
 from effects.muryang_effect import MuryangEffect
 from game.domain_controller import DomainController
 from game.state import GameState
 from game_input.keyboard_domain_trigger import KeyboardDomainTrigger
 from game_input.mouse_seal_input import MouseSealInput
+from game_input.voice_domain_trigger import VoiceDomainTrigger
 
 
 WIDTH = 1100
@@ -104,6 +106,7 @@ def draw_timing_bar(
 def draw_practice_screen(
     surface: pygame.Surface,
     controller: DomainController,
+    voice_status: str,
     title_font: pygame.font.Font,
     body_font: pygame.font.Font,
     small_font: pygame.font.Font,
@@ -116,7 +119,7 @@ def draw_practice_screen(
     draw_text(surface, body_font, controller.result_message, (58, 185))
 
     instructions = [
-        "1. V 키를 눌러 영역전개 준비 상태로 들어갑니다",
+        '1. V 키 또는 음성 "영역전개"로 준비 상태에 들어갑니다',
         "2. 마우스 오른쪽 버튼을 누르고 유지합니다",
         "3. 오른쪽 버튼을 유지한 채 왼쪽 버튼을 클릭합니다",
         "4. 초록색 타이밍 구간에서 오른쪽 버튼을 놓습니다",
@@ -135,6 +138,8 @@ def draw_practice_screen(
             f"해제 타이머: {elapsed:.2f}초",
             (190, 552),
         )
+
+    draw_text(surface, small_font, voice_status, (58, 642), (145, 173, 205))
 
     if controller.state == GameState.FAILED:
         overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
@@ -155,46 +160,55 @@ def main() -> int:
     controller = DomainController()
     keyboard_trigger = KeyboardDomainTrigger()
     mouse_seal_input = MouseSealInput()
+    voice_trigger = VoiceDomainTrigger()
     effect = MuryangEffect()
     was_domain_active = False
 
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                continue
+    voice_trigger.start()
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                running = False
-                continue
+    try:
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    continue
 
-            # 실제 입력 장치는 각 모듈이 처리하고, Controller에는 의미만 전달한다.
-            keyboard_trigger.handle_event(event, controller)
-            mouse_seal_input.handle_event(event, controller)
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    running = False
+                    continue
 
-        controller.update()
+                # 실제 입력 장치는 각 모듈이 처리하고, Controller에는 의미만 전달한다.
+                keyboard_trigger.handle_event(event, controller)
+                mouse_seal_input.handle_event(event, controller)
 
-        is_domain_active = controller.state == GameState.DOMAIN_ACTIVE
-        if is_domain_active and not was_domain_active:
-            effect.restart()
+            # 음성 스레드가 감지한 명령은 Pygame 메인 스레드에서 적용한다.
+            voice_trigger.update(controller)
+            controller.update()
 
-        if is_domain_active:
-            effect.draw(screen, title_font)
-        else:
-            draw_practice_screen(
-                screen,
-                controller,
-                title_font,
-                body_font,
-                small_font,
-            )
+            is_domain_active = controller.state == GameState.DOMAIN_ACTIVE
+            if is_domain_active and not was_domain_active:
+                effect.restart()
 
-        was_domain_active = is_domain_active
-        pygame.display.flip()
-        clock.tick(FPS)
+            if is_domain_active:
+                effect.draw(screen, title_font)
+            else:
+                draw_practice_screen(
+                    screen,
+                    controller,
+                    voice_trigger.status_message,
+                    title_font,
+                    body_font,
+                    small_font,
+                )
 
-    pygame.quit()
+            was_domain_active = is_domain_active
+            pygame.display.flip()
+            clock.tick(FPS)
+    finally:
+        voice_trigger.stop()
+        pygame.quit()
+
     return 0
 
 
