@@ -46,7 +46,7 @@ def draw_character_select_screen(
     draw_text(
         surface,
         small_font,
-        "고죠는 한 손 장인 · 스쿠나는 양손 장인 프로토타입입니다.",
+        "고죠: 한 손 · 스쿠나: 양손 · 메구미: 그림자 궤적 장인",
         (60, 175),
         (145, 158, 184),
     )
