@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pygame
 
-from game.character import CHARACTER_SLOTS, CharacterProfile
+from characters.base import CharacterProfile
+from characters.registry import CHARACTER_SLOTS
 from ui.common import draw_text, draw_wrapped_text
 
 
