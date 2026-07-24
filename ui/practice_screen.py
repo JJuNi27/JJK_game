@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pygame
 
-from game.character import CharacterProfile
+from characters.base import CharacterProfile
 from game.domain_protocol import DomainControllerProtocol
 from game.practice_stats import PracticeStats
 from game.state import GameState
