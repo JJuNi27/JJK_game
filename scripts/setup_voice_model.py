@@ -8,19 +8,11 @@ import zipfile
 from pathlib import Path
 
 
-MODEL_NAME = "vosk-model-small-ko-0.22"
+MODEL_NAME = "vosk-model-small-ja-0.22"
 MODEL_URL = f"https://alphacephei.com/vosk/models/{MODEL_NAME}.zip"
 MODELS_DIR = Path("models")
 TARGET_DIR = MODELS_DIR / MODEL_NAME
 ARCHIVE_PATH = MODELS_DIR / f"{MODEL_NAME}.zip"
-
-
-def model_is_ready() -> bool:
-    """Vosk가 실제로 읽을 핵심 파일까지 설치됐는지 확인한다."""
-    return (
-        (TARGET_DIR / "am" / "final.mdl").is_file()
-        and (TARGET_DIR / "conf" / "model.conf").is_file()
-    )
 
 
 def report_progress(block_count: int, block_size: int, total_size: int) -> None:
@@ -37,28 +29,17 @@ def report_progress(block_count: int, block_size: int, total_size: int) -> None:
     )
 
 
-def remove_incomplete_model() -> None:
-    if TARGET_DIR.exists() and not model_is_ready():
-        try:
-            if TARGET_DIR.is_dir():
-                shutil.rmtree(TARGET_DIR)
-            else:
-                TARGET_DIR.unlink()
-        except OSError:
-            pass
-
-
 def main() -> int:
-    if model_is_ready():
+    if TARGET_DIR.is_dir():
         print(f"이미 설치되어 있습니다: {TARGET_DIR}")
         return 0
 
-    remove_incomplete_model()
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
+    extracted_ok = False
 
-    succeeded = False
     try:
-        print("Vosk 한국어 소형 모델을 내려받습니다.")
+        print("Vosk 일본어 소형 모델을 내려받습니다.")
+        print('주 음성 명령: 「領域展開」(료이키 텐카이)')
         print(f"출처: {MODEL_URL}")
         urllib.request.urlretrieve(
             MODEL_URL,
@@ -70,11 +51,11 @@ def main() -> int:
         with zipfile.ZipFile(ARCHIVE_PATH) as archive:
             archive.extractall(MODELS_DIR)
 
-        if not model_is_ready():
-            print("오류: 압축 해제 후 핵심 모델 파일을 찾지 못했습니다.")
+        if not TARGET_DIR.is_dir():
+            print("오류: 압축 해제 후 일본어 모델 폴더를 찾지 못했습니다.")
             return 1
 
-        succeeded = True
+        extracted_ok = True
         print(f"설치 완료: {TARGET_DIR}")
         return 0
 
@@ -89,11 +70,17 @@ def main() -> int:
             try:
                 ARCHIVE_PATH.unlink()
             except OSError:
-                # 잠긴 파일이면 다음 실행에서 덮어쓸 수 있도록 그대로 둔다.
                 pass
 
-        if not succeeded:
-            remove_incomplete_model()
+        # 실패 중 일부만 생성된 모델 폴더는 다음 설치를 위해 제거한다.
+        if TARGET_DIR.exists() and not extracted_ok:
+            try:
+                if TARGET_DIR.is_file():
+                    TARGET_DIR.unlink()
+                else:
+                    shutil.rmtree(TARGET_DIR)
+            except OSError:
+                pass
 
 
 if __name__ == "__main__":
