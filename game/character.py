@@ -46,19 +46,19 @@ SUKUNA_ITADORI = CharacterProfile(
     status="양손 장인 프로토타입",
 )
 
-FUTURE_SLOT = CharacterProfile(
-    character_id="future_slot",
-    name="다음 캐릭터",
-    technique="후보 미정",
-    domain="미정",
-    voice_command="-",
+MEGUMI_DRAFT = CharacterProfile(
+    character_id="megumi_draft",
+    name="후시구로 메구미",
+    technique="십종영법술",
+    domain="감합암예정",
+    voice_command="료이키 텐카이",
     available=False,
-    status="스쿠나 테스트 이후 추가 예정",
+    status="설정 카드 v0.1 검토 필요",
 )
 
 
 CHARACTER_SLOTS = (
     GOJO,
     SUKUNA_ITADORI,
-    FUTURE_SLOT,
+    MEGUMI_DRAFT,
 )
