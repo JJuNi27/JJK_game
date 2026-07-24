@@ -10,19 +10,20 @@ namespace JJKGame.Player
         [SerializeField, Min(0.1f)] private float attackRadius = 1.6f;
         [SerializeField, Min(0.1f)] private float comboResetDelay = 0.9f;
         [SerializeField, Min(0.1f)] private float comboDisplayDuration = 0.75f;
+        [SerializeField, Min(0.1f)] private float hitComboResetDelay = 1.05f;
         [SerializeField] private GojoDomainController domainController;
 
-        [Header("Combo Damage")]
+        [Header("Attack Chain Damage")]
         [SerializeField, Min(0.1f)] private float firstHitDamage = 12f;
         [SerializeField, Min(0.1f)] private float secondHitDamage = 14f;
         [SerializeField, Min(0.1f)] private float thirdHitDamage = 24f;
 
-        [Header("Combo Timing")]
+        [Header("Attack Chain Timing")]
         [SerializeField, Min(0.05f)] private float firstHitCooldown = 0.24f;
         [SerializeField, Min(0.05f)] private float secondHitCooldown = 0.28f;
         [SerializeField, Min(0.05f)] private float thirdHitCooldown = 0.52f;
 
-        [Header("Combo Hit Reaction")]
+        [Header("Attack Chain Hit Reaction")]
         [SerializeField, Min(0f)] private float firstHitKnockback = 4.5f;
         [SerializeField, Min(0f)] private float secondHitKnockback = 6f;
         [SerializeField, Min(0f)] private float thirdHitKnockback = 11f;
@@ -32,19 +33,27 @@ namespace JJKGame.Player
 
         private Health ownHealth;
         private float nextAttackAt;
-        private float comboExpiresAt;
-        private float comboDisplayUntil;
-        private int nextComboIndex;
+        private float chainExpiresAt;
+        private float chainDisplayUntil;
+        private float hitComboExpiresAt;
+        private int nextChainIndex;
         private int lastPerformedStep;
+        private int hitComboCount;
 
-        public int DisplayComboStep => Time.time <= comboDisplayUntil ? lastPerformedStep : 0;
-        public string ComboLabel => DisplayComboStep switch
+        public int DisplayChainStep => Time.time <= chainDisplayUntil ? lastPerformedStep : 0;
+        public int DisplayHitComboCount =>
+            hitComboCount >= 2 && Time.time <= hitComboExpiresAt ? hitComboCount : 0;
+
+        public string ChainLabel => DisplayChainStep switch
         {
-            1 => "COMBO 1 / 3",
-            2 => "COMBO 2 / 3",
-            3 => "COMBO 3 / 3 · FINISH",
+            1 => "ATTACK CHAIN 1 / 3",
+            2 => "ATTACK CHAIN 2 / 3",
+            3 => "ATTACK CHAIN 3 / 3 · FINISH",
             _ => string.Empty,
         };
+
+        public string HitComboLabel =>
+            DisplayHitComboCount > 0 ? $"HIT COMBO × {DisplayHitComboCount}" : string.Empty;
 
         public void Configure(Transform newAttackOrigin, GojoDomainController newDomainController)
         {
@@ -69,9 +78,14 @@ namespace JJKGame.Player
 
         private void Update()
         {
-            if (nextComboIndex != 0 && Time.time > comboExpiresAt)
+            if (nextChainIndex != 0 && Time.time > chainExpiresAt)
             {
-                ResetCombo();
+                ResetAttackChain();
+            }
+
+            if (hitComboCount > 0 && Time.time > hitComboExpiresAt)
+            {
+                ResetHitCombo();
             }
 
             if (!Input.GetMouseButtonDown(0) || Time.time < nextAttackAt)
@@ -84,57 +98,67 @@ namespace JJKGame.Player
                 return;
             }
 
-            PerformComboStep(nextComboIndex);
+            PerformAttackChainStep(nextChainIndex);
         }
 
-        private void PerformComboStep(int comboIndex)
+        private void PerformAttackChainStep(int chainIndex)
         {
-            float damage = GetComboValue(
-                comboIndex,
+            float damage = GetChainValue(
+                chainIndex,
                 firstHitDamage,
                 secondHitDamage,
                 thirdHitDamage
             );
-            float cooldown = GetComboValue(
-                comboIndex,
+            float cooldown = GetChainValue(
+                chainIndex,
                 firstHitCooldown,
                 secondHitCooldown,
                 thirdHitCooldown
             );
-            float knockback = GetComboValue(
-                comboIndex,
+            float knockback = GetChainValue(
+                chainIndex,
                 firstHitKnockback,
                 secondHitKnockback,
                 thirdHitKnockback
             );
-            float hitStun = GetComboValue(
-                comboIndex,
+            float hitStun = GetChainValue(
+                chainIndex,
                 firstHitStun,
                 secondHitStun,
                 thirdHitStun
             );
 
             nextAttackAt = Time.time + cooldown;
-            lastPerformedStep = comboIndex + 1;
-            comboDisplayUntil = Time.time + comboDisplayDuration;
-            PerformAttack(damage, knockback, hitStun);
+            lastPerformedStep = chainIndex + 1;
+            chainDisplayUntil = Time.time + comboDisplayDuration;
 
-            if (comboIndex >= 2)
+            bool hitAnyTarget = PerformAttack(damage, knockback, hitStun);
+            if (hitAnyTarget)
             {
-                nextComboIndex = 0;
-                comboExpiresAt = 0f;
+                RegisterSuccessfulHit();
             }
             else
             {
-                nextComboIndex = comboIndex + 1;
-                comboExpiresAt = Time.time + comboResetDelay;
+                ResetHitCombo();
+            }
+
+            if (chainIndex >= 2)
+            {
+                nextChainIndex = 0;
+                chainExpiresAt = 0f;
+            }
+            else
+            {
+                nextChainIndex = chainIndex + 1;
+                chainExpiresAt = Time.time + comboResetDelay;
             }
         }
 
-        private void PerformAttack(float damage, float knockbackSpeed, float hitStunDuration)
+        private bool PerformAttack(float damage, float knockbackSpeed, float hitStunDuration)
         {
             Collider[] hits = Physics.OverlapSphere(attackOrigin.position, attackRadius);
             HashSet<Health> damagedTargets = new HashSet<Health>();
+            bool hitAnyTarget = false;
 
             foreach (Collider hit in hits)
             {
@@ -149,9 +173,27 @@ namespace JJKGame.Player
                     continue;
                 }
 
-                targetHealth.TakeDamage(damage);
+                if (!targetHealth.TakeDamage(damage))
+                {
+                    continue;
+                }
+
+                hitAnyTarget = true;
                 ApplyHitReaction(targetHealth, knockbackSpeed, hitStunDuration);
             }
+
+            return hitAnyTarget;
+        }
+
+        private void RegisterSuccessfulHit()
+        {
+            if (Time.time > hitComboExpiresAt)
+            {
+                hitComboCount = 0;
+            }
+
+            hitComboCount += 1;
+            hitComboExpiresAt = Time.time + hitComboResetDelay;
         }
 
         private void ApplyHitReaction(
@@ -179,20 +221,26 @@ namespace JJKGame.Player
             }
         }
 
-        private void ResetCombo()
+        private void ResetAttackChain()
         {
-            nextComboIndex = 0;
-            comboExpiresAt = 0f;
+            nextChainIndex = 0;
+            chainExpiresAt = 0f;
         }
 
-        private static float GetComboValue(
-            int comboIndex,
+        private void ResetHitCombo()
+        {
+            hitComboCount = 0;
+            hitComboExpiresAt = 0f;
+        }
+
+        private static float GetChainValue(
+            int chainIndex,
             float first,
             float second,
             float third
         )
         {
-            return comboIndex switch
+            return chainIndex switch
             {
                 1 => second,
                 2 => third,
