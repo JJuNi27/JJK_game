@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from characters.base import CharacterProfile, CharacterRuntime
-from effects.fukuma_effect import FukumaEffect
-from game.sukuna_domain_controller import SukunaDomainController
-from game_input.sukuna_two_hand_input import SukunaTwoHandSealInput
+from characters.sukuna_itadori.controller import SukunaDomainController
+from characters.sukuna_itadori.effect import SukunaDomainEffect
+from characters.sukuna_itadori.input import SukunaTwoHandSealInput
 
 
 PROFILE = CharacterProfile(
@@ -22,8 +22,10 @@ PROFILE = CharacterProfile(
 
 
 def build_runtime() -> CharacterRuntime:
+    """스쿠나(이타도리) 전용 모듈만 조립해 런타임을 만든다."""
+
     return CharacterRuntime(
         controller=SukunaDomainController(),
         seal_input=SukunaTwoHandSealInput(),
-        effect=FukumaEffect(),
+        effect=SukunaDomainEffect(),
     )
