@@ -70,8 +70,11 @@ def draw_stats_panel(
     stats: PracticeStats,
     body_font: pygame.font.Font,
     small_font: pygame.font.Font,
+    *,
+    show_error_stats: bool,
 ) -> None:
-    panel_rect = pygame.Rect(750, 250, 300, 255)
+    panel_height = 255 if show_error_stats else 205
+    panel_rect = pygame.Rect(750, 250, 300, panel_height)
     pygame.draw.rect(surface, (27, 31, 44), panel_rect, border_radius=16)
     pygame.draw.rect(surface, (55, 63, 82), panel_rect, width=2, border_radius=16)
 
@@ -83,9 +86,15 @@ def draw_stats_panel(
         f"성공률: {stats.success_rate:.1%}",
         f"현재 연속 성공: {stats.current_streak}회",
         f"최고 연속 성공: {stats.best_streak}회",
-        f"최근 해제 오차: {format_release_error(stats.last_release_error)}",
-        f"평균 해제 오차: {format_release_error(stats.average_release_error)}",
     ]
+
+    if show_error_stats:
+        lines.extend(
+            [
+                f"최근 해제 오차: {format_release_error(stats.last_release_error)}",
+                f"평균 해제 오차: {format_release_error(stats.average_release_error)}",
+            ]
+        )
 
     for index, line in enumerate(lines):
         draw_text(
@@ -131,16 +140,27 @@ def draw_practice_screen(
         f"{character.name} · {character.domain} 장인 연습",
         (54, 44),
     )
-    state_label = STATE_LABELS.get(controller.state, controller.state.name)
+
+    if controller.state == GameState.RELEASE_TIMING:
+        state_label = character.progress_state_label
+    else:
+        state_label = STATE_LABELS.get(controller.state, controller.state.name)
+
     draw_text(surface, body_font, f"현재 상태: {state_label}", (58, 135))
     draw_text(surface, body_font, controller.result_message, (58, 185))
 
     for index, line in enumerate(build_practice_instructions(character)):
         draw_text(surface, small_font, line, (62, 270 + index * 34), (190, 197, 214))
 
-    draw_stats_panel(surface, stats, body_font, small_font)
+    draw_stats_panel(
+        surface,
+        stats,
+        body_font,
+        small_font,
+        show_error_stats=character.show_error_stats,
+    )
 
-    if controller.state == GameState.RELEASE_TIMING:
+    if character.show_timing_bar and controller.state == GameState.RELEASE_TIMING:
         draw_timing_bar(surface, controller)
         elapsed = controller.release_elapsed()
         draw_text(
