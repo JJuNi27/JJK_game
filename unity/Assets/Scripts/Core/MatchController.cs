@@ -13,11 +13,13 @@ namespace JJKGame.Core
 
         private string resultText = string.Empty;
         private bool matchFinished;
+        private BasicAttack playerAttack;
 
         private GUIStyle headerStyle;
         private GUIStyle healthValueStyle;
         private GUIStyle domainStyle;
         private GUIStyle hintStyle;
+        private GUIStyle comboStyle;
         private GUIStyle resultStyle;
         private GUIStyle resultHintStyle;
         private int styledForHeight = -1;
@@ -42,6 +44,7 @@ namespace JJKGame.Core
                 return;
             }
 
+            playerAttack = playerHealth.GetComponent<BasicAttack>();
             playerHealth.Died += HandlePlayerDeath;
             enemyHealth.Died += HandleEnemyDeath;
         }
@@ -170,13 +173,41 @@ namespace JJKGame.Core
                 TextAnchor.UpperRight
             );
 
+            DrawComboIndicator();
+            DrawDomainPanel(margin);
+        }
+
+        private void DrawComboIndicator()
+        {
+            if (playerAttack == null || playerAttack.DisplayComboStep <= 0 || matchFinished)
+            {
+                return;
+            }
+
+            bool finisher = playerAttack.DisplayComboStep == 3;
+            Color accent = finisher
+                ? new Color(0.70f, 0.36f, 1f, 0.96f)
+                : new Color(0.20f, 0.76f, 1f, 0.94f);
+            Rect comboRect = new Rect(Screen.width * 0.5f - 150f, 25f, 300f, 54f);
+
+            DrawRect(comboRect, new Color(0.018f, 0.025f, 0.055f, 0.92f));
+            DrawBorder(comboRect, accent, finisher ? 3f : 2f);
+            comboStyle.normal.textColor = accent;
+            GUI.Label(comboRect, playerAttack.ComboLabel, comboStyle);
+        }
+
+        private void DrawDomainPanel(float margin)
+        {
+            bool showTimingBar = gojoDomain != null && gojoDomain.IsReleaseTiming;
             float domainWidth = Mathf.Min(720f, Screen.width - margin * 2f);
+            float domainHeight = showTimingBar ? 126f : 68f;
             Rect domainRect = new Rect(
                 (Screen.width - domainWidth) * 0.5f,
-                Screen.height - 92f,
+                Screen.height - domainHeight - margin,
                 domainWidth,
-                68f
+                domainHeight
             );
+
             DrawRect(domainRect, new Color(0.025f, 0.035f, 0.075f, 0.88f));
             DrawBorder(domainRect, new Color(0.24f, 0.55f, 1f, 0.9f), 2f);
 
@@ -184,15 +215,60 @@ namespace JJKGame.Core
                 ? gojoDomain.StatusText
                 : "영역 시스템 연결 안 됨";
             GUI.Label(
-                new Rect(domainRect.x + 18f, domainRect.y + 9f, domainRect.width - 36f, 28f),
+                new Rect(domainRect.x + 18f, domainRect.y + 8f, domainRect.width - 36f, 28f),
                 domainText,
                 domainStyle
             );
-            GUI.Label(
-                new Rect(domainRect.x + 18f, domainRect.y + 39f, domainRect.width - 36f, 20f),
-                "WASD 이동  ·  좌클릭 공격  ·  V 영역 준비  ·  R 입력 초기화",
-                hintStyle
+
+            if (showTimingBar)
+            {
+                Rect timingRect = new Rect(
+                    domainRect.x + 30f,
+                    domainRect.y + 42f,
+                    domainRect.width - 60f,
+                    24f
+                );
+                DrawReleaseTimingBar(timingRect);
+
+                GUI.Label(
+                    new Rect(domainRect.x + 18f, domainRect.y + 69f, domainRect.width - 36f, 22f),
+                    $"흰색 선이 초록 구간에 있을 때 우클릭 해제 · {gojoDomain.ReleaseElapsed:0.00}초",
+                    hintStyle
+                );
+                GUI.Label(
+                    new Rect(domainRect.x + 18f, domainRect.y + 96f, domainRect.width - 36f, 20f),
+                    "WASD 이동  ·  좌클릭 공격  ·  V 영역 준비  ·  R 입력 초기화",
+                    hintStyle
+                );
+            }
+            else
+            {
+                GUI.Label(
+                    new Rect(domainRect.x + 18f, domainRect.y + 39f, domainRect.width - 36f, 20f),
+                    "WASD 이동  ·  좌클릭 3타 콤보  ·  V 영역 준비  ·  R 입력 초기화",
+                    hintStyle
+                );
+            }
+        }
+
+        private void DrawReleaseTimingBar(Rect barRect)
+        {
+            DrawRect(barRect, new Color(0.07f, 0.08f, 0.12f, 1f));
+
+            float successStart = barRect.x + barRect.width * gojoDomain.ReleaseWindowStartNormalized;
+            float successEnd = barRect.x + barRect.width * gojoDomain.ReleaseWindowEndNormalized;
+            Rect successRect = new Rect(
+                successStart,
+                barRect.y + 2f,
+                Mathf.Max(2f, successEnd - successStart),
+                barRect.height - 4f
             );
+            DrawRect(successRect, new Color(0.16f, 0.88f, 0.38f, 0.95f));
+
+            float cursorX = barRect.x + barRect.width * gojoDomain.ReleaseProgressNormalized;
+            Rect cursorRect = new Rect(cursorX - 2f, barRect.y - 4f, 4f, barRect.height + 8f);
+            DrawRect(cursorRect, Color.white);
+            DrawBorder(barRect, new Color(1f, 1f, 1f, 0.28f), 1f);
         }
 
         private void DrawHealthPanel(
@@ -319,6 +395,13 @@ namespace JJKGame.Core
                 alignment = TextAnchor.MiddleCenter,
             };
             hintStyle.normal.textColor = new Color(0.75f, 0.80f, 0.92f);
+
+            comboStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.Max(18, baseSize + 1),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+            };
 
             resultStyle = new GUIStyle(GUI.skin.label)
             {
