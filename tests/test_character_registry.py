@@ -21,6 +21,29 @@ class CharacterRegistryTests(unittest.TestCase):
                 self.assertIsNotNone(runtime.seal_input)
                 self.assertIsNotNone(runtime.effect)
 
+    def test_available_characters_use_character_local_modules(self) -> None:
+        """구현 원본이 공용 폴더로 다시 새어 나가지 않도록 검사한다."""
+
+        available = [character for character in CHARACTER_SLOTS if character.available]
+
+        for character in available:
+            with self.subTest(character=character.character_id):
+                runtime = create_character_runtime(character)
+                expected_prefix = f"characters.{character.character_id}"
+
+                self.assertTrue(
+                    type(runtime.controller).__module__.startswith(expected_prefix),
+                    type(runtime.controller).__module__,
+                )
+                self.assertTrue(
+                    type(runtime.seal_input).__module__.startswith(expected_prefix),
+                    type(runtime.seal_input).__module__,
+                )
+                self.assertTrue(
+                    type(runtime.effect).__module__.startswith(expected_prefix),
+                    type(runtime.effect).__module__,
+                )
+
     def test_locked_characters_do_not_build_runtime(self) -> None:
         locked = [character for character in CHARACTER_SLOTS if not character.available]
 
