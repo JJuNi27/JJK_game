@@ -1,12 +1,24 @@
 # JJK Game 프로젝트 인수인계서
 
-> 새 ChatGPT 대화에서 사용자가 저장소 링크와 함께 `이 깃허브 읽고 우리 하던 거 계속하자`라고 말하면 **README, 이 문서, ARCHITECTURE, 캐릭터 설정 카드, 최신 코드를 먼저 읽고 현재 상태에서 이어간다.**
+> 새 ChatGPT 대화에서 사용자가 저장소 링크와 함께 `이 깃허브 읽고 우리 하던 거 계속하자`라고 말하면 **README, 이 문서, ARCHITECTURE, 캐릭터 설정 카드, 최신 Python·Unity 코드를 먼저 읽고 현재 상태에서 이어간다.**
 
 ## 1. 프로젝트 정의
 
-주술회전의 **술식 선언, 장인(손동작), 영역전개, 공간 변화 연출**을 실제 게임 입력으로 옮기는 개인 프로젝트다.
+주술회전의 **술식 선언, 장인(손동작), 영역전개, 공간 변화 연출**을 실제 게임 입력과 전투 시스템으로 옮기는 개인 프로젝트다.
 
-현재는 Python + Pygame 자유 연습장으로 캐릭터별 장인 입력의 조작감과 성공·실패 판정을 검증한다. 장기적으로 Unity에서 캐릭터를 선택하고 봇과 싸우는 3D 전투 게임으로 확장한다.
+현재 두 축으로 진행한다.
+
+```text
+Python + Pygame
+- 캐릭터별 영역전개 입력 검증
+- 음성인식
+- 성공·실패와 연습 통계
+
+Unity + C#
+- 실제 이동과 공격
+- 주령 봇 전투
+- 검증된 영역 입력을 전투에 적용
+```
 
 ## 2. 사용자와 작업 방식
 
@@ -19,77 +31,40 @@
 
 ```text
 Assistant가 GitHub 수정
-→ 사용자 git pull origin master
-→ 사용자 단위 테스트와 python main.py 실행
+→ 사용자가 git pull origin master
+→ 사용자 컴퓨터에서 실행
 → 화면·오류·조작감 전달
 → Assistant가 저장소 수정
 ```
 
-## 3. 장기 방향
+Python 실행:
 
-### 메인 전투 모드
-
-- 전투 전에 캐릭터 선택
-- 선택 캐릭터의 술식과 영역만 사용
-- Unity에서 플레이어와 봇 전투
-- 첫 봇은 강화학습이 아니라 상태 머신
-
-첫 Unity MVP 후보:
-
-```text
-플레이어: 고죠
-상대: 단순 주령 봇 1마리
-맵: 작은 전투장
-기능: 이동, 기본 공격, 체력, 봇 추적·공격, 무량공처, 승패
+```bash
+git pull origin master
+python -m unittest discover -s tests -v
+python main.py
 ```
 
-### 자유 연습장
+## 3. 설정 운영 원칙
 
-- 캐릭터별 장인 커맨드
-- 성공률·연속 성공·판정 지표
-- 음성·마우스·미래 카메라 입력 테스트
-- 현재 Pygame 프로그램이 원형
-
-### 카메라 입력
-
-초기 계획은 MediaPipe Hand Landmarker와 직접 수집한 데이터로 실제 손 장인을 인식하는 것이었다. 웹캠 고장으로 후순위로 미뤘으며 폐기하지 않았다.
-
-## 4. 설정 운영 원칙
-
-- 원작 만화와 공식 애니메이션·극장판을 통합
+- 원작 만화와 공식 애니메이션·극장판 통합
 - 팬 해석과 공식 설정 분리
 - 캐릭터 구현 전 설정 카드 작성 → 사용자 검토 → 구현
 - 몸·시기 차이가 크면 별도 캐릭터 슬롯
+- 모든 영역전개 캐릭터는 음성으로 `료이키 텐카이`까지만 말함
 - 영역명은 음성으로 요구하지 않음
-- 모든 영역전개 캐릭터는 `료이키 텐카이`까지만 말함
+- 실제 발동 영역은 선택 캐릭터와 고유 장인 커맨드가 결정
 
 설정 카드:
 
-- [`characters/gojo.md`](characters/gojo.md): 고죠 v1.0
-- [`characters/sukuna.md`](characters/sukuna.md): 스쿠나(이타도리) v1.0
-- [`characters/megumi.md`](characters/megumi.md): 메구미 v1.0
-- [`characters/yuta.md`](characters/yuta.md): 본편 2학년 유타 v1.0
+- `docs/characters/gojo.md`: 고죠 v1.0
+- `docs/characters/sukuna.md`: 스쿠나(이타도리) v1.0
+- `docs/characters/megumi.md`: 메구미 v1.0
+- `docs/characters/yuta.md`: 본편 2학년 유타 v1.0
 
-## 5. 공통 영역 음성
+## 4. Python/Pygame v0.1 완료 상태
 
-```text
-료이키 텐카이
-→ DOMAIN_READY
-→ 선택 캐릭터의 고유 장인
-→ 해당 캐릭터의 영역
-```
-
-현재 음성인식:
-
-- Vosk + sounddevice
-- 일본어 소형 모델 `vosk-model-small-ja-0.22`
-- 부분 결과로 발동하지 않음
-- 확정 결과 전체 문구 일치
-- 평균 신뢰도 88% 이상
-- V 키는 항상 대체 입력
-- 사용자 로컬에서 일본어 인식 정상 확인
-
-## 6. 현재 플레이 가능 캐릭터
+사용자가 아래 네 캐릭터를 로컬에서 모두 정상 작동한다고 확인했다.
 
 ### 고죠 사토루
 
@@ -106,7 +81,7 @@ V 또는 료이키 텐카이
 허용 오차 ±0.22초
 ```
 
-사용자 결과:
+사용자 1차 통계:
 
 ```text
 10회 중 8회 성공
@@ -121,12 +96,12 @@ V 또는 료이키 텐카이
 - 십종영법술 없음
 - 해·팔·푸가 포함
 - 세계참 없음
-- 몸 형태별 스쿠나는 추후 별도 캐릭터
+- 메구미 몸·헤이안 본체는 추후 별도 캐릭터
 
 ```text
 V 또는 료이키 텐카이
-→ E 키 유지
-→ E 유지 중 좌·우클릭을 거의 동시에 누르고 유지
+→ E 유지
+→ 좌·우클릭을 거의 동시에 누르고 유지
 → 초록 구간에서 좌·우클릭을 거의 동시에 해제
 → 복마어주자
 ```
@@ -135,39 +110,34 @@ V 또는 료이키 텐카이
 
 확정 범위:
 
-- 메구미 본인 버전
+- 메구미 본인
 - 첫 기본 식신은 옥견 「혼」
 - 전투에서는 실내 또는 기존 구조물이 있을 때 감합암예정 사용
 - 연습장에서는 환경 제한 없음
 - 마허라는 후순위 최후 수단
-- 흑섬·반전술식·임의 대영역 기술 없음
 
 ```text
 V 또는 료이키 텐카이
-→ Q 키 유지
+→ Q 유지
 → 좌클릭 유지 상태로 아래 방향 드래그
 → 이어서 좌우로 그림자 펼치기
 → Q 유지 상태에서 좌클릭 해제
 → 감합암예정
 ```
 
-고죠·스쿠나·메구미는 사용자가 로컬에서 정상 작동을 확인했다.
-
 ### 옷코츠 유타(본편 2학년)
 
-중요한 분리 원칙:
+분리 원칙:
 
 ```text
-현재 yuta
+characters/yuta
 = 본편 2학년 유타
 
-추후 yuta_zero
+추후 characters/yuta_zero
 = 주술회전 0의 1학년 유타
 ```
 
-제로 버전은 나중에 별도 캐릭터로 추가한다. 본편 유타와 제로 유타의 리카 상태·능력 범위를 섞지 않는다.
-
-현재 장인:
+본편 유타와 제로 유타의 리카 상태와 능력 범위를 섞지 않는다.
 
 ```text
 V 또는 료이키 텐카이
@@ -178,16 +148,7 @@ V 또는 료이키 텐카이
 → 진안상애
 ```
 
-초기 수치:
-
-```text
-C 후 드래그 시작 제한 0.80초
-위쪽 최소 이동 190px
-좌우 흔들림 허용 100px
-전체 검 뽑기 제한 1.60초
-```
-
-진안상애 전투에서 보존할 정체성:
+진안상애 전투 정체성:
 
 ```text
 필중 복사 술식 1개 선택
@@ -212,11 +173,9 @@ C 후 드래그 시작 제한 0.80초
 - 주복사 참격
 - 리카 완전 현현 5분 시스템
 
-유타 코드는 구현 완료했지만 사용자 로컬 조작 테스트는 아직 필요하다.
+## 5. Python 아키텍처
 
-## 7. 현재 아키텍처
-
-네 캐릭터 모두 동일한 패키지 구조를 사용한다.
+네 캐릭터 모두 같은 구조를 사용한다.
 
 ```text
 characters/<character_id>/
@@ -226,112 +185,180 @@ characters/<character_id>/
 └─ effect.py
 ```
 
-현재:
+```text
+characters/registry.py
+- 카드 순서
+- 프로필과 build_runtime 연결
+
+main.py
+- 앱 루프와 화면 전환
+- 캐릭터별 세부 구현을 직접 알지 않음
+
+ui/
+- 캐릭터 선택과 연습 화면
+
+game_input/
+- 공통 V 키와 일본어 음성 입력
+```
+
+과거 공용 경로의 고죠·스쿠나 호환 facade는 삭제했다. 실제 캐릭터 구현은 `characters/<id>/`에만 둔다.
+
+상세 기준은 `docs/ARCHITECTURE.md`.
+
+## 6. 음성인식
+
+- Vosk + sounddevice
+- 일본어 소형 모델 `vosk-model-small-ja-0.22`
+- 부분 결과로 발동하지 않음
+- 확정 결과 전체 문구 일치
+- 평균 신뢰도 88% 이상
+- 한자·히라가나·가타카나 표기 허용
+- V 키는 항상 대체 입력
+- 사용자 로컬에서 `료이키 텐카이` 인식 정상 확인
+
+## 7. 현재 핵심 단계 — Unity 전투 MVP
+
+Python 장인 연습장에 캐릭터를 더 추가하는 것보다, 실제 전투 루프를 먼저 검증한다.
+
+첫 MVP:
 
 ```text
-characters/
-├─ gojo/
-├─ sukuna_itadori/
-├─ megumi/
-└─ yuta/
+플레이어: 고죠
+상대: 단순 주령 봇 1마리
+맵: 작은 전투장
+
+WASD 이동
+좌클릭 기본 공격
+플레이어·주령 체력
+주령 추적·근접 공격
+V + 고죠 마우스 장인
+무량공처 성공 시 주령 행동 정지
+승리 / 패배
 ```
 
-`characters/registry.py`가 카드 순서와 런타임 builder를 연결한다. `main.py`와 UI는 캐릭터별 구현 클래스를 직접 알지 않는다.
-
-과거 공용 경로에 있던 고죠·스쿠나 호환 파일은 삭제했다. 실제 캐릭터 구현은 `characters/<id>/`에만 둔다.
-
-상세 기준: [`ARCHITECTURE.md`](ARCHITECTURE.md)
-
-## 8. UI 구조
+### Unity 코드 위치
 
 ```text
-ui/common.py
-- 한글 폰트, 텍스트, 자동 줄바꿈
+unity/Assets/Scripts/Core/
+├─ Health.cs
+├─ IDomainStunnable.cs
+└─ MatchController.cs
 
-ui/character_select_screen.py
-- 현재 네 캐릭터용 2×2 카드
-- 숫자·ENTER·클릭 선택
+unity/Assets/Scripts/Player/
+├─ ThirdPersonPlayerController.cs
+├─ BasicAttack.cs
+└─ GojoDomainController.cs
 
-ui/practice_screen.py
-- 프로필의 seal_steps를 읽어 안내
-- 프로필 데이터에 따라 타이밍 바와 오차 통계 표시 여부 결정
+unity/Assets/Scripts/Enemy/
+└─ CurseBotController.cs
+
+unity/Assets/Scripts/Camera/
+└─ SimpleCameraFollow.cs
+
+unity/Assets/Editor/
+└─ JJKMvpSceneBuilder.cs
 ```
 
-다섯 번째 캐릭터 추가 전에는 선택 화면 페이지 기능을 추가한다.
+### Unity 구현 내용
 
-## 9. 자동 테스트
+- `Health`: 공통 체력·피해·사망 이벤트
+- `ThirdPersonPlayerController`: CharacterController 기반 WASD 이동
+- `BasicAttack`: 좌클릭 범위 공격
+- `CurseBotController`: Idle/Chase/Attack/Frozen/Dead 상태 머신
+- `IDomainStunnable`: 영역 행동 불능 대상 공통 규약
+- `GojoDomainController`: Python에서 검증한 V → 우클릭 → 좌클릭 → 우클릭 해제 판정
+- `MatchController`: HUD, 승리·패배, ENTER 재시작
+- `SimpleCameraFollow`: 플레이어 추적
+- `JJKMvpSceneBuilder`: 메뉴 한 번으로 테스트 장면 자동 생성
 
-```bash
-python -m unittest discover -s tests -v
+### 장면 자동 생성
+
+Unity 상단 메뉴:
+
+```text
+Tools
+→ JJK Game
+→ Build Combat MVP Scene
 ```
 
-현재 검사:
+자동 생성:
 
-- 캐릭터 ID 중복 없음
-- 선택 가능한 캐릭터 런타임 생성
-- 컨트롤러·입력·이펙트가 해당 캐릭터 패키지에 위치
-- 메구미 그림자 궤적 성공·실패
-- 유타 검 뽑기 궤적 성공·실패
+```text
+ArenaGround
+GojoPlayer
+CurseBot
+Main Camera
+Directional Light
+MatchController
+Assets/Scenes/CombatMVP.unity
+```
 
-GitHub Actions는 Python compileall과 단위 테스트를 실행한다.
+상세 최초 설정은 `unity/README.md`를 따른다.
+
+## 8. Unity 프로젝트 최초 준비
+
+현재 Git에는 `unity/Assets/`와 코드만 있다. Unity가 생성하는 `Packages/`와 `ProjectSettings/`는 사용자 컴퓨터에서 한 번 만들어야 한다.
+
+권장 절차:
+
+```text
+1. Unity Hub에서 Unity 6.3 LTS + 3D Core 임시 프로젝트 생성
+2. 에디터 종료
+3. 임시 프로젝트의 Packages/와 ProjectSettings/를 저장소 unity/로 복사
+4. Unity Hub에서 저장소 unity/ 폴더 열기
+5. 컴파일 완료
+6. Tools → JJK Game → Build Combat MVP Scene
+7. Play
+```
+
+Unity 자동 생성 폴더는 `.gitignore`에 추가되어 있다.
+
+## 9. Unity에서 아직 확인되지 않은 것
+
+Unity 코드는 GitHub에 반영했지만 사용자의 Unity 에디터에서는 아직 실행하지 않았다.
+
+다음 로컬 확인이 필요하다.
+
+```text
+1. C# 컴파일 오류가 없는지
+2. 장면 자동 생성 메뉴가 보이는지
+3. CombatMVP 씬이 생성되는지
+4. WASD 이동이 되는지
+5. 좌클릭 공격으로 주령 체력이 감소하는지
+6. 주령이 추적하고 플레이어를 공격하는지
+7. 승리·패배와 ENTER 재시작이 되는지
+8. V → 우클릭 유지 → 좌클릭 → 타이밍 해제로 무량공처가 되는지
+9. 무량공처 동안 주령이 멈추는지
+10. 장인 입력 중 좌클릭이 기본 공격으로 중복되지 않는지
+```
 
 ## 10. 바로 다음 작업
 
-사용자에게 다음을 실행하게 한다.
+사용자의 Unity 설치 여부를 확인하고 `unity/README.md` 절차대로 최초 프로젝트를 연다.
 
-```bash
-git pull origin master
-python -m unittest discover -s tests -v
-python main.py
-```
+오류가 발생하면 Console의 첫 번째 빨간 오류 전체와 Unity 버전을 받는다.
 
-확인 항목:
+정상 실행 뒤 조정 순서:
 
 ```text
-1. 테스트가 OK인지
-2. 네 캐릭터 카드가 2×2로 정상인지
-3. 고죠·스쿠나·메구미 회귀 이상이 없는지
-4. 4키 또는 클릭으로 유타가 선택되는지
-5. V/음성 → C 유지 → 아래에서 위로 드래그가 되는지
-6. 190px 이상 뽑고 좌클릭을 놓으면 진안상애가 발동하는지
-7. C 조기 해제·짧은 드래그·큰 좌우 흔들림이 실패하는지
-8. 임시 진안상애 화면에 십자 구조와 여러 검이 보이는지
+이동 속도와 카메라
+→ 공격 범위·피해·주령 속도
+→ 고죠 영역 입력 타이밍
+→ 임시 무량공처 화면 효과
+→ Python 일본어 음성과 Unity 연결
+→ 창·혁·자
 ```
 
-조작감에 따라 우선 조절할 값:
+## 11. 장기 방향
 
 ```text
-ring_to_draw_timeout
-upward_min_distance
-upward_horizontal_tolerance
-total_gesture_timeout
-```
-
-## 11. 이후 순서
-
-```text
-유타 장인 난이도 안정화
-→ 네 캐릭터 일반 술식 설계
-→ 고죠 창·혁·자
-→ 스쿠나 해·팔·푸가
-→ 메구미 옥견 「혼」·누에 등
-→ 유타 검술·리카 부분 현현·주언·하늘 조작
-→ Unity 전투 MVP
-→ 카메라 장인 입력
+Unity 고죠 vs 주령 MVP
+→ 전투 조작감 안정화
+→ 캐릭터별 일반 술식
+→ 캐릭터 선택과 데이터 구조
+→ 다른 영역 캐릭터 Unity 이전
+→ 카메라 실제 장인 입력
 → 영역 충돌·번아웃·흑섬
 ```
 
-제로 유타는 본편 유타의 일반 술식과 영역 시스템이 안정된 뒤 별도 캐릭터로 추가한다.
-
-## 12. 새 대화 절차
-
-```text
-1. README.md
-2. docs/HANDOFF.md
-3. docs/ARCHITECTURE.md
-4. docs/characters/gojo.md, sukuna.md, megumi.md, yuta.md
-5. characters/registry.py
-6. characters/<id>/ 최신 코드
-7. 테스트와 사용자 최신 발언 확인
-8. 바로 다음 작업부터 진행
-```
+첫 봇은 강화학습이 아니라 단순 상태 머신이다. 전투 기본기가 안정되기 전에는 ML을 넣지 않는다.
