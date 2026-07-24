@@ -14,12 +14,15 @@ namespace JJKGame.Core
         private string resultText = string.Empty;
         private bool matchFinished;
         private BasicAttack playerAttack;
+        private ThirdPersonPlayerController playerMovement;
+        private CurseBotController enemyBot;
 
         private GUIStyle headerStyle;
         private GUIStyle healthValueStyle;
         private GUIStyle domainStyle;
         private GUIStyle hintStyle;
         private GUIStyle comboStyle;
+        private GUIStyle warningStyle;
         private GUIStyle resultStyle;
         private GUIStyle resultHintStyle;
         private int styledForHeight = -1;
@@ -45,6 +48,8 @@ namespace JJKGame.Core
             }
 
             playerAttack = playerHealth.GetComponent<BasicAttack>();
+            playerMovement = playerHealth.GetComponent<ThirdPersonPlayerController>();
+            enemyBot = enemyHealth.GetComponent<CurseBotController>();
             playerHealth.Died += HandlePlayerDeath;
             enemyHealth.Died += HandleEnemyDeath;
         }
@@ -94,21 +99,14 @@ namespace JJKGame.Core
 
         private void StopCombatActors()
         {
-            if (playerHealth != null)
+            if (playerMovement != null)
             {
-                ThirdPersonPlayerController movement =
-                    playerHealth.GetComponent<ThirdPersonPlayerController>();
-                BasicAttack attack = playerHealth.GetComponent<BasicAttack>();
+                playerMovement.enabled = false;
+            }
 
-                if (movement != null)
-                {
-                    movement.enabled = false;
-                }
-
-                if (attack != null)
-                {
-                    attack.enabled = false;
-                }
+            if (playerAttack != null)
+            {
+                playerAttack.enabled = false;
             }
 
             if (gojoDomain != null)
@@ -117,13 +115,9 @@ namespace JJKGame.Core
                 gojoDomain.enabled = false;
             }
 
-            if (enemyHealth != null)
+            if (enemyBot != null)
             {
-                CurseBotController bot = enemyHealth.GetComponent<CurseBotController>();
-                if (bot != null)
-                {
-                    bot.enabled = false;
-                }
+                enemyBot.enabled = false;
             }
         }
 
@@ -173,33 +167,127 @@ namespace JJKGame.Core
                 TextAnchor.UpperRight
             );
 
-            DrawComboIndicator();
+            DrawDodgeStatus(playerRect);
+            DrawAttackIndicators();
+            DrawEnemyAttackWarning();
             DrawDomainPanel(margin);
         }
 
-        private void DrawComboIndicator()
+        private void DrawDodgeStatus(Rect playerRect)
         {
-            if (playerAttack == null || playerAttack.DisplayComboStep <= 0 || matchFinished)
+            if (playerMovement == null || matchFinished)
             {
                 return;
             }
 
-            bool finisher = playerAttack.DisplayComboStep == 3;
-            Color accent = finisher
-                ? new Color(0.70f, 0.36f, 1f, 0.96f)
-                : new Color(0.20f, 0.76f, 1f, 0.94f);
-            Rect comboRect = new Rect(Screen.width * 0.5f - 150f, 25f, 300f, 54f);
+            string text;
+            Color accent;
+            if (playerMovement.IsDodging)
+            {
+                text = "DODGING";
+                accent = new Color(0.35f, 0.95f, 1f);
+            }
+            else if (playerMovement.DodgeReady)
+            {
+                text = "DODGE READY  [SPACE]";
+                accent = new Color(0.22f, 0.82f, 1f);
+            }
+            else
+            {
+                text = $"DODGE  {playerMovement.DodgeCooldownRemaining:0.0}s";
+                accent = new Color(0.48f, 0.56f, 0.68f);
+            }
 
-            DrawRect(comboRect, new Color(0.018f, 0.025f, 0.055f, 0.92f));
-            DrawBorder(comboRect, accent, finisher ? 3f : 2f);
+            Rect statusRect = new Rect(playerRect.x, playerRect.yMax + 7f, 205f, 30f);
+            DrawRect(statusRect, new Color(0.018f, 0.025f, 0.045f, 0.90f));
+            DrawBorder(statusRect, accent, 2f);
             comboStyle.normal.textColor = accent;
-            GUI.Label(comboRect, playerAttack.ComboLabel, comboStyle);
+            GUI.Label(statusRect, text, comboStyle);
+        }
+
+        private void DrawAttackIndicators()
+        {
+            if (playerAttack == null || matchFinished)
+            {
+                return;
+            }
+
+            float y = 25f;
+            if (playerAttack.DisplayChainStep > 0)
+            {
+                bool finisher = playerAttack.DisplayChainStep == 3;
+                Color chainAccent = finisher
+                    ? new Color(0.70f, 0.36f, 1f, 0.96f)
+                    : new Color(0.20f, 0.76f, 1f, 0.94f);
+                Rect chainRect = new Rect(Screen.width * 0.5f - 180f, y, 360f, 52f);
+
+                DrawRect(chainRect, new Color(0.018f, 0.025f, 0.055f, 0.92f));
+                DrawBorder(chainRect, chainAccent, finisher ? 3f : 2f);
+                comboStyle.normal.textColor = chainAccent;
+                GUI.Label(chainRect, playerAttack.ChainLabel, comboStyle);
+                y += 59f;
+            }
+
+            if (playerAttack.DisplayHitComboCount > 0)
+            {
+                Color hitAccent = new Color(1f, 0.80f, 0.22f, 0.98f);
+                Rect hitRect = new Rect(Screen.width * 0.5f - 135f, y, 270f, 44f);
+
+                DrawRect(hitRect, new Color(0.055f, 0.038f, 0.012f, 0.93f));
+                DrawBorder(hitRect, hitAccent, 2f);
+                comboStyle.normal.textColor = hitAccent;
+                GUI.Label(hitRect, playerAttack.HitComboLabel, comboStyle);
+            }
+        }
+
+        private void DrawEnemyAttackWarning()
+        {
+            if (enemyBot == null || !enemyBot.IsAttackTelegraphing || matchFinished)
+            {
+                return;
+            }
+
+            float width = Mathf.Min(430f, Screen.width - 48f);
+            Rect warningRect = new Rect(
+                (Screen.width - width) * 0.5f,
+                Screen.height * 0.34f,
+                width,
+                82f
+            );
+            Color accent = new Color(1f, 0.40f, 0.08f, 0.98f);
+
+            DrawRect(warningRect, new Color(0.10f, 0.025f, 0.008f, 0.92f));
+            DrawBorder(warningRect, accent, 3f);
+            warningStyle.normal.textColor = accent;
+            GUI.Label(
+                new Rect(warningRect.x, warningRect.y + 5f, warningRect.width, 43f),
+                "DODGE!  [SPACE]",
+                warningStyle
+            );
+
+            Rect windupBar = new Rect(
+                warningRect.x + 24f,
+                warningRect.y + 56f,
+                warningRect.width - 48f,
+                12f
+            );
+            DrawRect(windupBar, new Color(0.18f, 0.08f, 0.025f, 1f));
+            DrawRect(
+                new Rect(
+                    windupBar.x,
+                    windupBar.y,
+                    windupBar.width * enemyBot.AttackWindupProgress,
+                    windupBar.height
+                ),
+                accent
+            );
+            DrawBorder(windupBar, new Color(1f, 1f, 1f, 0.22f), 1f);
         }
 
         private void DrawDomainPanel(float margin)
         {
             bool showTimingBar = gojoDomain != null && gojoDomain.IsReleaseTiming;
-            float domainWidth = Mathf.Min(720f, Screen.width - margin * 2f);
+            float domainWidth = Mathf.Min(760f, Screen.width - margin * 2f);
             float domainHeight = showTimingBar ? 126f : 68f;
             Rect domainRect = new Rect(
                 (Screen.width - domainWidth) * 0.5f,
@@ -237,7 +325,7 @@ namespace JJKGame.Core
                 );
                 GUI.Label(
                     new Rect(domainRect.x + 18f, domainRect.y + 96f, domainRect.width - 36f, 20f),
-                    "WASD 이동  ·  좌클릭 공격  ·  V 영역 준비  ·  R 입력 초기화",
+                    "WASD 이동  ·  SPACE 회피  ·  좌클릭 공격 연계  ·  V 영역 준비  ·  R 초기화",
                     hintStyle
                 );
             }
@@ -245,7 +333,7 @@ namespace JJKGame.Core
             {
                 GUI.Label(
                     new Rect(domainRect.x + 18f, domainRect.y + 39f, domainRect.width - 36f, 20f),
-                    "WASD 이동  ·  좌클릭 3타 콤보  ·  V 영역 준비  ·  R 입력 초기화",
+                    "WASD 이동  ·  SPACE 회피  ·  좌클릭 3단 공격 연계  ·  V 영역 준비  ·  R 초기화",
                     hintStyle
                 );
             }
@@ -398,7 +486,14 @@ namespace JJKGame.Core
 
             comboStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.Max(18, baseSize + 1),
+                fontSize = Mathf.Max(16, baseSize),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+            };
+
+            warningStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 24f, 30f, 48f)),
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
