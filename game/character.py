@@ -22,17 +22,17 @@ GOJO = CharacterProfile(
     technique="무하한 주술",
     domain="무량공처",
     voice_command="료이키 텐카이",
-    status='음성: "료이키 텐카이"',
+    status='한 손 장인 · 음성 "료이키 텐카이"',
 )
 
-SUKUNA_DRAFT = CharacterProfile(
+SUKUNA_ITADORI = CharacterProfile(
     character_id="sukuna_itadori",
     name="스쿠나(이타도리)",
     technique="주복사 · 해/팔 · 푸가",
     domain="복마어주자",
     voice_command="료이키 텐카이",
-    available=False,
-    status="설정 확정 · 양손 커맨드 구현 중",
+    available=True,
+    status="양손 장인 프로토타입",
 )
 
 FUTURE_SLOT = CharacterProfile(
@@ -42,12 +42,12 @@ FUTURE_SLOT = CharacterProfile(
     domain="미정",
     voice_command="-",
     available=False,
-    status="스쿠나 이후 추가 예정",
+    status="스쿠나 테스트 이후 추가 예정",
 )
 
 
 CHARACTER_SLOTS = (
     GOJO,
-    SUKUNA_DRAFT,
+    SUKUNA_ITADORI,
     FUTURE_SLOT,
 )
