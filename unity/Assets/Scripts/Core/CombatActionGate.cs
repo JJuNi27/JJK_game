@@ -21,6 +21,7 @@ namespace JJKGame.Core
         private ThirdPersonPlayerController movement;
         private GojoTechniqueController technique;
         private GojoDomainController domain;
+        private TechniqueBurnoutController burnout;
 
         public static CombatActionGate GetOrCreate(GameObject owner)
         {
@@ -67,11 +68,20 @@ namespace JJKGame.Core
             }
         }
 
+        public bool TechniqueBurnedOut
+        {
+            get
+            {
+                RefreshReferences();
+                return burnout != null && burnout.IsBurnedOut;
+            }
+        }
+
         public bool CanStartBasicAttack => CurrentState == CombatActionState.Normal;
-        public bool CanStartTechnique => CurrentState == CombatActionState.Normal;
-        public bool CanStartUltimate => CurrentState == CombatActionState.Normal;
+        public bool CanStartTechnique => CurrentState == CombatActionState.Normal && !TechniqueBurnedOut;
+        public bool CanStartUltimate => CurrentState == CombatActionState.Normal && !TechniqueBurnedOut;
         public bool CanStartDodge => CurrentState == CombatActionState.Normal;
-        public bool CanStartDomain => CurrentState == CombatActionState.Normal;
+        public bool CanStartDomain => CurrentState == CombatActionState.Normal && !TechniqueBurnedOut;
 
         private void Awake()
         {
@@ -84,6 +94,7 @@ namespace JJKGame.Core
             movement ??= GetComponent<ThirdPersonPlayerController>();
             technique ??= GetComponent<GojoTechniqueController>();
             domain ??= GetComponent<GojoDomainController>();
+            burnout ??= GetComponent<TechniqueBurnoutController>();
         }
     }
 }
