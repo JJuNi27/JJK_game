@@ -13,6 +13,7 @@ namespace JJKGame.Core
 
         public event Action<Health> Died;
         public event Action<Health, float> HealthChanged;
+        public event Action<Health, DamageContext, DamageResolution> DamageResolved;
 
         private float invulnerableUntil;
 
@@ -34,22 +35,53 @@ namespace JJKGame.Core
             }
         }
 
-        public bool TakeDamage(float amount)
+        public DamageResolution ReceiveDamage(DamageContext context)
         {
-            if (IsDead || IsInvulnerable || amount <= 0f)
+            if (IsDead)
             {
-                return false;
+                return Resolve(context, DamageResolution.TargetDead);
             }
 
-            CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
+            if (context.Amount <= 0f)
+            {
+                return Resolve(context, DamageResolution.Invalid);
+            }
+
+            if (IsInvulnerable)
+            {
+                return Resolve(context, DamageResolution.Invulnerable);
+            }
+
+            MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
+            foreach (MonoBehaviour behaviour in behaviours)
+            {
+                if (behaviour is not IDamageGuard guard)
+                {
+                    continue;
+                }
+
+                DamageGuardDecision decision = guard.EvaluateDamage(context);
+                if (decision == DamageGuardDecision.Block)
+                {
+                    return Resolve(context, DamageResolution.Guarded);
+                }
+            }
+
+            CurrentHealth = Mathf.Max(0f, CurrentHealth - context.Amount);
             HealthChanged?.Invoke(this, CurrentHealth);
+            DamageResolved?.Invoke(this, context, DamageResolution.Applied);
 
             if (IsDead)
             {
                 Died?.Invoke(this);
             }
 
-            return true;
+            return DamageResolution.Applied;
+        }
+
+        public bool TakeDamage(float amount)
+        {
+            return ReceiveDamage(DamageContext.Legacy(amount)) == DamageResolution.Applied;
         }
 
         public void Kill()
@@ -90,6 +122,12 @@ namespace JJKGame.Core
             CurrentHealth = maxHealth;
             invulnerableUntil = 0f;
             HealthChanged?.Invoke(this, CurrentHealth);
+        }
+
+        private DamageResolution Resolve(DamageContext context, DamageResolution resolution)
+        {
+            DamageResolved?.Invoke(this, context, resolution);
+            return resolution;
         }
     }
 }
