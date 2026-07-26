@@ -7,6 +7,10 @@ namespace JJKGame.Core
     {
         [SerializeField, Min(1f)] private float maxHealth = 100f;
 
+        [Header("Out Of Bounds")]
+        [SerializeField] private bool dieBelowWorld = true;
+        [SerializeField] private float worldDeathY = -12f;
+
         public event Action<Health> Died;
         public event Action<Health, float> HealthChanged;
 
@@ -20,6 +24,14 @@ namespace JJKGame.Core
         private void Awake()
         {
             CurrentHealth = maxHealth;
+        }
+
+        private void Update()
+        {
+            if (dieBelowWorld && !IsDead && transform.position.y < worldDeathY)
+            {
+                Kill();
+            }
         }
 
         public bool TakeDamage(float amount)
@@ -38,6 +50,18 @@ namespace JJKGame.Core
             }
 
             return true;
+        }
+
+        public void Kill()
+        {
+            if (IsDead)
+            {
+                return;
+            }
+
+            CurrentHealth = 0f;
+            HealthChanged?.Invoke(this, CurrentHealth);
+            Died?.Invoke(this);
         }
 
         public void GrantInvulnerability(float duration)
