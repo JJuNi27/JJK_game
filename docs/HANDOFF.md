@@ -1,6 +1,6 @@
 # JJK Game 프로젝트 인수인계서
 
-> 새 ChatGPT 대화에서는 `README.md`, 이 문서, `docs/CANON_SKILL_RULES.md`, `docs/ADAPTATION_REFERENCES.md`, `docs/AUDIO_SETUP.md`, `unity/README.md`와 최신 코드를 먼저 읽는다.
+> 새 ChatGPT 대화에서는 `README.md`, 이 문서, `docs/CANON_SKILL_RULES.md`, `docs/ADAPTATION_REFERENCES.md`, `docs/PHANTOM_PARADE_REFERENCE.md`, `docs/AUDIO_SETUP.md`, `unity/README.md`와 최신 코드를 먼저 읽는다.
 
 이 문서는 **사용자 확인 완료**, **원격 테스트 전**, **다음 작업**을 분리하는 단일 인수인계 기준이다.
 
@@ -24,12 +24,20 @@ Assistant가 원격 `master` 수정 → 사용자가 pull → Unity 실행 확�
 ## 2. 제작 원칙
 
 1. 만화·공식 팬북·공식 애니메이션·극장판 설정을 우선한다.
-2. `OFFICIAL_CONFIRMED`, `ADAPTATION_REFERENCE`, `GAME_ORIGINAL`, `INTERPRETATION_PENDING`을 구분한다.
-3. 팬텀 퍼레이드는 원작을 게임으로 번역한 모션·VFX·사운드·자원 참고자료로 사용한다.
-4. 같은 인물도 시기·육체·습득 기술이 다르면 별도 캐릭터 버전으로 분리한다.
-5. 공식 게임 원본 자산을 복사하지 않고 프로젝트용으로 새로 제작한다.
-6. 연결된 2~3개 작업은 묶되 테스트 항목은 분리한다.
-7. 작업 묶음 뒤 이 문서를 반드시 갱신한다.
+2. `OFFICIAL_CONFIRMED`, `ADAPTATION_REFERENCE`, `GAME_ORIGINAL`, `INTERPRETATION_PENDING`, `LOCALIZATION_PENDING`을 구분한다.
+3. 팬텀 퍼레이드는 원작을 게임으로 번역한 모션·VFX·사운드·자원 참고자료로 적극 사용한다.
+4. GameWith 팬텀 퍼레이드 공략은 스킬 비용·최대 주력·상태 변화·자동 효과·필살기 조건의 고정 조사처로 사용한다.
+5. GameWith는 일본 서버 기준이므로 수치와 일본 원문 확인에 쓰고, UI 명칭은 글로벌 한국어 클라이언트를 우선한다.
+6. 같은 인물도 시기·육체·습득 기술이 다르면 별도 캐릭터 버전으로 분리한다.
+7. 공식 게임 원본 자산을 복사하지 않고 프로젝트용으로 새로 제작한다.
+8. 연결된 2~3개 작업은 묶되 테스트 항목은 분리한다.
+9. 작업 묶음 뒤 이 문서를 반드시 갱신한다.
+
+팬텀 퍼레이드 조사 절차:
+
+```text
+docs/PHANTOM_PARADE_REFERENCE.md
+```
 
 ## 3. Python/Pygame 완료 상태
 
@@ -164,6 +172,32 @@ unity/Assets/Scripts/Player/GojoPrototypeAvatar.cs
 
 이것은 최종 모델이 아니라 전투 가독성과 외형 확인용 자체 제작 프록시다.
 
+### 6-4. 팬텀 퍼레이드 조사·명칭 기준
+
+새 문서:
+
+```text
+docs/PHANTOM_PARADE_REFERENCE.md
+```
+
+고정 절차:
+
+```text
+원작·공식 애니
+→ 기술 원리와 실제 조건
+
+GameWith 일본 서버
+→ 비용, 최대 주력, 스킬 변화, 자동 효과, 필살기 조건과 세부 수치
+
+글로벌 한국어 클라이언트·공식 사이트
+→ 화면에 표시할 캐릭터명·기술명·상태명
+
+프로젝트
+→ 실시간 액션용 GAME_ORIGINAL 조작과 수치
+```
+
+명칭은 글로벌 한국어 클라이언트 → 글로벌 공식 한국어 사이트 → 한국 공식 번역 → 글로벌 영어 → 일본 원문 순서로 확정한다. 확인되지 않은 이름은 임의 번역하지 않고 `LOCALIZATION_PENDING`으로 남긴다.
+
 ## 7. 이번 테스트 순서
 
 ```text
@@ -202,6 +236,7 @@ Unity Asset Store·Sketchfab 모델은 개별 라이선스와 저작자 표시�
 - 현재 다른 고죠 버전 선택 UI 없음
 - 신주쿠 조기 회복 입력 없음
 - 무하한 상시 방어와 예외 공격 규칙 없음
+- 글로벌 한국어 스킬명 전체 대조표는 아직 작성 중
 
 ## 10. 다음 우선순위
 
@@ -217,6 +252,10 @@ Unity Asset Store·Sketchfab 모델은 개별 라이선스와 저작자 표시�
 - 현대 일반 고죠의 무하한 상시 방어
 - 무하한을 무시하는 공격 타입 기반
 
+자료 정리
+- 현재 고죠 버전의 글로벌 한국어 명칭 대조
+- GameWith 기반 캐릭터 조사표 작성
+
 그 다음
 - 캐릭터 버전 선택 UI
 - 회옥·옥절 버전 상세 스킬 확정
@@ -226,7 +265,8 @@ Unity Asset Store·Sketchfab 모델은 개별 라이선스와 저작자 표시�
 ## 11. 새 채팅에서 Assistant가 먼저 할 일
 
 1. 이 문서를 읽는다.
-2. 사용자가 6번 작업을 pull·테스트했는지 확인한다.
-3. 오류가 있으면 고치면서 다음 작업도 진행한다.
-4. 원작은 `CANON_SKILL_RULES`, 공식 게임 참고는 `ADAPTATION_REFERENCES`를 확인한다.
-5. 작업 후 이 문서를 갱신한다.
+2. 사용자가 6-1~6-3 작업을 pull·테스트했는지 확인한다.
+3. 새 캐릭터·버전 작업 전 `PHANTOM_PARADE_REFERENCE.md` 조사표를 작성한다.
+4. 오류가 있으면 고치면서 다음 작업도 진행한다.
+5. 원작은 `CANON_SKILL_RULES`, 공식 게임 참고는 `ADAPTATION_REFERENCES`와 `PHANTOM_PARADE_REFERENCE`를 확인한다.
+6. 작업 후 이 문서를 갱신한다.
