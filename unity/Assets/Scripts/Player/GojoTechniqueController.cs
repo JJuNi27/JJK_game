@@ -48,6 +48,7 @@ namespace JJKGame.Player
         private PrototypeCombatAudio combatAudio;
         private CursedEnergyController cursedEnergy;
         private CombatActionGate actionGate;
+        private TechniqueBurnoutController burnout;
         private CastState castState;
         private float castStartedAt;
         private float castCompletesAt;
@@ -112,6 +113,8 @@ namespace JJKGame.Player
             targetLock = GetComponent<TargetLockController>();
             combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
+            burnout = TechniqueBurnoutController.GetOrCreate(gameObject);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
         }
 
@@ -171,11 +174,8 @@ namespace JJKGame.Player
                 return;
             }
 
-            if (cursedEnergy == null)
-            {
-                cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
-            }
-
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (cursedEnergy != null && !cursedEnergy.TrySpend(cost, name))
             {
                 return;
@@ -329,12 +329,21 @@ namespace JJKGame.Player
             bool ready,
             float cooldownRemaining,
             CastState skillCastState,
-            float energyCost
+            float baseEnergyCost
         )
         {
+            float actualCost = cursedEnergy != null
+                ? cursedEnergy.ResolveCost(baseEnergyCost)
+                : baseEnergyCost;
+
             if (!CombatActive)
             {
                 return skillName + "  전투 종료";
+            }
+
+            if (burnout != null && burnout.IsBurnedOut)
+            {
+                return $"{skillName}  술식 번아웃 {burnout.Remaining:0.0}s";
             }
 
             if (DomainBusy)
@@ -357,12 +366,12 @@ namespace JJKGame.Player
                 return $"{skillName}  {cooldownRemaining:0.0}s";
             }
 
-            if (cursedEnergy != null && !cursedEnergy.CanSpend(energyCost))
+            if (cursedEnergy != null && !cursedEnergy.CanSpend(baseEnergyCost))
             {
-                return $"{skillName}  주력 부족 · 필요 {energyCost:0}";
+                return $"{skillName}  주력 부족 · 필요 {actualCost:0}";
             }
 
-            return $"{skillName}  READY · 주력 {energyCost:0}";
+            return $"{skillName}  READY · 주력 {actualCost:0}";
         }
 
         private bool HasLivingOpponent()
