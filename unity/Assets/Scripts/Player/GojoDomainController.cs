@@ -26,9 +26,12 @@ namespace JJKGame.Player
         [Header("Unlimited Void")]
         [SerializeField, Min(0.1f)] private float domainDuration = 3f;
         [SerializeField, Min(0.1f)] private float domainRadius = 30f;
+        [SerializeField, Min(0f)] private float domainEnergyCost = 60f;
         [SerializeField] private GameObject domainVisualRoot;
 
         private GojoTechniqueController techniqueController;
+        private CursedEnergyController cursedEnergy;
+        private CombatActionGate actionGate;
 
         public DomainState State { get; private set; } = DomainState.Normal;
         public string StatusText { get; private set; } = "V 키로 영역전개를 준비하세요";
@@ -48,6 +51,7 @@ namespace JJKGame.Player
             Mathf.Clamp01((targetReleaseTime - releaseTolerance) / ReleaseTimelineDuration);
         public float ReleaseWindowEndNormalized =>
             Mathf.Clamp01((targetReleaseTime + releaseTolerance) / ReleaseTimelineDuration);
+        public float DomainEnergyCost => domainEnergyCost;
 
         private float stateStartedAt;
         private float rightPressedAt;
@@ -57,6 +61,8 @@ namespace JJKGame.Player
         {
             EnsureTechniqueControllers();
             techniqueController = GetComponent<GojoTechniqueController>();
+            cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
+            actionGate = CombatActionGate.GetOrCreate(gameObject);
             EnsureRuntimeVisual();
             SetDomainVisual(false);
             ResetCommand();
@@ -85,14 +91,18 @@ namespace JJKGame.Player
                 return;
             }
 
-            if (techniqueController == null)
+            actionGate ??= CombatActionGate.GetOrCreate(gameObject);
+            if (actionGate != null && !actionGate.CanStartDomain)
             {
-                techniqueController = GetComponent<GojoTechniqueController>();
+                StatusText = "현재 행동 중에는 영역전개 입력을 시작할 수 없습니다";
+                return;
             }
 
-            if (techniqueController != null && techniqueController.IsCasting)
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            if (cursedEnergy != null && !cursedEnergy.CanSpend(domainEnergyCost))
             {
-                StatusText = "술식 시전 중에는 영역전개 입력을 시작할 수 없습니다";
+                cursedEnergy.NotifyInsufficient("무량공처", domainEnergyCost);
+                StatusText = $"주력 부족: 무량공처에는 {domainEnergyCost:0} 필요";
                 return;
             }
 
@@ -109,7 +119,7 @@ namespace JJKGame.Player
             rightPressedAt = 0f;
             leftClickedAt = 0f;
             StatusText =
-                $"{CombatInputBindings.DomainLabel} 키로 영역전개 준비 · "
+                $"{CombatInputBindings.DomainLabel} 키로 영역전개 준비 · 주력 {domainEnergyCost:0} · "
                 + $"{CombatInputBindings.CancelCommandLabel} 입력 취소";
             SetDomainVisual(false);
         }
@@ -208,6 +218,16 @@ namespace JJKGame.Player
 
         private void ActivateDomain()
         {
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            if (
+                cursedEnergy != null
+                && !cursedEnergy.TrySpend(domainEnergyCost, "무량공처")
+            )
+            {
+                Fail("실패: 영역전개에 필요한 주력이 부족합니다");
+                return;
+            }
+
             ChangeState(DomainState.Active, "영역전개 · 무량공처");
             SetDomainVisual(true);
 
@@ -241,6 +261,9 @@ namespace JJKGame.Player
 
         private void EnsureTechniqueControllers()
         {
+            CursedEnergyController.GetOrCreate(gameObject);
+            CombatActionGate.GetOrCreate(gameObject);
+
             if (GetComponent<TargetLockController>() == null)
             {
                 gameObject.AddComponent<TargetLockController>();
