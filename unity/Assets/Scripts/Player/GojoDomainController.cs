@@ -227,6 +227,11 @@ namespace JJKGame.Player
 
         private void EnsureTechniqueControllers()
         {
+            if (GetComponent<TargetLockController>() == null)
+            {
+                gameObject.AddComponent<TargetLockController>();
+            }
+
             GojoTechniqueController technique = GetComponent<GojoTechniqueController>();
             if (technique == null)
             {
