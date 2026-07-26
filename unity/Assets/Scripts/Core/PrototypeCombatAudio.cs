@@ -1,24 +1,45 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace JJKGame.Core
 {
+    [DisallowMultipleComponent]
     public sealed class PrototypeCombatAudio : MonoBehaviour
     {
-        [Header("Optional Local Overrides")]
+        [Header("Optional Local Voice / Music Overrides")]
         [SerializeField] private AudioClip backgroundMusic;
         [SerializeField] private AudioClip blueVoice;
         [SerializeField] private AudioClip redVoice;
         [SerializeField] private AudioClip purpleVoice;
         [SerializeField] private AudioClip domainVoice;
 
+        [Header("Optional Local Combat SFX Overrides")]
+        [SerializeField] private AudioClip basicSwingSound;
+        [SerializeField] private AudioClip basicHitSound;
+        [SerializeField] private AudioClip playerHitSound;
+        [SerializeField] private AudioClip dodgeSound;
+        [SerializeField] private AudioClip victorySound;
+        [SerializeField] private AudioClip defeatSound;
+
         [Header("Volume")]
         [SerializeField, Range(0f, 1f)] private float sfxVolume = 0.85f;
         [SerializeField, Range(0f, 1f)] private float voiceVolume = 0.95f;
         [SerializeField, Range(0f, 1f)] private float musicVolume = 0.32f;
 
+        private readonly HashSet<Health> trackedHealth = new HashSet<Health>();
+
         private AudioSource sfxSource;
         private AudioSource voiceSource;
         private AudioSource musicSource;
+        private Health ownerHealth;
+        private Transform purpleVisual;
+        private Transform domainVisual;
+        private float lastOwnerHealth;
+        private float nextHealthRefreshAt;
+        private bool purpleWasActive;
+        private bool domainWasActive;
+        private bool resultSoundPlayed;
+        private bool ownerHealthBound;
 
         private AudioClip blueCastFallback;
         private AudioClip blueImpactFallback;
@@ -26,13 +47,63 @@ namespace JJKGame.Core
         private AudioClip redImpactFallback;
         private AudioClip purpleFallback;
         private AudioClip domainFallback;
+        private AudioClip basicSwingFallback;
+        private AudioClip basicHitFallback;
+        private AudioClip playerHitFallback;
+        private AudioClip dodgeFallback;
+        private AudioClip victoryFallback;
+        private AudioClip defeatFallback;
+
+        public static PrototypeCombatAudio GetOrCreate(GameObject owner)
+        {
+            if (owner == null)
+            {
+                return null;
+            }
+
+            PrototypeCombatAudio audio = owner.GetComponent<PrototypeCombatAudio>();
+            return audio != null ? audio : owner.AddComponent<PrototypeCombatAudio>();
+        }
 
         private void Awake()
         {
+            ownerHealth = GetComponent<Health>();
             LoadLocalOverrides();
             BuildSources();
             BuildFallbackClips();
             StartBackgroundMusic();
+        }
+
+        private void Start()
+        {
+            RefreshHealthBindings();
+            LocateTechniqueVisuals();
+        }
+
+        private void Update()
+        {
+            if (Time.time >= nextHealthRefreshAt)
+            {
+                RefreshHealthBindings();
+            }
+
+            DetectTechniqueVisualActivations();
+        }
+
+        private void OnDestroy()
+        {
+            if (ownerHealth != null && ownerHealthBound)
+            {
+                ownerHealth.HealthChanged -= HandleOwnerHealthChanged;
+            }
+
+            foreach (Health health in trackedHealth)
+            {
+                if (health != null)
+                {
+                    health.Died -= HandleAnyDeath;
+                }
+            }
         }
 
         public void PlayBlueCast()
@@ -69,32 +140,65 @@ namespace JJKGame.Core
             PlaySfx(domainFallback, 1f);
         }
 
+        public void PlayBasicSwing(int chainStep)
+        {
+            float volume = chainStep >= 3 ? 1f : 0.68f + chainStep * 0.08f;
+            PlaySfx(basicSwingSound != null ? basicSwingSound : basicSwingFallback, volume);
+        }
+
+        public void PlayBasicHit(int chainStep)
+        {
+            float volume = chainStep >= 3 ? 1f : 0.72f + chainStep * 0.08f;
+            PlaySfx(basicHitSound != null ? basicHitSound : basicHitFallback, volume);
+        }
+
+        public void PlayDodge()
+        {
+            PlaySfx(dodgeSound != null ? dodgeSound : dodgeFallback, 0.90f);
+        }
+
+        public void PlayPlayerHit()
+        {
+            PlaySfx(playerHitSound != null ? playerHitSound : playerHitFallback, 0.92f);
+        }
+
+        public void PlayVictory()
+        {
+            if (resultSoundPlayed)
+            {
+                return;
+            }
+
+            resultSoundPlayed = true;
+            FadeMusicForResult();
+            PlaySfx(victorySound != null ? victorySound : victoryFallback, 1f);
+        }
+
+        public void PlayDefeat()
+        {
+            if (resultSoundPlayed)
+            {
+                return;
+            }
+
+            resultSoundPlayed = true;
+            FadeMusicForResult();
+            PlaySfx(defeatSound != null ? defeatSound : defeatFallback, 1f);
+        }
+
         private void LoadLocalOverrides()
         {
-            if (backgroundMusic == null)
-            {
-                backgroundMusic = Resources.Load<AudioClip>("LocalAudio/BGM");
-            }
-
-            if (blueVoice == null)
-            {
-                blueVoice = Resources.Load<AudioClip>("LocalAudio/Gojo_Blue");
-            }
-
-            if (redVoice == null)
-            {
-                redVoice = Resources.Load<AudioClip>("LocalAudio/Gojo_Red");
-            }
-
-            if (purpleVoice == null)
-            {
-                purpleVoice = Resources.Load<AudioClip>("LocalAudio/Gojo_Purple");
-            }
-
-            if (domainVoice == null)
-            {
-                domainVoice = Resources.Load<AudioClip>("LocalAudio/Gojo_Domain");
-            }
+            backgroundMusic ??= Resources.Load<AudioClip>("LocalAudio/BGM");
+            blueVoice ??= Resources.Load<AudioClip>("LocalAudio/Gojo_Blue");
+            redVoice ??= Resources.Load<AudioClip>("LocalAudio/Gojo_Red");
+            purpleVoice ??= Resources.Load<AudioClip>("LocalAudio/Gojo_Purple");
+            domainVoice ??= Resources.Load<AudioClip>("LocalAudio/Gojo_Domain");
+            basicSwingSound ??= Resources.Load<AudioClip>("LocalAudio/BasicSwing");
+            basicHitSound ??= Resources.Load<AudioClip>("LocalAudio/BasicHit");
+            playerHitSound ??= Resources.Load<AudioClip>("LocalAudio/PlayerHit");
+            dodgeSound ??= Resources.Load<AudioClip>("LocalAudio/Dodge");
+            victorySound ??= Resources.Load<AudioClip>("LocalAudio/Victory");
+            defeatSound ??= Resources.Load<AudioClip>("LocalAudio/Defeat");
         }
 
         private void BuildSources()
@@ -116,54 +220,18 @@ namespace JJKGame.Core
 
         private void BuildFallbackClips()
         {
-            blueCastFallback = CreateSweepClip(
-                "BlueCastFallback",
-                0.24f,
-                190f,
-                520f,
-                0.20f,
-                0.04f
-            );
-            blueImpactFallback = CreateSweepClip(
-                "BlueImpactFallback",
-                0.34f,
-                150f,
-                62f,
-                0.27f,
-                0.16f
-            );
-            redCastFallback = CreateSweepClip(
-                "RedCastFallback",
-                0.20f,
-                360f,
-                760f,
-                0.22f,
-                0.06f
-            );
-            redImpactFallback = CreateSweepClip(
-                "RedImpactFallback",
-                0.42f,
-                125f,
-                48f,
-                0.34f,
-                0.38f
-            );
-            purpleFallback = CreateSweepClip(
-                "PurpleFallback",
-                0.75f,
-                105f,
-                430f,
-                0.32f,
-                0.19f
-            );
-            domainFallback = CreateSweepClip(
-                "DomainFallback",
-                1.05f,
-                85f,
-                310f,
-                0.27f,
-                0.10f
-            );
+            blueCastFallback = CreateSweepClip("BlueCastFallback", 0.24f, 190f, 520f, 0.20f, 0.04f);
+            blueImpactFallback = CreateSweepClip("BlueImpactFallback", 0.34f, 150f, 62f, 0.27f, 0.16f);
+            redCastFallback = CreateSweepClip("RedCastFallback", 0.20f, 360f, 760f, 0.22f, 0.06f);
+            redImpactFallback = CreateSweepClip("RedImpactFallback", 0.42f, 125f, 48f, 0.34f, 0.38f);
+            purpleFallback = CreateSweepClip("PurpleFallback", 0.75f, 105f, 430f, 0.32f, 0.19f);
+            domainFallback = CreateSweepClip("DomainFallback", 1.05f, 85f, 310f, 0.27f, 0.10f);
+            basicSwingFallback = CreateSweepClip("BasicSwingFallback", 0.14f, 520f, 190f, 0.12f, 0.22f);
+            basicHitFallback = CreateSweepClip("BasicHitFallback", 0.16f, 115f, 55f, 0.26f, 0.42f);
+            playerHitFallback = CreateSweepClip("PlayerHitFallback", 0.24f, 92f, 42f, 0.30f, 0.52f);
+            dodgeFallback = CreateSweepClip("DodgeFallback", 0.20f, 260f, 720f, 0.15f, 0.20f);
+            victoryFallback = CreateSweepClip("VictoryFallback", 0.85f, 260f, 690f, 0.20f, 0.03f);
+            defeatFallback = CreateSweepClip("DefeatFallback", 0.90f, 180f, 48f, 0.24f, 0.10f);
         }
 
         private void StartBackgroundMusic()
@@ -175,6 +243,95 @@ namespace JJKGame.Core
 
             musicSource.clip = backgroundMusic;
             musicSource.Play();
+        }
+
+        private void RefreshHealthBindings()
+        {
+            nextHealthRefreshAt = Time.time + 0.5f;
+            Health[] healthObjects = FindObjectsByType<Health>(FindObjectsSortMode.None);
+            foreach (Health health in healthObjects)
+            {
+                if (health == null || !trackedHealth.Add(health))
+                {
+                    continue;
+                }
+
+                health.Died += HandleAnyDeath;
+            }
+
+            if (ownerHealth != null && !ownerHealthBound)
+            {
+                ownerHealthBound = true;
+                lastOwnerHealth = ownerHealth.CurrentHealth;
+                ownerHealth.HealthChanged += HandleOwnerHealthChanged;
+            }
+        }
+
+        private void HandleOwnerHealthChanged(Health _, float currentHealth)
+        {
+            if (currentHealth < lastOwnerHealth)
+            {
+                PlayPlayerHit();
+            }
+
+            lastOwnerHealth = currentHealth;
+        }
+
+        private void HandleAnyDeath(Health deadHealth)
+        {
+            if (deadHealth == ownerHealth)
+            {
+                PlayDefeat();
+                return;
+            }
+
+            bool foundLivingOpponent = false;
+            foreach (Health health in trackedHealth)
+            {
+                if (health != null && health != ownerHealth && !health.IsDead)
+                {
+                    foundLivingOpponent = true;
+                    break;
+                }
+            }
+
+            if (!foundLivingOpponent)
+            {
+                PlayVictory();
+            }
+        }
+
+        private void LocateTechniqueVisuals()
+        {
+            purpleVisual ??= transform.Find("HollowPurplePrototypeVisual");
+            domainVisual ??= transform.Find("UnlimitedVoidPrototypeVisual");
+        }
+
+        private void DetectTechniqueVisualActivations()
+        {
+            LocateTechniqueVisuals();
+
+            bool purpleActive = purpleVisual != null && purpleVisual.gameObject.activeInHierarchy;
+            if (purpleActive && !purpleWasActive)
+            {
+                PlayPurple();
+            }
+            purpleWasActive = purpleActive;
+
+            bool domainActive = domainVisual != null && domainVisual.gameObject.activeInHierarchy;
+            if (domainActive && !domainWasActive)
+            {
+                PlayDomain();
+            }
+            domainWasActive = domainActive;
+        }
+
+        private void FadeMusicForResult()
+        {
+            if (musicSource != null && musicSource.isPlaying)
+            {
+                musicSource.volume = musicVolume * 0.35f;
+            }
         }
 
         private void PlaySfx(AudioClip clip, float relativeVolume)
