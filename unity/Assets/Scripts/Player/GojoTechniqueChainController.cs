@@ -6,6 +6,7 @@ namespace JJKGame.Player
 {
     [RequireComponent(typeof(Health))]
     [RequireComponent(typeof(GojoTechniqueController))]
+    [RequireComponent(typeof(TargetLockController))]
     public sealed class GojoTechniqueChainController : MonoBehaviour
     {
         [Header("Blue To Red Hit Chain")]
@@ -32,6 +33,7 @@ namespace JJKGame.Player
 
         private Health ownHealth;
         private GojoTechniqueController techniqueController;
+        private TargetLockController targetLock;
         private bool blueWasReady;
         private bool redWasReady;
         private float bluePreparedUntil;
@@ -69,6 +71,7 @@ namespace JJKGame.Player
         {
             ownHealth = GetComponent<Health>();
             techniqueController = GetComponent<GojoTechniqueController>();
+            targetLock = GetComponent<TargetLockController>();
             blueWasReady = techniqueController != null && techniqueController.BlueReady;
             redWasReady = techniqueController != null && techniqueController.RedReady;
             BuildPurpleVisual();
@@ -79,6 +82,11 @@ namespace JJKGame.Player
             if (techniqueController == null)
             {
                 techniqueController = GetComponent<GojoTechniqueController>();
+            }
+
+            if (targetLock == null)
+            {
+                targetLock = GetComponent<TargetLockController>();
             }
 
             if (techniqueController != null)
@@ -127,7 +135,7 @@ namespace JJKGame.Player
             bool redReadyNow = techniqueController.RedReady;
 
             // OFFICIAL_CONFIRMED principle: Purple combines Blue and Red themselves.
-            // Hitting an opponent is not required. The temporary preparation window is GAME_ORIGINAL.
+            // Hitting an opponent is not required. The preparation window is GAME_ORIGINAL.
             if (blueWasReady && !blueReadyNow)
             {
                 bluePreparedUntil = Time.time + purplePreparationDuration;
@@ -144,24 +152,18 @@ namespace JJKGame.Player
 
         private void HandleBlueHit(Health target)
         {
-            if (target == null)
+            if (target != null)
             {
-                return;
+                // This mark belongs only to the GAME_ORIGINAL Blue -> Red hit combo.
+                blueMarkedUntil[target] = Time.time + blueMarkDuration;
             }
-
-            // This mark belongs only to the GAME_ORIGINAL Blue -> Red hit combo.
-            blueMarkedUntil[target] = Time.time + blueMarkDuration;
         }
 
         private void HandleRedHit(Health target)
         {
-            if (target == null)
-            {
-                return;
-            }
-
             if (
-                !blueMarkedUntil.TryGetValue(target, out float markedUntil)
+                target == null
+                || !blueMarkedUntil.TryGetValue(target, out float markedUntil)
                 || Time.time > markedUntil
             )
             {
@@ -213,12 +215,8 @@ namespace JJKGame.Player
                     || target == ownHealth
                     || target.IsDead
                     || !affectedTargets.Add(target)
+                    || !target.TakeDamage(purpleDamage)
                 )
-                {
-                    continue;
-                }
-
-                if (!target.TakeDamage(purpleDamage))
                 {
                     continue;
                 }
@@ -229,6 +227,11 @@ namespace JJKGame.Player
 
         private Vector3 FindPurpleAimDirection()
         {
+            if (targetLock != null && targetLock.TryGetAimDirection(out Vector3 lockedDirection))
+            {
+                return lockedDirection;
+            }
+
             Health[] healthObjects = FindObjectsByType<Health>(FindObjectsSortMode.None);
             Health nearest = null;
             float nearestDistanceSqr = float.MaxValue;
