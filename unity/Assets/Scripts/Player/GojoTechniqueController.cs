@@ -6,20 +6,25 @@ using UnityEngine;
 namespace JJKGame.Player
 {
     [RequireComponent(typeof(Health))]
+    [RequireComponent(typeof(TargetLockController))]
     public sealed class GojoTechniqueController : MonoBehaviour
     {
         [Header("Cursed Technique Lapse: Blue")]
-        [SerializeField, Min(0.1f)] private float blueRadius = 8f;
+        [Tooltip("GAME_ORIGINAL: forward convergence distance when no target is locked.")]
+        [SerializeField, Min(0.1f)] private float blueCastDistance = 10f;
+        [SerializeField, Min(0.1f)] private float blueRadius = 4.5f;
         [SerializeField, Min(0f)] private float blueDamage = 8f;
-        [SerializeField, Min(0f)] private float bluePullSpeed = 13f;
+        [SerializeField, Min(0f)] private float bluePullSpeed = 16f;
         [SerializeField, Min(0f)] private float blueHitStun = 0.42f;
         [SerializeField, Min(0.1f)] private float blueCooldown = 3.2f;
         [SerializeField, Min(0.1f)] private float blueVisualDuration = 0.65f;
+        [SerializeField, Min(0f)] private float lockedBluePointOffset = 1.8f;
 
         [Header("Cursed Technique Reversal: Red")]
-        [SerializeField, Min(0.1f)] private float redRadius = 7f;
+        [SerializeField, Min(0.1f)] private float redRange = 11f;
+        [SerializeField, Min(0.1f)] private float redRadius = 2.3f;
         [SerializeField, Min(0f)] private float redDamage = 18f;
-        [SerializeField, Min(0f)] private float redPushSpeed = 20f;
+        [SerializeField, Min(0f)] private float redPushSpeed = 23f;
         [SerializeField, Min(0f)] private float redHitStun = 0.52f;
         [SerializeField, Min(0.1f)] private float redCooldown = 4.5f;
         [SerializeField, Min(0.1f)] private float redVisualDuration = 0.58f;
@@ -27,6 +32,7 @@ namespace JJKGame.Player
         private Health ownHealth;
         private Health[] combatHealth;
         private GojoDomainController domainController;
+        private TargetLockController targetLock;
         private TechniqueVisual blueVisual;
         private TechniqueVisual redVisual;
         private float nextBlueAt;
@@ -46,13 +52,13 @@ namespace JJKGame.Player
         public float RedCooldownProgress => GetCooldownProgress(RedCooldownRemaining, redCooldown);
 
         public string BlueStatusText => BuildStatusText(
-            $"{CombatInputBindings.Skill1Label} · 술식순전 「창」",
+            $"{CombatInputBindings.Skill1Label} · 술식순전 「창」 · 수렴점",
             BlueReady,
             BlueCooldownRemaining
         );
 
         public string RedStatusText => BuildStatusText(
-            $"{CombatInputBindings.Skill2Label} · 술식반전 「혁」",
+            $"{CombatInputBindings.Skill2Label} · 술식반전 「혁」 · 전방 반발",
             RedReady,
             RedCooldownRemaining
         );
@@ -70,25 +76,32 @@ namespace JJKGame.Player
         {
             ownHealth = GetComponent<Health>();
             domainController = GetComponent<GojoDomainController>();
+            targetLock = GetComponent<TargetLockController>();
+
             blueVisual = BuildTechniqueVisual(
-                "BluePrototypeVisual",
+                "BlueConvergencePrototypeVisual",
                 blueRadius,
                 blueVisualDuration,
                 new Color(0.10f, 0.72f, 1f, 0.95f),
                 new Color(0.32f, 0.92f, 1f, 0.90f),
                 new Color(0.12f, 0.55f, 1f),
                 3.4f,
-                90f
+                120f,
+                RingPlane.XZ,
+                RingPlane.XY
             );
+
             redVisual = BuildTechniqueVisual(
-                "RedPrototypeVisual",
+                "RedForwardPrototypeVisual",
                 redRadius,
                 redVisualDuration,
                 new Color(1f, 0.12f, 0.16f, 0.98f),
                 new Color(1f, 0.52f, 0.12f, 0.92f),
                 new Color(1f, 0.12f, 0.08f),
-                4.2f,
-                -130f
+                4.8f,
+                -160f,
+                RingPlane.XY,
+                RingPlane.XY
             );
         }
 
@@ -101,6 +114,12 @@ namespace JJKGame.Player
         {
             SetVisualActive(blueVisual, false);
             SetVisualActive(redVisual, false);
+        }
+
+        private void OnDestroy()
+        {
+            DestroyVisual(blueVisual);
+            DestroyVisual(redVisual);
         }
 
         private void Update()
@@ -126,87 +145,142 @@ namespace JJKGame.Player
 
         private void ActivateBlue()
         {
+            Vector3 convergencePoint = ResolveBlueConvergencePoint();
+            FaceHorizontalPoint(convergencePoint);
+
             nextBlueAt = Time.time + blueCooldown;
-            ShowVisual(blueVisual);
-            ApplyRadialTechnique(
-                blueRadius,
-                blueDamage,
-                bluePullSpeed,
-                blueHitStun,
-                true,
-                target => BlueHit?.Invoke(target)
-            );
+            ShowVisualAt(blueVisual, convergencePoint + Vector3.up * 0.10f, Quaternion.identity);
+            ApplyBlueAtPoint(convergencePoint);
         }
 
         private void ActivateRed()
         {
+            Vector3 direction = ResolveAimDirection();
+            transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+
+            Vector3 start = transform.position + Vector3.up * 1.0f + direction * 0.9f;
+            Vector3 end = start + direction * redRange;
+
             nextRedAt = Time.time + redCooldown;
-            ShowVisual(redVisual);
-            ApplyRadialTechnique(
-                redRadius,
-                redDamage,
-                redPushSpeed,
-                redHitStun,
-                false,
-                target => RedHit?.Invoke(target)
-            );
+            ShowVisualAt(redVisual, start, Quaternion.LookRotation(direction, Vector3.up));
+            ApplyRedAlongPath(start, end, direction);
         }
 
-        private void ApplyRadialTechnique(
-            float radius,
-            float damage,
-            float impulseSpeed,
-            float hitStun,
-            bool pullTowardCaster,
-            Action<Health> onTargetHit
-        )
+        private Vector3 ResolveBlueConvergencePoint()
         {
-            Collider[] hits = Physics.OverlapSphere(transform.position, radius);
+            Health lockedTarget = targetLock != null ? targetLock.CurrentTarget : null;
+            if (lockedTarget != null)
+            {
+                Vector3 targetPosition = lockedTarget.transform.position;
+                Vector3 towardCaster = transform.position - targetPosition;
+                towardCaster.y = 0f;
+
+                if (towardCaster.sqrMagnitude > 0.001f)
+                {
+                    targetPosition += towardCaster.normalized * lockedBluePointOffset;
+                }
+
+                return targetPosition;
+            }
+
+            return transform.position + ResolveAimDirection() * blueCastDistance;
+        }
+
+        private Vector3 ResolveAimDirection()
+        {
+            if (targetLock != null && targetLock.TryGetAimDirection(out Vector3 lockedDirection))
+            {
+                return lockedDirection;
+            }
+
+            Vector3 forward = transform.forward;
+            forward.y = 0f;
+            return forward.sqrMagnitude > 0.001f ? forward.normalized : Vector3.forward;
+        }
+
+        private void FaceHorizontalPoint(Vector3 point)
+        {
+            Vector3 direction = point - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            }
+        }
+
+        private void ApplyBlueAtPoint(Vector3 convergencePoint)
+        {
+            Collider[] hits = Physics.OverlapSphere(convergencePoint, blueRadius);
             HashSet<Health> affectedTargets = new HashSet<Health>();
 
             foreach (Collider hit in hits)
             {
                 Health targetHealth = hit.GetComponentInParent<Health>();
-                if (
-                    targetHealth == null
-                    || targetHealth == ownHealth
-                    || targetHealth.IsDead
-                    || !affectedTargets.Add(targetHealth)
-                )
+                if (!CanAffectTarget(targetHealth, affectedTargets))
                 {
                     continue;
                 }
 
-                if (!targetHealth.TakeDamage(damage))
+                if (!targetHealth.TakeDamage(blueDamage))
                 {
                     continue;
                 }
 
-                ApplyImpulse(targetHealth, impulseSpeed, hitStun, pullTowardCaster);
-                onTargetHit?.Invoke(targetHealth);
+                Vector3 pullDirection = convergencePoint - targetHealth.transform.position;
+                pullDirection.y = 0f;
+                if (pullDirection.sqrMagnitude <= 0.001f)
+                {
+                    pullDirection = transform.position - targetHealth.transform.position;
+                    pullDirection.y = 0f;
+                }
+
+                if (pullDirection.sqrMagnitude <= 0.001f)
+                {
+                    pullDirection = -targetHealth.transform.forward;
+                }
+
+                ApplyImpulse(targetHealth, pullDirection.normalized * bluePullSpeed, blueHitStun);
+                BlueHit?.Invoke(targetHealth);
             }
         }
 
-        private void ApplyImpulse(
+        private void ApplyRedAlongPath(Vector3 start, Vector3 end, Vector3 direction)
+        {
+            Collider[] hits = Physics.OverlapCapsule(start, end, redRadius);
+            HashSet<Health> affectedTargets = new HashSet<Health>();
+
+            foreach (Collider hit in hits)
+            {
+                Health targetHealth = hit.GetComponentInParent<Health>();
+                if (!CanAffectTarget(targetHealth, affectedTargets))
+                {
+                    continue;
+                }
+
+                if (!targetHealth.TakeDamage(redDamage))
+                {
+                    continue;
+                }
+
+                ApplyImpulse(targetHealth, direction.normalized * redPushSpeed, redHitStun);
+                RedHit?.Invoke(targetHealth);
+            }
+        }
+
+        private bool CanAffectTarget(Health targetHealth, HashSet<Health> affectedTargets)
+        {
+            return targetHealth != null
+                && targetHealth != ownHealth
+                && !targetHealth.IsDead
+                && affectedTargets.Add(targetHealth);
+        }
+
+        private static void ApplyImpulse(
             Health targetHealth,
-            float impulseSpeed,
-            float hitStun,
-            bool pullTowardCaster
+            Vector3 impulse,
+            float hitStun
         )
         {
-            Vector3 direction = pullTowardCaster
-                ? transform.position - targetHealth.transform.position
-                : targetHealth.transform.position - transform.position;
-            direction.y = 0f;
-
-            if (direction.sqrMagnitude <= 0.001f)
-            {
-                direction = pullTowardCaster
-                    ? -targetHealth.transform.forward
-                    : targetHealth.transform.forward;
-            }
-
-            Vector3 impulse = direction.normalized * impulseSpeed;
             MonoBehaviour[] behaviours = targetHealth.GetComponents<MonoBehaviour>();
             foreach (MonoBehaviour behaviour in behaviours)
             {
@@ -226,7 +300,9 @@ namespace JJKGame.Player
             Color innerColor,
             Color lightColor,
             float lightIntensity,
-            float rotationSpeed
+            float rotationSpeed,
+            RingPlane outerPlane,
+            RingPlane innerPlane
         )
         {
             TechniqueVisual visual = new TechniqueVisual
@@ -236,8 +312,6 @@ namespace JJKGame.Player
                 LightIntensity = lightIntensity,
                 RotationSpeed = rotationSpeed,
             };
-            visual.Root.transform.SetParent(transform, false);
-            visual.Root.transform.localPosition = Vector3.up * 0.15f;
 
             CreateRing(
                 visual,
@@ -246,7 +320,7 @@ namespace JJKGame.Player
                 0.14f,
                 outerColor,
                 Quaternion.identity,
-                RingPlane.XZ
+                outerPlane
             );
             CreateRing(
                 visual,
@@ -254,17 +328,17 @@ namespace JJKGame.Player
                 radius * 0.42f,
                 0.10f,
                 innerColor,
-                Quaternion.Euler(72f, 0f, 18f),
-                RingPlane.XY
+                Quaternion.Euler(0f, 0f, 24f),
+                innerPlane
             );
 
             GameObject lightObject = new GameObject(objectName + "Light");
             lightObject.transform.SetParent(visual.Root.transform, false);
-            lightObject.transform.localPosition = Vector3.up * 1.4f;
+            lightObject.transform.localPosition = Vector3.up * 0.4f;
             visual.Light = lightObject.AddComponent<Light>();
             visual.Light.type = LightType.Point;
             visual.Light.color = lightColor;
-            visual.Light.range = radius * 1.6f;
+            visual.Light.range = radius * 1.8f;
             visual.Light.intensity = lightIntensity;
             visual.Light.shadows = LightShadows.None;
 
@@ -329,7 +403,11 @@ namespace JJKGame.Player
             visual.RingColors.Add(color);
         }
 
-        private static void ShowVisual(TechniqueVisual visual)
+        private static void ShowVisualAt(
+            TechniqueVisual visual,
+            Vector3 position,
+            Quaternion rotation
+        )
         {
             if (visual == null || visual.Root == null)
             {
@@ -337,6 +415,7 @@ namespace JJKGame.Player
             }
 
             visual.StartedAt = Time.time;
+            visual.Root.transform.SetPositionAndRotation(position, rotation);
             visual.Root.transform.localScale = Vector3.one * 0.08f;
             RestoreVisualColors(visual, 1f);
             if (visual.Light != null)
@@ -360,7 +439,7 @@ namespace JJKGame.Player
             visual.Root.transform.localScale =
                 Vector3.one * Mathf.Max(0.08f, expansion * pulse);
             visual.Root.transform.Rotate(
-                Vector3.up,
+                Vector3.forward,
                 visual.RotationSpeed * Time.deltaTime,
                 Space.Self
             );
@@ -398,6 +477,14 @@ namespace JJKGame.Player
             }
         }
 
+        private static void DestroyVisual(TechniqueVisual visual)
+        {
+            if (visual != null && visual.Root != null)
+            {
+                Destroy(visual.Root);
+            }
+        }
+
         private void OnGUI()
         {
             if (ownHealth == null || ownHealth.IsDead)
@@ -406,7 +493,7 @@ namespace JJKGame.Player
             }
 
             EnsureStyle();
-            float width = Mathf.Min(350f, Screen.width - 48f);
+            float width = Mathf.Min(390f, Screen.width - 48f);
             DrawSkillPanel(
                 new Rect(24f, 151f, width, 38f),
                 BlueStatusText,
@@ -510,7 +597,7 @@ namespace JJKGame.Player
             }
 
             styledForHeight = Screen.height;
-            int fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 48f, 14f, 20f));
+            int fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 52f, 13f, 18f));
             skillStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = fontSize,
@@ -537,8 +624,22 @@ namespace JJKGame.Player
 
         private void OnDrawGizmosSelected()
         {
-            Gizmos.DrawWireSphere(transform.position, blueRadius);
-            Gizmos.DrawWireSphere(transform.position, redRadius);
+            Vector3 aimDirection = transform.forward;
+            aimDirection.y = 0f;
+            if (aimDirection.sqrMagnitude <= 0.001f)
+            {
+                aimDirection = Vector3.forward;
+            }
+            aimDirection.Normalize();
+
+            Vector3 bluePoint = transform.position + aimDirection * blueCastDistance;
+            Gizmos.DrawWireSphere(bluePoint, blueRadius);
+
+            Vector3 redStart = transform.position + Vector3.up * 1.0f + aimDirection * 0.9f;
+            Vector3 redEnd = redStart + aimDirection * redRange;
+            Gizmos.DrawWireSphere(redStart, redRadius);
+            Gizmos.DrawWireSphere(redEnd, redRadius);
+            Gizmos.DrawLine(redStart, redEnd);
         }
 
         private sealed class TechniqueVisual
