@@ -34,6 +34,10 @@ namespace JJKGame.Player
         public bool UsesBlindfold => activeVariant == GojoVariantId.ModernTeacher;
         public bool ShowsEyes => activeVariant == GojoVariantId.ShinjukuShowdown;
 
+        public bool UsesAutomaticInfinity =>
+            activeVariant == GojoVariantId.ModernTeacher
+            || activeVariant == GojoVariantId.ShinjukuShowdown;
+
         // Only the Shinjuku battle version is planned to expose manual RCT burnout recovery.
         public bool CanManuallyRestoreTechniqueBurnout =>
             activeVariant == GojoVariantId.ShinjukuShowdown;
@@ -53,6 +57,7 @@ namespace JJKGame.Player
         {
             CursedEnergyController.GetOrCreate(gameObject)
                 ?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
+            GojoInfinityDefense.GetOrCreate(gameObject);
         }
 
         public void SetVariant(GojoVariantId variantId)
