@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using JJKGame.Core;
 using UnityEngine;
@@ -33,21 +34,25 @@ namespace JJKGame.Player
         private GUIStyle skillStyle;
         private int styledForHeight = -1;
 
+        public event Action<Health> BlueHit;
+        public event Action<Health> RedHit;
+
         public bool BlueReady => Time.time >= nextBlueAt;
         public bool RedReady => Time.time >= nextRedAt;
+        public bool CanUseUltimate => CombatActive && !DomainBusy;
         public float BlueCooldownRemaining => Mathf.Max(0f, nextBlueAt - Time.time);
         public float RedCooldownRemaining => Mathf.Max(0f, nextRedAt - Time.time);
         public float BlueCooldownProgress => GetCooldownProgress(BlueCooldownRemaining, blueCooldown);
         public float RedCooldownProgress => GetCooldownProgress(RedCooldownRemaining, redCooldown);
 
         public string BlueStatusText => BuildStatusText(
-            "Q · 술식순전 「창」",
+            $"{CombatInputBindings.Skill1Label} · 술식순전 「창」",
             BlueReady,
             BlueCooldownRemaining
         );
 
         public string RedStatusText => BuildStatusText(
-            "E · 술식반전 「혁」",
+            $"{CombatInputBindings.Skill2Label} · 술식반전 「혁」",
             RedReady,
             RedCooldownRemaining
         );
@@ -103,12 +108,12 @@ namespace JJKGame.Player
             UpdateVisual(blueVisual);
             UpdateVisual(redVisual);
 
-            if (Input.GetKeyDown(KeyCode.Q) && CanUseTechnique(BlueReady))
+            if (Input.GetKeyDown(CombatInputBindings.Skill1) && CanUseTechnique(BlueReady))
             {
                 ActivateBlue();
             }
 
-            if (Input.GetKeyDown(KeyCode.E) && CanUseTechnique(RedReady))
+            if (Input.GetKeyDown(CombatInputBindings.Skill2) && CanUseTechnique(RedReady))
             {
                 ActivateRed();
             }
@@ -128,7 +133,8 @@ namespace JJKGame.Player
                 blueDamage,
                 bluePullSpeed,
                 blueHitStun,
-                true
+                true,
+                target => BlueHit?.Invoke(target)
             );
         }
 
@@ -141,7 +147,8 @@ namespace JJKGame.Player
                 redDamage,
                 redPushSpeed,
                 redHitStun,
-                false
+                false,
+                target => RedHit?.Invoke(target)
             );
         }
 
@@ -150,7 +157,8 @@ namespace JJKGame.Player
             float damage,
             float impulseSpeed,
             float hitStun,
-            bool pullTowardCaster
+            bool pullTowardCaster,
+            Action<Health> onTargetHit
         )
         {
             Collider[] hits = Physics.OverlapSphere(transform.position, radius);
@@ -175,6 +183,7 @@ namespace JJKGame.Player
                 }
 
                 ApplyImpulse(targetHealth, impulseSpeed, hitStun, pullTowardCaster);
+                onTargetHit?.Invoke(targetHealth);
             }
         }
 
