@@ -17,6 +17,7 @@ namespace JJKGame.Core
         [Header("Optional Local Combat SFX Overrides")]
         [SerializeField] private AudioClip basicSwingSound;
         [SerializeField] private AudioClip basicHitSound;
+        [SerializeField] private AudioClip basicFinisherSound;
         [SerializeField] private AudioClip playerHitSound;
         [SerializeField] private AudioClip dodgeSound;
         [SerializeField] private AudioClip victorySound;
@@ -51,6 +52,7 @@ namespace JJKGame.Core
         private AudioClip domainFallback;
         private AudioClip basicSwingFallback;
         private AudioClip basicHitFallback;
+        private AudioClip basicFinisherFallback;
         private AudioClip playerHitFallback;
         private AudioClip dodgeFallback;
         private AudioClip victoryFallback;
@@ -149,17 +151,33 @@ namespace JJKGame.Core
 
         public void PlayBasicSwing(int chainStep)
         {
-            float volume = chainStep >= 3 ? 1f : 0.68f + chainStep * 0.08f;
+            float volume = chainStep >= 3 ? 0.94f : 0.68f + chainStep * 0.08f;
             PlaySfx(basicSwingSound != null ? basicSwingSound : basicSwingFallback, volume);
         }
 
         public void PlayBasicHit(int chainStep)
         {
-            float volume = chainStep >= 3 ? 1f : 0.72f + chainStep * 0.08f;
-            PlaySfx(basicHitSound != null ? basicHitSound : basicHitFallback, volume);
-            float amplitude = chainStep >= 3 ? 0.24f : 0.09f + chainStep * 0.025f;
-            float flashAlpha = chainStep >= 3 ? 0.12f : 0.045f;
-            ShakeAndFlash(amplitude, 0.12f, Color.white, flashAlpha, 0.10f);
+            AudioClip regularHit = basicHitSound != null ? basicHitSound : basicHitFallback;
+            if (chainStep >= 3)
+            {
+                PlaySfx(regularHit, 0.78f);
+                PlaySfx(
+                    basicFinisherSound != null ? basicFinisherSound : basicFinisherFallback,
+                    1f
+                );
+                ShakeAndFlash(
+                    0.40f,
+                    0.22f,
+                    new Color(0.86f, 0.72f, 1f),
+                    0.19f,
+                    0.18f
+                );
+                return;
+            }
+
+            PlaySfx(regularHit, 0.72f + chainStep * 0.08f);
+            float amplitude = 0.09f + chainStep * 0.025f;
+            ShakeAndFlash(amplitude, 0.12f, Color.white, 0.045f, 0.10f);
         }
 
         public void PlayDodge()
@@ -209,6 +227,7 @@ namespace JJKGame.Core
             domainVoice ??= Resources.Load<AudioClip>("LocalAudio/Gojo_Domain");
             basicSwingSound ??= Resources.Load<AudioClip>("LocalAudio/BasicSwing");
             basicHitSound ??= Resources.Load<AudioClip>("LocalAudio/BasicHit");
+            basicFinisherSound ??= Resources.Load<AudioClip>("LocalAudio/BasicFinisher");
             playerHitSound ??= Resources.Load<AudioClip>("LocalAudio/PlayerHit");
             dodgeSound ??= Resources.Load<AudioClip>("LocalAudio/Dodge");
             victorySound ??= Resources.Load<AudioClip>("LocalAudio/Victory");
@@ -242,6 +261,7 @@ namespace JJKGame.Core
             domainFallback = CreateSweepClip("DomainFallback", 1.05f, 85f, 310f, 0.27f, 0.10f);
             basicSwingFallback = CreateSweepClip("BasicSwingFallback", 0.14f, 520f, 190f, 0.12f, 0.22f);
             basicHitFallback = CreateSweepClip("BasicHitFallback", 0.16f, 115f, 55f, 0.26f, 0.42f);
+            basicFinisherFallback = CreateSweepClip("BasicFinisherFallback", 0.32f, 82f, 28f, 0.42f, 0.58f);
             playerHitFallback = CreateSweepClip("PlayerHitFallback", 0.24f, 92f, 42f, 0.30f, 0.52f);
             dodgeFallback = CreateSweepClip("DodgeFallback", 0.20f, 260f, 720f, 0.15f, 0.20f);
             victoryFallback = CreateSweepClip("VictoryFallback", 0.85f, 260f, 690f, 0.20f, 0.03f);
