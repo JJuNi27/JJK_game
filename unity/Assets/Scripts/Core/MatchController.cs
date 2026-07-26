@@ -24,18 +24,19 @@ namespace JJKGame.Core
 
         private string resultText = string.Empty;
         private bool matchFinished;
+        private bool showControlHelp;
         private BasicAttack playerAttack;
         private ThirdPersonPlayerController playerMovement;
         private TargetLockController targetLock;
+        private CursedEnergyController cursedEnergy;
+        private GojoVariantController gojoVariant;
 
         private GUIStyle headerStyle;
-        private GUIStyle healthValueStyle;
-        private GUIStyle domainStyle;
-        private GUIStyle hintStyle;
-        private GUIStyle comboStyle;
+        private GUIStyle valueStyle;
+        private GUIStyle smallStyle;
+        private GUIStyle centerStyle;
         private GUIStyle warningStyle;
         private GUIStyle resultStyle;
-        private GUIStyle resultHintStyle;
         private int styledForHeight = -1;
 
         public int LivingEnemyCount
@@ -50,7 +51,6 @@ namespace JJKGame.Core
                         living += 1;
                     }
                 }
-
                 return living;
             }
         }
@@ -81,8 +81,11 @@ namespace JJKGame.Core
             playerAttack = playerHealth.GetComponent<BasicAttack>();
             playerMovement = playerHealth.GetComponent<ThirdPersonPlayerController>();
             targetLock = playerHealth.GetComponent<TargetLockController>();
-            playerHealth.Died += HandlePlayerDeath;
+            cursedEnergy = CursedEnergyController.GetOrCreate(playerHealth.gameObject);
+            gojoVariant = GojoVariantController.GetOrCreate(playerHealth.gameObject);
+            GojoPrototypeAvatar.GetOrCreate(playerHealth.gameObject);
 
+            playerHealth.Died += HandlePlayerDeath;
             foreach (Health health in enemyHealths)
             {
                 if (health != null)
@@ -110,6 +113,11 @@ namespace JJKGame.Core
 
         private void Update()
         {
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                showControlHelp = !showControlHelp;
+            }
+
             if (matchFinished && Input.GetKeyDown(KeyCode.Return))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -138,22 +146,22 @@ namespace JJKGame.Core
                 GameObject clone = Instantiate(enemyHealth.gameObject);
                 clone.name = $"CurseBot_{(char)('A' + newIndex)}";
                 clone.transform.position = GetPrototypeEnemySpawnPosition(newIndex);
-                clone.transform.rotation = Quaternion.LookRotation(
-                    playerHealth.transform.position - clone.transform.position,
-                    Vector3.up
-                );
+                Vector3 facing = playerHealth.transform.position - clone.transform.position;
+                facing.y = 0f;
+                if (facing.sqrMagnitude > 0.001f)
+                {
+                    clone.transform.rotation = Quaternion.LookRotation(facing, Vector3.up);
+                }
 
                 Health cloneHealth = clone.GetComponent<Health>();
-                if (cloneHealth != null)
-                {
-                    cloneHealth.ResetHealth();
-                    RegisterEnemy(cloneHealth);
-                }
-                else
+                if (cloneHealth == null)
                 {
                     Destroy(clone);
                     break;
                 }
+
+                cloneHealth.ResetHealth();
+                RegisterEnemy(cloneHealth);
             }
         }
 
@@ -205,13 +213,10 @@ namespace JJKGame.Core
             }
 
             Renderer groundRenderer = ground.GetComponent<Renderer>();
-            if (groundRenderer == null)
+            if (groundRenderer != null)
             {
-                return;
+                CreateSafetyWalls(groundRenderer.bounds);
             }
-
-            Bounds bounds = groundRenderer.bounds;
-            CreateSafetyWalls(bounds);
         }
 
         private void CreateSafetyWalls(Bounds arenaBounds)
@@ -223,38 +228,13 @@ namespace JJKGame.Core
             float fullWidth = arenaBounds.size.x + thickness * 2f;
             float fullDepth = arenaBounds.size.z + thickness * 2f;
 
-            CreateSafetyWall(
-                root.transform,
-                "NorthWall",
-                new Vector3(arenaBounds.center.x, y, arenaBounds.max.z + thickness * 0.5f),
-                new Vector3(fullWidth, height, thickness)
-            );
-            CreateSafetyWall(
-                root.transform,
-                "SouthWall",
-                new Vector3(arenaBounds.center.x, y, arenaBounds.min.z - thickness * 0.5f),
-                new Vector3(fullWidth, height, thickness)
-            );
-            CreateSafetyWall(
-                root.transform,
-                "EastWall",
-                new Vector3(arenaBounds.max.x + thickness * 0.5f, y, arenaBounds.center.z),
-                new Vector3(thickness, height, fullDepth)
-            );
-            CreateSafetyWall(
-                root.transform,
-                "WestWall",
-                new Vector3(arenaBounds.min.x - thickness * 0.5f, y, arenaBounds.center.z),
-                new Vector3(thickness, height, fullDepth)
-            );
+            CreateSafetyWall(root.transform, "NorthWall", new Vector3(arenaBounds.center.x, y, arenaBounds.max.z + thickness * 0.5f), new Vector3(fullWidth, height, thickness));
+            CreateSafetyWall(root.transform, "SouthWall", new Vector3(arenaBounds.center.x, y, arenaBounds.min.z - thickness * 0.5f), new Vector3(fullWidth, height, thickness));
+            CreateSafetyWall(root.transform, "EastWall", new Vector3(arenaBounds.max.x + thickness * 0.5f, y, arenaBounds.center.z), new Vector3(thickness, height, fullDepth));
+            CreateSafetyWall(root.transform, "WestWall", new Vector3(arenaBounds.min.x - thickness * 0.5f, y, arenaBounds.center.z), new Vector3(thickness, height, fullDepth));
         }
 
-        private static void CreateSafetyWall(
-            Transform parent,
-            string objectName,
-            Vector3 position,
-            Vector3 scale
-        )
+        private static void CreateSafetyWall(Transform parent, string objectName, Vector3 position, Vector3 scale)
         {
             GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
             wall.name = objectName;
@@ -263,18 +243,12 @@ namespace JJKGame.Core
             wall.transform.localScale = scale;
 
             Renderer renderer = wall.GetComponent<Renderer>();
-            if (renderer == null)
-            {
-                return;
-            }
-
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null)
             {
                 shader = Shader.Find("Standard");
             }
-
-            if (shader != null)
+            if (renderer != null && shader != null)
             {
                 renderer.material = new Material(shader)
                 {
@@ -310,16 +284,24 @@ namespace JJKGame.Core
 
         private void StopCombatActors()
         {
+            playerMovement ??= playerHealth != null
+                ? playerHealth.GetComponent<ThirdPersonPlayerController>()
+                : null;
+            playerAttack ??= playerHealth != null
+                ? playerHealth.GetComponent<BasicAttack>()
+                : null;
+            targetLock ??= playerHealth != null
+                ? playerHealth.GetComponent<TargetLockController>()
+                : null;
+
             if (playerMovement != null)
             {
                 playerMovement.enabled = false;
             }
-
             if (playerAttack != null)
             {
                 playerAttack.enabled = false;
             }
-
             if (targetLock != null)
             {
                 targetLock.enabled = false;
@@ -327,16 +309,12 @@ namespace JJKGame.Core
 
             if (playerHealth != null)
             {
-                GojoTechniqueChainController techniqueChain =
-                    playerHealth.GetComponent<GojoTechniqueChainController>();
-                GojoTechniqueController technique =
-                    playerHealth.GetComponent<GojoTechniqueController>();
-
-                if (techniqueChain != null)
+                GojoTechniqueChainController chain = playerHealth.GetComponent<GojoTechniqueChainController>();
+                GojoTechniqueController technique = playerHealth.GetComponent<GojoTechniqueController>();
+                if (chain != null)
                 {
-                    techniqueChain.enabled = false;
+                    chain.enabled = false;
                 }
-
                 if (technique != null)
                 {
                     technique.enabled = false;
@@ -366,32 +344,26 @@ namespace JJKGame.Core
             }
 
             EnsureStyles();
-            DrawCombatHud();
+            DrawCompactCombatHud();
 
+            if (showControlHelp && !matchFinished)
+            {
+                DrawControlHelp();
+            }
             if (matchFinished)
             {
                 DrawResultOverlay();
             }
         }
 
-        private void DrawCombatHud()
+        private void DrawCompactCombatHud()
         {
-            const float margin = 24f;
-            const float playerPanelHeight = 84f;
-            const float enemyPanelHeight = 70f;
-            const float enemyPanelGap = 7f;
-            float availableHalfWidth = (Screen.width - margin * 3f) * 0.5f;
-            float panelWidth = Mathf.Clamp(availableHalfWidth, 250f, 440f);
+            const float margin = 12f;
+            float panelWidth = Mathf.Clamp((Screen.width - margin * 3f) * 0.36f, 230f, 340f);
+            Rect playerRect = new Rect(margin, margin, panelWidth, 62f);
+            DrawPlayerPanel(playerRect);
 
-            Rect playerRect = new Rect(margin, margin, panelWidth, playerPanelHeight);
-            DrawHealthPanel(
-                playerRect,
-                "PLAYER · GOJO SATORU",
-                playerHealth,
-                new Color(0.18f, 0.66f, 1f),
-                TextAnchor.UpperLeft
-            );
-
+            float enemyWidth = Mathf.Clamp(panelWidth * 0.92f, 220f, 320f);
             for (int index = 0; index < enemyHealths.Count; index++)
             {
                 Health health = enemyHealths[index];
@@ -400,46 +372,86 @@ namespace JJKGame.Core
                     continue;
                 }
 
-                Rect enemyRect = new Rect(
-                    Screen.width - margin - panelWidth,
-                    margin + index * (enemyPanelHeight + enemyPanelGap),
-                    panelWidth,
-                    enemyPanelHeight
+                Rect rect = new Rect(
+                    Screen.width - margin - enemyWidth,
+                    margin + index * 48f,
+                    enemyWidth,
+                    43f
                 );
-                string state = health.IsDead ? " · DEFEATED" : string.Empty;
-                DrawHealthPanel(
-                    enemyRect,
-                    $"CURSE BOT {(char)('A' + index)}{state}",
-                    health,
-                    index % 2 == 0
-                        ? new Color(0.92f, 0.16f, 0.20f)
-                        : new Color(0.88f, 0.34f, 0.12f),
-                    TextAnchor.UpperRight
-                );
+                DrawEnemyPanel(rect, health, index);
             }
 
             DrawEnemyCount();
-            DrawDodgeStatus(playerRect);
+            DrawDodgeChip(playerRect);
             DrawAttackIndicators();
             DrawEnemyAttackWarning();
-            DrawDomainPanel(margin);
+            DrawDomainPanel();
+        }
+
+        private void DrawPlayerPanel(Rect rect)
+        {
+            DrawRect(rect, new Color(0.012f, 0.018f, 0.032f, 0.90f));
+            DrawBorder(rect, new Color(0.18f, 0.66f, 1f, 0.92f), 2f);
+
+            string title = gojoVariant != null
+                ? $"PLAYER · {gojoVariant.DisplayName}"
+                : "PLAYER · GOJO SATORU";
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - 20f, 18f), title, headerStyle);
+
+            DrawValueBar(
+                new Rect(rect.x + 10f, rect.y + 23f, rect.width - 20f, 18f),
+                playerHealth.CurrentHealth,
+                playerHealth.MaxHealth,
+                new Color(0.18f, 0.66f, 1f),
+                $"HP  {playerHealth.CurrentHealth:0} / {playerHealth.MaxHealth:0}"
+            );
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(playerHealth.gameObject);
+            if (cursedEnergy != null)
+            {
+                DrawValueBar(
+                    new Rect(rect.x + 10f, rect.y + 44f, rect.width - 20f, 12f),
+                    cursedEnergy.CurrentEnergy,
+                    cursedEnergy.MaxEnergy,
+                    new Color(0.34f, 0.20f, 0.96f),
+                    $"CE {cursedEnergy.CurrentEnergy:0}/{cursedEnergy.MaxEnergy:0} · {cursedEnergy.ProfileLabel}"
+                );
+            }
+        }
+
+        private void DrawEnemyPanel(Rect rect, Health health, int index)
+        {
+            Color accent = index % 2 == 0
+                ? new Color(0.94f, 0.15f, 0.20f)
+                : new Color(0.95f, 0.34f, 0.10f);
+            DrawRect(rect, new Color(0.018f, 0.020f, 0.030f, 0.90f));
+            DrawBorder(rect, accent, 2f);
+            string defeated = health.IsDead ? " · DOWN" : string.Empty;
+            GUI.Label(new Rect(rect.x + 9f, rect.y + 2f, rect.width - 18f, 17f), $"CURSE {(char)('A' + index)}{defeated}", headerStyle);
+            DrawValueBar(
+                new Rect(rect.x + 9f, rect.y + 21f, rect.width - 18f, 16f),
+                health.CurrentHealth,
+                health.MaxHealth,
+                accent,
+                $"{health.CurrentHealth:0} / {health.MaxHealth:0}"
+            );
         }
 
         private void DrawEnemyCount()
         {
-            float width = 230f;
-            Rect rect = new Rect((Screen.width - width) * 0.5f, 6f, width, 28f);
+            Rect rect = new Rect(Screen.width * 0.5f - 82f, 7f, 164f, 23f);
             Color accent = LivingEnemyCount > 0
-                ? new Color(1f, 0.55f, 0.18f, 0.98f)
-                : new Color(0.20f, 0.78f, 1f, 0.98f);
+                ? new Color(1f, 0.55f, 0.18f)
+                : new Color(0.20f, 0.78f, 1f);
             DrawRect(rect, new Color(0.045f, 0.025f, 0.012f, 0.90f));
             DrawBorder(rect, accent, 2f);
-            comboStyle.normal.textColor = accent;
-            GUI.Label(rect, $"CURSES LEFT  {LivingEnemyCount} / {enemyHealths.Count}", comboStyle);
+            centerStyle.normal.textColor = accent;
+            GUI.Label(rect, $"CURSES  {LivingEnemyCount}/{enemyHealths.Count}", centerStyle);
         }
 
-        private void DrawDodgeStatus(Rect playerRect)
+        private void DrawDodgeChip(Rect playerRect)
         {
+            playerMovement ??= playerHealth.GetComponent<ThirdPersonPlayerController>();
             if (playerMovement == null || matchFinished)
             {
                 return;
@@ -454,54 +466,53 @@ namespace JJKGame.Core
             }
             else if (playerMovement.DodgeReady)
             {
-                text = $"DODGE READY  [{CombatInputBindings.DodgeLabel}]";
+                text = "SPACE · DODGE READY";
                 accent = new Color(0.22f, 0.82f, 1f);
             }
             else
             {
-                text = $"DODGE  {playerMovement.DodgeCooldownRemaining:0.0}s";
+                text = $"DODGE {playerMovement.DodgeCooldownRemaining:0.0}s";
                 accent = new Color(0.48f, 0.56f, 0.68f);
             }
 
-            Rect statusRect = new Rect(playerRect.x, playerRect.yMax + 7f, 205f, 30f);
-            DrawRect(statusRect, new Color(0.018f, 0.025f, 0.045f, 0.90f));
-            DrawBorder(statusRect, accent, 2f);
-            comboStyle.normal.textColor = accent;
-            GUI.Label(statusRect, text, comboStyle);
+            Rect rect = new Rect(playerRect.x, playerRect.yMax + 5f, 160f, 22f);
+            DrawRect(rect, new Color(0.018f, 0.025f, 0.045f, 0.90f));
+            DrawBorder(rect, accent, 1f);
+            smallStyle.normal.textColor = accent;
+            GUI.Label(rect, text, smallStyle);
         }
 
         private void DrawAttackIndicators()
         {
+            playerAttack ??= playerHealth.GetComponent<BasicAttack>();
             if (playerAttack == null || matchFinished)
             {
                 return;
             }
 
-            float y = 40f;
+            float y = 34f;
             if (playerAttack.DisplayChainStep > 0)
             {
                 bool finisher = playerAttack.DisplayChainStep == 3;
-                Color chainAccent = finisher
-                    ? new Color(0.70f, 0.36f, 1f, 0.96f)
-                    : new Color(0.20f, 0.76f, 1f, 0.94f);
-                Rect chainRect = new Rect(Screen.width * 0.5f - 180f, y, 360f, 52f);
-
-                DrawRect(chainRect, new Color(0.018f, 0.025f, 0.055f, 0.92f));
-                DrawBorder(chainRect, chainAccent, finisher ? 3f : 2f);
-                comboStyle.normal.textColor = chainAccent;
-                GUI.Label(chainRect, playerAttack.ChainLabel, comboStyle);
-                y += 59f;
+                Rect rect = new Rect(Screen.width * 0.5f - 115f, y, 230f, 26f);
+                Color accent = finisher
+                    ? new Color(0.72f, 0.38f, 1f)
+                    : new Color(0.20f, 0.76f, 1f);
+                DrawRect(rect, new Color(0.018f, 0.025f, 0.055f, 0.88f));
+                DrawBorder(rect, accent, 2f);
+                centerStyle.normal.textColor = accent;
+                GUI.Label(rect, playerAttack.ChainLabel, centerStyle);
+                y += 30f;
             }
 
             if (playerAttack.DisplayHitComboCount > 0)
             {
-                Color hitAccent = new Color(1f, 0.80f, 0.22f, 0.98f);
-                Rect hitRect = new Rect(Screen.width * 0.5f - 135f, y, 270f, 44f);
-
-                DrawRect(hitRect, new Color(0.055f, 0.038f, 0.012f, 0.93f));
-                DrawBorder(hitRect, hitAccent, 2f);
-                comboStyle.normal.textColor = hitAccent;
-                GUI.Label(hitRect, playerAttack.HitComboLabel, comboStyle);
+                Rect rect = new Rect(Screen.width * 0.5f - 90f, y, 180f, 24f);
+                Color accent = new Color(1f, 0.80f, 0.22f);
+                DrawRect(rect, new Color(0.055f, 0.038f, 0.012f, 0.90f));
+                DrawBorder(rect, accent, 1f);
+                centerStyle.normal.textColor = accent;
+                GUI.Label(rect, playerAttack.HitComboLabel, centerStyle);
             }
         }
 
@@ -512,230 +523,103 @@ namespace JJKGame.Core
                 return;
             }
 
-            int telegraphCount = 0;
-            float greatestProgress = 0f;
+            int count = 0;
+            float progress = 0f;
             foreach (CurseBotController bot in enemyBots)
             {
                 if (bot != null && bot.IsAttackTelegraphing)
                 {
-                    telegraphCount += 1;
-                    greatestProgress = Mathf.Max(greatestProgress, bot.AttackWindupProgress);
+                    count += 1;
+                    progress = Mathf.Max(progress, bot.AttackWindupProgress);
                 }
             }
-
-            if (telegraphCount == 0)
+            if (count == 0)
             {
                 return;
             }
 
-            float width = Mathf.Min(430f, Screen.width - 48f);
-            Rect warningRect = new Rect(
-                (Screen.width - width) * 0.5f,
-                Screen.height * 0.34f,
-                width,
-                82f
-            );
-            Color accent = new Color(1f, 0.40f, 0.08f, 0.98f);
-
-            DrawRect(warningRect, new Color(0.10f, 0.025f, 0.008f, 0.92f));
-            DrawBorder(warningRect, accent, 3f);
+            float width = Mathf.Min(300f, Screen.width - 24f);
+            Rect rect = new Rect((Screen.width - width) * 0.5f, Screen.height * 0.31f, width, 54f);
+            Color accent = new Color(1f, 0.40f, 0.08f);
+            DrawRect(rect, new Color(0.10f, 0.025f, 0.008f, 0.90f));
+            DrawBorder(rect, accent, 2f);
             warningStyle.normal.textColor = accent;
-            string warningText = telegraphCount > 1
-                ? $"DODGE! × {telegraphCount}  [{CombatInputBindings.DodgeLabel}]"
-                : $"DODGE!  [{CombatInputBindings.DodgeLabel}]";
-            GUI.Label(
-                new Rect(warningRect.x, warningRect.y + 5f, warningRect.width, 43f),
-                warningText,
-                warningStyle
-            );
-
-            Rect windupBar = new Rect(
-                warningRect.x + 24f,
-                warningRect.y + 56f,
-                warningRect.width - 48f,
-                12f
-            );
-            DrawRect(windupBar, new Color(0.18f, 0.08f, 0.025f, 1f));
-            DrawRect(
-                new Rect(
-                    windupBar.x,
-                    windupBar.y,
-                    windupBar.width * greatestProgress,
-                    windupBar.height
-                ),
-                accent
-            );
-            DrawBorder(windupBar, new Color(1f, 1f, 1f, 0.22f), 1f);
+            GUI.Label(new Rect(rect.x, rect.y + 2f, rect.width, 31f), count > 1 ? $"DODGE! × {count}" : "DODGE!", warningStyle);
+            Rect bar = new Rect(rect.x + 18f, rect.y + 38f, rect.width - 36f, 8f);
+            DrawRect(bar, new Color(0.18f, 0.08f, 0.025f));
+            DrawRect(new Rect(bar.x, bar.y, bar.width * progress, bar.height), accent);
         }
 
-        private void DrawDomainPanel(float margin)
+        private void DrawDomainPanel()
         {
-            bool showTimingBar = gojoDomain != null && gojoDomain.IsReleaseTiming;
-            float domainWidth = Mathf.Min(980f, Screen.width - margin * 2f);
-            float domainHeight = showTimingBar ? 126f : 68f;
-            Rect domainRect = new Rect(
-                (Screen.width - domainWidth) * 0.5f,
-                Screen.height - domainHeight - margin,
-                domainWidth,
-                domainHeight
-            );
+            bool timing = gojoDomain != null && gojoDomain.IsReleaseTiming;
+            float width = Mathf.Min(680f, Screen.width - 24f);
+            float height = timing ? 76f : 36f;
+            Rect rect = new Rect((Screen.width - width) * 0.5f, Screen.height - height - 12f, width, height);
+            DrawRect(rect, new Color(0.018f, 0.026f, 0.060f, 0.88f));
+            DrawBorder(rect, new Color(0.24f, 0.55f, 1f, 0.92f), 2f);
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 4f, rect.width - 20f, 24f), gojoDomain != null ? gojoDomain.StatusText : "영역 시스템 연결 안 됨", centerStyle);
 
-            DrawRect(domainRect, new Color(0.025f, 0.035f, 0.075f, 0.88f));
-            DrawBorder(domainRect, new Color(0.24f, 0.55f, 1f, 0.9f), 2f);
-
-            string domainText = gojoDomain != null
-                ? gojoDomain.StatusText
-                : "영역 시스템 연결 안 됨";
-            GUI.Label(
-                new Rect(domainRect.x + 18f, domainRect.y + 8f, domainRect.width - 36f, 28f),
-                domainText,
-                domainStyle
-            );
-
-            if (showTimingBar)
+            if (timing)
             {
-                Rect timingRect = new Rect(
-                    domainRect.x + 30f,
-                    domainRect.y + 42f,
-                    domainRect.width - 60f,
-                    24f
-                );
-                DrawReleaseTimingBar(timingRect);
-
-                GUI.Label(
-                    new Rect(domainRect.x + 18f, domainRect.y + 69f, domainRect.width - 36f, 22f),
-                    $"흰색 선이 초록 구간에 있을 때 우클릭 해제 · {gojoDomain.ReleaseElapsed:0.00}초",
-                    hintStyle
-                );
-                GUI.Label(
-                    new Rect(domainRect.x + 18f, domainRect.y + 96f, domainRect.width - 36f, 20f),
-                    BuildControlHint(),
-                    hintStyle
-                );
+                Rect bar = new Rect(rect.x + 24f, rect.y + 34f, rect.width - 48f, 16f);
+                DrawReleaseTimingBar(bar);
+                GUI.Label(new Rect(rect.x + 10f, rect.y + 54f, rect.width - 20f, 17f), $"초록 구간에서 우클릭 해제 · {gojoDomain.ReleaseElapsed:0.00}s", smallStyle);
             }
             else
             {
-                GUI.Label(
-                    new Rect(domainRect.x + 18f, domainRect.y + 39f, domainRect.width - 36f, 20f),
-                    BuildControlHint(),
-                    hintStyle
-                );
+                smallStyle.normal.textColor = new Color(0.60f, 0.67f, 0.82f);
+                GUI.Label(new Rect(rect.x + 10f, rect.y + 20f, rect.width - 20f, 14f), "F1 · 조작 도움말", smallStyle);
             }
         }
 
-        private static string BuildControlHint()
+        private void DrawReleaseTimingBar(Rect rect)
         {
-            return
-                $"WASD 이동 · {CombatInputBindings.DodgeLabel} 회피 · 좌클릭 공격 · "
-                + $"{CombatInputBindings.TargetLockLabel} 타깃 · "
-                + $"{CombatInputBindings.Skill1Label}/{CombatInputBindings.Skill2Label} 술식 · "
-                + $"{CombatInputBindings.UltimateLabel} 상위기 · "
-                + $"{CombatInputBindings.DomainLabel} 영역 · "
-                + $"{CombatInputBindings.CancelCommandLabel} 취소";
+            DrawRect(rect, new Color(0.07f, 0.08f, 0.12f));
+            float start = rect.x + rect.width * gojoDomain.ReleaseWindowStartNormalized;
+            float end = rect.x + rect.width * gojoDomain.ReleaseWindowEndNormalized;
+            DrawRect(new Rect(start, rect.y + 1f, Mathf.Max(2f, end - start), rect.height - 2f), new Color(0.16f, 0.88f, 0.38f));
+            float cursor = rect.x + rect.width * gojoDomain.ReleaseProgressNormalized;
+            DrawRect(new Rect(cursor - 2f, rect.y - 2f, 4f, rect.height + 4f), Color.white);
         }
 
-        private void DrawReleaseTimingBar(Rect barRect)
+        private void DrawControlHelp()
         {
-            DrawRect(barRect, new Color(0.07f, 0.08f, 0.12f, 1f));
-
-            float successStart = barRect.x + barRect.width * gojoDomain.ReleaseWindowStartNormalized;
-            float successEnd = barRect.x + barRect.width * gojoDomain.ReleaseWindowEndNormalized;
-            Rect successRect = new Rect(
-                successStart,
-                barRect.y + 2f,
-                Mathf.Max(2f, successEnd - successStart),
-                barRect.height - 4f
-            );
-            DrawRect(successRect, new Color(0.16f, 0.88f, 0.38f, 0.95f));
-
-            float cursorX = barRect.x + barRect.width * gojoDomain.ReleaseProgressNormalized;
-            Rect cursorRect = new Rect(cursorX - 2f, barRect.y - 4f, 4f, barRect.height + 8f);
-            DrawRect(cursorRect, Color.white);
-            DrawBorder(barRect, new Color(1f, 1f, 1f, 0.28f), 1f);
-        }
-
-        private void DrawHealthPanel(
-            Rect panelRect,
-            string title,
-            Health health,
-            Color fillColor,
-            TextAnchor titleAlignment
-        )
-        {
-            DrawRect(panelRect, new Color(0.018f, 0.022f, 0.035f, 0.9f));
-            DrawBorder(panelRect, new Color(fillColor.r, fillColor.g, fillColor.b, 0.9f), 2f);
-
-            headerStyle.alignment = titleAlignment;
-            GUI.Label(
-                new Rect(panelRect.x + 14f, panelRect.y + 5f, panelRect.width - 28f, 24f),
-                title,
-                headerStyle
-            );
-
-            Rect barBackground = new Rect(
-                panelRect.x + 14f,
-                panelRect.y + 34f,
-                panelRect.width - 28f,
-                24f
-            );
-            DrawRect(barBackground, new Color(0.09f, 0.10f, 0.14f, 1f));
-
-            float ratio = health.MaxHealth > 0f
-                ? Mathf.Clamp01(health.CurrentHealth / health.MaxHealth)
-                : 0f;
-            Rect barFill = new Rect(
-                barBackground.x + 2f,
-                barBackground.y + 2f,
-                Mathf.Max(0f, (barBackground.width - 4f) * ratio),
-                barBackground.height - 4f
-            );
-            DrawRect(barFill, fillColor);
-            DrawBorder(barBackground, new Color(1f, 1f, 1f, 0.18f), 1f);
-
-            GUI.Label(
-                barBackground,
-                $"{health.CurrentHealth:0} / {health.MaxHealth:0}",
-                healthValueStyle
-            );
+            float width = 330f;
+            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 178f, width, 118f);
+            DrawRect(rect, new Color(0.012f, 0.018f, 0.032f, 0.95f));
+            DrawBorder(rect, new Color(0.24f, 0.55f, 1f), 2f);
+            string text =
+                "F1 · 닫기\n"
+                + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
+                + "LMB 기본 공격 · Q 창 · E 혁 · R 허식 자\n"
+                + "V 영역 준비 · X 영역 입력 취소\n"
+                + "영역: RMB 유지 → LMB → 초록 구간 RMB 해제";
+            GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, rect.height - 16f), text, smallStyle);
         }
 
         private void DrawResultOverlay()
         {
-            DrawRect(
-                new Rect(0f, 0f, Screen.width, Screen.height),
-                new Color(0f, 0f, 0f, 0.64f)
-            );
-
+            DrawRect(new Rect(0f, 0f, Screen.width, Screen.height), new Color(0f, 0f, 0f, 0.64f));
             bool victory = resultText == "VICTORY";
-            Color accent = victory
-                ? new Color(0.20f, 0.78f, 1f)
-                : new Color(0.95f, 0.18f, 0.22f);
-
-            Rect resultPanel = new Rect(
-                Screen.width * 0.5f - 250f,
-                Screen.height * 0.5f - 105f,
-                500f,
-                210f
-            );
-            DrawRect(resultPanel, new Color(0.018f, 0.022f, 0.04f, 0.96f));
-            DrawBorder(resultPanel, accent, 4f);
-
+            Color accent = victory ? new Color(0.20f, 0.78f, 1f) : new Color(0.95f, 0.18f, 0.22f);
+            Rect panel = new Rect(Screen.width * 0.5f - 210f, Screen.height * 0.5f - 82f, 420f, 164f);
+            DrawRect(panel, new Color(0.018f, 0.022f, 0.04f, 0.97f));
+            DrawBorder(panel, accent, 3f);
             resultStyle.normal.textColor = accent;
-            GUI.Label(
-                new Rect(resultPanel.x + 20f, resultPanel.y + 28f, resultPanel.width - 40f, 82f),
-                resultText,
-                resultStyle
-            );
-            GUI.Label(
-                new Rect(resultPanel.x + 20f, resultPanel.y + 112f, resultPanel.width - 40f, 34f),
-                victory ? "모든 주령을 퇴치했습니다" : "전투에서 패배했습니다",
-                domainStyle
-            );
-            GUI.Label(
-                new Rect(resultPanel.x + 20f, resultPanel.y + 158f, resultPanel.width - 40f, 28f),
-                "ENTER 키로 다시 시작",
-                resultHintStyle
-            );
+            GUI.Label(new Rect(panel.x, panel.y + 18f, panel.width, 65f), resultText, resultStyle);
+            centerStyle.normal.textColor = Color.white;
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 88f, panel.width - 24f, 24f), victory ? "모든 주령을 퇴치했습니다" : "전투에서 패배했습니다", centerStyle);
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 124f, panel.width - 24f, 24f), "ENTER · 다시 시작", centerStyle);
+        }
+
+        private void DrawValueBar(Rect rect, float value, float max, Color fill, string text)
+        {
+            DrawRect(rect, new Color(0.075f, 0.082f, 0.115f));
+            float ratio = max > 0f ? Mathf.Clamp01(value / max) : 0f;
+            DrawRect(new Rect(rect.x + 1f, rect.y + 1f, (rect.width - 2f) * ratio, rect.height - 2f), fill);
+            DrawBorder(rect, new Color(1f, 1f, 1f, 0.16f), 1f);
+            GUI.Label(rect, text, valueStyle);
         }
 
         private void EnsureStyles()
@@ -746,75 +630,60 @@ namespace JJKGame.Core
             }
 
             styledForHeight = Screen.height;
-            int baseSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 45f, 15f, 22f));
-
+            int baseSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 62f, 12f, 17f));
             headerStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = baseSize,
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.UpperLeft,
+                alignment = TextAnchor.MiddleLeft,
             };
             headerStyle.normal.textColor = Color.white;
 
-            healthValueStyle = new GUIStyle(GUI.skin.label)
+            valueStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.Max(14, baseSize - 1),
+                fontSize = Mathf.Max(10, baseSize - 2),
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
-            healthValueStyle.normal.textColor = Color.white;
+            valueStyle.normal.textColor = Color.white;
 
-            domainStyle = new GUIStyle(GUI.skin.label)
+            smallStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.Max(10, baseSize - 2),
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = true,
+            };
+            smallStyle.normal.textColor = new Color(0.82f, 0.86f, 0.95f);
+
+            centerStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = baseSize,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
-            domainStyle.normal.textColor = Color.white;
-
-            hintStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.Max(12, baseSize - 4),
-                alignment = TextAnchor.MiddleCenter,
-            };
-            hintStyle.normal.textColor = new Color(0.75f, 0.80f, 0.92f);
-
-            comboStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.Max(16, baseSize),
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-            };
+            centerStyle.normal.textColor = Color.white;
 
             warningStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 24f, 30f, 48f)),
+                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 30f, 24f, 36f)),
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
 
             resultStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 16f, 42f, 72f)),
+                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 18f, 38f, 60f)),
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
-
-            resultHintStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.Max(14, baseSize - 1),
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-            };
-            resultHintStyle.normal.textColor = new Color(0.84f, 0.86f, 0.94f);
         }
 
         private static void DrawRect(Rect rect, Color color)
         {
-            Color previousColor = GUI.color;
+            Color previous = GUI.color;
             GUI.color = color;
             GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = previousColor;
+            GUI.color = previous;
         }
 
         private static void DrawBorder(Rect rect, Color color, float thickness)
