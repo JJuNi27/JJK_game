@@ -9,7 +9,7 @@
 - `GAME_ORIGINAL`: 조작감, 밸런스, UI를 위해 이 프로젝트에서 추가한 규칙
 - `INTERPRETATION_PENDING`: 원작 문구의 해석이 갈리거나 추가 확인이 필요한 규칙
 
-기술 조건은 `OFFICIAL_CONFIRMED`를 먼저 코드 구조에 반영합니다. 공식 게임은 모션·자원·VFX·사운드의 번역 참고자료로 활용하지만 원작과 충돌하면 원작을 우선합니다. 세부 참고 정책은 `docs/ADAPTATION_REFERENCES.md`를 따릅니다.
+기술 조건은 `OFFICIAL_CONFIRMED`를 먼저 코드 구조에 반영합니다. 공식 게임은 모션·자원·VFX·사운드의 번역 참고자료로 활용하지만 원작과 충돌하면 원작을 우선합니다. 세부 참고 정책은 `docs/ADAPTATION_REFERENCES.md`와 `docs/PHANTOM_PARADE_REFERENCE.md`를 따릅니다.
 
 ## 공통 주력 자원
 
@@ -25,6 +25,43 @@
 - `SukunaVastReserve`: 스쿠나용 최대 주력 300 대용량형 예정
 - `YutaLargeReserve`: 유타용 최대 주력 150 대용량형 예정
 - `Standard`: 일반 캐릭터용 최대 주력 100
+
+## 공통 피해와 방어 판정
+
+피해량과 방어 우회 이유를 분리합니다. 단순히 피해량이 높다는 이유로 무하한이나 다른 방어를 통과하지 않습니다.
+
+현재 `DamageDeliveryType`:
+
+```text
+Unspecified
+PhysicalStrike
+CursedTechnique
+DomainSureHit
+Environmental
+```
+
+현재 `DamageTraits`:
+
+```text
+DomainAmplification
+TechniqueNullification
+IgnoresInfinity
+Unblockable
+```
+
+`OFFICIAL_CONFIRMED`
+
+- 완성된 영역의 필중 효과는 일반적인 무하한 방어와 다른 판정으로 상대에게 도달할 수 있습니다.
+- 영역전연은 접촉하는 술식을 중화하는 방식으로 무하한에 대응할 수 있습니다.
+- 술식 자체를 무효화하는 특수 수단도 무하한 우회 사유로 분리합니다.
+
+`GAME_ORIGINAL`
+
+- 코드에서는 `DamageContext`가 피해량, 공격자, 전달 방식과 우회 속성을 함께 전달합니다.
+- `Health`는 피해 적용 전에 `IDamageGuard`들을 검사합니다.
+- 영역 필중, 영역전연, 술식 무효화와 명시적인 특수 우회만 무하한을 통과합니다.
+- 낙사 같은 환경 사망은 직접 사망 처리하며 일반 전투 방어와 분리합니다.
+- 기존 코드의 `TakeDamage(float)`는 단계적 마이그레이션을 위한 호환 경로이며 신규 공격은 `DamageContext`를 우선합니다.
 
 ## 같은 인물의 시기별 버전
 
@@ -70,6 +107,25 @@ ShinjukuShowdown
 - 고죠 버전들은 `SixEyesEfficiency` 프로필을 사용합니다.
 - Q/E/R/V 내부 기본 소비는 유지하지만 현재 실제 전투 소비는 각각 1입니다.
 - 고죠의 제약은 주력 고갈보다 쿨타임, 시전 위험과 술식 번아웃으로 표현합니다.
+
+### 무하한 자동 방어
+
+`OFFICIAL_CONFIRMED`
+
+- 현대 고죠는 무하한을 자동으로 운용해 위협을 선별하고 자신에게 도달하기 전에 정지시킵니다.
+- 일반적인 물리 타격이나 술식은 강하다는 이유만으로 무하한을 통과하지 않습니다.
+- 영역의 필중 효과, 영역전연, 술식 무효화 수단처럼 원리상 우회가 가능한 공격은 별도 판정입니다.
+
+`ADAPTATION_REFERENCE`
+
+- 팬텀 퍼레이드의 고죠 버전들에서 무하한은 공격 무효화·공격 무효화 해제 같은 명시적인 상태 규칙으로 표현됩니다.
+
+`GAME_ORIGINAL`
+
+- 현재 `ModernTeacher`와 미래 `ShinjukuShowdown`에 자동 무하한 방어를 적용합니다.
+- 회옥·옥절 버전의 자동화 수준은 각 버전 구현 때 다시 확정합니다.
+- 일반 공격이 막히면 체력이 줄지 않고 `INFINITY · BLOCKED`와 청색 파문이 표시됩니다.
+- 명시적인 우회 공격은 `INFINITY BYPASSED` 사유를 표시하고 정상 피해를 적용합니다.
 
 ### 술식순전 「창」
 
