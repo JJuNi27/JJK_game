@@ -53,7 +53,7 @@ namespace JJKGame.Player
 
         private void Awake()
         {
-            EnsureTechniqueController();
+            EnsureTechniqueControllers();
             EnsureRuntimeVisual();
             SetDomainVisual(false);
             ResetCommand();
@@ -61,12 +61,12 @@ namespace JJKGame.Player
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.V))
+            if (Input.GetKeyDown(CombatInputBindings.Domain))
             {
                 RequestDomain();
             }
 
-            if (Input.GetKeyDown(KeyCode.R))
+            if (Input.GetKeyDown(CombatInputBindings.CancelCommand))
             {
                 ResetCommand();
             }
@@ -94,7 +94,9 @@ namespace JJKGame.Player
             stateStartedAt = Time.time;
             rightPressedAt = 0f;
             leftClickedAt = 0f;
-            StatusText = "V 키로 영역전개를 준비하세요";
+            StatusText =
+                $"{CombatInputBindings.DomainLabel} 키로 영역전개 준비 · "
+                + $"{CombatInputBindings.CancelCommandLabel} 입력 취소";
             SetDomainVisual(false);
         }
 
@@ -223,11 +225,17 @@ namespace JJKGame.Player
             StatusText = message;
         }
 
-        private void EnsureTechniqueController()
+        private void EnsureTechniqueControllers()
         {
-            if (GetComponent<GojoTechniqueController>() == null)
+            GojoTechniqueController technique = GetComponent<GojoTechniqueController>();
+            if (technique == null)
             {
-                gameObject.AddComponent<GojoTechniqueController>();
+                technique = gameObject.AddComponent<GojoTechniqueController>();
+            }
+
+            if (GetComponent<GojoTechniqueChainController>() == null)
+            {
+                gameObject.AddComponent<GojoTechniqueChainController>();
             }
         }
 
