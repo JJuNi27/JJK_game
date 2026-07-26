@@ -10,6 +10,7 @@ namespace JJKGame.Core
         [SerializeField, Min(0.1f)] private float burnoutDuration = 5f;
 
         private GojoDomainController domain;
+        private GojoVariantController variant;
         private GojoDomainController.DomainState previousDomainState;
         private float burnoutEndsAt;
         private GUIStyle burnoutStyle;
@@ -35,6 +36,7 @@ namespace JJKGame.Core
         private void Awake()
         {
             domain = GetComponent<GojoDomainController>();
+            variant = GojoVariantController.GetOrCreate(gameObject);
             previousDomainState = domain != null
                 ? domain.State
                 : GojoDomainController.DomainState.Normal;
@@ -65,10 +67,16 @@ namespace JJKGame.Core
             burnoutEndsAt = Mathf.Max(burnoutEndsAt, Time.time + burnoutDuration);
         }
 
-        public void RestoreTechniqueEarly()
+        public bool TryRestoreTechniqueEarly()
         {
-            // Future hook for reverse cursed technique restoration.
+            variant ??= GojoVariantController.GetOrCreate(gameObject);
+            if (variant == null || !variant.CanManuallyRestoreTechniqueBurnout)
+            {
+                return false;
+            }
+
             burnoutEndsAt = 0f;
+            return true;
         }
 
         private void OnGUI()
@@ -79,20 +87,15 @@ namespace JJKGame.Core
             }
 
             EnsureStyle();
-            float width = Mathf.Min(410f, Screen.width - 48f);
-            Rect panel = new Rect(24f, 327f, width, 42f);
-            DrawRect(panel, new Color(0.12f, 0.035f, 0.02f, 0.94f));
+            float width = Mathf.Min(330f, Screen.width - 24f);
+            Rect panel = new Rect(12f, 286f, width, 31f);
+            DrawRect(panel, new Color(0.12f, 0.035f, 0.02f, 0.92f));
             DrawRect(
-                new Rect(
-                    panel.x + 2f,
-                    panel.y + 2f,
-                    (panel.width - 4f) * NormalizedRemaining,
-                    panel.height - 4f
-                ),
-                new Color(0.80f, 0.18f, 0.06f, 0.62f)
+                new Rect(panel.x + 2f, panel.y + 2f, (panel.width - 4f) * NormalizedRemaining, panel.height - 4f),
+                new Color(0.80f, 0.18f, 0.06f, 0.60f)
             );
-            DrawBorder(panel, new Color(1f, 0.40f, 0.12f, 0.98f), 2f);
-            GUI.Label(panel, $"술식 번아웃 · Q/E/R/V 봉인  {Remaining:0.0}s", burnoutStyle);
+            DrawBorder(panel, new Color(1f, 0.40f, 0.12f), 1f);
+            GUI.Label(panel, $"술식 번아웃 · Q/E/R/V 봉인 {Remaining:0.0}s", burnoutStyle);
         }
 
         private void EnsureStyle()
@@ -105,7 +108,7 @@ namespace JJKGame.Core
             styledForHeight = Screen.height;
             burnoutStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 52f, 14f, 19f)),
+                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 68f, 11f, 15f)),
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
