@@ -18,6 +18,8 @@ namespace JJKGame.Core
         private float nextRegenerationAt;
         private float noticeUntil;
         private string noticeText = string.Empty;
+        private GUIStyle energyStyle;
+        private int styledForHeight = -1;
 
         public event Action<CursedEnergyController, float> EnergyChanged;
 
@@ -113,6 +115,69 @@ namespace JJKGame.Core
 
             CurrentEnergy = clamped;
             EnergyChanged?.Invoke(this, CurrentEnergy);
+        }
+
+        private void OnGUI()
+        {
+            if (health == null || health.IsDead)
+            {
+                return;
+            }
+
+            EnsureStyle();
+            const float margin = 24f;
+            float availableHalfWidth = (Screen.width - margin * 3f) * 0.5f;
+            float panelWidth = Mathf.Clamp(availableHalfWidth, 250f, 440f);
+            Rect bar = new Rect(margin + 14f, margin + 63f, panelWidth - 28f, 15f);
+            bool showingNotice = !string.IsNullOrEmpty(NoticeText);
+            Color accent = showingNotice
+                ? new Color(1f, 0.24f, 0.18f, 0.98f)
+                : new Color(0.34f, 0.34f, 1f, 0.98f);
+
+            DrawRect(bar, new Color(0.055f, 0.045f, 0.13f, 1f));
+            DrawRect(
+                new Rect(bar.x + 1f, bar.y + 1f, (bar.width - 2f) * Normalized, bar.height - 2f),
+                new Color(0.30f, 0.18f, 0.92f, 0.96f)
+            );
+            DrawBorder(bar, accent, 1f);
+
+            energyStyle.normal.textColor = Color.white;
+            string text = showingNotice
+                ? NoticeText
+                : $"CURSED ENERGY  {CurrentEnergy:0} / {MaxEnergy:0}  ·  회복 {regenerationPerSecond:0}/s";
+            GUI.Label(bar, text, energyStyle);
+        }
+
+        private void EnsureStyle()
+        {
+            if (styledForHeight == Screen.height)
+            {
+                return;
+            }
+
+            styledForHeight = Screen.height;
+            energyStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 78f, 10f, 14f)),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+            };
+        }
+
+        private static void DrawRect(Rect rect, Color color)
+        {
+            Color previous = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(rect, Texture2D.whiteTexture);
+            GUI.color = previous;
+        }
+
+        private static void DrawBorder(Rect rect, Color color, float thickness)
+        {
+            DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), color);
+            DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
+            DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
+            DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
         }
     }
 }
