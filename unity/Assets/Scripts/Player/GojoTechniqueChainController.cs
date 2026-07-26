@@ -36,6 +36,7 @@ namespace JJKGame.Player
         private GojoTechniqueController techniqueController;
         private TargetLockController targetLock;
         private CursedEnergyController cursedEnergy;
+        private TechniqueBurnoutController burnout;
         private bool blueWasReady;
         private bool redWasReady;
         private float bluePreparedUntil;
@@ -78,6 +79,8 @@ namespace JJKGame.Player
             techniqueController = GetComponent<GojoTechniqueController>();
             targetLock = GetComponent<TargetLockController>();
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
+            burnout = TechniqueBurnoutController.GetOrCreate(gameObject);
             blueWasReady = techniqueController != null && techniqueController.BlueReady;
             redWasReady = techniqueController != null && techniqueController.RedReady;
             BuildPurpleVisual();
@@ -88,6 +91,8 @@ namespace JJKGame.Player
             techniqueController ??= GetComponent<GojoTechniqueController>();
             targetLock ??= GetComponent<TargetLockController>();
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
+            burnout ??= TechniqueBurnoutController.GetOrCreate(gameObject);
 
             if (techniqueController != null)
             {
@@ -124,6 +129,7 @@ namespace JJKGame.Player
             }
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (PurpleReady)
             {
                 ActivatePurple();
@@ -202,6 +208,7 @@ namespace JJKGame.Player
         private void ActivatePurple()
         {
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (
                 cursedEnergy != null
                 && !cursedEnergy.TrySpend(purpleEnergyCost, "허식 자")
@@ -538,6 +545,14 @@ namespace JJKGame.Player
         private string BuildPurpleStatusText()
         {
             string skillName = $"{CombatInputBindings.UltimateLabel} · 허식 「자」";
+            float actualCost = cursedEnergy != null
+                ? cursedEnergy.ResolveCost(purpleEnergyCost)
+                : purpleEnergyCost;
+
+            if (burnout != null && burnout.IsBurnedOut)
+            {
+                return $"{skillName}  술식 번아웃 {burnout.Remaining:0.0}s";
+            }
 
             if (techniqueController == null || !techniqueController.CanUseUltimate)
             {
@@ -556,10 +571,10 @@ namespace JJKGame.Player
 
             if (cursedEnergy != null && !cursedEnergy.CanSpend(purpleEnergyCost))
             {
-                return $"{skillName}  주력 부족 · 필요 {purpleEnergyCost:0}";
+                return $"{skillName}  주력 부족 · 필요 {actualCost:0}";
             }
 
-            return $"{skillName}  READY · 주력 {purpleEnergyCost:0}";
+            return $"{skillName}  READY · 주력 {actualCost:0}";
         }
 
         private void DrawCenterNotice(string text, Color accent)
