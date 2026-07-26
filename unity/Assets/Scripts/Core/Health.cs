@@ -55,7 +55,7 @@ namespace JJKGame.Core
             MonoBehaviour[] behaviours = GetComponents<MonoBehaviour>();
             foreach (MonoBehaviour behaviour in behaviours)
             {
-                if (behaviour is not IDamageGuard guard)
+                if (!(behaviour is IDamageGuard guard))
                 {
                     continue;
                 }
