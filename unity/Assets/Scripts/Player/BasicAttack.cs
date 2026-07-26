@@ -32,6 +32,7 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float thirdHitStun = 0.38f;
 
         private Health ownHealth;
+        private TargetLockController targetLock;
         private float nextAttackAt;
         private float chainExpiresAt;
         private float chainDisplayUntil;
@@ -64,6 +65,7 @@ namespace JJKGame.Player
         private void Awake()
         {
             ownHealth = GetComponent<Health>();
+            targetLock = GetComponent<TargetLockController>();
 
             if (attackOrigin == null)
             {
@@ -96,6 +98,11 @@ namespace JJKGame.Player
             if (domainController != null && domainController.CapturesMouseInput)
             {
                 return;
+            }
+
+            if (targetLock != null)
+            {
+                targetLock.FaceTargetInstant();
             }
 
             PerformAttackChainStep(nextChainIndex);
