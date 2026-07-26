@@ -28,6 +28,8 @@ namespace JJKGame.Player
         [SerializeField, Min(0.1f)] private float domainRadius = 30f;
         [SerializeField] private GameObject domainVisualRoot;
 
+        private GojoTechniqueController techniqueController;
+
         public DomainState State { get; private set; } = DomainState.Normal;
         public string StatusText { get; private set; } = "V 키로 영역전개를 준비하세요";
         public bool CapturesMouseInput =>
@@ -54,6 +56,7 @@ namespace JJKGame.Player
         private void Awake()
         {
             EnsureTechniqueControllers();
+            techniqueController = GetComponent<GojoTechniqueController>();
             EnsureRuntimeVisual();
             SetDomainVisual(false);
             ResetCommand();
@@ -79,6 +82,17 @@ namespace JJKGame.Player
         {
             if (State != DomainState.Normal)
             {
+                return;
+            }
+
+            if (techniqueController == null)
+            {
+                techniqueController = GetComponent<GojoTechniqueController>();
+            }
+
+            if (techniqueController != null && techniqueController.IsCasting)
+            {
+                StatusText = "술식 시전 중에는 영역전개 입력을 시작할 수 없습니다";
                 return;
             }
 
