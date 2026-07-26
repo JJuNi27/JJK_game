@@ -121,30 +121,10 @@ namespace JJKGame.Player
 
         private void PerformAttackChainStep(int chainIndex)
         {
-            float damage = GetChainValue(
-                chainIndex,
-                firstHitDamage,
-                secondHitDamage,
-                thirdHitDamage
-            );
-            float cooldown = GetChainValue(
-                chainIndex,
-                firstHitCooldown,
-                secondHitCooldown,
-                thirdHitCooldown
-            );
-            float knockback = GetChainValue(
-                chainIndex,
-                firstHitKnockback,
-                secondHitKnockback,
-                thirdHitKnockback
-            );
-            float hitStun = GetChainValue(
-                chainIndex,
-                firstHitStun,
-                secondHitStun,
-                thirdHitStun
-            );
+            float damage = GetChainValue(chainIndex, firstHitDamage, secondHitDamage, thirdHitDamage);
+            float cooldown = GetChainValue(chainIndex, firstHitCooldown, secondHitCooldown, thirdHitCooldown);
+            float knockback = GetChainValue(chainIndex, firstHitKnockback, secondHitKnockback, thirdHitKnockback);
+            float hitStun = GetChainValue(chainIndex, firstHitStun, secondHitStun, thirdHitStun);
 
             nextAttackAt = Time.time + cooldown;
             lastPerformedStep = chainIndex + 1;
@@ -194,7 +174,15 @@ namespace JJKGame.Player
                     continue;
                 }
 
-                if (!targetHealth.TakeDamage(damage))
+                DamageContext context = new DamageContext(
+                    damage,
+                    gameObject,
+                    DamageDeliveryType.PhysicalStrike,
+                    DamageTraits.None,
+                    $"BASIC ATTACK {lastPerformedStep}",
+                    targetHealth.transform.position + Vector3.up * 0.8f
+                );
+                if (targetHealth.ReceiveDamage(context) != DamageResolution.Applied)
                 {
                     continue;
                 }
@@ -217,11 +205,7 @@ namespace JJKGame.Player
             hitComboExpiresAt = Time.time + hitComboResetDelay;
         }
 
-        private void ApplyHitReaction(
-            Health targetHealth,
-            float knockbackSpeed,
-            float hitStunDuration
-        )
+        private void ApplyHitReaction(Health targetHealth, float knockbackSpeed, float hitStunDuration)
         {
             Vector3 direction = targetHealth.transform.position - transform.position;
             direction.y = 0f;
@@ -254,12 +238,7 @@ namespace JJKGame.Player
             hitComboExpiresAt = 0f;
         }
 
-        private static float GetChainValue(
-            int chainIndex,
-            float first,
-            float second,
-            float third
-        )
+        private static float GetChainValue(int chainIndex, float first, float second, float third)
         {
             return chainIndex switch
             {
