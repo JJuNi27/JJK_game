@@ -50,7 +50,11 @@ namespace JJKGame.Player
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 moveDirection = BuildCameraRelativeDirection(rawInput);
 
-            if (!IsDodging && Input.GetKeyDown(KeyCode.Space) && DodgeReady)
+            if (
+                !IsDodging
+                && Input.GetKeyDown(CombatInputBindings.Dodge)
+                && DodgeReady
+            )
             {
                 StartDodge(moveDirection);
             }
