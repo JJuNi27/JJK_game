@@ -32,6 +32,7 @@ namespace JJKGame.Player
         private GojoTechniqueController techniqueController;
         private CursedEnergyController cursedEnergy;
         private CombatActionGate actionGate;
+        private TechniqueBurnoutController burnout;
 
         public DomainState State { get; private set; } = DomainState.Normal;
         public string StatusText { get; private set; } = "V 키로 영역전개를 준비하세요";
@@ -51,7 +52,9 @@ namespace JJKGame.Player
             Mathf.Clamp01((targetReleaseTime - releaseTolerance) / ReleaseTimelineDuration);
         public float ReleaseWindowEndNormalized =>
             Mathf.Clamp01((targetReleaseTime + releaseTolerance) / ReleaseTimelineDuration);
-        public float DomainEnergyCost => domainEnergyCost;
+        public float DomainEnergyCost => cursedEnergy != null
+            ? cursedEnergy.ResolveCost(domainEnergyCost)
+            : domainEnergyCost;
 
         private float stateStartedAt;
         private float rightPressedAt;
@@ -62,6 +65,8 @@ namespace JJKGame.Player
             EnsureTechniqueControllers();
             techniqueController = GetComponent<GojoTechniqueController>();
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
+            burnout = TechniqueBurnoutController.GetOrCreate(gameObject);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
             EnsureRuntimeVisual();
             SetDomainVisual(false);
@@ -94,15 +99,18 @@ namespace JJKGame.Player
             actionGate ??= CombatActionGate.GetOrCreate(gameObject);
             if (actionGate != null && !actionGate.CanStartDomain)
             {
-                StatusText = "현재 행동 중에는 영역전개 입력을 시작할 수 없습니다";
+                StatusText = burnout != null && burnout.IsBurnedOut
+                    ? $"술식 번아웃 중 · 영역전개 봉인 {burnout.Remaining:0.0}초"
+                    : "현재 행동 중에는 영역전개 입력을 시작할 수 없습니다";
                 return;
             }
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (cursedEnergy != null && !cursedEnergy.CanSpend(domainEnergyCost))
             {
                 cursedEnergy.NotifyInsufficient("무량공처", domainEnergyCost);
-                StatusText = $"주력 부족: 무량공처에는 {domainEnergyCost:0} 필요";
+                StatusText = $"주력 부족: 무량공처에는 {DomainEnergyCost:0} 필요";
                 return;
             }
 
@@ -119,7 +127,7 @@ namespace JJKGame.Player
             rightPressedAt = 0f;
             leftClickedAt = 0f;
             StatusText =
-                $"{CombatInputBindings.DomainLabel} 키로 영역전개 준비 · 주력 {domainEnergyCost:0} · "
+                $"{CombatInputBindings.DomainLabel} 키로 영역전개 준비 · 주력 {DomainEnergyCost:0} · "
                 + $"{CombatInputBindings.CancelCommandLabel} 입력 취소";
             SetDomainVisual(false);
         }
@@ -219,6 +227,7 @@ namespace JJKGame.Player
         private void ActivateDomain()
         {
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (
                 cursedEnergy != null
                 && !cursedEnergy.TrySpend(domainEnergyCost, "무량공처")
@@ -261,9 +270,6 @@ namespace JJKGame.Player
 
         private void EnsureTechniqueControllers()
         {
-            CursedEnergyController.GetOrCreate(gameObject);
-            CombatActionGate.GetOrCreate(gameObject);
-
             if (GetComponent<TargetLockController>() == null)
             {
                 gameObject.AddComponent<TargetLockController>();
@@ -279,6 +285,8 @@ namespace JJKGame.Player
             {
                 gameObject.AddComponent<GojoTechniqueChainController>();
             }
+
+            TechniqueBurnoutController.GetOrCreate(gameObject);
         }
 
         private void EnsureRuntimeVisual()
