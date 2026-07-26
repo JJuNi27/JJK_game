@@ -100,6 +100,11 @@ namespace JJKGame.Player
                 return;
             }
 
+            if (targetLock == null)
+            {
+                targetLock = GetComponent<TargetLockController>();
+            }
+
             if (targetLock != null)
             {
                 targetLock.FaceTargetInstant();
