@@ -3,6 +3,12 @@ using UnityEngine;
 
 namespace JJKGame.Enemy
 {
+    public enum TrainingAttackMode
+    {
+        NormalStrike,
+        DomainAmplification,
+    }
+
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(Health))]
     public sealed class CurseBotController : MonoBehaviour, IDomainStunnable, IHitReactable
@@ -24,13 +30,15 @@ namespace JJKGame.Enemy
         [SerializeField, Min(0.1f)] private float rotationSpeed = 10f;
         [SerializeField] private float gravity = -24f;
 
-        [Header("Attack")]
+        [Header("Training Attack")]
+        [SerializeField] private TrainingAttackMode trainingAttackMode = TrainingAttackMode.NormalStrike;
         [SerializeField, Min(0.1f)] private float attackRange = 1.7f;
         [SerializeField, Min(0.1f)] private float attackDamage = 12f;
         [SerializeField, Min(0.05f)] private float attackCooldown = 0.9f;
         [SerializeField, Min(0.05f)] private float attackWindupDuration = 0.55f;
         [SerializeField, Min(0f)] private float attackReachBuffer = 0.35f;
-        [SerializeField] private Color attackTelegraphColor = new Color(1f, 0.45f, 0.08f);
+        [SerializeField] private Color normalTelegraphColor = new Color(1f, 0.45f, 0.08f);
+        [SerializeField] private Color domainAmplificationTelegraphColor = new Color(0.74f, 0.18f, 1f);
 
         [Header("Hit Reaction")]
         [SerializeField, Min(0.1f)] private float knockbackDamping = 18f;
@@ -52,6 +60,13 @@ namespace JJKGame.Enemy
         private float verticalVelocity;
         private Vector3 knockbackVelocity;
 
+        public TrainingAttackMode AttackMode => trainingAttackMode;
+        public string AttackModeLabel => trainingAttackMode == TrainingAttackMode.DomainAmplification
+            ? "DOMAIN AMPLIFICATION"
+            : "NORMAL STRIKE";
+        public Color AttackWarningColor => trainingAttackMode == TrainingAttackMode.DomainAmplification
+            ? domainAmplificationTelegraphColor
+            : normalTelegraphColor;
         public bool IsAttackTelegraphing => state == BotState.AttackWindup;
         public float AttackWindupProgress => IsAttackTelegraphing
             ? Mathf.Clamp01(
@@ -84,6 +99,14 @@ namespace JJKGame.Enemy
                     target = player.transform;
                 }
             }
+
+            // Prototype encounter convention: the runtime clone named CurseBot_B
+            // tests an explicit Infinity bypass. Other bots remain normal strikes.
+            ConfigureTrainingAttackMode(
+                name.Contains("_B")
+                    ? TrainingAttackMode.DomainAmplification
+                    : TrainingAttackMode.NormalStrike
+            );
         }
 
         private void OnDestroy()
@@ -160,6 +183,11 @@ namespace JJKGame.Enemy
                 TryBeginAttack(targetHealth);
                 ApplyGravityOnly();
             }
+        }
+
+        public void ConfigureTrainingAttackMode(TrainingAttackMode mode)
+        {
+            trainingAttackMode = mode;
         }
 
         public void ApplyDomainStun(float duration)
@@ -251,7 +279,18 @@ namespace JJKGame.Enemy
                 && distance <= attackRange + attackReachBuffer
             )
             {
-                targetHealth.TakeDamage(attackDamage);
+                DamageTraits traits = trainingAttackMode == TrainingAttackMode.DomainAmplification
+                    ? DamageTraits.DomainAmplification
+                    : DamageTraits.None;
+                DamageContext damage = new DamageContext(
+                    attackDamage,
+                    gameObject,
+                    DamageDeliveryType.PhysicalStrike,
+                    traits,
+                    AttackModeLabel,
+                    target.position + Vector3.up * 0.8f
+                );
+                targetHealth.ReceiveDamage(damage);
             }
 
             nextAttackAt = Time.time + attackCooldown;
@@ -311,7 +350,7 @@ namespace JJKGame.Enemy
             else if (IsAttackTelegraphing)
             {
                 float pulse = 0.55f + Mathf.Sin(Time.time * 30f) * 0.2f;
-                color = Color.Lerp(baseColor, attackTelegraphColor, pulse);
+                color = Color.Lerp(baseColor, AttackWarningColor, pulse);
             }
 
             WriteMaterialColor(bodyMaterial, color);
