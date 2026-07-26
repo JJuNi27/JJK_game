@@ -8,7 +8,7 @@ namespace JJKGame.Player
     [RequireComponent(typeof(GojoTechniqueController))]
     public sealed class GojoTechniqueChainController : MonoBehaviour
     {
-        [Header("Blue To Red Chain")]
+        [Header("Blue To Red Hit Chain")]
         [SerializeField, Min(0.1f)] private float blueMarkDuration = 2.2f;
         [SerializeField, Min(0f)] private float chainBonusDamage = 12f;
         [SerializeField, Min(0f)] private float empoweredPushSpeed = 28f;
@@ -16,7 +16,8 @@ namespace JJKGame.Player
         [SerializeField, Min(0.1f)] private float chainNoticeDuration = 1.15f;
 
         [Header("Hollow Purple")]
-        [SerializeField, Min(0.1f)] private float purpleChargeDuration = 8f;
+        [Tooltip("GAME_ORIGINAL: Blue and Red uses stay prepared for this many seconds.")]
+        [SerializeField, Min(0.1f)] private float purplePreparationDuration = 8f;
         [SerializeField, Min(0.1f)] private float purpleCooldown = 10f;
         [SerializeField, Min(0.1f)] private float purpleRange = 18f;
         [SerializeField, Min(0.1f)] private float purpleRadius = 2.2f;
@@ -31,8 +32,10 @@ namespace JJKGame.Player
 
         private Health ownHealth;
         private GojoTechniqueController techniqueController;
-        private float blueChargeUntil;
-        private float redChargeUntil;
+        private bool blueWasReady;
+        private bool redWasReady;
+        private float bluePreparedUntil;
+        private float redPreparedUntil;
         private float nextPurpleAt;
         private float chainNoticeUntil;
         private float purpleNoticeUntil;
@@ -47,12 +50,12 @@ namespace JJKGame.Player
         private GUIStyle noticeStyle;
         private int styledForHeight = -1;
 
-        private bool BlueCharged => Time.time <= blueChargeUntil;
-        private bool RedCharged => Time.time <= redChargeUntil;
+        private bool BluePrepared => Time.time <= bluePreparedUntil;
+        private bool RedPrepared => Time.time <= redPreparedUntil;
         private bool PurpleCooldownReady => Time.time >= nextPurpleAt;
         private bool PurpleReady =>
-            BlueCharged
-            && RedCharged
+            BluePrepared
+            && RedPrepared
             && PurpleCooldownReady
             && techniqueController != null
             && techniqueController.CanUseUltimate;
@@ -66,6 +69,8 @@ namespace JJKGame.Player
         {
             ownHealth = GetComponent<Health>();
             techniqueController = GetComponent<GojoTechniqueController>();
+            blueWasReady = techniqueController != null && techniqueController.BlueReady;
+            redWasReady = techniqueController != null && techniqueController.RedReady;
             BuildPurpleVisual();
         }
 
@@ -102,12 +107,39 @@ namespace JJKGame.Player
         private void Update()
         {
             RemoveExpiredMarks();
+            DetectTechniqueUses();
             UpdatePurpleVisual();
 
             if (Input.GetKeyDown(CombatInputBindings.Ultimate) && PurpleReady)
             {
                 ActivatePurple();
             }
+        }
+
+        private void DetectTechniqueUses()
+        {
+            if (techniqueController == null)
+            {
+                return;
+            }
+
+            bool blueReadyNow = techniqueController.BlueReady;
+            bool redReadyNow = techniqueController.RedReady;
+
+            // OFFICIAL_CONFIRMED principle: Purple combines Blue and Red themselves.
+            // Hitting an opponent is not required. The temporary preparation window is GAME_ORIGINAL.
+            if (blueWasReady && !blueReadyNow)
+            {
+                bluePreparedUntil = Time.time + purplePreparationDuration;
+            }
+
+            if (redWasReady && !redReadyNow)
+            {
+                redPreparedUntil = Time.time + purplePreparationDuration;
+            }
+
+            blueWasReady = blueReadyNow;
+            redWasReady = redReadyNow;
         }
 
         private void HandleBlueHit(Health target)
@@ -117,8 +149,8 @@ namespace JJKGame.Player
                 return;
             }
 
+            // This mark belongs only to the GAME_ORIGINAL Blue -> Red hit combo.
             blueMarkedUntil[target] = Time.time + blueMarkDuration;
-            blueChargeUntil = Time.time + purpleChargeDuration;
         }
 
         private void HandleRedHit(Health target)
@@ -127,8 +159,6 @@ namespace JJKGame.Player
             {
                 return;
             }
-
-            redChargeUntil = Time.time + purpleChargeDuration;
 
             if (
                 !blueMarkedUntil.TryGetValue(target, out float markedUntil)
@@ -143,7 +173,12 @@ namespace JJKGame.Player
             if (!target.IsDead)
             {
                 target.TakeDamage(chainBonusDamage);
-                ApplyHitReaction(target, GetDirectionAwayFromCaster(target), empoweredPushSpeed, empoweredHitStun);
+                ApplyHitReaction(
+                    target,
+                    GetDirectionAwayFromCaster(target),
+                    empoweredPushSpeed,
+                    empoweredHitStun
+                );
             }
 
             chainNoticeUntil = Time.time + chainNoticeDuration;
@@ -154,8 +189,8 @@ namespace JJKGame.Player
             Vector3 direction = FindPurpleAimDirection();
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
 
-            blueChargeUntil = 0f;
-            redChargeUntil = 0f;
+            bluePreparedUntil = 0f;
+            redPreparedUntil = 0f;
             nextPurpleAt = Time.time + purpleCooldown;
             purpleNoticeUntil = Time.time + 1.2f;
 
@@ -290,7 +325,8 @@ namespace JJKGame.Player
         {
             purpleVisualRoot = new GameObject("HollowPurplePrototypeVisual");
             purpleVisualRoot.transform.SetParent(transform, false);
-            purpleVisualRoot.transform.localPosition = Vector3.up * 1.05f + Vector3.forward * 0.8f;
+            purpleVisualRoot.transform.localPosition =
+                Vector3.up * 1.05f + Vector3.forward * 0.8f;
 
             purpleOuterBeam = CreateBeam(
                 "PurpleOuterBeam",
@@ -497,7 +533,7 @@ namespace JJKGame.Player
                 return skillName + "  READY";
             }
 
-            return $"{skillName}  창 {(BlueCharged ? 1 : 0)}/1 · 혁 {(RedCharged ? 1 : 0)}/1";
+            return $"{skillName}  창 사용 {(BluePrepared ? 1 : 0)}/1 · 혁 사용 {(RedPrepared ? 1 : 0)}/1";
         }
 
         private void DrawCenterNotice(string text, Color accent)
