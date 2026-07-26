@@ -13,78 +13,147 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float bluePullSpeed = 13f;
         [SerializeField, Min(0f)] private float blueHitStun = 0.42f;
         [SerializeField, Min(0.1f)] private float blueCooldown = 3.2f;
-        [SerializeField, Min(0.1f)] private float visualDuration = 0.65f;
+        [SerializeField, Min(0.1f)] private float blueVisualDuration = 0.65f;
 
-        private readonly List<LineRenderer> visualRings = new List<LineRenderer>();
+        [Header("Cursed Technique Reversal: Red")]
+        [SerializeField, Min(0.1f)] private float redRadius = 7f;
+        [SerializeField, Min(0f)] private float redDamage = 18f;
+        [SerializeField, Min(0f)] private float redPushSpeed = 20f;
+        [SerializeField, Min(0f)] private float redHitStun = 0.52f;
+        [SerializeField, Min(0.1f)] private float redCooldown = 4.5f;
+        [SerializeField, Min(0.1f)] private float redVisualDuration = 0.58f;
+
         private Health ownHealth;
+        private Health[] combatHealth;
         private GojoDomainController domainController;
-        private GameObject visualRoot;
-        private Light blueLight;
+        private TechniqueVisual blueVisual;
+        private TechniqueVisual redVisual;
         private float nextBlueAt;
-        private float visualStartedAt;
+        private float nextRedAt;
         private GUIStyle skillStyle;
         private int styledForHeight = -1;
 
         public bool BlueReady => Time.time >= nextBlueAt;
+        public bool RedReady => Time.time >= nextRedAt;
         public float BlueCooldownRemaining => Mathf.Max(0f, nextBlueAt - Time.time);
-        public float BlueCooldownProgress => blueCooldown <= 0f
-            ? 1f
-            : Mathf.Clamp01(1f - BlueCooldownRemaining / blueCooldown);
-        public string BlueStatusText
-        {
-            get
-            {
-                if (
-                    domainController != null
-                    && domainController.State != GojoDomainController.DomainState.Normal
-                )
-                {
-                    return "Q · 술식순전 「창」  영역 입력 중";
-                }
+        public float RedCooldownRemaining => Mathf.Max(0f, nextRedAt - Time.time);
+        public float BlueCooldownProgress => GetCooldownProgress(BlueCooldownRemaining, blueCooldown);
+        public float RedCooldownProgress => GetCooldownProgress(RedCooldownRemaining, redCooldown);
 
-                return BlueReady
-                    ? "Q · 술식순전 「창」  READY"
-                    : $"Q · 술식순전 「창」  {BlueCooldownRemaining:0.0}s";
-            }
-        }
+        public string BlueStatusText => BuildStatusText(
+            "Q · 술식순전 「창」",
+            BlueReady,
+            BlueCooldownRemaining
+        );
+
+        public string RedStatusText => BuildStatusText(
+            "E · 술식반전 「혁」",
+            RedReady,
+            RedCooldownRemaining
+        );
+
+        private bool DomainBusy =>
+            domainController != null
+            && domainController.State != GojoDomainController.DomainState.Normal;
+
+        private bool CombatActive =>
+            ownHealth != null
+            && !ownHealth.IsDead
+            && HasLivingOpponent();
 
         private void Awake()
         {
             ownHealth = GetComponent<Health>();
             domainController = GetComponent<GojoDomainController>();
-            BuildRuntimeVisual();
-            visualRoot.SetActive(false);
+            blueVisual = BuildTechniqueVisual(
+                "BluePrototypeVisual",
+                blueRadius,
+                blueVisualDuration,
+                new Color(0.10f, 0.72f, 1f, 0.95f),
+                new Color(0.32f, 0.92f, 1f, 0.90f),
+                new Color(0.12f, 0.55f, 1f),
+                3.4f,
+                90f
+            );
+            redVisual = BuildTechniqueVisual(
+                "RedPrototypeVisual",
+                redRadius,
+                redVisualDuration,
+                new Color(1f, 0.12f, 0.16f, 0.98f),
+                new Color(1f, 0.52f, 0.12f, 0.92f),
+                new Color(1f, 0.12f, 0.08f),
+                4.2f,
+                -130f
+            );
+        }
+
+        private void Start()
+        {
+            RefreshCombatHealth();
+        }
+
+        private void OnDisable()
+        {
+            SetVisualActive(blueVisual, false);
+            SetVisualActive(redVisual, false);
         }
 
         private void Update()
         {
-            UpdateVisual();
+            UpdateVisual(blueVisual);
+            UpdateVisual(redVisual);
 
-            if (!Input.GetKeyDown(KeyCode.Q) || !CanUseBlue())
+            if (Input.GetKeyDown(KeyCode.Q) && CanUseTechnique(BlueReady))
             {
-                return;
+                ActivateBlue();
             }
 
-            ActivateBlue();
+            if (Input.GetKeyDown(KeyCode.E) && CanUseTechnique(RedReady))
+            {
+                ActivateRed();
+            }
         }
 
-        private bool CanUseBlue()
+        private bool CanUseTechnique(bool ready)
         {
-            if (!BlueReady || ownHealth == null || ownHealth.IsDead)
-            {
-                return false;
-            }
-
-            return domainController == null
-                || domainController.State == GojoDomainController.DomainState.Normal;
+            return ready && CombatActive && !DomainBusy;
         }
 
         private void ActivateBlue()
         {
             nextBlueAt = Time.time + blueCooldown;
-            ShowVisual();
+            ShowVisual(blueVisual);
+            ApplyRadialTechnique(
+                blueRadius,
+                blueDamage,
+                bluePullSpeed,
+                blueHitStun,
+                true
+            );
+        }
 
-            Collider[] hits = Physics.OverlapSphere(transform.position, blueRadius);
+        private void ActivateRed()
+        {
+            nextRedAt = Time.time + redCooldown;
+            ShowVisual(redVisual);
+            ApplyRadialTechnique(
+                redRadius,
+                redDamage,
+                redPushSpeed,
+                redHitStun,
+                false
+            );
+        }
+
+        private void ApplyRadialTechnique(
+            float radius,
+            float damage,
+            float impulseSpeed,
+            float hitStun,
+            bool pullTowardCaster
+        )
+        {
+            Collider[] hits = Physics.OverlapSphere(transform.position, radius);
             HashSet<Health> affectedTargets = new HashSet<Health>();
 
             foreach (Collider hit in hits)
@@ -100,67 +169,102 @@ namespace JJKGame.Player
                     continue;
                 }
 
-                targetHealth.TakeDamage(blueDamage);
-                ApplyPull(targetHealth);
+                if (!targetHealth.TakeDamage(damage))
+                {
+                    continue;
+                }
+
+                ApplyImpulse(targetHealth, impulseSpeed, hitStun, pullTowardCaster);
             }
         }
 
-        private void ApplyPull(Health targetHealth)
+        private void ApplyImpulse(
+            Health targetHealth,
+            float impulseSpeed,
+            float hitStun,
+            bool pullTowardCaster
+        )
         {
-            Vector3 direction = transform.position - targetHealth.transform.position;
+            Vector3 direction = pullTowardCaster
+                ? transform.position - targetHealth.transform.position
+                : targetHealth.transform.position - transform.position;
             direction.y = 0f;
+
             if (direction.sqrMagnitude <= 0.001f)
             {
-                direction = -targetHealth.transform.forward;
+                direction = pullTowardCaster
+                    ? -targetHealth.transform.forward
+                    : targetHealth.transform.forward;
             }
 
-            Vector3 impulse = direction.normalized * bluePullSpeed;
+            Vector3 impulse = direction.normalized * impulseSpeed;
             MonoBehaviour[] behaviours = targetHealth.GetComponents<MonoBehaviour>();
             foreach (MonoBehaviour behaviour in behaviours)
             {
                 if (behaviour is IHitReactable hitReactable)
                 {
-                    hitReactable.ApplyHitReaction(impulse, blueHitStun);
+                    hitReactable.ApplyHitReaction(impulse, hitStun);
                     break;
                 }
             }
         }
 
-        private void BuildRuntimeVisual()
+        private TechniqueVisual BuildTechniqueVisual(
+            string objectName,
+            float radius,
+            float duration,
+            Color outerColor,
+            Color innerColor,
+            Color lightColor,
+            float lightIntensity,
+            float rotationSpeed
+        )
         {
-            visualRoot = new GameObject("BluePrototypeVisual");
-            visualRoot.transform.SetParent(transform, false);
-            visualRoot.transform.localPosition = Vector3.up * 0.15f;
+            TechniqueVisual visual = new TechniqueVisual
+            {
+                Root = new GameObject(objectName),
+                Duration = duration,
+                LightIntensity = lightIntensity,
+                RotationSpeed = rotationSpeed,
+            };
+            visual.Root.transform.SetParent(transform, false);
+            visual.Root.transform.localPosition = Vector3.up * 0.15f;
 
             CreateRing(
-                "BlueOuterRing",
-                blueRadius,
-                0.13f,
-                new Color(0.10f, 0.72f, 1f, 0.95f),
+                visual,
+                objectName + "OuterRing",
+                radius,
+                0.14f,
+                outerColor,
                 Quaternion.identity,
                 RingPlane.XZ
             );
             CreateRing(
-                "BlueInnerRing",
-                blueRadius * 0.42f,
+                visual,
+                objectName + "InnerRing",
+                radius * 0.42f,
                 0.10f,
-                new Color(0.32f, 0.92f, 1f, 0.90f),
+                innerColor,
                 Quaternion.Euler(72f, 0f, 18f),
                 RingPlane.XY
             );
 
-            GameObject lightObject = new GameObject("BlueLight");
-            lightObject.transform.SetParent(visualRoot.transform, false);
+            GameObject lightObject = new GameObject(objectName + "Light");
+            lightObject.transform.SetParent(visual.Root.transform, false);
             lightObject.transform.localPosition = Vector3.up * 1.4f;
-            blueLight = lightObject.AddComponent<Light>();
-            blueLight.type = LightType.Point;
-            blueLight.color = new Color(0.12f, 0.55f, 1f);
-            blueLight.range = blueRadius * 1.5f;
-            blueLight.intensity = 3.4f;
-            blueLight.shadows = LightShadows.None;
+            visual.Light = lightObject.AddComponent<Light>();
+            visual.Light.type = LightType.Point;
+            visual.Light.color = lightColor;
+            visual.Light.range = radius * 1.6f;
+            visual.Light.intensity = lightIntensity;
+            visual.Light.shadows = LightShadows.None;
+
+            visual.Root.SetActive(false);
+            return visual;
         }
 
-        private void CreateRing(
+        private static void CreateRing(
+            TechniqueVisual visual,
             string objectName,
             float radius,
             float width,
@@ -170,7 +274,7 @@ namespace JJKGame.Player
         )
         {
             GameObject ringObject = new GameObject(objectName);
-            ringObject.transform.SetParent(visualRoot.transform, false);
+            ringObject.transform.SetParent(visual.Root.transform, false);
             ringObject.transform.localRotation = localRotation;
 
             LineRenderer line = ringObject.AddComponent<LineRenderer>();
@@ -212,47 +316,76 @@ namespace JJKGame.Player
                 line.SetPosition(index, point);
             }
 
-            visualRings.Add(line);
+            visual.Rings.Add(line);
+            visual.RingColors.Add(color);
         }
 
-        private void ShowVisual()
+        private static void ShowVisual(TechniqueVisual visual)
         {
-            visualStartedAt = Time.time;
-            visualRoot.transform.localScale = Vector3.one * 0.08f;
-            visualRoot.SetActive(true);
-        }
-
-        private void UpdateVisual()
-        {
-            if (visualRoot == null || !visualRoot.activeSelf)
+            if (visual == null || visual.Root == null)
             {
                 return;
             }
 
-            float elapsed = Time.time - visualStartedAt;
-            float normalized = Mathf.Clamp01(elapsed / visualDuration);
+            visual.StartedAt = Time.time;
+            visual.Root.transform.localScale = Vector3.one * 0.08f;
+            RestoreVisualColors(visual, 1f);
+            if (visual.Light != null)
+            {
+                visual.Light.intensity = visual.LightIntensity;
+            }
+            visual.Root.SetActive(true);
+        }
+
+        private static void UpdateVisual(TechniqueVisual visual)
+        {
+            if (visual == null || visual.Root == null || !visual.Root.activeSelf)
+            {
+                return;
+            }
+
+            float elapsed = Time.time - visual.StartedAt;
+            float normalized = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, visual.Duration));
             float expansion = 1f - Mathf.Pow(1f - normalized, 3f);
             float pulse = 1f + Mathf.Sin(elapsed * 18f) * 0.045f;
-            visualRoot.transform.localScale = Vector3.one * Mathf.Max(0.08f, expansion * pulse);
-            visualRoot.transform.Rotate(Vector3.up, 90f * Time.deltaTime, Space.Self);
+            visual.Root.transform.localScale =
+                Vector3.one * Mathf.Max(0.08f, expansion * pulse);
+            visual.Root.transform.Rotate(
+                Vector3.up,
+                visual.RotationSpeed * Time.deltaTime,
+                Space.Self
+            );
 
             float alpha = 1f - normalized;
-            foreach (LineRenderer ring in visualRings)
+            RestoreVisualColors(visual, alpha);
+
+            if (visual.Light != null)
             {
-                Color start = ring.startColor;
-                start.a = alpha;
-                ring.startColor = start;
-                ring.endColor = start;
+                visual.Light.intensity = Mathf.Lerp(visual.LightIntensity, 0f, normalized);
             }
 
-            if (blueLight != null)
+            if (elapsed >= visual.Duration)
             {
-                blueLight.intensity = Mathf.Lerp(3.4f, 0f, normalized);
+                visual.Root.SetActive(false);
             }
+        }
 
-            if (elapsed >= visualDuration)
+        private static void RestoreVisualColors(TechniqueVisual visual, float alphaMultiplier)
+        {
+            for (int index = 0; index < visual.Rings.Count; index++)
             {
-                visualRoot.SetActive(false);
+                Color color = visual.RingColors[index];
+                color.a *= alphaMultiplier;
+                visual.Rings[index].startColor = color;
+                visual.Rings[index].endColor = color;
+            }
+        }
+
+        private static void SetVisualActive(TechniqueVisual visual, bool active)
+        {
+            if (visual != null && visual.Root != null)
+            {
+                visual.Root.SetActive(active);
             }
         }
 
@@ -264,23 +397,100 @@ namespace JJKGame.Player
             }
 
             EnsureStyle();
-            float width = Mathf.Min(330f, Screen.width - 48f);
-            Rect panel = new Rect(24f, 151f, width, 38f);
-            Color accent = BlueReady
-                ? new Color(0.12f, 0.72f, 1f, 0.98f)
-                : new Color(0.30f, 0.48f, 0.66f, 0.95f);
+            float width = Mathf.Min(350f, Screen.width - 48f);
+            DrawSkillPanel(
+                new Rect(24f, 151f, width, 38f),
+                BlueStatusText,
+                BlueCooldownProgress,
+                BlueReady,
+                new Color(0.12f, 0.72f, 1f, 0.98f),
+                new Color(0.05f, 0.34f, 0.68f, 0.70f),
+                new Color(0.012f, 0.035f, 0.075f, 0.92f)
+            );
+            DrawSkillPanel(
+                new Rect(24f, 195f, width, 38f),
+                RedStatusText,
+                RedCooldownProgress,
+                RedReady,
+                new Color(1f, 0.22f, 0.18f, 0.98f),
+                new Color(0.70f, 0.08f, 0.06f, 0.72f),
+                new Color(0.075f, 0.012f, 0.018f, 0.92f)
+            );
+        }
 
-            DrawRect(panel, new Color(0.012f, 0.035f, 0.075f, 0.92f));
+        private void DrawSkillPanel(
+            Rect panel,
+            string statusText,
+            float cooldownProgress,
+            bool ready,
+            Color readyAccent,
+            Color fillColor,
+            Color backgroundColor
+        )
+        {
+            bool available = ready && CombatActive && !DomainBusy;
+            Color accent = available
+                ? readyAccent
+                : new Color(0.34f, 0.40f, 0.50f, 0.95f);
+
+            DrawRect(panel, backgroundColor);
             Rect fill = new Rect(
                 panel.x + 2f,
                 panel.y + 2f,
-                (panel.width - 4f) * BlueCooldownProgress,
+                (panel.width - 4f) * cooldownProgress,
                 panel.height - 4f
             );
-            DrawRect(fill, new Color(0.05f, 0.34f, 0.68f, 0.70f));
+            DrawRect(fill, fillColor);
             DrawBorder(panel, accent, 2f);
             skillStyle.normal.textColor = Color.white;
-            GUI.Label(panel, BlueStatusText, skillStyle);
+            GUI.Label(panel, statusText, skillStyle);
+        }
+
+        private string BuildStatusText(string skillName, bool ready, float cooldownRemaining)
+        {
+            if (!CombatActive)
+            {
+                return skillName + "  전투 종료";
+            }
+
+            if (DomainBusy)
+            {
+                return skillName + "  영역 입력 중";
+            }
+
+            return ready
+                ? skillName + "  READY"
+                : $"{skillName}  {cooldownRemaining:0.0}s";
+        }
+
+        private bool HasLivingOpponent()
+        {
+            if (combatHealth == null || combatHealth.Length == 0)
+            {
+                RefreshCombatHealth();
+            }
+
+            foreach (Health health in combatHealth)
+            {
+                if (health != null && health != ownHealth && !health.IsDead)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void RefreshCombatHealth()
+        {
+            combatHealth = FindObjectsByType<Health>(FindObjectsSortMode.None);
+        }
+
+        private static float GetCooldownProgress(float remaining, float cooldown)
+        {
+            return cooldown <= 0f
+                ? 1f
+                : Mathf.Clamp01(1f - remaining / cooldown);
         }
 
         private void EnsureStyle()
@@ -319,6 +529,19 @@ namespace JJKGame.Player
         private void OnDrawGizmosSelected()
         {
             Gizmos.DrawWireSphere(transform.position, blueRadius);
+            Gizmos.DrawWireSphere(transform.position, redRadius);
+        }
+
+        private sealed class TechniqueVisual
+        {
+            public GameObject Root;
+            public readonly List<LineRenderer> Rings = new List<LineRenderer>();
+            public readonly List<Color> RingColors = new List<Color>();
+            public Light Light;
+            public float StartedAt;
+            public float Duration;
+            public float LightIntensity;
+            public float RotationSpeed;
         }
 
         private enum RingPlane
