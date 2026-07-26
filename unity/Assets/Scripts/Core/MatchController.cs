@@ -109,6 +109,24 @@ namespace JJKGame.Core
                 playerAttack.enabled = false;
             }
 
+            if (playerHealth != null)
+            {
+                GojoTechniqueChainController techniqueChain =
+                    playerHealth.GetComponent<GojoTechniqueChainController>();
+                GojoTechniqueController technique =
+                    playerHealth.GetComponent<GojoTechniqueController>();
+
+                if (techniqueChain != null)
+                {
+                    techniqueChain.enabled = false;
+                }
+
+                if (technique != null)
+                {
+                    technique.enabled = false;
+                }
+            }
+
             if (gojoDomain != null)
             {
                 gojoDomain.ResetCommand();
@@ -189,7 +207,7 @@ namespace JJKGame.Core
             }
             else if (playerMovement.DodgeReady)
             {
-                text = "DODGE READY  [SPACE]";
+                text = $"DODGE READY  [{CombatInputBindings.DodgeLabel}]";
                 accent = new Color(0.22f, 0.82f, 1f);
             }
             else
@@ -261,7 +279,7 @@ namespace JJKGame.Core
             warningStyle.normal.textColor = accent;
             GUI.Label(
                 new Rect(warningRect.x, warningRect.y + 5f, warningRect.width, 43f),
-                "DODGE!  [SPACE]",
+                $"DODGE!  [{CombatInputBindings.DodgeLabel}]",
                 warningStyle
             );
 
@@ -287,7 +305,7 @@ namespace JJKGame.Core
         private void DrawDomainPanel(float margin)
         {
             bool showTimingBar = gojoDomain != null && gojoDomain.IsReleaseTiming;
-            float domainWidth = Mathf.Min(760f, Screen.width - margin * 2f);
+            float domainWidth = Mathf.Min(900f, Screen.width - margin * 2f);
             float domainHeight = showTimingBar ? 126f : 68f;
             Rect domainRect = new Rect(
                 (Screen.width - domainWidth) * 0.5f,
@@ -325,7 +343,7 @@ namespace JJKGame.Core
                 );
                 GUI.Label(
                     new Rect(domainRect.x + 18f, domainRect.y + 96f, domainRect.width - 36f, 20f),
-                    "WASD 이동  ·  SPACE 회피  ·  좌클릭 공격 연계  ·  V 영역 준비  ·  R 초기화",
+                    BuildControlHint(),
                     hintStyle
                 );
             }
@@ -333,10 +351,20 @@ namespace JJKGame.Core
             {
                 GUI.Label(
                     new Rect(domainRect.x + 18f, domainRect.y + 39f, domainRect.width - 36f, 20f),
-                    "WASD 이동  ·  SPACE 회피  ·  좌클릭 3단 공격 연계  ·  V 영역 준비  ·  R 초기화",
+                    BuildControlHint(),
                     hintStyle
                 );
             }
+        }
+
+        private static string BuildControlHint()
+        {
+            return
+                $"WASD 이동 · {CombatInputBindings.DodgeLabel} 회피 · 좌클릭 공격 · "
+                + $"{CombatInputBindings.Skill1Label}/{CombatInputBindings.Skill2Label} 술식 · "
+                + $"{CombatInputBindings.UltimateLabel} 상위기 · "
+                + $"{CombatInputBindings.DomainLabel} 영역 · "
+                + $"{CombatInputBindings.CancelCommandLabel} 영역 입력 취소";
         }
 
         private void DrawReleaseTimingBar(Rect barRect)
