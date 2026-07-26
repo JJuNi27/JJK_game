@@ -255,7 +255,7 @@ namespace JJKGame.Player
 
             EnsureStyle();
             float width = Mathf.Min(360f, Screen.width - 48f);
-            Rect panel = new Rect(Screen.width - width - 24f, 115f, width, 34f);
+            Rect panel = new Rect(Screen.width - width - 24f, 190f, width, 34f);
             DrawRect(panel, new Color(0.055f, 0.040f, 0.010f, 0.92f));
             DrawBorder(panel, new Color(1f, 0.76f, 0.16f, 0.98f), 2f);
             GUI.Label(
