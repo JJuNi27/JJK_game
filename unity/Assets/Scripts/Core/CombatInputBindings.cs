@@ -10,6 +10,7 @@ namespace JJKGame.Core
         public const KeyCode Domain = KeyCode.V;
         public const KeyCode CancelCommand = KeyCode.X;
         public const KeyCode Dodge = KeyCode.Space;
+        public const KeyCode TargetLock = KeyCode.Tab;
 
         public const string Skill1Label = "Q";
         public const string Skill2Label = "E";
@@ -17,5 +18,6 @@ namespace JJKGame.Core
         public const string DomainLabel = "V";
         public const string CancelCommandLabel = "X";
         public const string DodgeLabel = "SPACE";
+        public const string TargetLockLabel = "TAB";
     }
 }
