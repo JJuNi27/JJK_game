@@ -32,3 +32,6 @@ unity/*.pdb
 unity/*.mdb
 unity/*.opendb
 unity/*.VC.db
+
+# 개인 테스트용 BGM/대사 파일은 저장소에 포함하지 않는다.
+unity/Assets/Resources/LocalAudio/
