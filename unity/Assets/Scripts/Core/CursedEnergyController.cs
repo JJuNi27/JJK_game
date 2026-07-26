@@ -3,16 +3,28 @@ using UnityEngine;
 
 namespace JJKGame.Core
 {
+    public enum CursedEnergyProfileId
+    {
+        Standard,
+        SixEyesEfficiency,
+        SukunaVastReserve,
+        YutaLargeReserve,
+    }
+
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Health))]
     public sealed class CursedEnergyController : MonoBehaviour
     {
         [Header("GAME_ORIGINAL Cursed Energy")]
+        [SerializeField] private CursedEnergyProfileId activeProfile = CursedEnergyProfileId.Standard;
         [SerializeField, Min(1f)] private float maxEnergy = 100f;
         [SerializeField, Min(0f)] private float startingEnergy = 100f;
         [SerializeField, Min(0f)] private float regenerationPerSecond = 12f;
         [SerializeField, Min(0f)] private float regenerationDelayAfterSpend = 0.8f;
+        [SerializeField, Min(0f)] private float costMultiplier = 1f;
+        [SerializeField, Min(0f)] private float minimumTechniqueCost;
         [SerializeField, Min(0.1f)] private float noticeDuration = 1.1f;
+        [SerializeField] private string profileLabel = "STANDARD";
 
         private Health health;
         private float nextRegenerationAt;
@@ -20,9 +32,12 @@ namespace JJKGame.Core
         private string noticeText = string.Empty;
         private GUIStyle energyStyle;
         private int styledForHeight = -1;
+        private bool profileApplied;
 
         public event Action<CursedEnergyController, float> EnergyChanged;
 
+        public CursedEnergyProfileId ActiveProfile => activeProfile;
+        public string ProfileLabel => profileLabel;
         public float MaxEnergy => maxEnergy;
         public float CurrentEnergy { get; private set; }
         public float Normalized => maxEnergy > 0f
@@ -44,7 +59,7 @@ namespace JJKGame.Core
         private void Awake()
         {
             health = GetComponent<Health>();
-            CurrentEnergy = Mathf.Clamp(startingEnergy, 0f, maxEnergy);
+            ApplyProfile(activeProfile, true);
         }
 
         private void Update()
@@ -63,29 +78,79 @@ namespace JJKGame.Core
             SetEnergy(CurrentEnergy + regenerationPerSecond * Time.deltaTime);
         }
 
-        public bool CanSpend(float amount)
+        public void ApplyProfile(CursedEnergyProfileId profileId, bool refill = true)
         {
-            return amount <= 0f || CurrentEnergy + 0.001f >= amount;
+            if (profileApplied && activeProfile == profileId)
+            {
+                return;
+            }
+
+            activeProfile = profileId;
+            switch (profileId)
+            {
+                case CursedEnergyProfileId.SixEyesEfficiency:
+                    ConfigureValues(100f, 100f, 12f, 0.8f, 0.01f, 1f, "SIX EYES · 육안 효율");
+                    break;
+                case CursedEnergyProfileId.SukunaVastReserve:
+                    ConfigureValues(300f, 300f, 12f, 0.8f, 1f, 0f, "VAST RESERVE · 스쿠나");
+                    break;
+                case CursedEnergyProfileId.YutaLargeReserve:
+                    ConfigureValues(150f, 150f, 10f, 0.8f, 1f, 0f, "LARGE RESERVE · 유타");
+                    break;
+                default:
+                    ConfigureValues(100f, 100f, 12f, 0.8f, 1f, 0f, "STANDARD");
+                    break;
+            }
+
+            profileApplied = true;
+            if (refill)
+            {
+                CurrentEnergy = Mathf.Clamp(startingEnergy, 0f, maxEnergy);
+                EnergyChanged?.Invoke(this, CurrentEnergy);
+            }
+            else
+            {
+                SetEnergy(CurrentEnergy);
+            }
         }
 
-        public bool TrySpend(float amount, string actionName = "술식")
+        public float ResolveCost(float baseCost)
         {
-            amount = Mathf.Max(0f, amount);
-            if (!CanSpend(amount))
+            baseCost = Mathf.Max(0f, baseCost);
+            if (baseCost <= 0f)
             {
-                NotifyInsufficient(actionName, amount);
+                return 0f;
+            }
+
+            float adjusted = Mathf.Ceil(baseCost * Mathf.Max(0f, costMultiplier) - 0.001f);
+            return Mathf.Max(minimumTechniqueCost, adjusted);
+        }
+
+        public bool CanSpend(float baseCost)
+        {
+            float actualCost = ResolveCost(baseCost);
+            return actualCost <= 0f || CurrentEnergy + 0.001f >= actualCost;
+        }
+
+        public bool TrySpend(float baseCost, string actionName = "술식")
+        {
+            float actualCost = ResolveCost(baseCost);
+            if (!CanSpend(baseCost))
+            {
+                NotifyInsufficient(actionName, baseCost);
                 return false;
             }
 
-            SetEnergy(CurrentEnergy - amount);
+            SetEnergy(CurrentEnergy - actualCost);
             nextRegenerationAt = Time.time + regenerationDelayAfterSpend;
             return true;
         }
 
-        public void NotifyInsufficient(string actionName, float requiredAmount)
+        public void NotifyInsufficient(string actionName, float baseRequiredAmount)
         {
             string resolvedName = string.IsNullOrWhiteSpace(actionName) ? "술식" : actionName;
-            noticeText = $"주력 부족 · {resolvedName} 필요 {requiredAmount:0}";
+            float actualCost = ResolveCost(baseRequiredAmount);
+            noticeText = $"주력 부족 · {resolvedName} 필요 {actualCost:0}";
             noticeUntil = Time.time + noticeDuration;
         }
 
@@ -103,6 +168,27 @@ namespace JJKGame.Core
             noticeUntil = 0f;
             noticeText = string.Empty;
             SetEnergy(Mathf.Clamp(startingEnergy, 0f, maxEnergy));
+        }
+
+        private void ConfigureValues(
+            float newMax,
+            float newStarting,
+            float newRegeneration,
+            float newRegenerationDelay,
+            float newCostMultiplier,
+            float newMinimumCost,
+            string newProfileLabel
+        )
+        {
+            maxEnergy = Mathf.Max(1f, newMax);
+            startingEnergy = Mathf.Clamp(newStarting, 0f, maxEnergy);
+            regenerationPerSecond = Mathf.Max(0f, newRegeneration);
+            regenerationDelayAfterSpend = Mathf.Max(0f, newRegenerationDelay);
+            costMultiplier = Mathf.Max(0f, newCostMultiplier);
+            minimumTechniqueCost = Mathf.Max(0f, newMinimumCost);
+            profileLabel = string.IsNullOrWhiteSpace(newProfileLabel)
+                ? activeProfile.ToString()
+                : newProfileLabel;
         }
 
         private void SetEnergy(float value)
@@ -144,7 +230,7 @@ namespace JJKGame.Core
             energyStyle.normal.textColor = Color.white;
             string text = showingNotice
                 ? NoticeText
-                : $"CURSED ENERGY  {CurrentEnergy:0} / {MaxEnergy:0}  ·  회복 {regenerationPerSecond:0}/s";
+                : $"CURSED ENERGY  {CurrentEnergy:0} / {MaxEnergy:0}  ·  {ProfileLabel}";
             GUI.Label(bar, text, energyStyle);
         }
 
