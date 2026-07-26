@@ -16,7 +16,6 @@ namespace JJKGame.Player
         }
 
         [Header("Cursed Technique Lapse: Blue")]
-        [Tooltip("GAME_ORIGINAL: short wind-up before the convergence point appears.")]
         [SerializeField, Min(0.01f)] private float blueCastTime = 0.24f;
         [SerializeField, Min(0.1f)] private float blueCastDistance = 10f;
         [SerializeField, Min(0.1f)] private float blueRadius = 4.5f;
@@ -30,7 +29,6 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float lockedBluePointOffset = 1.8f;
 
         [Header("Cursed Technique Reversal: Red")]
-        [Tooltip("GAME_ORIGINAL: short wind-up before the projectile launches.")]
         [SerializeField, Min(0.01f)] private float redCastTime = 0.30f;
         [SerializeField, Min(0.1f)] private float redRange = 11f;
         [SerializeField, Min(0.1f)] private float redProjectileSpeed = 22f;
@@ -66,45 +64,20 @@ namespace JJKGame.Player
         public bool BlueReady => Time.time >= nextBlueAt;
         public bool RedReady => Time.time >= nextRedAt;
         public bool IsCasting => castState != CastState.None;
-        public bool CanUseUltimate =>
-            CombatActive
-            && actionGate != null
-            && actionGate.CanStartUltimate;
+        public bool CanUseUltimate => CombatActive && actionGate != null && actionGate.CanStartUltimate;
         public float BlueCooldownRemaining => Mathf.Max(0f, nextBlueAt - Time.time);
         public float RedCooldownRemaining => Mathf.Max(0f, nextRedAt - Time.time);
         public float BlueCooldownProgress => GetCooldownProgress(BlueCooldownRemaining, blueCooldown);
         public float RedCooldownProgress => GetCooldownProgress(RedCooldownRemaining, redCooldown);
         public float CastProgress => !IsCasting
             ? 0f
-            : Mathf.Clamp01(
-                (Time.time - castStartedAt)
-                    / Mathf.Max(0.01f, castCompletesAt - castStartedAt)
-            );
+            : Mathf.Clamp01((Time.time - castStartedAt) / Mathf.Max(0.01f, castCompletesAt - castStartedAt));
 
-        public string BlueStatusText => BuildStatusText(
-            $"{CombatInputBindings.Skill1Label} · 술식순전 「창」 · 수렴점",
-            BlueReady,
-            BlueCooldownRemaining,
-            CastState.Blue,
-            blueEnergyCost
-        );
+        public string BlueStatusText => BuildStatusText("Q · 순전 「창」", BlueReady, BlueCooldownRemaining, CastState.Blue, blueEnergyCost);
+        public string RedStatusText => BuildStatusText("E · 반전 「혁」", RedReady, RedCooldownRemaining, CastState.Red, redEnergyCost);
 
-        public string RedStatusText => BuildStatusText(
-            $"{CombatInputBindings.Skill2Label} · 술식반전 「혁」 · 발사체",
-            RedReady,
-            RedCooldownRemaining,
-            CastState.Red,
-            redEnergyCost
-        );
-
-        private bool DomainBusy =>
-            domainController != null
-            && domainController.State != GojoDomainController.DomainState.Normal;
-
-        private bool CombatActive =>
-            ownHealth != null
-            && !ownHealth.IsDead
-            && HasLivingOpponent();
+        private bool DomainBusy => domainController != null && domainController.State != GojoDomainController.DomainState.Normal;
+        private bool CombatActive => ownHealth != null && !ownHealth.IsDead && HasLivingOpponent();
 
         private void Awake()
         {
@@ -143,12 +116,10 @@ namespace JJKGame.Player
                     CancelCast();
                     return;
                 }
-
                 if (Time.time >= castCompletesAt)
                 {
                     CompleteCast();
                 }
-
                 return;
             }
 
@@ -167,8 +138,7 @@ namespace JJKGame.Player
             bool blue = requestedState == CastState.Blue;
             bool ready = blue ? BlueReady : RedReady;
             float cost = blue ? blueEnergyCost : redEnergyCost;
-            string name = blue ? "창" : "혁";
-
+            string actionName = blue ? "창" : "혁";
             if (!ready || !CombatActive || actionGate == null || !actionGate.CanStartTechnique)
             {
                 return;
@@ -176,37 +146,27 @@ namespace JJKGame.Player
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
             cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
-            if (cursedEnergy != null && !cursedEnergy.TrySpend(cost, name))
+            if (cursedEnergy != null && !cursedEnergy.TrySpend(cost, actionName))
             {
                 return;
             }
 
             if (blue)
             {
-                BeginBlueCast();
+                pendingBluePoint = ResolveBlueConvergencePoint();
+                FaceHorizontalPoint(pendingBluePoint);
+                nextBlueAt = Time.time + blueCooldown;
+                BeginCast(CastState.Blue, blueCastTime);
+                combatAudio?.PlayBlueCast();
             }
             else
             {
-                BeginRedCast();
+                pendingRedDirection = ResolveAimDirection();
+                transform.rotation = Quaternion.LookRotation(pendingRedDirection, Vector3.up);
+                nextRedAt = Time.time + redCooldown;
+                BeginCast(CastState.Red, redCastTime);
+                combatAudio?.PlayRedCast();
             }
-        }
-
-        private void BeginBlueCast()
-        {
-            pendingBluePoint = ResolveBlueConvergencePoint();
-            FaceHorizontalPoint(pendingBluePoint);
-            nextBlueAt = Time.time + blueCooldown;
-            BeginCast(CastState.Blue, blueCastTime);
-            combatAudio?.PlayBlueCast();
-        }
-
-        private void BeginRedCast()
-        {
-            pendingRedDirection = ResolveAimDirection();
-            transform.rotation = Quaternion.LookRotation(pendingRedDirection, Vector3.up);
-            nextRedAt = Time.time + redCooldown;
-            BeginCast(CastState.Red, redCastTime);
-            combatAudio?.PlayRedCast();
         }
 
         private void BeginCast(CastState state, float duration)
@@ -218,16 +178,13 @@ namespace JJKGame.Player
 
         private void CompleteCast()
         {
-            CastState completedState = castState;
-            castState = CastState.None;
-            castStartedAt = 0f;
-            castCompletesAt = 0f;
-
-            if (completedState == CastState.Blue)
+            CastState completed = castState;
+            CancelCast();
+            if (completed == CastState.Blue)
             {
                 SpawnBlueField();
             }
-            else if (completedState == CastState.Red)
+            else if (completed == CastState.Red)
             {
                 SpawnRedProjectile();
             }
@@ -260,15 +217,11 @@ namespace JJKGame.Player
 
         private void SpawnRedProjectile()
         {
-            Vector3 direction = pendingRedDirection.sqrMagnitude > 0.001f
-                ? pendingRedDirection.normalized
-                : transform.forward;
+            Vector3 direction = pendingRedDirection.sqrMagnitude > 0.001f ? pendingRedDirection.normalized : transform.forward;
             Vector3 start = transform.position + Vector3.up * 1.0f + direction * 0.9f;
-
             GameObject projectileObject = new GameObject("RedTechniqueProjectile");
             projectileObject.transform.position = start;
-            RedTechniqueProjectile projectile =
-                projectileObject.AddComponent<RedTechniqueProjectile>();
+            RedTechniqueProjectile projectile = projectileObject.AddComponent<RedTechniqueProjectile>();
             projectile.Configure(
                 ownHealth,
                 direction,
@@ -288,17 +241,15 @@ namespace JJKGame.Player
             Health lockedTarget = targetLock != null ? targetLock.CurrentTarget : null;
             if (lockedTarget != null)
             {
-                Vector3 targetPosition = lockedTarget.transform.position;
-                Vector3 towardCaster = transform.position - targetPosition;
+                Vector3 point = lockedTarget.transform.position;
+                Vector3 towardCaster = transform.position - point;
                 towardCaster.y = 0f;
                 if (towardCaster.sqrMagnitude > 0.001f)
                 {
-                    targetPosition += towardCaster.normalized * lockedBluePointOffset;
+                    point += towardCaster.normalized * lockedBluePointOffset;
                 }
-
-                return targetPosition;
+                return point;
             }
-
             return transform.position + ResolveAimDirection() * blueCastDistance;
         }
 
@@ -308,7 +259,6 @@ namespace JJKGame.Player
             {
                 return lockedDirection;
             }
-
             Vector3 forward = transform.forward;
             forward.y = 0f;
             return forward.sqrMagnitude > 0.001f ? forward.normalized : Vector3.forward;
@@ -324,67 +274,46 @@ namespace JJKGame.Player
             }
         }
 
-        private string BuildStatusText(
-            string skillName,
-            bool ready,
-            float cooldownRemaining,
-            CastState skillCastState,
-            float baseEnergyCost
-        )
+        private string BuildStatusText(string skillName, bool ready, float cooldownRemaining, CastState ownCast, float baseCost)
         {
-            float actualCost = cursedEnergy != null
-                ? cursedEnergy.ResolveCost(baseEnergyCost)
-                : baseEnergyCost;
-
+            float cost = cursedEnergy != null ? cursedEnergy.ResolveCost(baseCost) : baseCost;
             if (!CombatActive)
             {
-                return skillName + "  전투 종료";
+                return skillName + " · 종료";
             }
-
             if (burnout != null && burnout.IsBurnedOut)
             {
-                return $"{skillName}  술식 번아웃 {burnout.Remaining:0.0}s";
+                return $"{skillName} · 번아웃 {burnout.Remaining:0.0}s";
             }
-
             if (DomainBusy)
             {
-                return skillName + "  영역 입력 중";
+                return skillName + " · 영역 입력 중";
             }
-
-            if (castState == skillCastState)
+            if (castState == ownCast)
             {
-                return $"{skillName}  시전 중 {CastProgress * 100f:0}%";
+                return $"{skillName} · 시전 {CastProgress * 100f:0}%";
             }
-
             if (IsCasting)
             {
-                return skillName + "  다른 술식 시전 중";
+                return skillName + " · 다른 술식 시전 중";
             }
-
             if (!ready)
             {
-                return $"{skillName}  {cooldownRemaining:0.0}s";
+                return $"{skillName} · {cooldownRemaining:0.0}s";
             }
-
-            if (cursedEnergy != null && !cursedEnergy.CanSpend(baseEnergyCost))
+            if (cursedEnergy != null && !cursedEnergy.CanSpend(baseCost))
             {
-                return $"{skillName}  주력 부족 · 필요 {actualCost:0}";
+                return $"{skillName} · 주력 부족 {cost:0}";
             }
-
-            return $"{skillName}  READY · 주력 {actualCost:0}";
+            return $"{skillName} · READY · CE {cost:0}";
         }
 
         private bool HasLivingOpponent()
         {
-            if (
-                combatHealth == null
-                || combatHealth.Length == 0
-                || Time.time >= nextCombatHealthRefreshAt
-            )
+            if (combatHealth == null || combatHealth.Length == 0 || Time.time >= nextCombatHealthRefreshAt)
             {
                 RefreshCombatHealth();
             }
-
             foreach (Health health in combatHealth)
             {
                 if (health != null && health != ownHealth && !health.IsDead)
@@ -392,7 +321,6 @@ namespace JJKGame.Player
                     return true;
                 }
             }
-
             return false;
         }
 
@@ -404,9 +332,7 @@ namespace JJKGame.Player
 
         private static float GetCooldownProgress(float remaining, float cooldown)
         {
-            return cooldown <= 0f
-                ? 1f
-                : Mathf.Clamp01(1f - remaining / cooldown);
+            return cooldown <= 0f ? 1f : Mathf.Clamp01(1f - remaining / cooldown);
         }
 
         private void OnGUI()
@@ -417,63 +343,39 @@ namespace JJKGame.Player
             }
 
             EnsureStyle();
-            float width = Mathf.Min(410f, Screen.width - 48f);
+            float width = Mathf.Min(330f, Screen.width - 24f);
             DrawSkillPanel(
-                new Rect(24f, 151f, width, 38f),
+                new Rect(12f, 104f, width, 29f),
                 BlueStatusText,
                 BlueCooldownProgress,
                 BlueReady && (cursedEnergy == null || cursedEnergy.CanSpend(blueEnergyCost)),
                 castState == CastState.Blue,
-                new Color(0.12f, 0.72f, 1f, 0.98f),
-                new Color(0.05f, 0.34f, 0.68f, 0.70f),
-                new Color(0.012f, 0.035f, 0.075f, 0.92f)
+                new Color(0.12f, 0.72f, 1f),
+                new Color(0.05f, 0.34f, 0.68f, 0.66f),
+                new Color(0.012f, 0.035f, 0.075f, 0.88f)
             );
             DrawSkillPanel(
-                new Rect(24f, 195f, width, 38f),
+                new Rect(12f, 137f, width, 29f),
                 RedStatusText,
                 RedCooldownProgress,
                 RedReady && (cursedEnergy == null || cursedEnergy.CanSpend(redEnergyCost)),
                 castState == CastState.Red,
-                new Color(1f, 0.22f, 0.18f, 0.98f),
-                new Color(0.70f, 0.08f, 0.06f, 0.72f),
-                new Color(0.075f, 0.012f, 0.018f, 0.92f)
+                new Color(1f, 0.22f, 0.18f),
+                new Color(0.70f, 0.08f, 0.06f, 0.66f),
+                new Color(0.075f, 0.012f, 0.018f, 0.88f)
             );
         }
 
-        private void DrawSkillPanel(
-            Rect panel,
-            string statusText,
-            float cooldownProgress,
-            bool ready,
-            bool castingThisSkill,
-            Color readyAccent,
-            Color fillColor,
-            Color backgroundColor
-        )
+        private void DrawSkillPanel(Rect panel, string text, float cooldownProgress, bool ready, bool casting, Color readyAccent, Color fillColor, Color background)
         {
-            bool available =
-                ready
-                && CombatActive
-                && actionGate != null
-                && actionGate.CanStartTechnique;
-            Color accent = castingThisSkill
-                ? Color.white
-                : available
-                    ? readyAccent
-                    : new Color(0.34f, 0.40f, 0.50f, 0.95f);
-
-            DrawRect(panel, backgroundColor);
-            float progress = castingThisSkill ? CastProgress : cooldownProgress;
-            Rect fill = new Rect(
-                panel.x + 2f,
-                panel.y + 2f,
-                (panel.width - 4f) * progress,
-                panel.height - 4f
-            );
-            DrawRect(fill, fillColor);
-            DrawBorder(panel, accent, castingThisSkill ? 3f : 2f);
+            bool available = ready && CombatActive && actionGate != null && actionGate.CanStartTechnique;
+            Color accent = casting ? Color.white : available ? readyAccent : new Color(0.34f, 0.40f, 0.50f);
+            DrawRect(panel, background);
+            float progress = casting ? CastProgress : cooldownProgress;
+            DrawRect(new Rect(panel.x + 2f, panel.y + 2f, (panel.width - 4f) * progress, panel.height - 4f), fillColor);
+            DrawBorder(panel, accent, casting ? 2f : 1f);
             skillStyle.normal.textColor = Color.white;
-            GUI.Label(panel, statusText, skillStyle);
+            GUI.Label(panel, text, skillStyle);
         }
 
         private void EnsureStyle()
@@ -482,11 +384,10 @@ namespace JJKGame.Player
             {
                 return;
             }
-
             styledForHeight = Screen.height;
             skillStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 54f, 13f, 18f)),
+                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 68f, 11f, 15f)),
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
@@ -494,10 +395,10 @@ namespace JJKGame.Player
 
         private static void DrawRect(Rect rect, Color color)
         {
-            Color previousColor = GUI.color;
+            Color previous = GUI.color;
             GUI.color = color;
             GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = previousColor;
+            GUI.color = previous;
         }
 
         private static void DrawBorder(Rect rect, Color color, float thickness)
@@ -506,19 +407,6 @@ namespace JJKGame.Player
             DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
             DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
             DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            Vector3 direction = transform.forward.sqrMagnitude > 0.001f
-                ? transform.forward.normalized
-                : Vector3.forward;
-            Gizmos.DrawWireSphere(transform.position + direction * blueCastDistance, blueRadius);
-            Vector3 redStart = transform.position + Vector3.up * 1.0f + direction * 0.9f;
-            Vector3 redEnd = redStart + direction * redRange;
-            Gizmos.DrawWireSphere(redStart, redRadius);
-            Gizmos.DrawWireSphere(redEnd, redRadius);
-            Gizmos.DrawLine(redStart, redEnd);
         }
     }
 }
