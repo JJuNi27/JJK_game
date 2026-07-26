@@ -17,7 +17,6 @@ namespace JJKGame.Player
         [SerializeField, Min(0.1f)] private float chainNoticeDuration = 1.15f;
 
         [Header("Hollow Purple")]
-        [Tooltip("GAME_ORIGINAL: Blue and Red uses stay prepared for this many seconds.")]
         [SerializeField, Min(0.1f)] private float purplePreparationDuration = 8f;
         [SerializeField, Min(0.1f)] private float purpleCooldown = 10f;
         [SerializeField, Min(0.1f)] private float purpleRange = 18f;
@@ -28,8 +27,7 @@ namespace JJKGame.Player
         [SerializeField, Min(0.1f)] private float purpleVisualDuration = 0.85f;
         [SerializeField, Min(0f)] private float purpleEnergyCost = 45f;
 
-        private readonly Dictionary<Health, float> blueMarkedUntil =
-            new Dictionary<Health, float>();
+        private readonly Dictionary<Health, float> blueMarkedUntil = new Dictionary<Health, float>();
         private readonly List<Health> expiredMarks = new List<Health>();
 
         private Health ownHealth;
@@ -67,7 +65,6 @@ namespace JJKGame.Player
         private bool PurpleReady =>
             PurpleBaseReady
             && (cursedEnergy == null || cursedEnergy.CanSpend(purpleEnergyCost));
-
         private float PurpleCooldownRemaining => Mathf.Max(0f, nextPurpleAt - Time.time);
         private float PurpleCooldownProgress => purpleCooldown <= 0f
             ? 1f
@@ -110,7 +107,6 @@ namespace JJKGame.Player
                 techniqueController.BlueHit -= HandleBlueHit;
                 techniqueController.RedHit -= HandleRedHit;
             }
-
             if (purpleVisualRoot != null)
             {
                 purpleVisualRoot.SetActive(false);
@@ -134,11 +130,7 @@ namespace JJKGame.Player
             {
                 ActivatePurple();
             }
-            else if (
-                PurpleBaseReady
-                && cursedEnergy != null
-                && !cursedEnergy.CanSpend(purpleEnergyCost)
-            )
+            else if (PurpleBaseReady && cursedEnergy != null && !cursedEnergy.CanSpend(purpleEnergyCost))
             {
                 cursedEnergy.NotifyInsufficient("허식 자", purpleEnergyCost);
             }
@@ -153,19 +145,14 @@ namespace JJKGame.Player
 
             bool blueReadyNow = techniqueController.BlueReady;
             bool redReadyNow = techniqueController.RedReady;
-
-            // OFFICIAL_CONFIRMED principle: Purple combines Blue and Red themselves.
-            // Hitting an opponent is not required. The preparation window is GAME_ORIGINAL.
             if (blueWasReady && !blueReadyNow)
             {
                 bluePreparedUntil = Time.time + purplePreparationDuration;
             }
-
             if (redWasReady && !redReadyNow)
             {
                 redPreparedUntil = Time.time + purplePreparationDuration;
             }
-
             blueWasReady = blueReadyNow;
             redWasReady = redReadyNow;
         }
@@ -190,18 +177,11 @@ namespace JJKGame.Player
             }
 
             blueMarkedUntil.Remove(target);
-
             if (!target.IsDead)
             {
                 target.TakeDamage(chainBonusDamage);
-                ApplyHitReaction(
-                    target,
-                    GetDirectionAwayFromCaster(target),
-                    empoweredPushSpeed,
-                    empoweredHitStun
-                );
+                ApplyHitReaction(target, DirectionAwayFromCaster(target), empoweredPushSpeed, empoweredHitStun);
             }
-
             chainNoticeUntil = Time.time + chainNoticeDuration;
         }
 
@@ -209,22 +189,17 @@ namespace JJKGame.Player
         {
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
             cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
-            if (
-                cursedEnergy != null
-                && !cursedEnergy.TrySpend(purpleEnergyCost, "허식 자")
-            )
+            if (cursedEnergy != null && !cursedEnergy.TrySpend(purpleEnergyCost, "허식 자"))
             {
                 return;
             }
 
             Vector3 direction = FindPurpleAimDirection();
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
-
             bluePreparedUntil = 0f;
             redPreparedUntil = 0f;
             nextPurpleAt = Time.time + purpleCooldown;
             purpleNoticeUntil = Time.time + 1.2f;
-
             ShowPurpleVisual();
             ApplyPurpleDamage(direction);
         }
@@ -234,7 +209,7 @@ namespace JJKGame.Player
             Vector3 start = transform.position + Vector3.up * 1.0f + direction * 0.8f;
             Vector3 end = start + direction * purpleRange;
             Collider[] hits = Physics.OverlapCapsule(start, end, purpleRadius);
-            HashSet<Health> affectedTargets = new HashSet<Health>();
+            HashSet<Health> affected = new HashSet<Health>();
 
             foreach (Collider hit in hits)
             {
@@ -243,13 +218,12 @@ namespace JJKGame.Player
                     target == null
                     || target == ownHealth
                     || target.IsDead
-                    || !affectedTargets.Add(target)
+                    || !affected.Add(target)
                     || !target.TakeDamage(purpleDamage)
                 )
                 {
                     continue;
                 }
-
                 ApplyHitReaction(target, direction, purplePushSpeed, purpleHitStun);
             }
         }
@@ -264,20 +238,17 @@ namespace JJKGame.Player
             Health[] healthObjects = FindObjectsByType<Health>(FindObjectsSortMode.None);
             Health nearest = null;
             float nearestDistanceSqr = float.MaxValue;
-
             foreach (Health health in healthObjects)
             {
                 if (health == null || health == ownHealth || health.IsDead)
                 {
                     continue;
                 }
-
                 Vector3 offset = health.transform.position - transform.position;
                 offset.y = 0f;
-                float distanceSqr = offset.sqrMagnitude;
-                if (distanceSqr < nearestDistanceSqr)
+                if (offset.sqrMagnitude < nearestDistanceSqr)
                 {
-                    nearestDistanceSqr = distanceSqr;
+                    nearestDistanceSqr = offset.sqrMagnitude;
                     nearest = health;
                 }
             }
@@ -286,29 +257,19 @@ namespace JJKGame.Player
             {
                 return transform.forward;
             }
-
             Vector3 direction = nearest.transform.position - transform.position;
             direction.y = 0f;
-            return direction.sqrMagnitude > 0.001f
-                ? direction.normalized
-                : transform.forward;
+            return direction.sqrMagnitude > 0.001f ? direction.normalized : transform.forward;
         }
 
-        private Vector3 GetDirectionAwayFromCaster(Health target)
+        private Vector3 DirectionAwayFromCaster(Health target)
         {
             Vector3 direction = target.transform.position - transform.position;
             direction.y = 0f;
-            return direction.sqrMagnitude > 0.001f
-                ? direction.normalized
-                : transform.forward;
+            return direction.sqrMagnitude > 0.001f ? direction.normalized : transform.forward;
         }
 
-        private static void ApplyHitReaction(
-            Health target,
-            Vector3 direction,
-            float impulseSpeed,
-            float hitStun
-        )
+        private static void ApplyHitReaction(Health target, Vector3 direction, float impulseSpeed, float hitStun)
         {
             Vector3 impulse = direction.normalized * impulseSpeed;
             MonoBehaviour[] behaviours = target.GetComponents<MonoBehaviour>();
@@ -325,7 +286,6 @@ namespace JJKGame.Player
         private void RemoveExpiredMarks()
         {
             expiredMarks.Clear();
-
             foreach (KeyValuePair<Health, float> mark in blueMarkedUntil)
             {
                 if (mark.Key == null || mark.Key.IsDead || Time.time > mark.Value)
@@ -333,7 +293,6 @@ namespace JJKGame.Player
                     expiredMarks.Add(mark.Key);
                 }
             }
-
             foreach (Health target in expiredMarks)
             {
                 blueMarkedUntil.Remove(target);
@@ -349,7 +308,6 @@ namespace JJKGame.Player
                     return true;
                 }
             }
-
             return false;
         }
 
@@ -357,21 +315,9 @@ namespace JJKGame.Player
         {
             purpleVisualRoot = new GameObject("HollowPurplePrototypeVisual");
             purpleVisualRoot.transform.SetParent(transform, false);
-            purpleVisualRoot.transform.localPosition =
-                Vector3.up * 1.05f + Vector3.forward * 0.8f;
-
-            purpleOuterBeam = CreateBeam(
-                "PurpleOuterBeam",
-                0.95f,
-                1.65f,
-                new Color(0.62f, 0.10f, 1f, 0.95f)
-            );
-            purpleCoreBeam = CreateBeam(
-                "PurpleCoreBeam",
-                0.28f,
-                0.55f,
-                new Color(0.96f, 0.82f, 1f, 0.98f)
-            );
+            purpleVisualRoot.transform.localPosition = Vector3.up * 1.05f + Vector3.forward * 0.8f;
+            purpleOuterBeam = CreateBeam("PurpleOuterBeam", 0.95f, 1.65f, new Color(0.62f, 0.10f, 1f, 0.95f));
+            purpleCoreBeam = CreateBeam("PurpleCoreBeam", 0.28f, 0.55f, new Color(0.96f, 0.82f, 1f, 0.98f));
 
             GameObject lightObject = new GameObject("PurpleLight");
             lightObject.transform.SetParent(purpleVisualRoot.transform, false);
@@ -382,20 +328,13 @@ namespace JJKGame.Player
             purpleLight.range = 10f;
             purpleLight.intensity = 6f;
             purpleLight.shadows = LightShadows.None;
-
             purpleVisualRoot.SetActive(false);
         }
 
-        private LineRenderer CreateBeam(
-            string objectName,
-            float startWidth,
-            float endWidth,
-            Color color
-        )
+        private LineRenderer CreateBeam(string objectName, float startWidth, float endWidth, Color color)
         {
             GameObject beamObject = new GameObject(objectName);
             beamObject.transform.SetParent(purpleVisualRoot.transform, false);
-
             LineRenderer line = beamObject.AddComponent<LineRenderer>();
             line.useWorldSpace = false;
             line.positionCount = 2;
@@ -408,18 +347,15 @@ namespace JJKGame.Player
             line.numCapVertices = 8;
             line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             line.receiveShadows = false;
-
             Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null)
             {
                 shader = Shader.Find("Sprites/Default");
             }
-
             if (shader != null)
             {
                 line.material = new Material(shader) { color = color };
             }
-
             return line;
         }
 
@@ -447,22 +383,13 @@ namespace JJKGame.Player
             float normalized = Mathf.Clamp01(elapsed / purpleVisualDuration);
             float pulse = 1f + Mathf.Sin(elapsed * 28f) * 0.12f;
             float alpha = 1f - normalized;
-
             purpleOuterBeam.startWidth = Mathf.Lerp(0.95f, 1.7f, normalized) * pulse;
             purpleOuterBeam.endWidth = Mathf.Lerp(1.65f, 2.6f, normalized) * pulse;
             purpleCoreBeam.startWidth = Mathf.Lerp(0.28f, 0.08f, normalized);
             purpleCoreBeam.endWidth = Mathf.Lerp(0.55f, 0.14f, normalized);
-
-            SetBeamColor(
-                purpleOuterBeam,
-                new Color(0.62f, 0.10f, 1f, 0.95f * alpha)
-            );
-            SetBeamColor(
-                purpleCoreBeam,
-                new Color(0.96f, 0.82f, 1f, 0.98f * alpha)
-            );
+            SetBeamColor(purpleOuterBeam, new Color(0.62f, 0.10f, 1f, 0.95f * alpha));
+            SetBeamColor(purpleCoreBeam, new Color(0.96f, 0.82f, 1f, 0.98f * alpha));
             purpleLight.intensity = Mathf.Lerp(6f, 0f, normalized);
-
             if (elapsed >= purpleVisualDuration)
             {
                 purpleVisualRoot.SetActive(false);
@@ -475,7 +402,6 @@ namespace JJKGame.Player
             {
                 return;
             }
-
             line.startColor = color;
             line.endColor = color;
         }
@@ -492,104 +418,70 @@ namespace JJKGame.Player
 
             if (Time.time <= purpleNoticeUntil)
             {
-                DrawCenterNotice(
-                    "HOLLOW PURPLE · 허식 「자」",
-                    new Color(0.74f, 0.26f, 1f, 0.98f)
-                );
+                DrawCenterNotice("HOLLOW PURPLE · 허식 「자」", new Color(0.74f, 0.26f, 1f));
                 return;
             }
-
             if (Time.time <= chainNoticeUntil)
             {
-                DrawCenterNotice(
-                    "BLUE → RED CHAIN  ·  BONUS +12",
-                    new Color(0.82f, 0.28f, 1f, 0.98f)
-                );
+                DrawCenterNotice("BLUE → RED · BONUS +12", new Color(0.82f, 0.28f, 1f));
                 return;
             }
-
             if (HasBlueMarkedTarget())
             {
-                float width = Mathf.Min(350f, Screen.width - 48f);
-                Rect primedRect = new Rect(24f, 283f, width, 34f);
-                DrawRect(primedRect, new Color(0.09f, 0.025f, 0.13f, 0.92f));
-                DrawBorder(primedRect, new Color(0.72f, 0.30f, 1f, 0.96f), 2f);
-                GUI.Label(
-                    primedRect,
-                    $"BLUE MARK · {CombatInputBindings.Skill2Label}로 혁 연계",
-                    skillStyle
-                );
+                float width = Mathf.Min(330f, Screen.width - 24f);
+                Rect rect = new Rect(12f, 203f, width, 25f);
+                DrawRect(rect, new Color(0.09f, 0.025f, 0.13f, 0.88f));
+                DrawBorder(rect, new Color(0.72f, 0.30f, 1f), 1f);
+                GUI.Label(rect, "BLUE MARK · E로 혁 연계", skillStyle);
             }
         }
 
         private void DrawPurpleSkillPanel()
         {
-            float width = Mathf.Min(410f, Screen.width - 48f);
-            Rect panel = new Rect(24f, 239f, width, 38f);
-            Color accent = PurpleReady
-                ? new Color(0.76f, 0.28f, 1f, 0.98f)
-                : new Color(0.42f, 0.34f, 0.52f, 0.96f);
-
-            DrawRect(panel, new Color(0.055f, 0.012f, 0.085f, 0.93f));
-            Rect fill = new Rect(
-                panel.x + 2f,
-                panel.y + 2f,
-                (panel.width - 4f) * PurpleCooldownProgress,
-                panel.height - 4f
-            );
-            DrawRect(fill, new Color(0.38f, 0.06f, 0.58f, 0.72f));
-            DrawBorder(panel, accent, 2f);
+            float width = Mathf.Min(330f, Screen.width - 24f);
+            Rect panel = new Rect(12f, 170f, width, 29f);
+            Color accent = PurpleReady ? new Color(0.76f, 0.28f, 1f) : new Color(0.42f, 0.34f, 0.52f);
+            DrawRect(panel, new Color(0.055f, 0.012f, 0.085f, 0.88f));
+            DrawRect(new Rect(panel.x + 2f, panel.y + 2f, (panel.width - 4f) * PurpleCooldownProgress, panel.height - 4f), new Color(0.38f, 0.06f, 0.58f, 0.66f));
+            DrawBorder(panel, accent, 1f);
             GUI.Label(panel, BuildPurpleStatusText(), skillStyle);
         }
 
         private string BuildPurpleStatusText()
         {
-            string skillName = $"{CombatInputBindings.UltimateLabel} · 허식 「자」";
-            float actualCost = cursedEnergy != null
-                ? cursedEnergy.ResolveCost(purpleEnergyCost)
-                : purpleEnergyCost;
-
+            string skillName = "R · 허식 「자」";
+            float actualCost = cursedEnergy != null ? cursedEnergy.ResolveCost(purpleEnergyCost) : purpleEnergyCost;
             if (burnout != null && burnout.IsBurnedOut)
             {
-                return $"{skillName}  술식 번아웃 {burnout.Remaining:0.0}s";
+                return $"{skillName} · 번아웃 {burnout.Remaining:0.0}s";
             }
-
             if (techniqueController == null || !techniqueController.CanUseUltimate)
             {
-                return skillName + "  사용 불가";
+                return skillName + " · 사용 불가";
             }
-
             if (!PurpleCooldownReady)
             {
-                return $"{skillName}  {PurpleCooldownRemaining:0.0}s";
+                return $"{skillName} · {PurpleCooldownRemaining:0.0}s";
             }
-
             if (!BluePrepared || !RedPrepared)
             {
-                return $"{skillName}  창 사용 {(BluePrepared ? 1 : 0)}/1 · 혁 사용 {(RedPrepared ? 1 : 0)}/1";
+                return $"{skillName} · 창 {(BluePrepared ? 1 : 0)}/1 · 혁 {(RedPrepared ? 1 : 0)}/1";
             }
-
             if (cursedEnergy != null && !cursedEnergy.CanSpend(purpleEnergyCost))
             {
-                return $"{skillName}  주력 부족 · 필요 {actualCost:0}";
+                return $"{skillName} · 주력 부족 {actualCost:0}";
             }
-
-            return $"{skillName}  READY · 주력 {actualCost:0}";
+            return $"{skillName} · READY · CE {actualCost:0}";
         }
 
         private void DrawCenterNotice(string text, Color accent)
         {
-            float width = Mathf.Min(560f, Screen.width - 48f);
-            Rect noticeRect = new Rect(
-                (Screen.width - width) * 0.5f,
-                Screen.height * 0.22f,
-                width,
-                68f
-            );
-            DrawRect(noticeRect, new Color(0.11f, 0.008f, 0.16f, 0.95f));
-            DrawBorder(noticeRect, accent, 3f);
+            float width = Mathf.Min(440f, Screen.width - 24f);
+            Rect rect = new Rect((Screen.width - width) * 0.5f, Screen.height * 0.20f, width, 48f);
+            DrawRect(rect, new Color(0.11f, 0.008f, 0.16f, 0.92f));
+            DrawBorder(rect, accent, 2f);
             noticeStyle.normal.textColor = accent;
-            GUI.Label(noticeRect, text, noticeStyle);
+            GUI.Label(rect, text, noticeStyle);
         }
 
         private void EnsureStyles()
@@ -600,8 +492,7 @@ namespace JJKGame.Player
             }
 
             styledForHeight = Screen.height;
-            int baseSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 48f, 14f, 20f));
-
+            int baseSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 68f, 11f, 15f));
             skillStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = baseSize,
@@ -609,10 +500,9 @@ namespace JJKGame.Player
                 alignment = TextAnchor.MiddleCenter,
             };
             skillStyle.normal.textColor = new Color(0.94f, 0.86f, 1f);
-
             noticeStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.Max(22, baseSize + 8),
+                fontSize = Mathf.Max(19, baseSize + 7),
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
@@ -620,10 +510,10 @@ namespace JJKGame.Player
 
         private static void DrawRect(Rect rect, Color color)
         {
-            Color previousColor = GUI.color;
+            Color previous = GUI.color;
             GUI.color = color;
             GUI.DrawTexture(rect, Texture2D.whiteTexture);
-            GUI.color = previousColor;
+            GUI.color = previous;
         }
 
         private static void DrawBorder(Rect rect, Color color, float thickness)
@@ -632,16 +522,6 @@ namespace JJKGame.Player
             DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
             DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
             DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            Vector3 direction = transform.forward;
-            Vector3 start = transform.position + Vector3.up * 1.0f + direction * 0.8f;
-            Vector3 end = start + direction * purpleRange;
-            Gizmos.DrawWireSphere(start, purpleRadius);
-            Gizmos.DrawWireSphere(end, purpleRadius);
-            Gizmos.DrawLine(start, end);
         }
     }
 }
