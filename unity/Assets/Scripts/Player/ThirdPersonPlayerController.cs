@@ -12,6 +12,7 @@ namespace JJKGame.Player
         [SerializeField, Min(0.1f)] private float rotationSpeed = 14f;
         [SerializeField] private float gravity = -24f;
         [SerializeField] private Transform cameraTransform;
+        [SerializeField, Range(0f, 1f)] private float techniqueCastMoveMultiplier = 0.35f;
 
         [Header("Dodge")]
         [SerializeField, Min(0.1f)] private float dodgeSpeed = 12f;
@@ -21,19 +22,36 @@ namespace JJKGame.Player
 
         private CharacterController controller;
         private Health health;
+        private GojoTechniqueController techniqueController;
+        private PrototypeCombatAudio combatAudio;
         private float verticalVelocity;
         private float dodgeEndsAt;
         private float nextDodgeAt;
         private Vector3 dodgeDirection;
 
         public bool IsDodging => Time.time < dodgeEndsAt;
-        public bool DodgeReady => Time.time >= nextDodgeAt && !IsDodging;
+        public bool DodgeReady => Time.time >= nextDodgeAt && !IsDodging && !TechniqueCasting;
         public float DodgeCooldownRemaining => Mathf.Max(0f, nextDodgeAt - Time.time);
+
+        private bool TechniqueCasting
+        {
+            get
+            {
+                if (techniqueController == null)
+                {
+                    techniqueController = GetComponent<GojoTechniqueController>();
+                }
+
+                return techniqueController != null && techniqueController.IsCasting;
+            }
+        }
 
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
             health = GetComponent<Health>();
+            techniqueController = GetComponent<GojoTechniqueController>();
+            combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
 
             if (cameraTransform == null && Camera.main != null)
             {
@@ -52,6 +70,7 @@ namespace JJKGame.Player
 
             if (
                 !IsDodging
+                && !TechniqueCasting
                 && Input.GetKeyDown(CombatInputBindings.Dodge)
                 && DodgeReady
             )
@@ -76,7 +95,10 @@ namespace JJKGame.Player
             }
 
             ApplyGroundingAndGravity();
-            Vector3 velocity = moveDirection * moveSpeed;
+            float currentMoveSpeed = TechniqueCasting
+                ? moveSpeed * techniqueCastMoveMultiplier
+                : moveSpeed;
+            Vector3 velocity = moveDirection * currentMoveSpeed;
             velocity.y = verticalVelocity;
             controller.Move(velocity * Time.deltaTime);
         }
@@ -93,6 +115,8 @@ namespace JJKGame.Player
             dodgeEndsAt = Time.time + dodgeDuration;
             nextDodgeAt = Time.time + dodgeCooldown;
             health.GrantInvulnerability(dodgeInvulnerabilityDuration);
+            combatAudio ??= PrototypeCombatAudio.GetOrCreate(gameObject);
+            combatAudio?.PlayDodge();
         }
 
         private void ApplyDodgeMovement()
