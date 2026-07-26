@@ -26,6 +26,7 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float purplePushSpeed = 34f;
         [SerializeField, Min(0f)] private float purpleHitStun = 1f;
         [SerializeField, Min(0.1f)] private float purpleVisualDuration = 0.85f;
+        [SerializeField, Min(0f)] private float purpleEnergyCost = 45f;
 
         private readonly Dictionary<Health, float> blueMarkedUntil =
             new Dictionary<Health, float>();
@@ -34,6 +35,7 @@ namespace JJKGame.Player
         private Health ownHealth;
         private GojoTechniqueController techniqueController;
         private TargetLockController targetLock;
+        private CursedEnergyController cursedEnergy;
         private bool blueWasReady;
         private bool redWasReady;
         private float bluePreparedUntil;
@@ -55,12 +57,15 @@ namespace JJKGame.Player
         private bool BluePrepared => Time.time <= bluePreparedUntil;
         private bool RedPrepared => Time.time <= redPreparedUntil;
         private bool PurpleCooldownReady => Time.time >= nextPurpleAt;
-        private bool PurpleReady =>
+        private bool PurpleBaseReady =>
             BluePrepared
             && RedPrepared
             && PurpleCooldownReady
             && techniqueController != null
             && techniqueController.CanUseUltimate;
+        private bool PurpleReady =>
+            PurpleBaseReady
+            && (cursedEnergy == null || cursedEnergy.CanSpend(purpleEnergyCost));
 
         private float PurpleCooldownRemaining => Mathf.Max(0f, nextPurpleAt - Time.time);
         private float PurpleCooldownProgress => purpleCooldown <= 0f
@@ -72,6 +77,7 @@ namespace JJKGame.Player
             ownHealth = GetComponent<Health>();
             techniqueController = GetComponent<GojoTechniqueController>();
             targetLock = GetComponent<TargetLockController>();
+            cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
             blueWasReady = techniqueController != null && techniqueController.BlueReady;
             redWasReady = techniqueController != null && techniqueController.RedReady;
             BuildPurpleVisual();
@@ -79,15 +85,9 @@ namespace JJKGame.Player
 
         private void OnEnable()
         {
-            if (techniqueController == null)
-            {
-                techniqueController = GetComponent<GojoTechniqueController>();
-            }
-
-            if (targetLock == null)
-            {
-                targetLock = GetComponent<TargetLockController>();
-            }
+            techniqueController ??= GetComponent<GojoTechniqueController>();
+            targetLock ??= GetComponent<TargetLockController>();
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
 
             if (techniqueController != null)
             {
@@ -118,9 +118,23 @@ namespace JJKGame.Player
             DetectTechniqueUses();
             UpdatePurpleVisual();
 
-            if (Input.GetKeyDown(CombatInputBindings.Ultimate) && PurpleReady)
+            if (!Input.GetKeyDown(CombatInputBindings.Ultimate))
+            {
+                return;
+            }
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            if (PurpleReady)
             {
                 ActivatePurple();
+            }
+            else if (
+                PurpleBaseReady
+                && cursedEnergy != null
+                && !cursedEnergy.CanSpend(purpleEnergyCost)
+            )
+            {
+                cursedEnergy.NotifyInsufficient("허식 자", purpleEnergyCost);
             }
         }
 
@@ -154,7 +168,6 @@ namespace JJKGame.Player
         {
             if (target != null)
             {
-                // This mark belongs only to the GAME_ORIGINAL Blue -> Red hit combo.
                 blueMarkedUntil[target] = Time.time + blueMarkDuration;
             }
         }
@@ -188,6 +201,15 @@ namespace JJKGame.Player
 
         private void ActivatePurple()
         {
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            if (
+                cursedEnergy != null
+                && !cursedEnergy.TrySpend(purpleEnergyCost, "허식 자")
+            )
+            {
+                return;
+            }
+
             Vector3 direction = FindPurpleAimDirection();
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
 
@@ -388,10 +410,7 @@ namespace JJKGame.Player
 
             if (shader != null)
             {
-                line.material = new Material(shader)
-                {
-                    color = color,
-                };
+                line.material = new Material(shader) { color = color };
             }
 
             return line;
@@ -498,10 +517,9 @@ namespace JJKGame.Player
 
         private void DrawPurpleSkillPanel()
         {
-            float width = Mathf.Min(350f, Screen.width - 48f);
+            float width = Mathf.Min(410f, Screen.width - 48f);
             Rect panel = new Rect(24f, 239f, width, 38f);
-            bool usable = PurpleReady;
-            Color accent = usable
+            Color accent = PurpleReady
                 ? new Color(0.76f, 0.28f, 1f, 0.98f)
                 : new Color(0.42f, 0.34f, 0.52f, 0.96f);
 
@@ -531,12 +549,17 @@ namespace JJKGame.Player
                 return $"{skillName}  {PurpleCooldownRemaining:0.0}s";
             }
 
-            if (PurpleReady)
+            if (!BluePrepared || !RedPrepared)
             {
-                return skillName + "  READY";
+                return $"{skillName}  창 사용 {(BluePrepared ? 1 : 0)}/1 · 혁 사용 {(RedPrepared ? 1 : 0)}/1";
             }
 
-            return $"{skillName}  창 사용 {(BluePrepared ? 1 : 0)}/1 · 혁 사용 {(RedPrepared ? 1 : 0)}/1";
+            if (cursedEnergy != null && !cursedEnergy.CanSpend(purpleEnergyCost))
+            {
+                return $"{skillName}  주력 부족 · 필요 {purpleEnergyCost:0}";
+            }
+
+            return $"{skillName}  READY · 주력 {purpleEnergyCost:0}";
         }
 
         private void DrawCenterNotice(string text, Color accent)
