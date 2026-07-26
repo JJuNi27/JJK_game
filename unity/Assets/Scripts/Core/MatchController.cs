@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using JJKGame.Enemy;
 using JJKGame.Player;
 using UnityEngine;
@@ -11,11 +12,21 @@ namespace JJKGame.Core
         [SerializeField] private Health enemyHealth;
         [SerializeField] private GojoDomainController gojoDomain;
 
+        [Header("Prototype Encounter")]
+        [SerializeField, Min(1)] private int prototypeEnemyCount = 2;
+        [SerializeField, Min(3f)] private float arenaGroundScale = 6.5f;
+        [SerializeField] private bool createSafetyWalls = true;
+        [SerializeField, Min(0.2f)] private float safetyWallThickness = 0.8f;
+        [SerializeField, Min(0.2f)] private float safetyWallHeight = 1.2f;
+
+        private readonly List<Health> enemyHealths = new List<Health>();
+        private readonly List<CurseBotController> enemyBots = new List<CurseBotController>();
+
         private string resultText = string.Empty;
         private bool matchFinished;
         private BasicAttack playerAttack;
         private ThirdPersonPlayerController playerMovement;
-        private CurseBotController enemyBot;
+        private TargetLockController targetLock;
 
         private GUIStyle headerStyle;
         private GUIStyle healthValueStyle;
@@ -26,6 +37,23 @@ namespace JJKGame.Core
         private GUIStyle resultStyle;
         private GUIStyle resultHintStyle;
         private int styledForHeight = -1;
+
+        public int LivingEnemyCount
+        {
+            get
+            {
+                int living = 0;
+                foreach (Health health in enemyHealths)
+                {
+                    if (health != null && !health.IsDead)
+                    {
+                        living += 1;
+                    }
+                }
+
+                return living;
+            }
+        }
 
         public void Configure(
             Health newPlayerHealth,
@@ -47,11 +75,21 @@ namespace JJKGame.Core
                 return;
             }
 
+            ExpandPrototypeArena();
+            BuildEnemyRoster();
+
             playerAttack = playerHealth.GetComponent<BasicAttack>();
             playerMovement = playerHealth.GetComponent<ThirdPersonPlayerController>();
-            enemyBot = enemyHealth.GetComponent<CurseBotController>();
+            targetLock = playerHealth.GetComponent<TargetLockController>();
             playerHealth.Died += HandlePlayerDeath;
-            enemyHealth.Died += HandleEnemyDeath;
+
+            foreach (Health health in enemyHealths)
+            {
+                if (health != null)
+                {
+                    health.Died += HandleEnemyDeath;
+                }
+            }
         }
 
         private void OnDestroy()
@@ -61,9 +99,12 @@ namespace JJKGame.Core
                 playerHealth.Died -= HandlePlayerDeath;
             }
 
-            if (enemyHealth != null)
+            foreach (Health health in enemyHealths)
             {
-                enemyHealth.Died -= HandleEnemyDeath;
+                if (health != null)
+                {
+                    health.Died -= HandleEnemyDeath;
+                }
             }
         }
 
@@ -75,6 +116,173 @@ namespace JJKGame.Core
             }
         }
 
+        private void BuildEnemyRoster()
+        {
+            enemyHealths.Clear();
+            enemyBots.Clear();
+            RegisterEnemy(enemyHealth);
+
+            Health[] sceneHealth = FindObjectsByType<Health>(FindObjectsSortMode.None);
+            foreach (Health health in sceneHealth)
+            {
+                if (health != null && health != playerHealth && health != enemyHealth)
+                {
+                    RegisterEnemy(health);
+                }
+            }
+
+            int desiredCount = Mathf.Max(1, prototypeEnemyCount);
+            while (enemyHealths.Count < desiredCount)
+            {
+                int newIndex = enemyHealths.Count;
+                GameObject clone = Instantiate(enemyHealth.gameObject);
+                clone.name = $"CurseBot_{(char)('A' + newIndex)}";
+                clone.transform.position = GetPrototypeEnemySpawnPosition(newIndex);
+                clone.transform.rotation = Quaternion.LookRotation(
+                    playerHealth.transform.position - clone.transform.position,
+                    Vector3.up
+                );
+
+                Health cloneHealth = clone.GetComponent<Health>();
+                if (cloneHealth != null)
+                {
+                    cloneHealth.ResetHealth();
+                    RegisterEnemy(cloneHealth);
+                }
+                else
+                {
+                    Destroy(clone);
+                    break;
+                }
+            }
+        }
+
+        private void RegisterEnemy(Health health)
+        {
+            if (health == null || health == playerHealth || enemyHealths.Contains(health))
+            {
+                return;
+            }
+
+            enemyHealths.Add(health);
+            CurseBotController bot = health.GetComponent<CurseBotController>();
+            if (bot != null)
+            {
+                enemyBots.Add(bot);
+            }
+        }
+
+        private Vector3 GetPrototypeEnemySpawnPosition(int enemyIndex)
+        {
+            Vector3 basePosition = enemyHealth.transform.position;
+            if (enemyIndex <= 0)
+            {
+                return basePosition;
+            }
+
+            int row = (enemyIndex - 1) / 2;
+            float side = enemyIndex % 2 == 1 ? -1f : 1f;
+            return basePosition + new Vector3(side * (7f + row * 2f), 0f, 3f + row * 4f);
+        }
+
+        private void ExpandPrototypeArena()
+        {
+            GameObject ground = GameObject.Find("ArenaGround");
+            if (ground == null)
+            {
+                Debug.LogWarning("ArenaGround를 찾지 못해 런타임 맵 확장을 건너뜁니다.");
+                return;
+            }
+
+            Vector3 scale = ground.transform.localScale;
+            scale.x = Mathf.Max(scale.x, arenaGroundScale);
+            scale.z = Mathf.Max(scale.z, arenaGroundScale);
+            ground.transform.localScale = scale;
+
+            if (!createSafetyWalls || GameObject.Find("PrototypeArenaBoundary") != null)
+            {
+                return;
+            }
+
+            Renderer groundRenderer = ground.GetComponent<Renderer>();
+            if (groundRenderer == null)
+            {
+                return;
+            }
+
+            Bounds bounds = groundRenderer.bounds;
+            CreateSafetyWalls(bounds);
+        }
+
+        private void CreateSafetyWalls(Bounds arenaBounds)
+        {
+            GameObject root = new GameObject("PrototypeArenaBoundary");
+            float thickness = safetyWallThickness;
+            float height = safetyWallHeight;
+            float y = arenaBounds.max.y + height * 0.5f;
+            float fullWidth = arenaBounds.size.x + thickness * 2f;
+            float fullDepth = arenaBounds.size.z + thickness * 2f;
+
+            CreateSafetyWall(
+                root.transform,
+                "NorthWall",
+                new Vector3(arenaBounds.center.x, y, arenaBounds.max.z + thickness * 0.5f),
+                new Vector3(fullWidth, height, thickness)
+            );
+            CreateSafetyWall(
+                root.transform,
+                "SouthWall",
+                new Vector3(arenaBounds.center.x, y, arenaBounds.min.z - thickness * 0.5f),
+                new Vector3(fullWidth, height, thickness)
+            );
+            CreateSafetyWall(
+                root.transform,
+                "EastWall",
+                new Vector3(arenaBounds.max.x + thickness * 0.5f, y, arenaBounds.center.z),
+                new Vector3(thickness, height, fullDepth)
+            );
+            CreateSafetyWall(
+                root.transform,
+                "WestWall",
+                new Vector3(arenaBounds.min.x - thickness * 0.5f, y, arenaBounds.center.z),
+                new Vector3(thickness, height, fullDepth)
+            );
+        }
+
+        private static void CreateSafetyWall(
+            Transform parent,
+            string objectName,
+            Vector3 position,
+            Vector3 scale
+        )
+        {
+            GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.name = objectName;
+            wall.transform.SetParent(parent, false);
+            wall.transform.position = position;
+            wall.transform.localScale = scale;
+
+            Renderer renderer = wall.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                return;
+            }
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+
+            if (shader != null)
+            {
+                renderer.material = new Material(shader)
+                {
+                    color = new Color(0.055f, 0.10f, 0.18f, 1f),
+                };
+            }
+        }
+
         private void HandlePlayerDeath(Health _)
         {
             FinishMatch("DEFEAT");
@@ -82,7 +290,10 @@ namespace JJKGame.Core
 
         private void HandleEnemyDeath(Health _)
         {
-            FinishMatch("VICTORY");
+            if (LivingEnemyCount <= 0)
+            {
+                FinishMatch("VICTORY");
+            }
         }
 
         private void FinishMatch(string result)
@@ -109,6 +320,11 @@ namespace JJKGame.Core
                 playerAttack.enabled = false;
             }
 
+            if (targetLock != null)
+            {
+                targetLock.enabled = false;
+            }
+
             if (playerHealth != null)
             {
                 GojoTechniqueChainController techniqueChain =
@@ -133,15 +349,18 @@ namespace JJKGame.Core
                 gojoDomain.enabled = false;
             }
 
-            if (enemyBot != null)
+            foreach (CurseBotController bot in enemyBots)
             {
-                enemyBot.enabled = false;
+                if (bot != null)
+                {
+                    bot.enabled = false;
+                }
             }
         }
 
         private void OnGUI()
         {
-            if (playerHealth == null || enemyHealth == null)
+            if (playerHealth == null || enemyHealths.Count == 0)
             {
                 return;
             }
@@ -158,18 +377,13 @@ namespace JJKGame.Core
         private void DrawCombatHud()
         {
             const float margin = 24f;
-            const float panelHeight = 84f;
+            const float playerPanelHeight = 84f;
+            const float enemyPanelHeight = 70f;
+            const float enemyPanelGap = 7f;
             float availableHalfWidth = (Screen.width - margin * 3f) * 0.5f;
             float panelWidth = Mathf.Clamp(availableHalfWidth, 250f, 440f);
 
-            Rect playerRect = new Rect(margin, margin, panelWidth, panelHeight);
-            Rect enemyRect = new Rect(
-                Screen.width - margin - panelWidth,
-                margin,
-                panelWidth,
-                panelHeight
-            );
-
+            Rect playerRect = new Rect(margin, margin, panelWidth, playerPanelHeight);
             DrawHealthPanel(
                 playerRect,
                 "PLAYER · GOJO SATORU",
@@ -177,18 +391,51 @@ namespace JJKGame.Core
                 new Color(0.18f, 0.66f, 1f),
                 TextAnchor.UpperLeft
             );
-            DrawHealthPanel(
-                enemyRect,
-                "CURSE BOT",
-                enemyHealth,
-                new Color(0.92f, 0.16f, 0.20f),
-                TextAnchor.UpperRight
-            );
 
+            for (int index = 0; index < enemyHealths.Count; index++)
+            {
+                Health health = enemyHealths[index];
+                if (health == null)
+                {
+                    continue;
+                }
+
+                Rect enemyRect = new Rect(
+                    Screen.width - margin - panelWidth,
+                    margin + index * (enemyPanelHeight + enemyPanelGap),
+                    panelWidth,
+                    enemyPanelHeight
+                );
+                string state = health.IsDead ? " · DEFEATED" : string.Empty;
+                DrawHealthPanel(
+                    enemyRect,
+                    $"CURSE BOT {(char)('A' + index)}{state}",
+                    health,
+                    index % 2 == 0
+                        ? new Color(0.92f, 0.16f, 0.20f)
+                        : new Color(0.88f, 0.34f, 0.12f),
+                    TextAnchor.UpperRight
+                );
+            }
+
+            DrawEnemyCount();
             DrawDodgeStatus(playerRect);
             DrawAttackIndicators();
             DrawEnemyAttackWarning();
             DrawDomainPanel(margin);
+        }
+
+        private void DrawEnemyCount()
+        {
+            float width = 230f;
+            Rect rect = new Rect((Screen.width - width) * 0.5f, 6f, width, 28f);
+            Color accent = LivingEnemyCount > 0
+                ? new Color(1f, 0.55f, 0.18f, 0.98f)
+                : new Color(0.20f, 0.78f, 1f, 0.98f);
+            DrawRect(rect, new Color(0.045f, 0.025f, 0.012f, 0.90f));
+            DrawBorder(rect, accent, 2f);
+            comboStyle.normal.textColor = accent;
+            GUI.Label(rect, $"CURSES LEFT  {LivingEnemyCount} / {enemyHealths.Count}", comboStyle);
         }
 
         private void DrawDodgeStatus(Rect playerRect)
@@ -230,7 +477,7 @@ namespace JJKGame.Core
                 return;
             }
 
-            float y = 25f;
+            float y = 40f;
             if (playerAttack.DisplayChainStep > 0)
             {
                 bool finisher = playerAttack.DisplayChainStep == 3;
@@ -260,7 +507,23 @@ namespace JJKGame.Core
 
         private void DrawEnemyAttackWarning()
         {
-            if (enemyBot == null || !enemyBot.IsAttackTelegraphing || matchFinished)
+            if (matchFinished)
+            {
+                return;
+            }
+
+            int telegraphCount = 0;
+            float greatestProgress = 0f;
+            foreach (CurseBotController bot in enemyBots)
+            {
+                if (bot != null && bot.IsAttackTelegraphing)
+                {
+                    telegraphCount += 1;
+                    greatestProgress = Mathf.Max(greatestProgress, bot.AttackWindupProgress);
+                }
+            }
+
+            if (telegraphCount == 0)
             {
                 return;
             }
@@ -277,9 +540,12 @@ namespace JJKGame.Core
             DrawRect(warningRect, new Color(0.10f, 0.025f, 0.008f, 0.92f));
             DrawBorder(warningRect, accent, 3f);
             warningStyle.normal.textColor = accent;
+            string warningText = telegraphCount > 1
+                ? $"DODGE! × {telegraphCount}  [{CombatInputBindings.DodgeLabel}]"
+                : $"DODGE!  [{CombatInputBindings.DodgeLabel}]";
             GUI.Label(
                 new Rect(warningRect.x, warningRect.y + 5f, warningRect.width, 43f),
-                $"DODGE!  [{CombatInputBindings.DodgeLabel}]",
+                warningText,
                 warningStyle
             );
 
@@ -294,7 +560,7 @@ namespace JJKGame.Core
                 new Rect(
                     windupBar.x,
                     windupBar.y,
-                    windupBar.width * enemyBot.AttackWindupProgress,
+                    windupBar.width * greatestProgress,
                     windupBar.height
                 ),
                 accent
@@ -305,7 +571,7 @@ namespace JJKGame.Core
         private void DrawDomainPanel(float margin)
         {
             bool showTimingBar = gojoDomain != null && gojoDomain.IsReleaseTiming;
-            float domainWidth = Mathf.Min(900f, Screen.width - margin * 2f);
+            float domainWidth = Mathf.Min(980f, Screen.width - margin * 2f);
             float domainHeight = showTimingBar ? 126f : 68f;
             Rect domainRect = new Rect(
                 (Screen.width - domainWidth) * 0.5f,
@@ -361,10 +627,11 @@ namespace JJKGame.Core
         {
             return
                 $"WASD 이동 · {CombatInputBindings.DodgeLabel} 회피 · 좌클릭 공격 · "
+                + $"{CombatInputBindings.TargetLockLabel} 타깃 · "
                 + $"{CombatInputBindings.Skill1Label}/{CombatInputBindings.Skill2Label} 술식 · "
                 + $"{CombatInputBindings.UltimateLabel} 상위기 · "
                 + $"{CombatInputBindings.DomainLabel} 영역 · "
-                + $"{CombatInputBindings.CancelCommandLabel} 영역 입력 취소";
+                + $"{CombatInputBindings.CancelCommandLabel} 취소";
         }
 
         private void DrawReleaseTimingBar(Rect barRect)
@@ -400,14 +667,14 @@ namespace JJKGame.Core
 
             headerStyle.alignment = titleAlignment;
             GUI.Label(
-                new Rect(panelRect.x + 14f, panelRect.y + 8f, panelRect.width - 28f, 24f),
+                new Rect(panelRect.x + 14f, panelRect.y + 5f, panelRect.width - 28f, 24f),
                 title,
                 headerStyle
             );
 
             Rect barBackground = new Rect(
                 panelRect.x + 14f,
-                panelRect.y + 38f,
+                panelRect.y + 34f,
                 panelRect.width - 28f,
                 24f
             );
@@ -461,7 +728,7 @@ namespace JJKGame.Core
             );
             GUI.Label(
                 new Rect(resultPanel.x + 20f, resultPanel.y + 112f, resultPanel.width - 40f, 34f),
-                victory ? "주령을 퇴치했습니다" : "전투에서 패배했습니다",
+                victory ? "모든 주령을 퇴치했습니다" : "전투에서 패배했습니다",
                 domainStyle
             );
             GUI.Label(
@@ -553,15 +820,9 @@ namespace JJKGame.Core
         private static void DrawBorder(Rect rect, Color color, float thickness)
         {
             DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), color);
-            DrawRect(
-                new Rect(rect.x, rect.yMax - thickness, rect.width, thickness),
-                color
-            );
+            DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
             DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
-            DrawRect(
-                new Rect(rect.xMax - thickness, rect.y, thickness, rect.height),
-                color
-            );
+            DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
         }
     }
 }
