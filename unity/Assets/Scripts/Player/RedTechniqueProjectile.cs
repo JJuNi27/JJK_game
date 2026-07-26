@@ -95,7 +95,15 @@ namespace JJKGame.Player
                     continue;
                 }
 
-                if (!target.TakeDamage(damage))
+                DamageContext context = new DamageContext(
+                    damage,
+                    owner != null ? owner.gameObject : gameObject,
+                    DamageDeliveryType.CursedTechnique,
+                    DamageTraits.None,
+                    "CURSED TECHNIQUE REVERSAL: RED",
+                    target.transform.position + Vector3.up * 0.8f
+                );
+                if (target.ReceiveDamage(context) != DamageResolution.Applied)
                 {
                     continue;
                 }
