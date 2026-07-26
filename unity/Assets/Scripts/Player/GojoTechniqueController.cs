@@ -26,6 +26,7 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float bluePullSpeed = 16f;
         [SerializeField, Min(0f)] private float blueHitStun = 0.42f;
         [SerializeField, Min(0.1f)] private float blueCooldown = 3.2f;
+        [SerializeField, Min(0f)] private float blueEnergyCost = 16f;
         [SerializeField, Min(0f)] private float lockedBluePointOffset = 1.8f;
 
         [Header("Cursed Technique Reversal: Red")]
@@ -38,12 +39,15 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float redPushSpeed = 23f;
         [SerializeField, Min(0f)] private float redHitStun = 0.52f;
         [SerializeField, Min(0.1f)] private float redCooldown = 4.5f;
+        [SerializeField, Min(0f)] private float redEnergyCost = 24f;
 
         private Health ownHealth;
         private Health[] combatHealth;
         private GojoDomainController domainController;
         private TargetLockController targetLock;
         private PrototypeCombatAudio combatAudio;
+        private CursedEnergyController cursedEnergy;
+        private CombatActionGate actionGate;
         private CastState castState;
         private float castStartedAt;
         private float castCompletesAt;
@@ -61,7 +65,10 @@ namespace JJKGame.Player
         public bool BlueReady => Time.time >= nextBlueAt;
         public bool RedReady => Time.time >= nextRedAt;
         public bool IsCasting => castState != CastState.None;
-        public bool CanUseUltimate => CombatActive && !DomainBusy && !IsCasting;
+        public bool CanUseUltimate =>
+            CombatActive
+            && actionGate != null
+            && actionGate.CanStartUltimate;
         public float BlueCooldownRemaining => Mathf.Max(0f, nextBlueAt - Time.time);
         public float RedCooldownRemaining => Mathf.Max(0f, nextRedAt - Time.time);
         public float BlueCooldownProgress => GetCooldownProgress(BlueCooldownRemaining, blueCooldown);
@@ -77,14 +84,16 @@ namespace JJKGame.Player
             $"{CombatInputBindings.Skill1Label} · 술식순전 「창」 · 수렴점",
             BlueReady,
             BlueCooldownRemaining,
-            CastState.Blue
+            CastState.Blue,
+            blueEnergyCost
         );
 
         public string RedStatusText => BuildStatusText(
             $"{CombatInputBindings.Skill2Label} · 술식반전 「혁」 · 발사체",
             RedReady,
             RedCooldownRemaining,
-            CastState.Red
+            CastState.Red,
+            redEnergyCost
         );
 
         private bool DomainBusy =>
@@ -101,11 +110,9 @@ namespace JJKGame.Player
             ownHealth = GetComponent<Health>();
             domainController = GetComponent<GojoDomainController>();
             targetLock = GetComponent<TargetLockController>();
-            combatAudio = GetComponent<PrototypeCombatAudio>();
-            if (combatAudio == null)
-            {
-                combatAudio = gameObject.AddComponent<PrototypeCombatAudio>();
-            }
+            combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
+            cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
+            actionGate = CombatActionGate.GetOrCreate(gameObject);
         }
 
         private void Start()
@@ -142,22 +149,46 @@ namespace JJKGame.Player
                 return;
             }
 
-            if (Input.GetKeyDown(CombatInputBindings.Skill1) && CanUseTechnique(BlueReady))
+            if (Input.GetKeyDown(CombatInputBindings.Skill1))
             {
-                BeginBlueCast();
+                TryBeginTechnique(CastState.Blue);
             }
-            else if (
-                Input.GetKeyDown(CombatInputBindings.Skill2)
-                && CanUseTechnique(RedReady)
-            )
+            else if (Input.GetKeyDown(CombatInputBindings.Skill2))
             {
-                BeginRedCast();
+                TryBeginTechnique(CastState.Red);
             }
         }
 
-        private bool CanUseTechnique(bool ready)
+        private void TryBeginTechnique(CastState requestedState)
         {
-            return ready && CombatActive && !DomainBusy && !IsCasting;
+            bool blue = requestedState == CastState.Blue;
+            bool ready = blue ? BlueReady : RedReady;
+            float cost = blue ? blueEnergyCost : redEnergyCost;
+            string name = blue ? "창" : "혁";
+
+            if (!ready || !CombatActive || actionGate == null || !actionGate.CanStartTechnique)
+            {
+                return;
+            }
+
+            if (cursedEnergy == null)
+            {
+                cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
+            }
+
+            if (cursedEnergy != null && !cursedEnergy.TrySpend(cost, name))
+            {
+                return;
+            }
+
+            if (blue)
+            {
+                BeginBlueCast();
+            }
+            else
+            {
+                BeginRedCast();
+            }
         }
 
         private void BeginBlueCast()
@@ -297,7 +328,8 @@ namespace JJKGame.Player
             string skillName,
             bool ready,
             float cooldownRemaining,
-            CastState skillCastState
+            CastState skillCastState,
+            float energyCost
         )
         {
             if (!CombatActive)
@@ -320,9 +352,17 @@ namespace JJKGame.Player
                 return skillName + "  다른 술식 시전 중";
             }
 
-            return ready
-                ? skillName + "  READY"
-                : $"{skillName}  {cooldownRemaining:0.0}s";
+            if (!ready)
+            {
+                return $"{skillName}  {cooldownRemaining:0.0}s";
+            }
+
+            if (cursedEnergy != null && !cursedEnergy.CanSpend(energyCost))
+            {
+                return $"{skillName}  주력 부족 · 필요 {energyCost:0}";
+            }
+
+            return $"{skillName}  READY · 주력 {energyCost:0}";
         }
 
         private bool HasLivingOpponent()
@@ -373,7 +413,7 @@ namespace JJKGame.Player
                 new Rect(24f, 151f, width, 38f),
                 BlueStatusText,
                 BlueCooldownProgress,
-                BlueReady,
+                BlueReady && (cursedEnergy == null || cursedEnergy.CanSpend(blueEnergyCost)),
                 castState == CastState.Blue,
                 new Color(0.12f, 0.72f, 1f, 0.98f),
                 new Color(0.05f, 0.34f, 0.68f, 0.70f),
@@ -383,7 +423,7 @@ namespace JJKGame.Player
                 new Rect(24f, 195f, width, 38f),
                 RedStatusText,
                 RedCooldownProgress,
-                RedReady,
+                RedReady && (cursedEnergy == null || cursedEnergy.CanSpend(redEnergyCost)),
                 castState == CastState.Red,
                 new Color(1f, 0.22f, 0.18f, 0.98f),
                 new Color(0.70f, 0.08f, 0.06f, 0.72f),
@@ -402,7 +442,11 @@ namespace JJKGame.Player
             Color backgroundColor
         )
         {
-            bool available = ready && CombatActive && !DomainBusy && !IsCasting;
+            bool available =
+                ready
+                && CombatActive
+                && actionGate != null
+                && actionGate.CanStartTechnique;
             Color accent = castingThisSkill
                 ? Color.white
                 : available
