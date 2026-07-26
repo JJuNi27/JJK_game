@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using JJKGame.CameraSystem;
 using UnityEngine;
 
 namespace JJKGame.Core
@@ -32,6 +33,7 @@ namespace JJKGame.Core
         private AudioSource voiceSource;
         private AudioSource musicSource;
         private Health ownerHealth;
+        private SimpleCameraFollow cameraFeedback;
         private Transform purpleVisual;
         private Transform domainVisual;
         private float lastOwnerHealth;
@@ -78,6 +80,7 @@ namespace JJKGame.Core
         {
             RefreshHealthBindings();
             LocateTechniqueVisuals();
+            LocateCameraFeedback();
         }
 
         private void Update()
@@ -115,6 +118,7 @@ namespace JJKGame.Core
         public void PlayBlueImpact()
         {
             PlaySfx(blueImpactFallback, 1f);
+            ShakeAndFlash(0.18f, 0.18f, new Color(0.12f, 0.62f, 1f), 0.08f, 0.16f);
         }
 
         public void PlayRedCast()
@@ -126,18 +130,21 @@ namespace JJKGame.Core
         public void PlayRedImpact()
         {
             PlaySfx(redImpactFallback, 1f);
+            ShakeAndFlash(0.30f, 0.24f, new Color(1f, 0.12f, 0.08f), 0.13f, 0.20f);
         }
 
         public void PlayPurple()
         {
             PlayVoice(purpleVoice);
             PlaySfx(purpleFallback, 1f);
+            ShakeAndFlash(0.58f, 0.42f, new Color(0.66f, 0.12f, 1f), 0.23f, 0.34f);
         }
 
         public void PlayDomain()
         {
             PlayVoice(domainVoice);
             PlaySfx(domainFallback, 1f);
+            ShakeAndFlash(0.36f, 0.48f, new Color(0.34f, 0.64f, 1f), 0.20f, 0.42f);
         }
 
         public void PlayBasicSwing(int chainStep)
@@ -150,16 +157,21 @@ namespace JJKGame.Core
         {
             float volume = chainStep >= 3 ? 1f : 0.72f + chainStep * 0.08f;
             PlaySfx(basicHitSound != null ? basicHitSound : basicHitFallback, volume);
+            float amplitude = chainStep >= 3 ? 0.24f : 0.09f + chainStep * 0.025f;
+            float flashAlpha = chainStep >= 3 ? 0.12f : 0.045f;
+            ShakeAndFlash(amplitude, 0.12f, Color.white, flashAlpha, 0.10f);
         }
 
         public void PlayDodge()
         {
             PlaySfx(dodgeSound != null ? dodgeSound : dodgeFallback, 0.90f);
+            GetCameraFeedback()?.AddShake(0.05f, 0.10f);
         }
 
         public void PlayPlayerHit()
         {
             PlaySfx(playerHitSound != null ? playerHitSound : playerHitFallback, 0.92f);
+            ShakeAndFlash(0.22f, 0.20f, new Color(1f, 0.04f, 0.04f), 0.16f, 0.22f);
         }
 
         public void PlayVictory()
@@ -172,6 +184,7 @@ namespace JJKGame.Core
             resultSoundPlayed = true;
             FadeMusicForResult();
             PlaySfx(victorySound != null ? victorySound : victoryFallback, 1f);
+            ShakeAndFlash(0.12f, 0.28f, new Color(0.16f, 0.72f, 1f), 0.12f, 0.34f);
         }
 
         public void PlayDefeat()
@@ -184,6 +197,7 @@ namespace JJKGame.Core
             resultSoundPlayed = true;
             FadeMusicForResult();
             PlaySfx(defeatSound != null ? defeatSound : defeatFallback, 1f);
+            ShakeAndFlash(0.26f, 0.36f, new Color(0.70f, 0.01f, 0.02f), 0.20f, 0.40f);
         }
 
         private void LoadLocalOverrides()
@@ -324,6 +338,39 @@ namespace JJKGame.Core
                 PlayDomain();
             }
             domainWasActive = domainActive;
+        }
+
+        private SimpleCameraFollow GetCameraFeedback()
+        {
+            if (cameraFeedback == null)
+            {
+                LocateCameraFeedback();
+            }
+
+            return cameraFeedback;
+        }
+
+        private void LocateCameraFeedback()
+        {
+            cameraFeedback = FindFirstObjectByType<SimpleCameraFollow>();
+        }
+
+        private void ShakeAndFlash(
+            float shakeAmplitude,
+            float shakeDuration,
+            Color color,
+            float flashAlpha,
+            float flashDuration
+        )
+        {
+            SimpleCameraFollow feedback = GetCameraFeedback();
+            if (feedback == null)
+            {
+                return;
+            }
+
+            feedback.AddShake(shakeAmplitude, shakeDuration);
+            feedback.Flash(color, flashAlpha, flashDuration);
         }
 
         private void FadeMusicForResult()
