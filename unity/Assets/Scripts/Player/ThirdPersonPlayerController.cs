@@ -24,24 +24,24 @@ namespace JJKGame.Player
         private Health health;
         private GojoTechniqueController techniqueController;
         private PrototypeCombatAudio combatAudio;
+        private CombatActionGate actionGate;
         private float verticalVelocity;
         private float dodgeEndsAt;
         private float nextDodgeAt;
         private Vector3 dodgeDirection;
 
         public bool IsDodging => Time.time < dodgeEndsAt;
-        public bool DodgeReady => Time.time >= nextDodgeAt && !IsDodging && !TechniqueCasting;
+        public bool DodgeReady =>
+            Time.time >= nextDodgeAt
+            && !IsDodging
+            && (actionGate == null || actionGate.CanStartDodge);
         public float DodgeCooldownRemaining => Mathf.Max(0f, nextDodgeAt - Time.time);
 
         private bool TechniqueCasting
         {
             get
             {
-                if (techniqueController == null)
-                {
-                    techniqueController = GetComponent<GojoTechniqueController>();
-                }
-
+                techniqueController ??= GetComponent<GojoTechniqueController>();
                 return techniqueController != null && techniqueController.IsCasting;
             }
         }
@@ -52,6 +52,7 @@ namespace JJKGame.Player
             health = GetComponent<Health>();
             techniqueController = GetComponent<GojoTechniqueController>();
             combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
+            actionGate = CombatActionGate.GetOrCreate(gameObject);
 
             if (cameraTransform == null && Camera.main != null)
             {
@@ -68,11 +69,12 @@ namespace JJKGame.Player
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 moveDirection = BuildCameraRelativeDirection(rawInput);
 
+            actionGate ??= CombatActionGate.GetOrCreate(gameObject);
             if (
                 !IsDodging
-                && !TechniqueCasting
                 && Input.GetKeyDown(CombatInputBindings.Dodge)
                 && DodgeReady
+                && (actionGate == null || actionGate.CanStartDodge)
             )
             {
                 StartDodge(moveDirection);
