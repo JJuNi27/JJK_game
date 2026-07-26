@@ -33,6 +33,8 @@ namespace JJKGame.Player
 
         private Health ownHealth;
         private TargetLockController targetLock;
+        private GojoTechniqueController techniqueController;
+        private PrototypeCombatAudio combatAudio;
         private float nextAttackAt;
         private float chainExpiresAt;
         private float chainDisplayUntil;
@@ -66,6 +68,8 @@ namespace JJKGame.Player
         {
             ownHealth = GetComponent<Health>();
             targetLock = GetComponent<TargetLockController>();
+            techniqueController = GetComponent<GojoTechniqueController>();
+            combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
 
             if (attackOrigin == null)
             {
@@ -96,6 +100,16 @@ namespace JJKGame.Player
             }
 
             if (domainController != null && domainController.CapturesMouseInput)
+            {
+                return;
+            }
+
+            if (techniqueController == null)
+            {
+                techniqueController = GetComponent<GojoTechniqueController>();
+            }
+
+            if (techniqueController != null && techniqueController.IsCasting)
             {
                 return;
             }
@@ -143,11 +157,14 @@ namespace JJKGame.Player
             nextAttackAt = Time.time + cooldown;
             lastPerformedStep = chainIndex + 1;
             chainDisplayUntil = Time.time + comboDisplayDuration;
+            combatAudio ??= PrototypeCombatAudio.GetOrCreate(gameObject);
+            combatAudio?.PlayBasicSwing(lastPerformedStep);
 
             bool hitAnyTarget = PerformAttack(damage, knockback, hitStun);
             if (hitAnyTarget)
             {
                 RegisterSuccessfulHit();
+                combatAudio?.PlayBasicHit(lastPerformedStep);
             }
             else
             {
