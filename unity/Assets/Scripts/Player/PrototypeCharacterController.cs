@@ -19,6 +19,7 @@ namespace JJKGame.Player
 
         private Health health;
         private CursedEnergyController cursedEnergy;
+        private SukunaDomainController sukunaDomain;
         private bool showSukunaHelp;
         private GUIStyle headerStyle;
         private GUIStyle valueStyle;
@@ -111,6 +112,13 @@ namespace JJKGame.Player
                 sukunaTechnique.enabled = false;
             }
 
+            sukunaDomain = GetComponent<SukunaDomainController>();
+            if (sukunaDomain != null)
+            {
+                sukunaDomain.ResetDomain();
+                sukunaDomain.enabled = false;
+            }
+
             SukunaPrototypeAvatar sukunaAvatar = GetComponent<SukunaPrototypeAvatar>();
             if (sukunaAvatar != null)
             {
@@ -128,10 +136,10 @@ namespace JJKGame.Player
 
         private void ApplySukuna()
         {
-            GojoDomainController domain = GetComponent<GojoDomainController>();
-            if (domain != null)
+            GojoDomainController gojoDomain = GetComponent<GojoDomainController>();
+            if (gojoDomain != null)
             {
-                domain.ResetCommand();
+                gojoDomain.ResetCommand();
             }
             SetGojoComponentsEnabled(false);
             SetChildActive("PrototypeGojoAvatar", false);
@@ -142,6 +150,9 @@ namespace JJKGame.Player
                 sukunaTechnique = gameObject.AddComponent<SukunaTechniqueController>();
             }
             sukunaTechnique.enabled = true;
+
+            sukunaDomain = SukunaDomainController.GetOrCreate(gameObject);
+            sukunaDomain.enabled = true;
 
             SukunaPrototypeAvatar sukunaAvatar = SukunaPrototypeAvatar.GetOrCreate(gameObject);
             sukunaAvatar.enabled = true;
@@ -253,29 +264,32 @@ namespace JJKGame.Player
 
         private void DrawSukunaDomainPanel()
         {
+            sukunaDomain ??= GetComponent<SukunaDomainController>();
             float width = Mathf.Min(680f, Screen.width - 24f);
             Rect rect = new Rect((Screen.width - width) * 0.5f, Screen.height - 48f, width, 36f);
-            Color accent = new Color(0.90f, 0.18f, 0.10f);
+            Color accent = sukunaDomain != null && sukunaDomain.IsActive
+                ? new Color(1f, 0.08f, 0.04f)
+                : new Color(0.90f, 0.18f, 0.10f);
             DrawRect(rect, new Color(0.055f, 0.010f, 0.012f, 0.98f));
-            DrawBorder(rect, accent, 2f);
+            DrawBorder(rect, accent, sukunaDomain != null && sukunaDomain.IsActive ? 3f : 2f);
             centerStyle.normal.textColor = Color.white;
             GUI.Label(
                 new Rect(rect.x + 10f, rect.y + 2f, rect.width - 20f, 22f),
-                "V · 복마어주자 · 현재 잠김",
+                sukunaDomain != null ? sukunaDomain.StatusText : "V · 복마어주자 · 연결 안 됨",
                 centerStyle
             );
             smallStyle.normal.textColor = new Color(0.92f, 0.66f, 0.60f);
             GUI.Label(
                 new Rect(rect.x + 10f, rect.y + 20f, rect.width - 20f, 14f),
-                "R 푸가 구현 완료 · 해·팔 준비 + 영역 밖 적 1명 · F1 도움말",
+                "개방형 영역 · 반복 필중 참격 · V 직접 입력은 임시 · F1 도움말",
                 smallStyle
             );
         }
 
         private void DrawSukunaHelp()
         {
-            float width = 350f;
-            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 198f, width, 138f);
+            float width = 360f;
+            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 208f, width, 148f);
             DrawRect(rect, new Color(0.040f, 0.010f, 0.012f, 0.98f));
             DrawBorder(rect, new Color(0.96f, 0.22f, 0.12f), 2f);
             string text =
@@ -283,8 +297,8 @@ namespace JJKGame.Player
                 + "1 고죠 · 2 스쿠나 · 전환 시 장면 재시작\n"
                 + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
                 + "LMB 기본 공격 · Q 해 · E 팔\n"
-                + "R 푸가: 해·팔 사용 후 적 1명일 때\n"
-                + "V 복마어주자 · 현재 잠김";
+                + "R 푸가: 해·팔 사용 후 영역 밖 적 1명\n"
+                + "V 복마어주자: 짧은 준비 후 개방형 영역";
             smallStyle.normal.textColor = Color.white;
             GUI.Label(
                 new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, rect.height - 16f),
