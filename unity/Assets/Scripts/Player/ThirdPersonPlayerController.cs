@@ -24,6 +24,7 @@ namespace JJKGame.Player
         private Health health;
         private GojoTechniqueController gojoTechnique;
         private SukunaTechniqueController sukunaTechnique;
+        private SukunaDomainController sukunaDomain;
         private PrototypeCombatAudio combatAudio;
         private CombatActionGate actionGate;
         private float verticalVelocity;
@@ -44,6 +45,7 @@ namespace JJKGame.Player
             {
                 gojoTechnique ??= GetComponent<GojoTechniqueController>();
                 sukunaTechnique ??= GetComponent<SukunaTechniqueController>();
+                sukunaDomain ??= GetComponent<SukunaDomainController>();
                 return (
                     gojoTechnique != null
                     && gojoTechnique.enabled
@@ -52,6 +54,10 @@ namespace JJKGame.Player
                     sukunaTechnique != null
                     && sukunaTechnique.enabled
                     && sukunaTechnique.IsCasting
+                ) || (
+                    sukunaDomain != null
+                    && sukunaDomain.enabled
+                    && sukunaDomain.IsCasting
                 );
             }
         }
@@ -62,6 +68,7 @@ namespace JJKGame.Player
             health = GetComponent<Health>();
             gojoTechnique = GetComponent<GojoTechniqueController>();
             sukunaTechnique = GetComponent<SukunaTechniqueController>();
+            sukunaDomain = GetComponent<SukunaDomainController>();
             combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
 
