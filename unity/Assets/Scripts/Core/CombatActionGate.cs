@@ -19,8 +19,9 @@ namespace JJKGame.Core
     {
         private Health health;
         private ThirdPersonPlayerController movement;
-        private GojoTechniqueController technique;
-        private GojoDomainController domain;
+        private GojoTechniqueController gojoTechnique;
+        private SukunaTechniqueController sukunaTechnique;
+        private GojoDomainController gojoDomain;
         private TechniqueBurnoutController burnout;
 
         public static CombatActionGate GetOrCreate(GameObject owner)
@@ -44,17 +45,28 @@ namespace JJKGame.Core
                     return CombatActionState.Disabled;
                 }
 
-                if (domain != null && domain.State == GojoDomainController.DomainState.Active)
+                if (
+                    gojoDomain != null
+                    && gojoDomain.enabled
+                    && gojoDomain.State == GojoDomainController.DomainState.Active
+                )
                 {
                     return CombatActionState.DomainActive;
                 }
 
-                if (domain != null && domain.State != GojoDomainController.DomainState.Normal)
+                if (
+                    gojoDomain != null
+                    && gojoDomain.enabled
+                    && gojoDomain.State != GojoDomainController.DomainState.Normal
+                )
                 {
                     return CombatActionState.DomainInput;
                 }
 
-                if (technique != null && technique.IsCasting)
+                if (
+                    (gojoTechnique != null && gojoTechnique.enabled && gojoTechnique.IsCasting)
+                    || (sukunaTechnique != null && sukunaTechnique.enabled && sukunaTechnique.IsCasting)
+                )
                 {
                     return CombatActionState.TechniqueCasting;
                 }
@@ -73,7 +85,7 @@ namespace JJKGame.Core
             get
             {
                 RefreshReferences();
-                return burnout != null && burnout.IsBurnedOut;
+                return burnout != null && burnout.enabled && burnout.IsBurnedOut;
             }
         }
 
@@ -92,8 +104,9 @@ namespace JJKGame.Core
         {
             health ??= GetComponent<Health>();
             movement ??= GetComponent<ThirdPersonPlayerController>();
-            technique ??= GetComponent<GojoTechniqueController>();
-            domain ??= GetComponent<GojoDomainController>();
+            gojoTechnique ??= GetComponent<GojoTechniqueController>();
+            sukunaTechnique ??= GetComponent<SukunaTechniqueController>();
+            gojoDomain ??= GetComponent<GojoDomainController>();
             burnout ??= GetComponent<TechniqueBurnoutController>();
         }
     }
