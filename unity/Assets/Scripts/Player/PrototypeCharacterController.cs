@@ -267,15 +267,15 @@ namespace JJKGame.Player
             smallStyle.normal.textColor = new Color(0.92f, 0.66f, 0.60f);
             GUI.Label(
                 new Rect(rect.x + 10f, rect.y + 20f, rect.width - 20f, 14f),
-                "R 푸가와 V 영역은 해·팔 검증 뒤 구현 · F1 도움말",
+                "R 푸가 구현 완료 · 해·팔 준비 + 영역 밖 적 1명 · F1 도움말",
                 smallStyle
             );
         }
 
         private void DrawSukunaHelp()
         {
-            float width = 330f;
-            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 188f, width, 128f);
+            float width = 350f;
+            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 198f, width, 138f);
             DrawRect(rect, new Color(0.040f, 0.010f, 0.012f, 0.98f));
             DrawBorder(rect, new Color(0.96f, 0.22f, 0.12f), 2f);
             string text =
@@ -283,7 +283,8 @@ namespace JJKGame.Player
                 + "1 고죠 · 2 스쿠나 · 전환 시 장면 재시작\n"
                 + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
                 + "LMB 기본 공격 · Q 해 · E 팔\n"
-                + "R 푸가 잠김 · V 복마어주자 잠김";
+                + "R 푸가: 해·팔 사용 후 적 1명일 때\n"
+                + "V 복마어주자 · 현재 잠김";
             smallStyle.normal.textColor = Color.white;
             GUI.Label(
                 new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, rect.height - 16f),
