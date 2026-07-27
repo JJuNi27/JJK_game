@@ -1,0 +1,535 @@
+using System.Collections;
+using System.Collections.Generic;
+using JJKGame.Core;
+using UnityEngine;
+
+namespace JJKGame.Player
+{
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(Health))]
+    [RequireComponent(typeof(TargetLockController))]
+    public sealed class SukunaTechniqueController : MonoBehaviour
+    {
+        [Header("Q · 해")]
+        [SerializeField, Min(0f)] private float dismantleEnergyCost = 15f;
+        [SerializeField, Min(0.1f)] private float dismantleCooldown = 3f;
+        [SerializeField, Min(0.1f)] private float dismantleRange = 18f;
+        [SerializeField, Range(20f, 180f)] private float dismantleMultiAngle = 130f;
+        [SerializeField, Min(1)] private int dismantleSingleHits = 4;
+        [SerializeField, Min(1)] private int dismantleMultiHits = 2;
+        [SerializeField, Min(0f)] private float dismantleSingleDamagePerHit = 8f;
+        [SerializeField, Min(0f)] private float dismantleMultiDamagePerHit = 10f;
+        [SerializeField, Min(0.01f)] private float dismantleHitInterval = 0.075f;
+
+        [Header("E · 팔")]
+        [SerializeField, Min(0f)] private float cleaveEnergyCost = 45f;
+        [SerializeField, Min(0.1f)] private float cleaveCooldown = 5f;
+        [SerializeField, Min(0.1f)] private float cleaveRange = 3.4f;
+        [SerializeField, Min(1)] private int cleaveHits = 7;
+        [SerializeField, Min(0f)] private float cleaveDamagePerHit = 8f;
+        [SerializeField, Min(0.01f)] private float cleaveHitInterval = 0.055f;
+        [SerializeField, Min(0f)] private float cleaveFinisherKnockback = 12f;
+        [SerializeField, Min(0f)] private float cleaveFinisherStun = 0.48f;
+
+        private Health ownHealth;
+        private TargetLockController targetLock;
+        private CursedEnergyController cursedEnergy;
+        private CombatActionGate actionGate;
+        private PrototypeCombatAudio combatAudio;
+        private float nextDismantleAt;
+        private float nextCleaveAt;
+        private bool isCasting;
+        private GUIStyle skillStyle;
+        private int styledForHeight = -1;
+
+        public bool IsCasting => isCasting;
+        public bool DismantleUsed { get; private set; }
+        public bool CleaveUsed { get; private set; }
+        public float DismantleCooldownRemaining => Mathf.Max(0f, nextDismantleAt - Time.time);
+        public float CleaveCooldownRemaining => Mathf.Max(0f, nextCleaveAt - Time.time);
+
+        private bool CombatActive =>
+            ownHealth != null
+            && !ownHealth.IsDead
+            && FindLivingEnemies().Count > 0;
+
+        private void Awake()
+        {
+            ownHealth = GetComponent<Health>();
+            targetLock = GetComponent<TargetLockController>();
+            cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve);
+            actionGate = CombatActionGate.GetOrCreate(gameObject);
+            combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
+        }
+
+        private void OnDisable()
+        {
+            StopAllCoroutines();
+            isCasting = false;
+        }
+
+        private void Update()
+        {
+            if (!CombatActive || isCasting)
+            {
+                return;
+            }
+
+            if (Input.GetKeyDown(CombatInputBindings.Skill1))
+            {
+                TryUseDismantle();
+            }
+            else if (Input.GetKeyDown(CombatInputBindings.Skill2))
+            {
+                TryUseCleave();
+            }
+        }
+
+        private void TryUseDismantle()
+        {
+            actionGate ??= CombatActionGate.GetOrCreate(gameObject);
+            if (
+                Time.time < nextDismantleAt
+                || actionGate == null
+                || !actionGate.CanStartTechnique
+            )
+            {
+                return;
+            }
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, false);
+            if (cursedEnergy != null && !cursedEnergy.TrySpend(dismantleEnergyCost, "해"))
+            {
+                return;
+            }
+
+            List<Health> enemies = FindLivingEnemies();
+            bool multiTargetMode = enemies.Count >= 2;
+            List<Health> targets = multiTargetMode
+                ? FindDismantleConeTargets(enemies)
+                : FindSingleDismantleTarget(enemies);
+
+            Vector3 aimDirection = ResolveAimDirection(targets);
+            FaceDirection(aimDirection);
+            nextDismantleAt = Time.time + dismantleCooldown;
+            DismantleUsed = true;
+
+            int hitCount = multiTargetMode ? dismantleMultiHits : dismantleSingleHits;
+            float damagePerHit = multiTargetMode
+                ? dismantleMultiDamagePerHit
+                : dismantleSingleDamagePerHit;
+            StartCoroutine(
+                ExecuteSlashSequence(
+                    targets,
+                    hitCount,
+                    damagePerHit,
+                    dismantleHitInterval,
+                    multiTargetMode ? "해 · 다중 참격" : "해 · 집중 참격",
+                    new Color(0.90f, 0.18f, 0.16f),
+                    0f,
+                    0f,
+                    dismantleRange
+                )
+            );
+        }
+
+        private void TryUseCleave()
+        {
+            actionGate ??= CombatActionGate.GetOrCreate(gameObject);
+            if (
+                Time.time < nextCleaveAt
+                || actionGate == null
+                || !actionGate.CanStartTechnique
+            )
+            {
+                return;
+            }
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, false);
+            if (cursedEnergy != null && !cursedEnergy.TrySpend(cleaveEnergyCost, "팔"))
+            {
+                return;
+            }
+
+            Health target = FindCleaveTarget();
+            List<Health> targets = new List<Health>();
+            if (target != null)
+            {
+                targets.Add(target);
+                Vector3 direction = target.transform.position - transform.position;
+                direction.y = 0f;
+                FaceDirection(direction);
+            }
+
+            nextCleaveAt = Time.time + cleaveCooldown;
+            CleaveUsed = true;
+            StartCoroutine(
+                ExecuteSlashSequence(
+                    targets,
+                    cleaveHits,
+                    cleaveDamagePerHit,
+                    cleaveHitInterval,
+                    "팔",
+                    new Color(1f, 0.48f, 0.10f),
+                    cleaveFinisherKnockback,
+                    cleaveFinisherStun,
+                    cleaveRange
+                )
+            );
+        }
+
+        private IEnumerator ExecuteSlashSequence(
+            List<Health> targets,
+            int hitCount,
+            float damagePerHit,
+            float interval,
+            string actionName,
+            Color visualColor,
+            float finalKnockback,
+            float finalStun,
+            float visualLength
+        )
+        {
+            isCasting = true;
+            combatAudio ??= PrototypeCombatAudio.GetOrCreate(gameObject);
+
+            for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
+            {
+                bool finalHit = hitIndex == hitCount - 1;
+                if (hitIndex == 0 || finalHit)
+                {
+                    combatAudio?.PlayBasicSwing(finalHit ? 3 : 1);
+                }
+
+                Vector3 fallbackDirection = transform.forward;
+                SpawnSlashVisual(fallbackDirection, visualLength, visualColor, hitIndex);
+
+                foreach (Health target in targets)
+                {
+                    if (target == null || target.IsDead)
+                    {
+                        continue;
+                    }
+
+                    Vector3 direction = target.transform.position - transform.position;
+                    direction.y = 0f;
+                    if (direction.sqrMagnitude <= 0.001f)
+                    {
+                        direction = transform.forward;
+                    }
+
+                    DamageContext context = new DamageContext(
+                        damagePerHit,
+                        gameObject,
+                        DamageDeliveryType.CursedTechnique,
+                        DamageTraits.None,
+                        actionName,
+                        target.transform.position + Vector3.up * 0.8f
+                    );
+                    if (target.ReceiveDamage(context) != DamageResolution.Applied)
+                    {
+                        continue;
+                    }
+
+                    if (finalHit)
+                    {
+                        combatAudio?.PlayBasicHit(3);
+                        if (finalKnockback > 0f || finalStun > 0f)
+                        {
+                            ApplyHitReaction(
+                                target,
+                                direction.normalized * finalKnockback,
+                                finalStun
+                            );
+                        }
+                    }
+                }
+
+                if (!finalHit)
+                {
+                    yield return new WaitForSeconds(interval);
+                }
+            }
+
+            isCasting = false;
+        }
+
+        private List<Health> FindLivingEnemies()
+        {
+            Health[] allHealth = FindObjectsByType<Health>(FindObjectsSortMode.None);
+            List<Health> enemies = new List<Health>();
+            foreach (Health health in allHealth)
+            {
+                if (health != null && health != ownHealth && !health.IsDead)
+                {
+                    enemies.Add(health);
+                }
+            }
+            return enemies;
+        }
+
+        private List<Health> FindSingleDismantleTarget(List<Health> enemies)
+        {
+            List<Health> targets = new List<Health>();
+            Health target = ResolvePreferredTarget(enemies, dismantleRange);
+            if (target != null)
+            {
+                targets.Add(target);
+            }
+            return targets;
+        }
+
+        private List<Health> FindDismantleConeTargets(List<Health> enemies)
+        {
+            List<Health> targets = new List<Health>();
+            Vector3 aimDirection = ResolveAimDirection(null);
+            float minimumDot = Mathf.Cos(dismantleMultiAngle * 0.5f * Mathf.Deg2Rad);
+
+            foreach (Health enemy in enemies)
+            {
+                Vector3 offset = enemy.transform.position - transform.position;
+                offset.y = 0f;
+                float distance = offset.magnitude;
+                if (
+                    distance <= dismantleRange
+                    && distance > 0.001f
+                    && Vector3.Dot(aimDirection, offset.normalized) >= minimumDot
+                )
+                {
+                    targets.Add(enemy);
+                }
+            }
+
+            if (targets.Count == 0)
+            {
+                Health fallback = ResolvePreferredTarget(enemies, dismantleRange);
+                if (fallback != null)
+                {
+                    targets.Add(fallback);
+                }
+            }
+            return targets;
+        }
+
+        private Health FindCleaveTarget()
+        {
+            List<Health> enemies = FindLivingEnemies();
+            return ResolvePreferredTarget(enemies, cleaveRange);
+        }
+
+        private Health ResolvePreferredTarget(List<Health> enemies, float range)
+        {
+            Health locked = targetLock != null ? targetLock.CurrentTarget : null;
+            if (
+                locked != null
+                && !locked.IsDead
+                && Vector3.Distance(transform.position, locked.transform.position) <= range
+            )
+            {
+                return locked;
+            }
+
+            Health nearest = null;
+            float nearestDistance = range;
+            foreach (Health enemy in enemies)
+            {
+                float distance = Vector3.Distance(transform.position, enemy.transform.position);
+                if (distance <= nearestDistance)
+                {
+                    nearestDistance = distance;
+                    nearest = enemy;
+                }
+            }
+            return nearest;
+        }
+
+        private Vector3 ResolveAimDirection(List<Health> preferredTargets)
+        {
+            if (preferredTargets != null && preferredTargets.Count > 0 && preferredTargets[0] != null)
+            {
+                Vector3 direction = preferredTargets[0].transform.position - transform.position;
+                direction.y = 0f;
+                if (direction.sqrMagnitude > 0.001f)
+                {
+                    return direction.normalized;
+                }
+            }
+
+            if (targetLock != null && targetLock.TryGetAimDirection(out Vector3 lockedDirection))
+            {
+                return lockedDirection;
+            }
+
+            Vector3 forward = transform.forward;
+            forward.y = 0f;
+            return forward.sqrMagnitude > 0.001f ? forward.normalized : Vector3.forward;
+        }
+
+        private void FaceDirection(Vector3 direction)
+        {
+            direction.y = 0f;
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            }
+        }
+
+        private static void ApplyHitReaction(Health target, Vector3 impulse, float stun)
+        {
+            MonoBehaviour[] behaviours = target.GetComponents<MonoBehaviour>();
+            foreach (MonoBehaviour behaviour in behaviours)
+            {
+                if (behaviour is IHitReactable hitReactable)
+                {
+                    hitReactable.ApplyHitReaction(impulse, stun);
+                    break;
+                }
+            }
+        }
+
+        private void SpawnSlashVisual(Vector3 direction, float length, Color color, int hitIndex)
+        {
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= 0.001f)
+            {
+                direction = transform.forward;
+            }
+            direction.Normalize();
+
+            Vector3 side = Vector3.Cross(Vector3.up, direction).normalized;
+            float alternatingOffset = (hitIndex % 2 == 0 ? -1f : 1f) * 0.45f;
+            Vector3 center = transform.position + Vector3.up * (0.8f + hitIndex * 0.03f);
+            Vector3 start = center + side * alternatingOffset;
+            Vector3 end = center + direction * Mathf.Max(2f, length) - side * alternatingOffset;
+
+            GameObject visual = new GameObject("SukunaSlashPrototype");
+            LineRenderer line = visual.AddComponent<LineRenderer>();
+            line.useWorldSpace = true;
+            line.positionCount = 2;
+            line.SetPosition(0, start);
+            line.SetPosition(1, end);
+            line.startWidth = 0.11f;
+            line.endWidth = 0.025f;
+            line.startColor = color;
+            line.endColor = new Color(color.r, color.g, color.b, 0.12f);
+            line.numCapVertices = 4;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.receiveShadows = false;
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+            if (shader != null)
+            {
+                line.material = new Material(shader) { color = color };
+            }
+            Destroy(visual, 0.16f);
+        }
+
+        private string BuildDismantleStatus()
+        {
+            string mode = FindLivingEnemies().Count >= 2 ? "다중 2히트" : "단일 4히트";
+            if (isCasting)
+            {
+                return $"Q · 해 · 시전 중 · {mode}";
+            }
+            if (DismantleCooldownRemaining > 0f)
+            {
+                return $"Q · 해 · {DismantleCooldownRemaining:0.0}s";
+            }
+            return $"Q · 해 · READY · CE {dismantleEnergyCost:0} · {mode}";
+        }
+
+        private string BuildCleaveStatus()
+        {
+            if (isCasting)
+            {
+                return "E · 팔 · 시전 중";
+            }
+            if (CleaveCooldownRemaining > 0f)
+            {
+                return $"E · 팔 · {CleaveCooldownRemaining:0.0}s";
+            }
+            return $"E · 팔 · READY · CE {cleaveEnergyCost:0} · 근거리 {cleaveHits}히트";
+        }
+
+        private string BuildFugaStatus()
+        {
+            if (DismantleUsed && CleaveUsed)
+            {
+                return "R · 푸가 · 준비 완료 · Milestone 2에서 구현";
+            }
+            return $"R · 푸가 · 해 {(DismantleUsed ? 1 : 0)}/1 · 팔 {(CleaveUsed ? 1 : 0)}/1";
+        }
+
+        private void OnGUI()
+        {
+            if (ownHealth == null || ownHealth.IsDead)
+            {
+                return;
+            }
+
+            EnsureStyle();
+            float width = Mathf.Min(330f, Screen.width - 24f);
+            DrawSkillPanel(
+                new Rect(12f, 104f, width, 29f),
+                BuildDismantleStatus(),
+                new Color(0.96f, 0.18f, 0.15f)
+            );
+            DrawSkillPanel(
+                new Rect(12f, 137f, width, 29f),
+                BuildCleaveStatus(),
+                new Color(1f, 0.48f, 0.10f)
+            );
+            DrawSkillPanel(
+                new Rect(12f, 170f, width, 29f),
+                BuildFugaStatus(),
+                new Color(0.85f, 0.20f, 0.08f)
+            );
+        }
+
+        private void DrawSkillPanel(Rect rect, string text, Color accent)
+        {
+            DrawRect(rect, new Color(0.075f, 0.012f, 0.012f, 0.90f));
+            DrawBorder(rect, accent, 1f);
+            skillStyle.normal.textColor = Color.white;
+            GUI.Label(rect, text, skillStyle);
+        }
+
+        private void EnsureStyle()
+        {
+            if (styledForHeight == Screen.height)
+            {
+                return;
+            }
+            styledForHeight = Screen.height;
+            skillStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 68f, 11f, 15f)),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+            };
+        }
+
+        private static void DrawRect(Rect rect, Color color)
+        {
+            Color previous = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(rect, Texture2D.whiteTexture);
+            GUI.color = previous;
+        }
+
+        private static void DrawBorder(Rect rect, Color color, float thickness)
+        {
+            DrawRect(new Rect(rect.x, rect.y, rect.width, thickness), color);
+            DrawRect(new Rect(rect.x, rect.yMax - thickness, rect.width, thickness), color);
+            DrawRect(new Rect(rect.x, rect.y, thickness, rect.height), color);
+            DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
+        }
+    }
+}
