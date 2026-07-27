@@ -81,10 +81,6 @@ namespace JJKGame.Core
         {
             if (profileApplied && activeProfile == profileId)
             {
-                if (refill)
-                {
-                    ResetEnergy();
-                }
                 return;
             }
 
