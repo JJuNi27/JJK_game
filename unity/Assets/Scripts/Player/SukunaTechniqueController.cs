@@ -31,6 +31,18 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float cleaveFinisherKnockback = 12f;
         [SerializeField, Min(0f)] private float cleaveFinisherStun = 0.48f;
 
+        [Header("R · 푸가 · Milestone 2")]
+        [SerializeField, Min(0f)] private float fugaEnergyCost = 35f;
+        [SerializeField, Min(0.1f)] private float fugaCooldown = 11f;
+        [SerializeField, Min(0.01f)] private float fugaCastTime = 0.52f;
+        [SerializeField, Min(0.1f)] private float fugaRange = 24f;
+        [SerializeField, Min(0.1f)] private float fugaProjectileSpeed = 18f;
+        [SerializeField, Min(0.1f)] private float fugaProjectileRadius = 0.65f;
+        [SerializeField, Min(0.1f)] private float fugaExplosionRadius = 4.5f;
+        [SerializeField, Min(0f)] private float fugaDamage = 78f;
+        [SerializeField, Min(0f)] private float fugaKnockback = 24f;
+        [SerializeField, Min(0f)] private float fugaHitStun = 1.15f;
+
         private Health ownHealth;
         private TargetLockController targetLock;
         private CursedEnergyController cursedEnergy;
@@ -38,15 +50,19 @@ namespace JJKGame.Player
         private PrototypeCombatAudio combatAudio;
         private float nextDismantleAt;
         private float nextCleaveAt;
+        private float nextFugaAt;
         private bool isCasting;
+        private bool isFugaCasting;
         private GUIStyle skillStyle;
         private int styledForHeight = -1;
 
         public bool IsCasting => isCasting;
         public bool DismantleUsed { get; private set; }
         public bool CleaveUsed { get; private set; }
+        public bool FugaPrepared => DismantleUsed && CleaveUsed;
         public float DismantleCooldownRemaining => Mathf.Max(0f, nextDismantleAt - Time.time);
         public float CleaveCooldownRemaining => Mathf.Max(0f, nextCleaveAt - Time.time);
+        public float FugaCooldownRemaining => Mathf.Max(0f, nextFugaAt - Time.time);
 
         private bool CombatActive =>
             ownHealth != null
@@ -67,6 +83,7 @@ namespace JJKGame.Player
         {
             StopAllCoroutines();
             isCasting = false;
+            isFugaCasting = false;
         }
 
         private void Update()
@@ -83,6 +100,10 @@ namespace JJKGame.Player
             else if (Input.GetKeyDown(CombatInputBindings.Skill2))
             {
                 TryUseCleave();
+            }
+            else if (Input.GetKeyDown(CombatInputBindings.Ultimate))
+            {
+                TryUseFuga();
             }
         }
 
@@ -181,6 +202,52 @@ namespace JJKGame.Player
             );
         }
 
+        private void TryUseFuga()
+        {
+            actionGate ??= CombatActionGate.GetOrCreate(gameObject);
+            if (
+                !FugaPrepared
+                || Time.time < nextFugaAt
+                || actionGate == null
+                || !actionGate.CanStartUltimate
+            )
+            {
+                return;
+            }
+
+            List<Health> enemies = FindLivingEnemies();
+            if (enemies.Count != 1)
+            {
+                return;
+            }
+
+            Health target = enemies[0];
+            if (
+                target == null
+                || target.IsDead
+                || Vector3.Distance(transform.position, target.transform.position) > fugaRange
+            )
+            {
+                return;
+            }
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, false);
+            if (cursedEnergy != null && !cursedEnergy.TrySpend(fugaEnergyCost, "푸가"))
+            {
+                return;
+            }
+
+            Vector3 direction = target.transform.position - transform.position;
+            direction.y = 0f;
+            FaceDirection(direction);
+
+            nextFugaAt = Time.time + fugaCooldown;
+            DismantleUsed = false;
+            CleaveUsed = false;
+            StartCoroutine(ExecuteFuga(target, direction));
+        }
+
         private IEnumerator ExecuteSlashSequence(
             List<Health> targets,
             int hitCount,
@@ -204,8 +271,7 @@ namespace JJKGame.Player
                     combatAudio?.PlayBasicSwing(finalHit ? 3 : 1);
                 }
 
-                Vector3 fallbackDirection = transform.forward;
-                SpawnSlashVisual(fallbackDirection, visualLength, visualColor, hitIndex);
+                SpawnSlashVisual(transform.forward, visualLength, visualColor, hitIndex);
 
                 foreach (Health target in targets)
                 {
@@ -255,6 +321,57 @@ namespace JJKGame.Player
             }
 
             isCasting = false;
+        }
+
+        private IEnumerator ExecuteFuga(Health target, Vector3 initialDirection)
+        {
+            isCasting = true;
+            isFugaCasting = true;
+            combatAudio ??= PrototypeCombatAudio.GetOrCreate(gameObject);
+            combatAudio?.PlayBasicSwing(3);
+
+            yield return new WaitForSeconds(fugaCastTime);
+
+            if (ownHealth == null || ownHealth.IsDead)
+            {
+                isCasting = false;
+                isFugaCasting = false;
+                yield break;
+            }
+
+            Vector3 direction = initialDirection;
+            if (target != null && !target.IsDead)
+            {
+                direction = target.transform.position - transform.position;
+                direction.y = 0f;
+            }
+            if (direction.sqrMagnitude <= 0.001f)
+            {
+                direction = transform.forward;
+            }
+            direction.Normalize();
+            FaceDirection(direction);
+
+            GameObject projectileObject = new GameObject("SukunaFugaProjectile");
+            projectileObject.transform.position =
+                transform.position + Vector3.up * 1.0f + direction * 0.95f;
+            SukunaFugaProjectile projectile = projectileObject.AddComponent<SukunaFugaProjectile>();
+            projectile.Configure(
+                ownHealth,
+                target,
+                direction,
+                fugaProjectileSpeed,
+                fugaRange,
+                fugaProjectileRadius,
+                fugaExplosionRadius,
+                fugaDamage,
+                fugaKnockback,
+                fugaHitStun,
+                () => combatAudio?.PlayRedImpact()
+            );
+
+            isCasting = false;
+            isFugaCasting = false;
         }
 
         private List<Health> FindLivingEnemies()
@@ -436,7 +553,7 @@ namespace JJKGame.Player
             string mode = FindLivingEnemies().Count >= 2 ? "다중 2히트" : "단일 4히트";
             if (isCasting)
             {
-                return $"Q · 해 · 시전 중 · {mode}";
+                return $"Q · 해 · 다른 술식 시전 중 · {mode}";
             }
             if (DismantleCooldownRemaining > 0f)
             {
@@ -449,7 +566,7 @@ namespace JJKGame.Player
         {
             if (isCasting)
             {
-                return "E · 팔 · 시전 중";
+                return "E · 팔 · 다른 술식 시전 중";
             }
             if (CleaveCooldownRemaining > 0f)
             {
@@ -460,11 +577,41 @@ namespace JJKGame.Player
 
         private string BuildFugaStatus()
         {
-            if (DismantleUsed && CleaveUsed)
+            if (isFugaCasting)
             {
-                return "R · 푸가 · 준비 완료 · Milestone 2에서 구현";
+                return "R · 푸가 · 개방 중";
             }
-            return $"R · 푸가 · 해 {(DismantleUsed ? 1 : 0)}/1 · 팔 {(CleaveUsed ? 1 : 0)}/1";
+            if (FugaCooldownRemaining > 0f)
+            {
+                return $"R · 푸가 · {FugaCooldownRemaining:0.0}s";
+            }
+            if (!FugaPrepared)
+            {
+                return $"R · 푸가 · 해 {(DismantleUsed ? 1 : 0)}/1 · 팔 {(CleaveUsed ? 1 : 0)}/1";
+            }
+
+            List<Health> enemies = FindLivingEnemies();
+            if (enemies.Count != 1)
+            {
+                return $"R · 푸가 · 영역 밖 적 1명 필요 · 현재 {enemies.Count}";
+            }
+
+            Health target = enemies[0];
+            if (
+                target == null
+                || Vector3.Distance(transform.position, target.transform.position) > fugaRange
+            )
+            {
+                return $"R · 푸가 · 대상 거리 초과 · 최대 {fugaRange:0}m";
+            }
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            if (cursedEnergy != null && !cursedEnergy.CanSpend(fugaEnergyCost))
+            {
+                return $"R · 푸가 · 주력 부족 · CE {fugaEnergyCost:0}";
+            }
+
+            return $"R · 푸가 · READY · CE {fugaEnergyCost:0} · 단일 대상";
         }
 
         private void OnGUI()
@@ -489,7 +636,9 @@ namespace JJKGame.Player
             DrawSkillPanel(
                 new Rect(12f, 170f, width, 29f),
                 BuildFugaStatus(),
-                new Color(0.85f, 0.20f, 0.08f)
+                FugaPrepared
+                    ? new Color(1f, 0.36f, 0.06f)
+                    : new Color(0.60f, 0.20f, 0.08f)
             );
         }
 
