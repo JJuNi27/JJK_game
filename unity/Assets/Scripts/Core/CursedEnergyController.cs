@@ -7,6 +7,7 @@ namespace JJKGame.Core
     {
         Standard,
         SixEyesEfficiency,
+        SukunaShibuyaReserve,
         SukunaVastReserve,
         YutaLargeReserve,
     }
@@ -80,6 +81,10 @@ namespace JJKGame.Core
         {
             if (profileApplied && activeProfile == profileId)
             {
+                if (refill)
+                {
+                    ResetEnergy();
+                }
                 return;
             }
 
@@ -88,6 +93,9 @@ namespace JJKGame.Core
             {
                 case CursedEnergyProfileId.SixEyesEfficiency:
                     ConfigureValues(100f, 100f, 12f, 0.8f, 0.01f, 1f, "SIX EYES · 육안 효율");
+                    break;
+                case CursedEnergyProfileId.SukunaShibuyaReserve:
+                    ConfigureValues(160f, 95f, 4f, 1.2f, 1f, 0f, "VAST RESERVE · 시부야 스쿠나");
                     break;
                 case CursedEnergyProfileId.SukunaVastReserve:
                     ConfigureValues(300f, 300f, 12f, 0.8f, 1f, 0f, "VAST RESERVE · 스쿠나");
