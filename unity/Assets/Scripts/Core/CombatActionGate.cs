@@ -22,6 +22,7 @@ namespace JJKGame.Core
         private GojoTechniqueController gojoTechnique;
         private SukunaTechniqueController sukunaTechnique;
         private GojoDomainController gojoDomain;
+        private SukunaDomainController sukunaDomain;
         private TechniqueBurnoutController burnout;
 
         public static CombatActionGate GetOrCreate(GameObject owner)
@@ -46,18 +47,24 @@ namespace JJKGame.Core
                 }
 
                 if (
-                    gojoDomain != null
-                    && gojoDomain.enabled
-                    && gojoDomain.State == GojoDomainController.DomainState.Active
+                    (gojoDomain != null
+                        && gojoDomain.enabled
+                        && gojoDomain.State == GojoDomainController.DomainState.Active)
+                    || (sukunaDomain != null
+                        && sukunaDomain.enabled
+                        && sukunaDomain.IsActive)
                 )
                 {
                     return CombatActionState.DomainActive;
                 }
 
                 if (
-                    gojoDomain != null
-                    && gojoDomain.enabled
-                    && gojoDomain.State != GojoDomainController.DomainState.Normal
+                    (gojoDomain != null
+                        && gojoDomain.enabled
+                        && gojoDomain.State != GojoDomainController.DomainState.Normal)
+                    || (sukunaDomain != null
+                        && sukunaDomain.enabled
+                        && sukunaDomain.IsCasting)
                 )
                 {
                     return CombatActionState.DomainInput;
@@ -107,6 +114,7 @@ namespace JJKGame.Core
             gojoTechnique ??= GetComponent<GojoTechniqueController>();
             sukunaTechnique ??= GetComponent<SukunaTechniqueController>();
             gojoDomain ??= GetComponent<GojoDomainController>();
+            sukunaDomain ??= GetComponent<SukunaDomainController>();
             burnout ??= GetComponent<TechniqueBurnoutController>();
         }
     }
