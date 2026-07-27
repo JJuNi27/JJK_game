@@ -38,7 +38,6 @@ namespace JJKGame.Player
             activeVariant == GojoVariantId.ModernTeacher
             || activeVariant == GojoVariantId.ShinjukuShowdown;
 
-        // Only the Shinjuku battle version is planned to expose manual RCT burnout recovery.
         public bool CanManuallyRestoreTechniqueBurnout =>
             activeVariant == GojoVariantId.ShinjukuShowdown;
 
@@ -58,6 +57,7 @@ namespace JJKGame.Player
             CursedEnergyController.GetOrCreate(gameObject)
                 ?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             GojoInfinityDefense.GetOrCreate(gameObject);
+            PrototypeCharacterController.GetOrCreate(gameObject);
         }
 
         public void SetVariant(GojoVariantId variantId)
