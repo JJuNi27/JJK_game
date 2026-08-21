@@ -9,14 +9,15 @@ Gate 3A Combat Feel: USER VERIFIED
 Gate 3B Prototype Character Presentation: USER VERIFIED
 Gate 3C Signature Technique Presentation: USER VERIFIED
 Gate 3D Representative Arena + HUD Polish: STARTED
-Gate 3D Pass 1 · Arena Mood Scaffold: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3D Pass 1 · Arena Mood Scaffold: USER VERIFIED
+Gate 3D Pass 2 · Team HUD Visual Integration: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
 
 ## Gate 3D 목적
 
-현재 CombatMVP는 전투 규칙과 대표 기술 검증에는 충분하지만 화면은 여전히 회색 Prototype Arena에 가깝다.
+현재 CombatMVP는 전투 규칙과 대표 기술 검증에는 충분하지만 화면은 여전히 Prototype Arena / Debug HUD 성격이 강하다.
 
 Gate 3D에서는 전투 규칙을 건드리지 않고:
 
@@ -29,13 +30,13 @@ Gate 3D에서는 전투 규칙을 건드리지 않고:
 
 을 진행한다.
 
-실제 최종 맵 자산은 아직 없으므로 지금은 Shibuya/도심 야간 전투를 연상시키는 `GAME_ORIGINAL mood scaffold`만 사용한다.
+실제 최종 맵 자산은 아직 없으므로 지금은 Shibuya/도심 야간 전투를 연상시키는 `GAME_ORIGINAL mood scaffold`를 사용한다.
 
 ---
 
 # Pass 1 — Arena Mood Scaffold
 
-새 파일:
+파일:
 
 ```text
 unity/Assets/Scripts/Core/PrototypeBeautyArenaPresentation.cs
@@ -43,7 +44,7 @@ unity/Assets/Scripts/Core/PrototypeBeautyArenaPresentation.cs
 
 `CombatMVP` Scene에서만 활성화되는 Runtime Presentation이다.
 
-## 추가되는 표현
+추가 표현:
 
 ```text
 - 푸른/남색 계열 야간 Ambient
@@ -55,66 +56,108 @@ unity/Assets/Scripts/Core/PrototypeBeautyArenaPresentation.cs
 - 차가운 조명 1개 + 따뜻한 조명 1개
 ```
 
-도심 실루엣과 바닥 accent의 Collider는 비활성화/제거한다.
+도심 실루엣과 바닥 accent의 Collider는 의도적으로 비활성화/제거한다.
 
-따라서 장식물이:
+따라서 현재 Prototype 건물은 `배경 실루엣`이며 실제 벽이나 플레이 가능한 건물 구조가 아니다.
+
+## Pass 1 사용자 확인
+
+2026-08-22 사용자 Unity 실제 확인:
 
 ```text
-Player movement
-Enemy movement
-Target Lock
-Projectile
-Domain
-Spawn
-Arena collision
+- 건물 실루엣 표시 정상
+- 맵 링 표시 정상
+- 건물은 통과 가능
 ```
 
-을 막지 않도록 한다.
+건물 통과는 현재 설계상 정상이다. 장식 Collider를 의도적으로 제거했기 때문이다.
+
+따라서:
+
+```text
+Gate 3D Pass 1 · Arena Mood Scaffold: USER VERIFIED
+```
+
+---
+
+# Pass 2 — Team HUD Visual Integration
+
+현재 기능성 HUD의 정보 구조는 유지하면서 `디버그 박스` 느낌을 줄이고 야간 도심 Beauty Corner와 어울리는 전투 HUD 언어로 정리한다.
+
+변경 파일:
+
+```text
+unity/Assets/Scripts/Player/PrototypePlayerTeamController.cs
+unity/Assets/Scripts/Enemy/PrototypeOpponentTeamController.cs
+```
+
+## Player HUD
+
+```text
+- 상단 좌측 Active Fighter 패널을 76px 높이의 전투 카드로 재구성
+- 캐릭터명 / 시대 라벨 / ACTIVE 상태 분리
+- HP / CE bar를 어두운 HUD plate 위에 통합
+- 고죠는 청색, 스쿠나는 적색 accent 유지
+- 좌측 accent stripe와 얇은 highlight line 추가
+```
+
+Team panel:
+
+```text
+- 기존 92px 패널을 더 얇은 76px 구조로 압축
+- TEAM / T TAG 상태를 헤더에 분리
+- Active / Reserve는 A / R row로 간결화
+- HP / CE 상태 정보는 유지
+- KO / ACTION LOCK / Cooldown 정보 유지
+```
+
+## Opponent HUD
+
+```text
+- 우측 상단 Team panel을 Player HUD와 대칭되는 76px plate로 재구성
+- OPPONENT / 생존 수 / RESERVE ENTRY 상태 분리
+- Active / Reserve row를 간결화
+- 우측 red/orange accent stripe 사용
+```
+
+Mode chip:
+
+```text
+기존 큰 F2 MODE 박스
+→ 화면 상단 중앙의 얇은 21px 상태 strip
+```
 
 ## 바꾸지 않은 것
 
 ```text
+HP / CE 값
+Tag 기능
+KO Auto Tag
+Opponent Reserve Entry
+F2 Encounter Mode
 Damage
-HP / CE
-Cooldown
-Skill rules
-Domain rules
-Player / Enemy spawn
-Combat arena collider
-Camera offset
-Team Match
+Skill / Domain
 Target Lock
+Camera
+Arena collision
 ```
 
-## 현재 성격
-
-이 Pass는 최종 Shibuya 맵 제작이 아니다.
-
-목적은 실제 배경 자산이 들어오기 전에:
-
-```text
-어두운 도심 배경
-+ 밝은 Signature VFX
-+ 캐릭터 실루엣
-```
-
-조합이 Beauty Corner에서 읽히는지 검증하는 것이다.
-
-실제 Environment Model / Texture / Decal / Post Process 자산이 들어오면 이 Runtime scaffold는 제거 대상이다.
+즉 이번 Pass는 정보와 게임 규칙은 그대로 두고 Presentation만 정리한다.
 
 ## 빠른 사용자 테스트
 
 ```text
 1. git pull origin master
 2. Unity Console 빨간 오류 확인
-3. Play를 완전히 다시 시작
+3. Play 시작
 
 확인 포인트
-- 기존 회색 테스트장보다 야간 도심 분위기가 확실히 생겼는지
-- 플레이 영역 밖에 건물 실루엣/네온이 보이는지
-- 바닥에 얇은 원형 accent가 보이는지
-- 캐릭터와 허식 자 / 푸가 / 영역 VFX가 배경에 묻히지 않는지
-- 걷기/회피/전투 중 보이지 않는 벽이나 장식 충돌이 생기지 않는지
+- 좌측 Active HUD가 이전보다 게임 HUD처럼 정리됐는지
+- 하단 좌측 Team panel이 겹치지 않고 Active / Reserve 정보가 읽히는지
+- F2 Team Battle에서 우측 Opponent panel이 대칭적으로 보이는지
+- 상단 MODE strip이 중앙 공격 표시와 겹치지 않는지
+- 고죠 → 스쿠나 Tag 시 accent / 이름 / HP / CE가 정상 전환되는지
+- 상대 첫 KO → Reserve Entry → 최종 KO까지 HUD 정보가 정상 유지되는지
 ```
 
-정상 확인 후 다음 묶음은 `Gate 3D Pass 2 · HUD visual integration`이다.
+정상 확인 후 다음 묶음은 `Gate 3D Pass 3 · Match / Skill HUD hierarchy polish + Beauty Corner regression`이다.
