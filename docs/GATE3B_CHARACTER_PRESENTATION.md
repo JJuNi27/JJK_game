@@ -7,7 +7,10 @@
 ```text
 Gate 3A Combat Feel: USER VERIFIED
 Gate 3B Character Presentation Pass 1: USER VERIFIED
-Gate 3B Character Presentation Pass 2 Bundle: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3B Character Presentation Pass 2 Bundle: USER VERIFIED
+Gate 3B Prototype Presentation: USER VERIFIED
+
+NEXT: Gate 3C Signature Technique Presentation
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -46,7 +49,11 @@ SukunaPrototypeAvatar
 
 가 Primitive 기반으로 런타임 외형을 만든다.
 
-따라서 실제 모델을 기다리며 멈추지 않고, 나중에 Animator/모델로 교체할 수 있는 표현 규칙을 먼저 검증한다.
+따라서 실제 모델을 기다리며 멈추지 않고, 나중에 Animator/모델로 교체할 수 있는 표현 규칙을 먼저 검증했다.
+
+현재 동작들은 최종 품질이 아니라 상태/타이밍 검증용 placeholder다.
+
+최종 목표는 실제 리깅 모델 + Animator + 캐릭터별 전용 애니메이션이며, 현재 Primitive 팔/몸 회전 방식은 실제 제작 단계에서 교체한다.
 
 최종 Character Asset Contract 추출은 Gate 4에서 한다. 지금 거대한 범용 애니메이션 시스템은 만들지 않는다.
 
@@ -115,7 +122,7 @@ Gate 3B Character Presentation Pass 1: USER VERIFIED
 
 ## 목적
 
-실제 Animator가 없는 상태에서도 `가만히 있음 / 이동 / 회피 / 공격`이 실루엣만으로 조금 더 구분되도록 한다.
+실제 Animator가 없는 상태에서도 `가만히 있음 / 이동 / 회피 / 공격`이 실루엣만으로 구분되도록 한다.
 
 이번 작업도 최종 애니메이션이 아니라 Character Presentation 규칙 검증용 placeholder다.
 
@@ -201,44 +208,51 @@ Target Lock
 술식/영역
 ```
 
-## 사용자 테스트
+## 사용자 검증
+
+2026-08-21 사용자 실제 Unity 확인:
 
 ```text
-1. git pull origin master
-2. Unity Console 빨간 오류 없는지 확인
-
-[이동]
-3. 고죠 WASD 이동
-→ 정지 상태보다 이동 중 몸이 조금 앞으로 기울어 보이는지
-
-4. T → 스쿠나 후 이동
-→ 고죠보다 조금 더 공격적으로 숙인 느낌인지
-
-[회피]
-5. 고죠 SPACE
-→ 회피 동안 몸이 앞으로 숙고 팔이 뒤로 빠지는 Dash Pose가 보이는지
-
-6. 스쿠나 SPACE
-→ 같은 구조지만 조금 더 과격한 자세인지
-
-[회귀]
-7. LMB 1/2/3
-→ Pass 1 공격 포즈 정상
-
-8. T Tag / TAB Target Lock / Q/E/R/V
-→ 기존 기능에 이상 없는지 간단 확인
+[USER VERIFIED]
+- 고죠 이동 중 전진 기울기 정상
+- 스쿠나 이동 중 더 공격적인 자세 정상
+- 고죠 SPACE 회피 Dash Pose 정상
+- 스쿠나 SPACE 회피의 더 과격한 자세 정상
+- 정지 / 이동 / 회피 / 공격 상태 구분 정상
+- 기존 전투 흐름에 눈에 띄는 이상 없음
 ```
 
-Primitive 외형이라 자세 자체가 우스워 보이는 것은 실패 조건이 아니다.
+사용자 판정: `이동 모션들은 정상`.
 
-이번 Pass의 성공 기준은:
+따라서:
 
 ```text
-상태 구분이 눈에 보임
-기존 전투 로직을 건드리지 않음
-컴파일/런타임 오류 없음
+Gate 3B Character Presentation Pass 2 Bundle: USER VERIFIED
+Gate 3B Prototype Presentation: USER VERIFIED
 ```
 
-이다.
+---
 
-정상 확인되면 Gate 3B의 Prototype Presentation 검증을 닫고, 실제 모델/애니메이션 자산 준비와 함께 Gate 3C Signature Technique Presentation으로 넘어간다.
+## 다음 시작점
+
+다음 작업은:
+
+```text
+Gate 3C Signature Technique Presentation
+```
+
+대표 범위:
+
+```text
+GOJO
+- 허식 자
+- 무량공처
+
+SUKUNA
+- 푸가
+- 복마어주자
+```
+
+현재 Prototype 동작 품질을 더 다듬는 데 시간을 쓰지 않고, 실제 모델/Animator 자산이 준비되면 공격/이동/회피/Tag placeholder를 고급 애니메이션으로 교체한다.
+
+Gate 3C부터는 VFX/SFX/카메라/캐릭터 Presentation 연결처럼 여러 파일을 함께 다루는 작업이 늘어나므로 Codex 사용 비중을 높인다.
