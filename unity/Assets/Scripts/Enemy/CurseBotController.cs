@@ -1,3 +1,4 @@
+using System;
 using JJKGame.Core;
 using UnityEngine;
 
@@ -30,6 +31,10 @@ namespace JJKGame.Enemy
         [SerializeField, Min(0.1f)] private float rotationSpeed = 10f;
         [SerializeField] private float gravity = -24f;
 
+        [Header("Prototype Crowd Spacing")]
+        [SerializeField, Min(0.2f)] private float engagementRadius = 1.15f;
+        [SerializeField, Min(0.05f)] private float engagementSlotTolerance = 0.42f;
+
         [Header("Training Attack")]
         [SerializeField] private TrainingAttackMode trainingAttackMode = TrainingAttackMode.NormalStrike;
         [SerializeField, Min(0.1f)] private float attackRange = 1.7f;
@@ -59,6 +64,8 @@ namespace JJKGame.Enemy
         private float attackWindupEndsAt;
         private float verticalVelocity;
         private Vector3 knockbackVelocity;
+        private int engagementSlotIndex;
+        private int engagementSlotCount = 1;
 
         public TrainingAttackMode AttackMode => trainingAttackMode;
         public string AttackModeLabel => trainingAttackMode == TrainingAttackMode.DomainAmplification
@@ -107,6 +114,8 @@ namespace JJKGame.Enemy
                     ? TrainingAttackMode.DomainAmplification
                     : TrainingAttackMode.NormalStrike
             );
+
+            AssignEngagementSlot();
         }
 
         private void OnDestroy()
@@ -171,10 +180,14 @@ namespace JJKGame.Enemy
             flatOffset.y = 0f;
             float distance = flatOffset.magnitude;
 
-            if (distance > attackRange)
+            Vector3 engagementOffset = ResolveEngagementPoint() - transform.position;
+            engagementOffset.y = 0f;
+            bool needsSlotReposition = engagementOffset.magnitude > engagementSlotTolerance;
+
+            if (distance > attackRange || needsSlotReposition)
             {
                 state = BotState.Chase;
-                Chase(flatOffset);
+                Chase(engagementOffset);
             }
             else
             {
@@ -217,6 +230,46 @@ namespace JJKGame.Enemy
             hitStunUntil = Mathf.Max(hitStunUntil, Time.time + Mathf.Max(0f, stunDuration));
             flashUntil = Time.time + hitFlashDuration;
             state = BotState.Hitstunned;
+        }
+
+        private void AssignEngagementSlot()
+        {
+            CurseBotController[] bots = FindObjectsByType<CurseBotController>(
+                FindObjectsSortMode.None
+            );
+            Array.Sort(
+                bots,
+                (left, right) =>
+                {
+                    int nameComparison = string.CompareOrdinal(left.name, right.name);
+                    return nameComparison != 0
+                        ? nameComparison
+                        : left.GetInstanceID().CompareTo(right.GetInstanceID());
+                }
+            );
+
+            engagementSlotCount = Mathf.Max(1, bots.Length);
+            engagementSlotIndex = 0;
+            for (int index = 0; index < bots.Length; index++)
+            {
+                if (bots[index] == this)
+                {
+                    engagementSlotIndex = index;
+                    break;
+                }
+            }
+        }
+
+        private Vector3 ResolveEngagementPoint()
+        {
+            if (target == null || engagementSlotCount <= 1)
+            {
+                return target != null ? target.position : transform.position;
+            }
+
+            float angle = 360f * engagementSlotIndex / engagementSlotCount;
+            Vector3 radial = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+            return target.position + radial * engagementRadius;
         }
 
         private void Chase(Vector3 flatOffset)
