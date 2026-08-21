@@ -10,7 +10,8 @@ Gate 3B Prototype Character Presentation: USER VERIFIED
 Gate 3C Signature Technique Presentation: USER VERIFIED
 Gate 3D Representative Arena + HUD Polish: STARTED
 Gate 3D Pass 1 · Arena Mood Scaffold: USER VERIFIED
-Gate 3D Pass 2 · Team HUD Visual Integration: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3D Pass 2 · Team HUD Visual Integration: USER VERIFIED
+Gate 3D Pass 3 · Contextual Skill Deck HUD: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -82,8 +83,6 @@ Gate 3D Pass 1 · Arena Mood Scaffold: USER VERIFIED
 
 # Pass 2 — Team HUD Visual Integration
 
-현재 기능성 HUD의 정보 구조는 유지하면서 `디버그 박스` 느낌을 줄이고 야간 도심 Beauty Corner와 어울리는 전투 HUD 언어로 정리한다.
-
 변경 파일:
 
 ```text
@@ -91,58 +90,115 @@ unity/Assets/Scripts/Player/PrototypePlayerTeamController.cs
 unity/Assets/Scripts/Enemy/PrototypeOpponentTeamController.cs
 ```
 
-## Player HUD
+Player / Opponent Team HUD의 기능성 정보는 유지하면서 디버그 박스 느낌을 줄이고 야간 Beauty Corner에 맞는 전투 HUD plate로 정리했다.
+
+유지한 정보:
 
 ```text
-- 상단 좌측 Active Fighter 패널을 76px 높이의 전투 카드로 재구성
-- 캐릭터명 / 시대 라벨 / ACTIVE 상태 분리
-- HP / CE bar를 어두운 HUD plate 위에 통합
-- 고죠는 청색, 스쿠나는 적색 accent 유지
-- 좌측 accent stripe와 얇은 highlight line 추가
+- Active / Reserve
+- HP / CE
+- Tag Ready / Cooldown / Action Lock
+- KO
+- Opponent Reserve Entry
+- F2 Encounter Mode
 ```
 
-Team panel:
+게임 규칙은 변경하지 않았다.
+
+## Pass 2 사용자 확인
+
+2026-08-22 사용자 Unity 실제 확인:
 
 ```text
-- 기존 92px 패널을 더 얇은 76px 구조로 압축
-- TEAM / T TAG 상태를 헤더에 분리
-- Active / Reserve는 A / R row로 간결화
-- HP / CE 상태 정보는 유지
-- KO / ACTION LOCK / Cooldown 정보 유지
+HUD 변경 정상
+Tag / HP / CE / Opponent Team 표시 정상
 ```
 
-## Opponent HUD
+사용자 판정:
 
 ```text
-- 우측 상단 Team panel을 Player HUD와 대칭되는 76px plate로 재구성
-- OPPONENT / 생존 수 / RESERVE ENTRY 상태 분리
-- Active / Reserve row를 간결화
-- 우측 red/orange accent stripe 사용
+ㅇㅇ 정상이다
 ```
 
-Mode chip:
+따라서:
 
 ```text
-기존 큰 F2 MODE 박스
-→ 화면 상단 중앙의 얇은 21px 상태 strip
+Gate 3D Pass 2 · Team HUD Visual Integration: USER VERIFIED
 ```
+
+---
+
+# Pass 3 — Contextual Skill Deck HUD
+
+새 파일:
+
+```text
+unity/Assets/Scripts/Core/PrototypeSkillDeckHud.cs
+```
+
+기존 Match HUD를 뜯어고치지 않고, Beauty Corner에서 항상 필요한 `현재 캐릭터의 4개 대표 술식`을 한눈에 읽게 만드는 별도 하단 Skill Deck를 추가한다.
+
+## 표시 구조
+
+고죠:
+
+```text
+Q 창
+E 혁
+R 허식 자
+V 무량공처
+```
+
+스쿠나:
+
+```text
+Q 해
+E 팔
+R 푸가
+V 복마어주자
+```
+
+Tag로 Active 캐릭터가 바뀌면 Skill Deck도 자동으로 교체된다.
+
+## 상태 표현
+
+`CombatActionGate`를 읽기 전용으로 사용한다.
+
+```text
+READY
+DODGE
+CASTING
+DOMAIN INPUT
+DOMAIN ACTIVE
+TECHNIQUE BURNOUT
+DISABLED
+```
+
+현재 시작할 수 없는 술식은 chip이 흐려진다.
+
+Q / E / R / V 입력 순간 해당 chip이 약 0.18초 강조되어 입력과 연출의 연결이 눈에 보이도록 한다.
+
+## 위치
+
+기본은 화면 우하단이다.
+
+작은 화면에서는 기존 하단 Domain HUD와 겹침을 줄이기 위해 조금 위로 자동 이동한다.
 
 ## 바꾸지 않은 것
 
 ```text
-HP / CE 값
-Tag 기능
-KO Auto Tag
-Opponent Reserve Entry
-F2 Encounter Mode
+Input Binding
 Damage
-Skill / Domain
+CE Cost
+Cooldown
+Cast Time
+Domain Rule
+Tag
 Target Lock
-Camera
-Arena collision
+Match Result
 ```
 
-즉 이번 Pass는 정보와 게임 규칙은 그대로 두고 Presentation만 정리한다.
+즉 전부 Presentation이다.
 
 ## 빠른 사용자 테스트
 
@@ -152,12 +208,12 @@ Arena collision
 3. Play 시작
 
 확인 포인트
-- 좌측 Active HUD가 이전보다 게임 HUD처럼 정리됐는지
-- 하단 좌측 Team panel이 겹치지 않고 Active / Reserve 정보가 읽히는지
-- F2 Team Battle에서 우측 Opponent panel이 대칭적으로 보이는지
-- 상단 MODE strip이 중앙 공격 표시와 겹치지 않는지
-- 고죠 → 스쿠나 Tag 시 accent / 이름 / HP / CE가 정상 전환되는지
-- 상대 첫 KO → Reserve Entry → 최종 KO까지 HUD 정보가 정상 유지되는지
+- 우하단에 Q/E/R/V Skill Deck가 표시되는지
+- 고죠에서 창 / 혁 / 허식 자 / 무량공처가 보이는지
+- T Tag 후 스쿠나의 해 / 팔 / 푸가 / 복마어주자로 즉시 바뀌는지
+- Q/E/R/V를 누를 때 해당 chip이 잠깐 강조되는지
+- Dodge / Casting / Domain 상태에서 상단 상태 라벨과 chip 밝기가 자연스럽게 바뀌는지
+- 기존 Team HUD / Domain HUD / 전투 입력이 깨지지 않는지
 ```
 
-정상 확인 후 다음 묶음은 `Gate 3D Pass 3 · Match / Skill HUD hierarchy polish + Beauty Corner regression`이다.
+Pass 3 검증 후 Gate 3D는 `Beauty Corner regression`을 한 번 묶어서 확인하고 닫는 방향으로 진행한다.
