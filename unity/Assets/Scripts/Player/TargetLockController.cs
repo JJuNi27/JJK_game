@@ -98,6 +98,17 @@ namespace JJKGame.Player
             }
         }
 
+        public bool TryLockTarget(Health target)
+        {
+            if (ownHealth == null || ownHealth.IsDead || !enabled || !IsValidTarget(target))
+            {
+                return false;
+            }
+
+            SetTarget(target);
+            return CurrentTarget == target;
+        }
+
         private void SelectNextTargetOrUnlock()
         {
             RefreshCandidates();
@@ -147,7 +158,7 @@ namespace JJKGame.Player
 
         private bool IsValidTarget(Health target)
         {
-            if (target == null || target == ownHealth || target.IsDead)
+            if (target == null || target == ownHealth || target.IsDead || !target.gameObject.activeInHierarchy)
             {
                 return false;
             }
