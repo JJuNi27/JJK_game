@@ -6,8 +6,7 @@
 
 ```text
 Gate 2B Opponent Team Core Runtime: USER VERIFIED
-Enemy Team HUD Cleanup · Team Battle View: USER VERIFIED
-Enemy Team HUD Cleanup · Training Regression: USER TEST PENDING
+Enemy Team HUD Cleanup: USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -23,7 +22,7 @@ Gate 2B 핵심 런타임은 사용자 실제 Unity 테스트에서 다음이 확
 - 마지막 상대까지 KO해야 VICTORY
 ```
 
-핵심 구조가 확인됐으므로 다음으로 임시 중복 Enemy HUD를 정리한다.
+핵심 구조가 확인됐으므로 임시 중복 Enemy HUD를 정리했다.
 
 기존 Team Battle 화면에는 다음 두 HUD가 동시에 존재할 수 있었다.
 
@@ -38,7 +37,7 @@ PrototypeOpponentTeamController
 - ACTIVE / RESERVE
 ```
 
-Team Battle에서는 Active / Reserve 정보가 더 중요하므로 중복 표시를 제거한다.
+Team Battle에서는 Active / Reserve 정보가 더 중요하므로 중복 표시를 제거했다.
 
 ## 변경 내용
 
@@ -59,7 +58,7 @@ Enemy 공격 경고는 Reserve GameObject가 비활성인 경우 계산에서 �
 
 ### PrototypeOpponentTeamController
 
-Team Battle용 상대 HUD를 우측 상단으로 이동한다.
+Team Battle용 상대 HUD를 우측 상단에 표시한다.
 
 ```text
 OPPONENT TEAM · 2/2
@@ -75,50 +74,38 @@ ACTIVE · CURSE B · HP ...
 RESERVE · CURSE A · HP 0/... · KO
 ```
 
+최종 KO 뒤에는:
+
+```text
+OPPONENT TEAM · 0/2
+두 팀원 모두 KO
+VICTORY
+```
+
 형태가 된다.
 
-`TeamBattleModeRequested` 정적 상태를 노출해 MatchController가 Team Battle 중인지 HUD 수준에서 확인할 수 있도록 했다.
+`TeamBattleModeRequested` 정적 상태를 노출해 MatchController가 Team Battle 중인지 HUD 수준에서 확인한다.
 
-## 2026-08-21 사용자 캡처 확인
+## 사용자 검증
 
-사용자가 Team Battle에서 두 상대를 모두 KO한 최종 VICTORY 화면을 공유했다.
-
-캡처에서 다음을 직접 확인했다.
+2026-08-21 사용자 실제 Unity 캡처와 플레이 결과:
 
 ```text
-[USER VERIFIED · Team Battle View]
-- 기존 CURSE A / CURSE B 개별 HP 패널이 보이지 않음
+[USER VERIFIED]
+- Team Battle 화면에서 기존 CURSE A / CURSE B 개별 HUD가 보이지 않음
 - 기존 CURSES 2/2 카운트가 보이지 않음
-- 우측 상단에 OPPONENT TEAM 패널 하나만 존재
-- 최종 상태가 OPPONENT TEAM · 0/2로 표시됨
-- Curse A / Curse B가 모두 HP 0 / KO로 표시됨
-- 두 상대를 모두 KO한 뒤 VICTORY 정상 표시
+- 우측 상단 OPPONENT TEAM 패널 하나가 상대 팀 HUD를 담당
+- 최종 상대 KO 뒤 OPPONENT TEAM · 0/2 표시
+- Active / Reserve 두 행 모두 KO 표시
+- VICTORY 정상 표시
 ```
 
-따라서 Team Battle 화면의 중복 Enemy HUD 제거와 최종 팀 상태 표시는 사용자 검증 완료로 본다.
+사용자 캡처로 최종 `0/2 + VICTORY` 상태를 직접 확인했다.
 
-Training 모드에서 기존 `CURSE A / CURSE B / CURSES 2/2` HUD가 그대로 유지되는지는 Gate 2B 최종 회귀에서 한 번 더 확인한다.
-
-## 사용자 확인
-
-```text
-1. git pull origin master
-2. Unity Console 빨간 오류 확인
-
-[남은 회귀]
-3. F2로 Training 복귀
-→ 기존 우측 CURSE A / CURSE B 패널과 CURSES 2/2가 유지되는지
-
-4. F2로 Team Battle 재진입
-→ OPPONENT TEAM 단일 HUD가 유지되는지
-```
-
-남은 Training 회귀까지 사용자가 실제 Unity에서 확인하면:
+## 완료 판정
 
 ```text
 Enemy Team HUD Cleanup: USER VERIFIED
 ```
 
-로 최종 변경한다.
-
-다음 Gate 2B 작업은 `KO Entry / Target Lock 자동 승계`다.
+다음 판단 항목이었던 `KO Entry / Target Lock 승계 정책`도 자동 승계 방향으로 구현 후 사용자 검증 완료했다.
