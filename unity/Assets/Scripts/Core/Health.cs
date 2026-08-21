@@ -95,9 +95,23 @@ namespace JJKGame.Core
                 return;
             }
 
+            float lethalAmount = Mathf.Max(1f, CurrentHealth);
+            DamageContext context = new DamageContext(
+                lethalAmount,
+                gameObject,
+                DamageDeliveryType.Environmental,
+                DamageTraits.Unblockable,
+                "OUT OF BOUNDS",
+                transform.position
+            );
+
             CurrentHealth = 0f;
             HealthChanged?.Invoke(this, CurrentHealth);
-            Died?.Invoke(this);
+            DamageResolved?.Invoke(this, context, DamageResolution.Applied);
+            if (IsDead)
+            {
+                Died?.Invoke(this);
+            }
         }
 
         public void GrantInvulnerability(float duration)
