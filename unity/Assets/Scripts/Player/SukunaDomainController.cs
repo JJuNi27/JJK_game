@@ -30,6 +30,8 @@ namespace JJKGame.Player
         private CursedEnergyController cursedEnergy;
         private CombatActionGate actionGate;
         private PrototypeCombatAudio combatAudio;
+        private SukunaCombatAudio sukunaAudio;
+        private SukunaTechniqueController sukunaTechnique;
         private SukunaMalevolentShrineVisual domainVisual;
         private float castCompletesAt;
         private float activeEndsAt;
@@ -51,6 +53,8 @@ namespace JJKGame.Player
             : domainEnergyCost;
         public int SureHitsApplied => sureHitsApplied;
         public int SureHitCount => sureHitCount;
+        public Vector3 DomainCenter => domainCenter;
+        public float DomainRadius => domainRadius;
 
         public string StatusText
         {
@@ -96,6 +100,8 @@ namespace JJKGame.Player
             cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
             combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
+            sukunaAudio = SukunaCombatAudio.GetOrCreate(gameObject);
+            sukunaTechnique = GetComponent<SukunaTechniqueController>();
         }
 
         private void OnDisable()
@@ -134,6 +140,12 @@ namespace JJKGame.Player
 
             if (State == DomainState.Active)
             {
+                if (Input.GetKeyDown(CombatInputBindings.Ultimate))
+                {
+                    sukunaTechnique ??= GetComponent<SukunaTechniqueController>();
+                    sukunaTechnique?.TryUseFugaInsideDomain(domainCenter, domainRadius);
+                }
+
                 if (sureHitsApplied < sureHitCount && Time.time >= nextSureHitAt)
                 {
                     ApplySureHitPulse();
@@ -208,8 +220,8 @@ namespace JJKGame.Player
             domainVisual = visualObject.AddComponent<SukunaMalevolentShrineVisual>();
             domainVisual.Configure(domainRadius);
 
-            combatAudio ??= PrototypeCombatAudio.GetOrCreate(gameObject);
-            combatAudio?.PlayDomain();
+            sukunaAudio ??= SukunaCombatAudio.GetOrCreate(gameObject);
+            sukunaAudio?.PlayDomain();
         }
 
         private void ApplySureHitPulse()
