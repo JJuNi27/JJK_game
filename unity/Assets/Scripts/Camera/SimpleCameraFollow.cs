@@ -20,6 +20,21 @@ namespace JJKGame.CameraSystem
         private float flashPeakAlpha;
         private Color flashColor = Color.white;
 
+        private Camera controlledCamera;
+        private float baseFieldOfView;
+        private float fovKickStartedAt;
+        private float fovKickEndsAt;
+        private float fovKickDelta;
+
+        private void Awake()
+        {
+            controlledCamera = GetComponent<Camera>();
+            if (controlledCamera != null)
+            {
+                baseFieldOfView = controlledCamera.fieldOfView;
+            }
+        }
+
         public void SetTarget(Transform newTarget)
         {
             target = newTarget;
@@ -56,8 +71,34 @@ namespace JJKGame.CameraSystem
             flashEndsAt = Mathf.Max(flashEndsAt, now + duration);
         }
 
+        public void AddFovKick(float delta, float duration)
+        {
+            if (Mathf.Approximately(delta, 0f) || duration <= 0f)
+            {
+                return;
+            }
+
+            controlledCamera ??= GetComponent<Camera>();
+            if (controlledCamera == null)
+            {
+                return;
+            }
+
+            if (baseFieldOfView <= 0f)
+            {
+                baseFieldOfView = controlledCamera.fieldOfView;
+            }
+
+            float now = Time.unscaledTime;
+            fovKickStartedAt = now;
+            fovKickEndsAt = now + duration;
+            fovKickDelta = delta;
+        }
+
         private void LateUpdate()
         {
+            ApplyFovKick();
+
             if (target == null)
             {
                 return;
@@ -77,6 +118,32 @@ namespace JJKGame.CameraSystem
             transform.rotation = Quaternion.LookRotation(lookPoint - transform.position, Vector3.up);
         }
 
+        private void ApplyFovKick()
+        {
+            controlledCamera ??= GetComponent<Camera>();
+            if (controlledCamera == null || baseFieldOfView <= 0f)
+            {
+                return;
+            }
+
+            float now = Time.unscaledTime;
+            if (now >= fovKickEndsAt)
+            {
+                controlledCamera.fieldOfView = baseFieldOfView;
+                fovKickDelta = 0f;
+                return;
+            }
+
+            float duration = Mathf.Max(0.01f, fovKickEndsAt - fovKickStartedAt);
+            float progress = Mathf.Clamp01((now - fovKickStartedAt) / duration);
+            float envelope = Mathf.Sin(progress * Mathf.PI);
+            controlledCamera.fieldOfView = Mathf.Clamp(
+                baseFieldOfView + fovKickDelta * envelope,
+                25f,
+                100f
+            );
+        }
+
         private Vector3 BuildShakeOffset()
         {
             float now = Time.unscaledTime;
@@ -90,6 +157,14 @@ namespace JJKGame.CameraSystem
             float remaining = Mathf.Clamp01((shakeEndsAt - now) / duration);
             Vector2 random = Random.insideUnitCircle * shakeAmplitude * remaining;
             return transform.right * random.x + Vector3.up * random.y;
+        }
+
+        private void OnDisable()
+        {
+            if (controlledCamera != null && baseFieldOfView > 0f)
+            {
+                controlledCamera.fieldOfView = baseFieldOfView;
+            }
         }
 
         private void OnGUI()
