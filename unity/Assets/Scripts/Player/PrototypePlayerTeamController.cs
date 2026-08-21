@@ -43,6 +43,7 @@ namespace JJKGame.Player
         private float nextManualTagAt;
         private bool switchingMember;
         private GUIStyle titleStyle;
+        private GUIStyle metaStyle;
         private GUIStyle rowStyle;
         private GUIStyle chipStyle;
         private int styledForHeight = -1;
@@ -236,39 +237,54 @@ namespace JJKGame.Player
         private void DrawActivePlayerOverlay()
         {
             const float margin = 12f;
-            float panelWidth = Mathf.Clamp((Screen.width - margin * 3f) * 0.36f, 230f, 340f);
-            Rect rect = new Rect(margin, margin, panelWidth, 62f);
+            float panelWidth = Mathf.Clamp((Screen.width - margin * 3f) * 0.37f, 255f, 370f);
+            Rect rect = new Rect(margin, margin, panelWidth, 76f);
             bool sukuna = ActiveCharacter == PrototypeCharacterId.SukunaShibuyaYujiBody;
-            Color accent = sukuna
-                ? new Color(0.96f, 0.20f, 0.12f)
-                : new Color(0.18f, 0.66f, 1f);
+            Color accent = CharacterAccent(ActiveCharacter);
+            Color secondary = sukuna
+                ? new Color(0.66f, 0.08f, 0.12f)
+                : new Color(0.20f, 0.24f, 0.90f);
 
-            DrawRect(rect, sukuna
-                ? new Color(0.040f, 0.010f, 0.012f, 0.995f)
-                : new Color(0.012f, 0.018f, 0.032f, 0.995f));
-            DrawBorder(rect, accent, 2f);
+            DrawHudPlate(rect, accent, true);
+            DrawRect(new Rect(rect.x, rect.y, 5f, rect.height), accent);
+            DrawRect(new Rect(rect.x + 5f, rect.y, rect.width - 5f, 2f), new Color(accent.r, accent.g, accent.b, 0.75f));
+
             GUI.Label(
-                new Rect(rect.x + 10f, rect.y + 3f, rect.width - 20f, 18f),
-                $"ACTIVE · {CharacterName(ActiveCharacter)}",
+                new Rect(rect.x + 14f, rect.y + 5f, rect.width - 92f, 18f),
+                CharacterShortName(ActiveCharacter).ToUpperInvariant(),
                 titleStyle
+            );
+            metaStyle.alignment = TextAnchor.MiddleRight;
+            metaStyle.normal.textColor = accent;
+            GUI.Label(
+                new Rect(rect.x + rect.width - 84f, rect.y + 5f, 72f, 18f),
+                "ACTIVE",
+                metaStyle
+            );
+            metaStyle.alignment = TextAnchor.MiddleLeft;
+            metaStyle.normal.textColor = new Color(0.68f, 0.73f, 0.84f);
+            GUI.Label(
+                new Rect(rect.x + 14f, rect.y + 21f, rect.width - 28f, 15f),
+                CharacterEraLabel(ActiveCharacter),
+                metaStyle
             );
 
             DrawValueBar(
-                new Rect(rect.x + 10f, rect.y + 23f, rect.width - 20f, 18f),
+                new Rect(rect.x + 14f, rect.y + 39f, rect.width - 28f, 18f),
                 health.CurrentHealth,
                 health.MaxHealth,
                 accent,
-                $"HP {health.CurrentHealth:0}/{health.MaxHealth:0}"
+                $"HP  {health.CurrentHealth:0} / {health.MaxHealth:0}"
             );
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
             if (cursedEnergy != null)
             {
                 DrawValueBar(
-                    new Rect(rect.x + 10f, rect.y + 44f, rect.width - 20f, 12f),
+                    new Rect(rect.x + 14f, rect.y + 60f, rect.width - 28f, 10f),
                     cursedEnergy.CurrentEnergy,
                     cursedEnergy.MaxEnergy,
-                    sukuna ? new Color(0.72f, 0.12f, 0.20f) : new Color(0.34f, 0.20f, 0.96f),
+                    secondary,
                     $"CE {cursedEnergy.CurrentEnergy:0}/{cursedEnergy.MaxEnergy:0}"
                 );
             }
@@ -276,27 +292,39 @@ namespace JJKGame.Player
 
         private void DrawTeamPanel()
         {
-            float width = Mathf.Min(340f, Screen.width - 24f);
-            float panelY = Mathf.Max(286f, Screen.height - 200f);
-            panelY = Mathf.Min(panelY, Screen.height - 104f);
-            Rect panel = new Rect(12f, panelY, width, 92f);
-            DrawRect(panel, new Color(0.012f, 0.016f, 0.025f, 0.96f));
-            DrawBorder(panel, new Color(0.58f, 0.68f, 0.88f, 0.90f), 2f);
+            float width = Mathf.Min(336f, Screen.width - 24f);
+            float panelY = Mathf.Max(298f, Screen.height - 176f);
+            panelY = Mathf.Min(panelY, Screen.height - 86f);
+            Rect panel = new Rect(12f, panelY, width, 76f);
+            Color activeAccent = CharacterAccent(ActiveCharacter);
+
+            DrawHudPlate(panel, new Color(0.46f, 0.55f, 0.76f), false);
+            DrawRect(new Rect(panel.x, panel.y, 3f, panel.height), new Color(activeAccent.r, activeAccent.g, activeAccent.b, 0.78f));
 
             string tagStatus = BuildTagStatus();
             GUI.Label(
-                new Rect(panel.x + 8f, panel.y + 3f, panel.width - 16f, 20f),
-                $"TEAM · {CombatInputBindings.TagLabel} TAG · {tagStatus}",
+                new Rect(panel.x + 10f, panel.y + 2f, panel.width * 0.52f, 18f),
+                "TEAM",
                 titleStyle
             );
+            metaStyle.alignment = TextAnchor.MiddleRight;
+            metaStyle.normal.textColor = tagStatus == "READY"
+                ? activeAccent
+                : new Color(0.68f, 0.72f, 0.80f);
+            GUI.Label(
+                new Rect(panel.x + panel.width * 0.42f, panel.y + 2f, panel.width * 0.54f - 8f, 18f),
+                $"{CombatInputBindings.TagLabel} TAG · {tagStatus}",
+                metaStyle
+            );
+            metaStyle.alignment = TextAnchor.MiddleLeft;
 
             DrawMemberRow(
-                new Rect(panel.x + 8f, panel.y + 26f, panel.width - 16f, 27f),
+                new Rect(panel.x + 9f, panel.y + 23f, panel.width - 18f, 23f),
                 activeIndex,
                 true
             );
             DrawMemberRow(
-                new Rect(panel.x + 8f, panel.y + 57f, panel.width - 16f, 27f),
+                new Rect(panel.x + 9f, panel.y + 49f, panel.width - 18f, 21f),
                 1 - activeIndex,
                 false
             );
@@ -307,32 +335,30 @@ namespace JJKGame.Player
             TeamMemberState member = members[index];
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
 
-            bool sukuna = member.CharacterId == PrototypeCharacterId.SukunaShibuyaYujiBody;
             float displayedHealth = active && health != null ? health.CurrentHealth : member.Health;
             float displayedEnergy = active && cursedEnergy != null ? cursedEnergy.CurrentEnergy : member.Energy;
             bool initialized = active || member.Initialized;
             bool knockedOut = member.KnockedOut;
 
             Color accent = knockedOut
-                ? new Color(0.40f, 0.40f, 0.44f)
-                : sukuna
-                    ? new Color(0.96f, 0.24f, 0.14f)
-                    : new Color(0.20f, 0.70f, 1f);
-            DrawRect(rect, new Color(0.032f, 0.036f, 0.050f, 0.98f));
-            DrawBorder(rect, accent, active ? 2f : 1f);
+                ? new Color(0.38f, 0.39f, 0.44f)
+                : CharacterAccent(member.CharacterId);
+            Color background = active
+                ? new Color(accent.r * 0.10f, accent.g * 0.10f, accent.b * 0.10f, 0.94f)
+                : new Color(0.025f, 0.030f, 0.045f, 0.84f);
 
-            string role = active ? "ACTIVE" : "RESERVE";
-            string hpText = initialized
-                ? $"HP {displayedHealth:0}"
-                : "HP READY";
-            string energyText = initialized
-                ? $"CE {displayedEnergy:0}"
-                : "CE START";
+            DrawRect(rect, background);
+            DrawRect(new Rect(rect.x, rect.y, active ? 4f : 2f, rect.height), accent);
+            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, active ? 0.72f : 0.34f), 1f);
+
+            string role = active ? "A" : "R";
+            string hpText = initialized ? $"HP {displayedHealth:0}" : "HP READY";
+            string energyText = initialized ? $"CE {displayedEnergy:0}" : "CE START";
             string down = knockedOut ? " · KO" : string.Empty;
-            rowStyle.normal.textColor = knockedOut ? new Color(0.60f, 0.60f, 0.64f) : Color.white;
+            rowStyle.normal.textColor = knockedOut ? new Color(0.58f, 0.59f, 0.64f) : Color.white;
             GUI.Label(
                 rect,
-                $"{role} · {CharacterShortName(member.CharacterId)} · {hpText} · {energyText}{down}",
+                $"{role}  {CharacterShortName(member.CharacterId)}   {hpText}   {energyText}{down}",
                 rowStyle
             );
         }
@@ -357,6 +383,13 @@ namespace JJKGame.Player
             return "READY";
         }
 
+        private static Color CharacterAccent(PrototypeCharacterId characterId)
+        {
+            return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
+                ? new Color(0.96f, 0.20f, 0.12f)
+                : new Color(0.18f, 0.66f, 1f);
+        }
+
         private static string CharacterName(PrototypeCharacterId characterId)
         {
             return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
@@ -371,16 +404,39 @@ namespace JJKGame.Player
                 : "고죠";
         }
 
+        private static string CharacterEraLabel(PrototypeCharacterId characterId)
+        {
+            return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
+                ? "RYOMEN SUKUNA · 시부야 사변"
+                : "GOJO SATORU · 현대 · 교사";
+        }
+
         private void DrawValueBar(Rect rect, float value, float max, Color fill, string text)
         {
-            DrawRect(rect, new Color(0.075f, 0.082f, 0.115f));
+            DrawRect(rect, new Color(0.055f, 0.065f, 0.090f, 0.96f));
             float ratio = max > 0f ? Mathf.Clamp01(value / max) : 0f;
             DrawRect(
                 new Rect(rect.x + 1f, rect.y + 1f, (rect.width - 2f) * ratio, rect.height - 2f),
                 fill
             );
-            DrawBorder(rect, new Color(1f, 1f, 1f, 0.16f), 1f);
+            DrawRect(
+                new Rect(rect.x + 1f, rect.y + 1f, (rect.width - 2f) * ratio, 2f),
+                new Color(1f, 1f, 1f, 0.18f)
+            );
+            DrawBorder(rect, new Color(1f, 1f, 1f, 0.14f), 1f);
             GUI.Label(rect, text, chipStyle);
+        }
+
+        private static void DrawHudPlate(Rect rect, Color accent, bool stronger)
+        {
+            DrawRect(rect, stronger
+                ? new Color(0.006f, 0.010f, 0.020f, 0.94f)
+                : new Color(0.008f, 0.012f, 0.022f, 0.88f));
+            DrawRect(
+                new Rect(rect.x + 5f, rect.y + 4f, rect.width - 10f, rect.height - 8f),
+                new Color(accent.r * 0.05f, accent.g * 0.05f, accent.b * 0.05f, 0.36f)
+            );
+            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, stronger ? 0.55f : 0.30f), 1f);
         }
 
         private void EnsureStyles()
@@ -394,11 +450,19 @@ namespace JJKGame.Player
             int baseSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 64f, 11f, 16f));
             titleStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = baseSize,
+                fontSize = baseSize + 1,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleLeft,
             };
             titleStyle.normal.textColor = Color.white;
+
+            metaStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.Max(9, baseSize - 2),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+            };
+            metaStyle.normal.textColor = new Color(0.68f, 0.73f, 0.84f);
 
             rowStyle = new GUIStyle(GUI.skin.label)
             {
