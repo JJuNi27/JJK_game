@@ -20,6 +20,7 @@ namespace JJKGame.Player
         private Health health;
         private CursedEnergyController cursedEnergy;
         private SukunaDomainController sukunaDomain;
+        private PrototypeCharacterId activeCharacter;
         private bool showSukunaHelp;
         private GUIStyle headerStyle;
         private GUIStyle valueStyle;
@@ -28,7 +29,8 @@ namespace JJKGame.Player
         private int styledForHeight = -1;
 
         public static PrototypeCharacterId SelectedCharacter => selectedCharacter;
-        public bool IsSukuna => selectedCharacter == PrototypeCharacterId.SukunaShibuyaYujiBody;
+        public PrototypeCharacterId ActiveCharacter => activeCharacter;
+        public bool IsSukuna => activeCharacter == PrototypeCharacterId.SukunaShibuyaYujiBody;
         public string DisplayName => IsSukuna
             ? "RYOMEN SUKUNA · 시부야 사변"
             : "GOJO SATORU · 현대 · 교사";
@@ -50,30 +52,58 @@ namespace JJKGame.Player
         {
             health = GetComponent<Health>();
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
+            activeCharacter = selectedCharacter;
         }
 
         private void Start()
         {
-            ApplySelectedCharacter();
+            ApplyCharacter(selectedCharacter, true);
+            PrototypePlayerTeamController.GetOrCreate(gameObject);
         }
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-            {
-                SelectAndReload(PrototypeCharacterId.GojoModern);
-                return;
-            }
+            PrototypePlayerTeamController team = GetComponent<PrototypePlayerTeamController>();
+            bool teamMode = team != null && team.enabled;
 
-            if (Input.GetKeyDown(KeyCode.Alpha2))
+            if (!teamMode)
             {
-                SelectAndReload(PrototypeCharacterId.SukunaShibuyaYujiBody);
-                return;
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    SelectAndReload(PrototypeCharacterId.GojoModern);
+                    return;
+                }
+
+                if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    SelectAndReload(PrototypeCharacterId.SukunaShibuyaYujiBody);
+                    return;
+                }
             }
 
             if (IsSukuna && Input.GetKeyDown(KeyCode.F1))
             {
                 showSukunaHelp = !showSukunaHelp;
+            }
+        }
+
+        public void ApplyCharacter(PrototypeCharacterId nextCharacter, bool resetVitals)
+        {
+            selectedCharacter = nextCharacter;
+            activeCharacter = nextCharacter;
+
+            if (IsSukuna)
+            {
+                ApplySukuna(resetVitals);
+            }
+            else
+            {
+                ApplyGojo(resetVitals);
+            }
+
+            if (resetVitals)
+            {
+                health?.ResetHealth();
             }
         }
 
@@ -88,21 +118,7 @@ namespace JJKGame.Player
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
-        private void ApplySelectedCharacter()
-        {
-            if (IsSukuna)
-            {
-                ApplySukuna();
-            }
-            else
-            {
-                ApplyGojo();
-            }
-
-            health?.ResetHealth();
-        }
-
-        private void ApplyGojo()
+        private void ApplyGojo(bool refillEnergy)
         {
             SetGojoComponentsEnabled(true);
 
@@ -131,10 +147,10 @@ namespace JJKGame.Player
             SetChildActive("PrototypeGojoAvatar", true);
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency, true);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency, refillEnergy);
         }
 
-        private void ApplySukuna()
+        private void ApplySukuna(bool refillEnergy)
         {
             GojoDomainController gojoDomain = GetComponent<GojoDomainController>();
             if (gojoDomain != null)
@@ -159,7 +175,7 @@ namespace JJKGame.Player
             SetChildActive("PrototypeSukunaAvatar", true);
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, true);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, refillEnergy);
         }
 
         private void SetGojoComponentsEnabled(bool enabledState)
@@ -215,6 +231,12 @@ namespace JJKGame.Player
 
         private void DrawCharacterSwitchChip()
         {
+            PrototypePlayerTeamController team = GetComponent<PrototypePlayerTeamController>();
+            if (team != null && team.enabled)
+            {
+                return;
+            }
+
             float width = 230f;
             Rect rect = new Rect(Screen.width - width - 12f, 108f, width, 24f);
             Color accent = IsSukuna
@@ -294,7 +316,7 @@ namespace JJKGame.Player
             DrawBorder(rect, new Color(0.96f, 0.22f, 0.12f), 2f);
             string text =
                 "F1 · 닫기\n"
-                + "1 고죠 · 2 스쿠나 · 전환 시 장면 재시작\n"
+                + "T 팀 교대 · 현재 2인 팀 프로토타입\n"
                 + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
                 + "LMB 기본 공격 · Q 해 · E 팔\n"
                 + "R 푸가: 해·팔 사용 후 영역 밖 적 1명\n"
