@@ -277,7 +277,9 @@ namespace JJKGame.Player
         private void DrawTeamPanel()
         {
             float width = Mathf.Min(340f, Screen.width - 24f);
-            Rect panel = new Rect(12f, 108f, width, 92f);
+            float panelY = Mathf.Max(286f, Screen.height - 200f);
+            panelY = Mathf.Min(panelY, Screen.height - 104f);
+            Rect panel = new Rect(12f, panelY, width, 92f);
             DrawRect(panel, new Color(0.012f, 0.016f, 0.025f, 0.96f));
             DrawBorder(panel, new Color(0.58f, 0.68f, 0.88f, 0.90f), 2f);
 
