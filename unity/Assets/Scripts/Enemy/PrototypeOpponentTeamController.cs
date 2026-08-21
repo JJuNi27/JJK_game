@@ -55,13 +55,22 @@ namespace JJKGame.Enemy
             controller.InitializeFromScene();
         }
 
+        private void Awake()
+        {
+            DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+        }
+
         private void InitializeFromScene()
         {
+            DetachMemberEvents();
+            initialized = false;
+
             CurseBotController[] bots = FindObjectsByType<CurseBotController>(FindObjectsSortMode.None);
             if (bots == null || bots.Length < 2)
             {
                 Debug.LogWarning("Gate 2B 상대 팀 프로토타입은 CurseBot 2개 이상이 필요합니다.");
-                enabled = false;
+                switchingMode = false;
                 return;
             }
 
@@ -74,7 +83,7 @@ namespace JJKGame.Enemy
                 if (health == null)
                 {
                     Debug.LogWarning("Gate 2B 상대 팀원 Health를 찾지 못했습니다.");
-                    enabled = false;
+                    switchingMode = false;
                     return;
                 }
 
@@ -86,6 +95,7 @@ namespace JJKGame.Enemy
 
             activeIndex = 0;
             initialized = true;
+            switchingMode = false;
             ApplyRequestedMode();
         }
 
@@ -105,13 +115,25 @@ namespace JJKGame.Enemy
 
         private void OnDestroy()
         {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            DetachMemberEvents();
+        }
+
+        private void DetachMemberEvents()
+        {
             for (int index = 0; index < members.Length; index++)
             {
                 if (members[index] != null)
                 {
                     members[index].Died -= HandleMemberDeath;
                 }
+                members[index] = null;
             }
+        }
+
+        private void HandleSceneLoaded(Scene _, LoadSceneMode __)
+        {
+            InitializeFromScene();
         }
 
         private void Update()
@@ -126,7 +148,10 @@ namespace JJKGame.Enemy
                 requestedMode = IsTeamBattle
                     ? PrototypeEncounterMode.TrainingMultiCurse
                     : PrototypeEncounterMode.TeamBattle;
+
                 switchingMode = true;
+                initialized = false;
+                DetachMemberEvents();
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }
