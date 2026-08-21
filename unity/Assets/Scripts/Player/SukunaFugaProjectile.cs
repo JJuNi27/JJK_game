@@ -7,6 +7,8 @@ namespace JJKGame.Player
 {
     public sealed class SukunaFugaProjectile : MonoBehaviour
     {
+        public static event Action<Vector3, bool> Exploded;
+
         private readonly List<Material> runtimeMaterials = new List<Material>();
         private readonly List<LineRenderer> flightRings = new List<LineRenderer>();
         private readonly List<LineRenderer> explosionRings = new List<LineRenderer>();
@@ -163,6 +165,9 @@ namespace JJKGame.Player
 
             ApplySingleTargetDamage();
             BuildExplosionRings();
+
+            bool domainAmplified = gameObject.name.Contains("Domain");
+            Exploded?.Invoke(transform.position, domainAmplified);
         }
 
         private void ApplySingleTargetDamage()
