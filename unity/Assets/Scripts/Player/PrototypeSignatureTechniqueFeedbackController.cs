@@ -95,14 +95,15 @@ namespace JJKGame.Player
             )
             {
                 PlayFeedback(
-                    new Color(0.38f, 0.58f, 1f),
-                    0.035f,
+                    new Color(0.32f, 0.56f, 1f),
+                    0.11f,
+                    0.18f,
                     0.10f,
-                    0.060f,
-                    0.080f,
+                    0.12f,
                     0f,
                     1f
                 );
+                PlayFovKick(-4.5f, 0.22f);
             }
             previousGojoDomainState = gojoState;
 
@@ -114,14 +115,15 @@ namespace JJKGame.Player
             if (sukunaCasting && !sukunaDomainWasCasting)
             {
                 PlayFeedback(
-                    new Color(0.55f, 0.025f, 0.015f),
-                    0.050f,
+                    new Color(0.64f, 0.025f, 0.015f),
                     0.12f,
-                    0.085f,
-                    0.10f,
+                    0.20f,
+                    0.13f,
+                    0.15f,
                     0f,
                     1f
                 );
+                PlayFovKick(-5.5f, 0.24f);
             }
             sukunaDomainWasCasting = sukunaCasting;
 
@@ -155,14 +157,15 @@ namespace JJKGame.Player
             }
 
             PlayFeedback(
-                domainActive ? new Color(0.78f, 0.035f, 0.015f) : new Color(0.70f, 0.12f, 0.02f),
-                domainActive ? 0.070f : 0.055f,
-                0.12f,
+                domainActive ? new Color(0.84f, 0.035f, 0.015f) : new Color(0.78f, 0.14f, 0.02f),
                 domainActive ? 0.13f : 0.10f,
-                0.10f,
+                0.16f,
+                domainActive ? 0.16f : 0.13f,
+                0.13f,
                 0f,
                 1f
             );
+            PlayFovKick(domainActive ? -5f : -4f, 0.20f);
         }
 
         private void DetectPurpleRelease()
@@ -173,13 +176,14 @@ namespace JJKGame.Player
             {
                 PlayFeedback(
                     new Color(0.72f, 0.28f, 1f),
-                    0.14f,
-                    0.16f,
-                    0.42f,
-                    0.20f,
+                    0.18f,
+                    0.18f,
+                    0.48f,
+                    0.22f,
                     0.065f,
                     0.10f
                 );
+                PlayFovKick(7f, 0.26f);
 
                 purpleCulminationPending = true;
                 purpleCulminationAt = Time.unscaledTime + 0.09f;
@@ -198,13 +202,14 @@ namespace JJKGame.Player
             purpleCulminationPending = false;
             PlayFeedback(
                 new Color(0.86f, 0.62f, 1f),
-                0.075f,
                 0.10f,
-                0.20f,
-                0.11f,
+                0.12f,
+                0.24f,
+                0.12f,
                 0.020f,
                 0.16f
             );
+            PlayFovKick(3f, 0.15f);
         }
 
         private void DetectFugaRelease()
@@ -226,13 +231,14 @@ namespace JJKGame.Player
             bool domainAmplified = projectile.gameObject.name.Contains("Domain");
             PlayFeedback(
                 domainAmplified ? new Color(1f, 0.18f, 0.04f) : new Color(1f, 0.42f, 0.08f),
-                domainAmplified ? 0.14f : 0.10f,
-                domainAmplified ? 0.17f : 0.12f,
-                domainAmplified ? 0.38f : 0.28f,
-                domainAmplified ? 0.19f : 0.14f,
+                domainAmplified ? 0.17f : 0.13f,
+                domainAmplified ? 0.18f : 0.15f,
+                domainAmplified ? 0.42f : 0.32f,
+                domainAmplified ? 0.20f : 0.16f,
                 domainAmplified ? 0.050f : 0.035f,
                 0.10f
             );
+            PlayFovKick(domainAmplified ? 6f : 5f, 0.20f);
         }
 
         private void HandleFugaExploded(Health projectileOwner, Vector3 worldPosition, bool domainAmplified)
@@ -245,13 +251,14 @@ namespace JJKGame.Player
             _ = worldPosition;
             PlayFeedback(
                 domainAmplified ? new Color(1f, 0.12f, 0.015f) : new Color(1f, 0.48f, 0.06f),
-                domainAmplified ? 0.22f : 0.18f,
-                domainAmplified ? 0.24f : 0.20f,
-                domainAmplified ? 0.60f : 0.48f,
-                domainAmplified ? 0.26f : 0.22f,
+                domainAmplified ? 0.28f : 0.23f,
+                domainAmplified ? 0.27f : 0.23f,
+                domainAmplified ? 0.68f : 0.56f,
+                domainAmplified ? 0.29f : 0.25f,
                 domainAmplified ? 0.075f : 0.060f,
                 0.08f
             );
+            PlayFovKick(domainAmplified ? 11f : 9f, domainAmplified ? 0.32f : 0.28f);
         }
 
         private void DetectDomainActivation()
@@ -265,13 +272,14 @@ namespace JJKGame.Player
             {
                 PlayFeedback(
                     new Color(0.42f, 0.62f, 1f),
-                    0.13f,
-                    0.22f,
+                    0.17f,
+                    0.24f,
+                    0.26f,
                     0.20f,
-                    0.18f,
                     0.045f,
                     0.12f
                 );
+                PlayFovKick(6f, 0.24f);
             }
             gojoDomainWasActive = gojoActive;
 
@@ -284,13 +292,14 @@ namespace JJKGame.Player
             {
                 PlayFeedback(
                     new Color(0.92f, 0.08f, 0.035f),
-                    0.15f,
+                    0.20f,
+                    0.26f,
+                    0.42f,
                     0.24f,
-                    0.34f,
-                    0.22f,
                     0.055f,
                     0.10f
                 );
+                PlayFovKick(8f, 0.28f);
             }
             sukunaDomainWasActive = sukunaActive;
         }
@@ -314,6 +323,12 @@ namespace JJKGame.Player
                 count += 1;
             }
             return count;
+        }
+
+        private void PlayFovKick(float delta, float duration)
+        {
+            combatCamera ??= FindFirstObjectByType<SimpleCameraFollow>();
+            combatCamera?.AddFovKick(delta, duration);
         }
 
         private void PlayFeedback(
