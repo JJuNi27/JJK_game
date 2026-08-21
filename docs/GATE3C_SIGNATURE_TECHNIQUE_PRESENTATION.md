@@ -9,7 +9,8 @@ Gate 3A Combat Feel: USER VERIFIED
 Gate 3B Prototype Presentation: USER VERIFIED
 Gate 3C Signature Technique Presentation: STARTED
 Gate 3C Pass 1 · Signature Activation Feedback: USER VERIFIED
-Gate 3C Pass 2 · Anticipation + Release/Impact Timing: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3C Pass 2A · Anticipation + Release/Impact Timing: USER FEEDBACK · TOO SUBTLE
+Gate 3C Pass 2B · Readability Tuning + FOV Kick: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -38,62 +39,22 @@ SUKUNA
 
 # Pass 1 — Signature Activation Feedback
 
-## 구현
-
 파일:
 
 ```text
 unity/Assets/Scripts/Player/PrototypeSignatureTechniqueFeedbackController.cs
 ```
 
-`BasicAttack`이 있는 Fighter Shell에 런타임 자동 부착된다.
-
-기존 술식 로직에는 직접 손대지 않았다.
-
 감지:
 
 ```text
-허식 자
-→ HollowPurplePrototypeVisual 비활성 → 활성
-
-푸가
-→ 새 SukunaFugaProjectile 등장
-
-무량공처
-→ GojoDomainController.State == Active 진입
-
-복마어주자
-→ SukunaDomainController.IsActive 진입
+허식 자 → HollowPurplePrototypeVisual 활성
+푸가 → SukunaFugaProjectile 생성
+무량공처 → GojoDomainController.State == Active
+복마어주자 → SukunaDomainController.IsActive
 ```
 
-피드백:
-
-```text
-허식 자
-- 보라 Flash
-- 강한 Release Shake
-- 짧은 Hit Stop
-
-푸가
-- 주황/적색 Flash
-- 중강도 Release Shake
-- 짧은 Hit Stop
-
-복마어주자 내부 푸가
-- 일반 푸가보다 조금 강한 Release Feedback
-
-무량공처
-- 청색 계열 Flash
-- 영역 개방 충격
-
-복마어주자
-- 적색 Flash
-- 무량공처보다 거친 개방 충격
-```
-
-수치는 모두 `GAME_ORIGINAL` Beauty Corner placeholder다.
-
-## 사용자 검증
+기존 `SimpleCameraFollow.Flash`, `AddShake`, `PrototypeHitStopController.Request`를 재사용했다.
 
 2026-08-22 사용자 실제 Unity 확인:
 
@@ -106,8 +67,6 @@ unity/Assets/Scripts/Player/PrototypeSignatureTechniqueFeedbackController.cs
 - 기존 대표 술식 동작에 눈에 띄는 회귀 없음
 ```
 
-사용자 판정: `정상 확인`.
-
 따라서:
 
 ```text
@@ -116,13 +75,11 @@ Gate 3C Pass 1 · Signature Activation Feedback: USER VERIFIED
 
 ---
 
-# Pass 2 — Anticipation + Release/Impact Timing
+# Pass 2A — Anticipation + Release/Impact Timing
 
 ## 목적
 
-Pass 1은 `발동 순간 한 번의 큰 피드백`이었다.
-
-Pass 2에서는 대표 기술을 다음 리듬으로 읽히게 한다.
+대표 기술을:
 
 ```text
 준비 / 긴장
@@ -130,103 +87,124 @@ Pass 2에서는 대표 기술을 다음 리듬으로 읽히게 한다.
 → Culmination / Impact
 ```
 
-아직 최종 애니메이션 자산이 없으므로 카메라/Flash 타이밍으로 이 구조만 먼저 검증한다.
+리듬으로 읽히게 하는 첫 시도다.
 
-## 변경 파일
-
-```text
-unity/Assets/Scripts/Player/PrototypeSignatureTechniqueFeedbackController.cs
-unity/Assets/Scripts/Player/SukunaFugaProjectile.cs
-```
-
-## 1. 무량공처 Anticipation
-
-`GojoDomainController`가:
+구현:
 
 ```text
-Normal
-→ DomainReady
+무량공처
+- DomainReady 진입 때 약한 청색 Cue
+- Active 때 개방 Cue
+
+복마어주자
+- Casting 시작 때 약한 적색 Cue
+- Active 때 개방 Cue
+
+푸가
+- 유효 R 입력 때 Anticipation
+- Projectile 생성 때 Release
+- Projectile Explode 때 Impact
+
+허식 자
+- Release
+- 약 0.09초 뒤 Culmination Pulse
 ```
 
-로 들어가는 순간 약한 청색 Flash + 작은 Camera Shake를 준다.
-
-실제 영역이 Active 되는 순간의 강한 피드백은 Pass 1 그대로 유지된다.
-
-따라서:
-
-```text
-V로 영역 준비
-→ 약한 긴장 Cue
-→ 기존 장인 입력 성공
-→ Active 순간 큰 영역 개방 Cue
-```
-
-가 된다.
-
-## 2. 복마어주자 Anticipation
-
-`SukunaDomainController.IsCasting`이 시작되는 순간 약한 암적색 Flash + 작은 Shake를 추가했다.
-
-약 0.65초 Cast가 끝나 Active가 되면 Pass 1의 강한 적색 개방 피드백이 발생한다.
-
-게임의 Cast Time 자체는 바꾸지 않았다.
-
-## 3. 푸가 Anticipation → Release → Impact
-
-현재 푸가는 실제로 약 0.52초 Cast Time이 있으므로 세 단계 분리가 가장 명확하다.
-
-```text
-R 입력이 유효할 가능성이 높은 순간
-→ 약한 주황/적색 Anticipation
-
-Projectile 생성
-→ 기존 Release Feedback
-
-Projectile Explode
-→ 더 강한 Impact Flash + Shake + 짧은 Hit Stop
-```
-
-복마어주자 내부 증폭 푸가는 Release와 Impact를 일반 푸가보다 강하게 유지한다.
-
-### Fuga Explosion Hook
-
-`SukunaFugaProjectile`에 Presentation 전용 정적 이벤트를 추가했다.
+`SukunaFugaProjectile`에는 Presentation 전용 정적 이벤트:
 
 ```text
 Exploded(Health owner, Vector3 worldPosition, bool domainAmplified)
 ```
 
-중요:
+를 추가했다.
+
+Damage / Domain Fuga Blast / Explosion Ring 처리 뒤에 Presentation 이벤트가 호출되므로 핵심 전투 판정보다 뒤에서 연출이 연결된다.
+
+## 사용자 피드백
+
+2026-08-22 사용자 실제 Unity 테스트:
 
 ```text
-기존 onExploded callback
-→ 기존 Damage / Domain Fuga Blast
-→ 기존 Explosion Ring 생성
-→ Presentation Exploded event
+[USER FEEDBACK]
+- 무량공처 V 입력 때 약한 청색 Cue를 알아보기 어려움
+- 복마어주자 Casting의 약한 적색 Cue를 알아보기 어려움
+- 전체적으로 Pass 2에서 무엇이 달라졌는지 체감하기 어려움
 ```
 
-순서라서 Presentation subscriber에 문제가 생겨도 핵심 Damage 처리보다 뒤에서 호출되도록 했다.
+즉 기능 고장으로 판정하지는 않지만 `준비 → Release → Impact` 구분이 눈에 띄지 않아 Pass 2A는 완료 처리하지 않는다.
 
-또한 `owner`를 함께 넘겨 향후 적 스쿠나/다른 Fighter의 푸가가 생겨도 플레이어 카메라 피드백이 잘못 반응하지 않도록 현재 Fighter Shell의 Health와 일치할 때만 처리한다.
+---
 
-## 4. 허식 자 Release → Culmination
+# Pass 2B — Readability Tuning + FOV Kick
 
-현재 허식 자 Prototype은 실제 이동형 Projectile이 아니라 Capsule 범위에 즉시 Damage를 적용한다.
+## 목적
 
-따라서 이번 단계에서 가짜 Cast Delay를 넣거나 Damage 시점을 늦추지 않았다.
+Pass 2A의 문제는 Feedback이 기존 VFX에 묻힐 정도로 약했다는 것이다.
 
-대신 기존 Release 피드백 약 0.09초 뒤에 작은 보라색 `Culmination Pulse`를 한 번 더 준다.
+단순히 Flash alpha만 무작정 키우지 않고, 카메라 렌즈 변화까지 추가해 각 단계의 실루엣을 명확하게 만든다.
+
+## 변경 파일
 
 ```text
-Release
-→ 큰 보라 피드백
-→ 약 0.09초
-→ 작은 Culmination Pulse
+unity/Assets/Scripts/Camera/SimpleCameraFollow.cs
+unity/Assets/Scripts/Player/PrototypeSignatureTechniqueFeedbackController.cs
 ```
 
-이는 실제 Impact 판정을 새로 만드는 것이 아니라, 현재 즉시 판정 Prototype에서 `발사 → 에너지 마무리` 리듬을 시험하는 Presentation placeholder다.
+## FOV Kick API
 
-실제 모델/애니메이션/VFX가 들어가면 Animation Event 또는 실제 충돌 이벤트로 교체한다.
+`SimpleCameraFollow`에:
+
+```text
+AddFovKick(delta, duration)
+```
+
+를 추가했다.
+
+`Time.unscaledTime` 기준의 짧은 FOV pulse이며 종료 시 기존 FOV로 복구된다.
+
+규칙:
+
+```text
+Anticipation
+→ 음수 FOV delta
+→ 화면이 순간적으로 좁아져 집중/긴장감
+
+Release / Domain Active / Impact
+→ 양수 FOV delta
+→ 순간적으로 화면이 벌어지며 힘이 터지는 느낌
+```
+
+이 값은 GAME_ORIGINAL Beauty Corner placeholder다.
+
+## 강화된 구분
+
+```text
+무량공처 V 준비
+- 청색 Flash를 기존보다 눈에 띄게 강화
+- 약 -4.5 FOV 집중 Cue
+
+복마어주자 Casting 시작
+- 적색 Flash 강화
+- 약 -5.5 FOV 집중 Cue
+
+허식 자 Release
+- 기존 보라 Feedback 강화
+- 약 +7 FOV Release Kick
+- Culmination에도 작은 +3 FOV Pulse
+
+푸가
+- R Anticipation: -4 ~ -5 FOV
+- Projectile Release: +5 ~ +6 FOV
+- Explosion Impact: +9, Domain Amplified는 +11 FOV
+
+무량공처 Active
+- +6 FOV 개방 Kick
+
+복마어주자 Active
+- +8 FOV 개방 Kick
+```
+
+Flash/Shake 강도도 Pass 2A보다 한 단계 올렸다.
 
 ## 바꾸지 않은 것
 
@@ -245,72 +223,26 @@ Target Lock
 Tag
 ```
 
-## VFX / SFX Hook 위치 정리
-
-Gate 4에서 공통 계약으로 추출하기 전 현재 반복되는 지점은 다음과 같다.
-
-```text
-Signature Anticipation
-- DomainReady / IsCasting / valid Ultimate input
-
-Signature Release
-- HollowPurplePrototypeVisual 활성
-- Fuga Projectile 생성
-- Domain Active 진입
-
-Signature Impact / Culmination
-- FugaProjectile.Exploded
-- Purple Culmination placeholder timer
-```
-
-최종 자산 단계에서는 이 지점에:
-
-```text
-Animation Event
-전용 VFX prefab
-전용 Voice/SFX event
-Camera profile
-```
-
-을 연결한다.
-
 ---
 
-## 사용자 빠른 테스트
+## 다음 사용자 테스트
+
+이번에는 모든 기술을 길게 볼 필요 없이 차이가 가장 쉽게 보이는 두 개부터 확인한다.
 
 ```text
 1. git pull origin master
-2. Unity Console 빨간 오류 확인
+2. Console 빨간 오류 확인
 
-[고죠]
-3. V로 무량공처 준비
-→ 준비 시작 때 아주 약한 청색 Cue
-→ 실제 영역 Active 때 기존보다 큰 개방 Cue
+3. 고죠에서 V 한 번
+→ 영역 준비가 시작되는 순간 화면이 살짝 좁아지고 청색 Cue가 분명히 보여야 함
 
-4. 허식 자
-→ 발사 순간 큰 보라 Cue
-→ 아주 잠깐 뒤 작은 두 번째 보라 Pulse
+4. 스쿠나에서 V 한 번
+→ Casting 시작 순간 화면이 더 강하게 좁아지고 적색 Cue가 보여야 함
 
-[스쿠나]
-5. T → 스쿠나
-6. 해 + 팔 후 푸가
-→ R 입력 때 약한 긴장 Cue
-→ 약 0.52초 후 Projectile 발사 때 Release Cue
-→ 적/최대거리에서 폭발할 때 가장 강한 Impact Cue
-
-7. 복마어주자
-→ Casting 시작 때 약한 적색 Cue
-→ Active 순간 강한 적색 개방 Cue
+5. 가능하면 푸가
+→ R 준비: 화면 좁아짐
+→ 발사: 화면 벌어짐
+→ 폭발: 가장 큰 화면 벌어짐 + 충격
 ```
 
-성공 기준:
-
-```text
-기술이 한 번 번쩍이는 것이 아니라
-준비 → 발사/개방 → 마무리/충돌 리듬으로 읽힘
-
-기존 Damage / CE / Cooldown / Domain / Tag 흐름 회귀 없음
-Console 빨간 오류 없음
-```
-
-정상 확인되면 Gate 3C Pass 2를 USER VERIFIED로 닫고, 다음 묶음에서 대표 술식별 화면 공간 VFX/카메라 방향성을 더 강화한다.
+이제도 차이가 거의 안 보인다면 Flash/Shake 수치 문제가 아니라 현재 Prototype VFX/UI에 묻히는 Presentation 방식 자체의 문제로 보고, 다음 단계에서는 화면 전체 Tint가 아닌 공간 VFX/캐릭터 주변 Cast VFX로 전환한다.
