@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using JJKGame.CameraSystem;
 using JJKGame.Core;
 using UnityEngine;
 
@@ -31,10 +32,19 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float secondHitStun = 0.17f;
         [SerializeField, Min(0f)] private float thirdHitStun = 0.38f;
 
+        [Header("Beauty Corner · Basic Hit Camera Feedback")]
+        [SerializeField, Min(0f)] private float firstHitShake = 0.075f;
+        [SerializeField, Min(0f)] private float secondHitShake = 0.11f;
+        [SerializeField, Min(0f)] private float thirdHitShake = 0.22f;
+        [SerializeField, Min(0.01f)] private float firstHitShakeDuration = 0.07f;
+        [SerializeField, Min(0.01f)] private float secondHitShakeDuration = 0.085f;
+        [SerializeField, Min(0.01f)] private float thirdHitShakeDuration = 0.13f;
+
         private Health ownHealth;
         private TargetLockController targetLock;
         private PrototypeCombatAudio combatAudio;
         private CombatActionGate actionGate;
+        private SimpleCameraFollow combatCamera;
         private float nextAttackAt;
         private float chainExpiresAt;
         private float chainDisplayUntil;
@@ -81,6 +91,7 @@ namespace JJKGame.Player
             targetLock = GetComponent<TargetLockController>();
             combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
+            combatCamera = FindFirstObjectByType<SimpleCameraFollow>();
 
             if (attackOrigin == null)
             {
@@ -148,6 +159,7 @@ namespace JJKGame.Player
             {
                 RegisterSuccessfulHit();
                 combatAudio?.PlayBasicHit(lastPerformedStep);
+                PlayBasicHitCameraFeedback(chainIndex);
             }
             else
             {
@@ -205,6 +217,24 @@ namespace JJKGame.Player
             return hitAnyTarget;
         }
 
+        private void PlayBasicHitCameraFeedback(int chainIndex)
+        {
+            combatCamera ??= FindFirstObjectByType<SimpleCameraFollow>();
+            if (combatCamera == null)
+            {
+                return;
+            }
+
+            float amplitude = GetChainValue(chainIndex, firstHitShake, secondHitShake, thirdHitShake);
+            float duration = GetChainValue(
+                chainIndex,
+                firstHitShakeDuration,
+                secondHitShakeDuration,
+                thirdHitShakeDuration
+            );
+            combatCamera.AddShake(amplitude, duration);
+        }
+
         private void RegisterSuccessfulHit()
         {
             if (Time.time > hitComboExpiresAt)
@@ -257,12 +287,6 @@ namespace JJKGame.Player
                 2 => third,
                 _ => first,
             };
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            Transform origin = attackOrigin != null ? attackOrigin : transform;
-            Gizmos.DrawWireSphere(origin.position, attackRadius);
         }
     }
 }
