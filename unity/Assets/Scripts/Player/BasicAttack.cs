@@ -222,7 +222,7 @@ namespace JJKGame.Player
                     continue;
                 }
 
-                PrototypeHitImpactVfx.Spawn(context.ImpactPoint, lastPerformedStep);
+                PrototypeHitImpactVfx.Spawn(context.HitPoint, lastPerformedStep);
                 hitAnyTarget = true;
                 ApplyHitReaction(targetHealth, knockbackSpeed, hitStunDuration);
             }
