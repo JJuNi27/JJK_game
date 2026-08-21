@@ -10,7 +10,8 @@
 Gate 1 Core Combat: USER VERIFIED
 Gate 2A Player Active / Reserve: USER VERIFIED
 Team-aware HUD Cleanup: USER VERIFIED
-Gate 2B Opponent Team Runtime: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 2B Opponent Team Core Runtime: USER VERIFIED
+Gate 2B Final Regression: USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -193,6 +194,30 @@ Curse B HP 0
 → VICTORY
 ```
 
+## 2026-08-21 수정 후 사용자 검증
+
+사용자가 수정본을 실제 Unity에서 테스트해 다음 핵심 Match Flow를 확인했다.
+
+```text
+[USER VERIFIED]
+- Team Battle에서 상대는 한 번에 한 마리씩 전장에 등장함
+- 첫 상대가 KO되면 다음 Reserve가 차례로 등장함
+- 첫 상대 KO만으로는 VICTORY가 발생하지 않음
+- 두 번째 상대까지 KO해야 VICTORY가 발생함
+```
+
+사용자 표현 기준으로는 `1:1 토너먼트처럼 차례로 나온다`는 동작이 정상 확인됐다.
+
+따라서 Gate 2B의 핵심 상대 Active / Reserve 및 마지막 팀원 KO 승리 조건은 사용자 검증 완료로 본다.
+
+아직 Gate 2B 전체 완료 판정 전 최종 회귀로 다음을 확인한다.
+
+```text
+- 새 Active가 등장한 뒤 TAB Target Lock 가능
+- F2로 Team Battle → Training 복귀 후 두 Curse 동시 환경 복원
+- 고죠 ↔ 스쿠나 T Tag 및 기존 기술 회귀 없음
+```
+
 ## Target Lock 주의
 
 현재 최소 프로토타입에서는 첫 Active가 KO되면 기존 Target Lock은 죽은 타깃을 자동 해제한다.
@@ -284,12 +309,12 @@ RESERVE · CURSE B · HP ...
 1. Training과 Team Battle을 분리 가능
 2. F2로 Training ↔ Team Battle 왕복 가능
 3. Training에서는 두 Curse 동시 전투 유지
-4. Team Battle에서는 1 Active + 1 Reserve
+4. Team Battle에서는 1 Active + 1 Reserve ✅ USER VERIFIED
 5. Reserve는 전장/타깃/광역 대상에서 제외
-6. 첫 상대 KO에 VICTORY 발생하지 않음
-7. 첫 상대 KO 뒤 Reserve 자동 입장
+6. 첫 상대 KO에 VICTORY 발생하지 않음 ✅ USER VERIFIED
+7. 첫 상대 KO 뒤 Reserve 자동 입장 ✅ USER VERIFIED
 8. KO된 전 상대는 다시 등장하지 않음
-9. 마지막 상대 KO에만 VICTORY
+9. 마지막 상대 KO에만 VICTORY ✅ USER VERIFIED
 10. 새 Active를 TAB으로 락온 가능
 11. 기존 플레이어 팀/기술 회귀 없음
 ```
