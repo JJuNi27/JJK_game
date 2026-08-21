@@ -8,7 +8,7 @@
 Gate 1 Core Combat Proof: USER VERIFIED
 Gate 2 Match Architecture Proof: USER VERIFIED
 Gate 3 Beauty Corner: STARTED
-Gate 3A Combat Feel Pass 1: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3A Combat Feel Pass 1: USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -149,41 +149,27 @@ Target Lock
 
 ## 사용자 테스트
 
-```text
-1. git pull origin master
-2. Unity Console 빨간 오류 없는지 확인
-3. Training 또는 Team Battle 시작
-4. Curse에게 기본 3타를 적중
-
-기대:
-- 1타 적중 시 아주 약한 카메라 충격
-- 2타가 1타보다 약간 더 강함
-- 3타 FINISH가 가장 강하게 느껴짐
-- 화면이 과도하게 흔들리지 않음
-
-5. 허공에 LMB
-→ 카메라 흔들림 없음
-
-6. 고죠/스쿠나 T Tag
-→ 정상
-
-7. TAB Target Lock
-→ 정상
-```
-
-사용자 체감 판정:
+2026-08-21 사용자 실제 Unity 테스트:
 
 ```text
-약함
-적당함
-강함/어지러움
+[USER VERIFIED]
+- 기본 공격 적중 카메라 Shake 정상
+- 1타 < 2타 < 3타 FINISH 순서의 강도 차이 정상
+- 허공 공격에는 Shake 없음
+- 기존 전투 흐름에 이상 없음
 ```
 
-중 하나로 피드백을 받는다.
+사용자 판정: `정상`.
+
+따라서:
+
+```text
+Gate 3A Combat Feel Pass 1: USER VERIFIED
+```
 
 ## 다음 Pass
 
-이 Shake가 적당하면 다음으로:
+다음은:
 
 ```text
 Gate 3A Combat Feel Pass 2
@@ -194,4 +180,19 @@ Gate 3A Combat Feel Pass 2
 
 Hit Stop은 Time Scale을 건드릴 가능성이 있어 Shake보다 리스크가 높다.
 
-따라서 이번 Pass를 먼저 사용자 검증한 뒤 별도 구현한다.
+속도 향상을 위해 이후 작업은 범위에 따라 직접 수정과 Codex를 병행한다.
+
+```text
+직접 수정
+- 작은 수치/조건
+- 1~3개 파일의 국소 변경
+- 즉시 사용자 체감 테스트가 필요한 튜닝
+
+Codex 우선
+- 여러 파일을 동시에 읽고 수정해야 하는 Presentation 연결
+- 반복되는 VFX/SFX/Animation 이벤트 연결
+- 구조 리팩터링/마이그레이션
+- 테스트 추가
+```
+
+Gate 4에서는 Beauty Corner에서 실제 반복된 계약을 추출하므로 Codex 사용 비중이 더 커질 예정이다.
