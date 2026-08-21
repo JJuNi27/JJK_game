@@ -38,6 +38,10 @@ namespace JJKGame.Player
             && !IsDodging
             && (actionGate == null || actionGate.CanStartDodge);
         public float DodgeCooldownRemaining => Mathf.Max(0f, nextDodgeAt - Time.time);
+        public float DodgeProgress => !IsDodging
+            ? 0f
+            : 1f - Mathf.Clamp01((dodgeEndsAt - Time.time) / Mathf.Max(0.01f, dodgeDuration));
+        public Vector3 DodgeDirection => dodgeDirection;
 
         private bool TechniqueCasting
         {
