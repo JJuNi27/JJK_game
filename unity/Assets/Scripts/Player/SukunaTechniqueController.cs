@@ -43,11 +43,15 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float fugaKnockback = 24f;
         [SerializeField, Min(0f)] private float fugaHitStun = 1.15f;
 
+        [Header("R · 푸가 · 복마어주자 증폭")]
+        [SerializeField, Min(1f)] private float domainFugaProjectileSpeedMultiplier = 1.55f;
+
         private Health ownHealth;
         private TargetLockController targetLock;
         private CursedEnergyController cursedEnergy;
         private CombatActionGate actionGate;
         private PrototypeCombatAudio combatAudio;
+        private SukunaDomainController sukunaDomain;
         private float nextDismantleAt;
         private float nextCleaveAt;
         private float nextFugaAt;
@@ -77,6 +81,7 @@ namespace JJKGame.Player
             cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
             combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
+            sukunaDomain = GetComponent<SukunaDomainController>();
         }
 
         private void OnDisable()
@@ -204,6 +209,12 @@ namespace JJKGame.Player
 
         private void TryUseFuga()
         {
+            sukunaDomain ??= GetComponent<SukunaDomainController>();
+            if (sukunaDomain != null && sukunaDomain.enabled && sukunaDomain.IsActive)
+            {
+                return;
+            }
+
             actionGate ??= CombatActionGate.GetOrCreate(gameObject);
             if (
                 !FugaPrepared
@@ -245,7 +256,65 @@ namespace JJKGame.Player
             nextFugaAt = Time.time + fugaCooldown;
             DismantleUsed = false;
             CleaveUsed = false;
-            StartCoroutine(ExecuteFuga(target, direction));
+            StartCoroutine(ExecuteFuga(target, direction, false, Vector3.zero, 0f));
+        }
+
+        public bool TryUseFugaInsideDomain(Vector3 activeDomainCenter, float activeDomainRadius)
+        {
+            sukunaDomain ??= GetComponent<SukunaDomainController>();
+            if (
+                !isActiveAndEnabled
+                || isCasting
+                || !FugaPrepared
+                || Time.time < nextFugaAt
+                || sukunaDomain == null
+                || !sukunaDomain.enabled
+                || !sukunaDomain.IsActive
+            )
+            {
+                return false;
+            }
+
+            List<Health> targets = FindEnemiesInsideRadius(activeDomainCenter, activeDomainRadius);
+            if (targets.Count == 0)
+            {
+                return false;
+            }
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, false);
+            if (cursedEnergy != null && !cursedEnergy.TrySpend(fugaEnergyCost, "푸가"))
+            {
+                return false;
+            }
+
+            Health target = ResolvePreferredDomainFugaTarget(targets, activeDomainCenter, activeDomainRadius);
+            if (target == null)
+            {
+                return false;
+            }
+
+            Vector3 direction = target.transform.position - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= 0.001f)
+            {
+                direction = transform.forward;
+            }
+            FaceDirection(direction);
+
+            nextFugaAt = Time.time + fugaCooldown;
+            DismantleUsed = false;
+            CleaveUsed = false;
+            StartCoroutine(
+                ExecuteFuga(
+                    target,
+                    direction,
+                    true,
+                    activeDomainCenter,
+                    activeDomainRadius
+                )
+            );
+            return true;
         }
 
         private IEnumerator ExecuteSlashSequence(
@@ -323,7 +392,13 @@ namespace JJKGame.Player
             isCasting = false;
         }
 
-        private IEnumerator ExecuteFuga(Health target, Vector3 initialDirection)
+        private IEnumerator ExecuteFuga(
+            Health target,
+            Vector3 initialDirection,
+            bool domainAmplified,
+            Vector3 activeDomainCenter,
+            float activeDomainRadius
+        )
         {
             isCasting = true;
             isFugaCasting = true;
@@ -352,22 +427,51 @@ namespace JJKGame.Player
             direction.Normalize();
             FaceDirection(direction);
 
-            GameObject projectileObject = new GameObject("SukunaFugaProjectile");
-            projectileObject.transform.position =
-                transform.position + Vector3.up * 1.0f + direction * 0.95f;
+            Vector3 spawnPosition = transform.position + Vector3.up * 1.0f + direction * 0.95f;
+            GameObject projectileObject = new GameObject(
+                domainAmplified ? "SukunaDomainFugaProjectile" : "SukunaFugaProjectile"
+            );
+            projectileObject.transform.position = spawnPosition;
             SukunaFugaProjectile projectile = projectileObject.AddComponent<SukunaFugaProjectile>();
+
+            float projectileSpeed = domainAmplified
+                ? fugaProjectileSpeed * domainFugaProjectileSpeedMultiplier
+                : fugaProjectileSpeed;
+            float projectileRange = fugaRange;
+            if (domainAmplified)
+            {
+                float targetDistance = target != null
+                    ? Vector3.Distance(spawnPosition, target.transform.position + Vector3.up * 0.75f)
+                    : activeDomainRadius;
+                projectileRange = Mathf.Max(fugaRange, activeDomainRadius * 1.10f, targetDistance + 2f);
+            }
+
             projectile.Configure(
                 ownHealth,
                 target,
                 direction,
-                fugaProjectileSpeed,
-                fugaRange,
+                projectileSpeed,
+                projectileRange,
                 fugaProjectileRadius,
                 fugaExplosionRadius,
-                fugaDamage,
-                fugaKnockback,
-                fugaHitStun,
-                () => combatAudio?.PlayRedImpact()
+                domainAmplified ? 0f : fugaDamage,
+                domainAmplified ? 0f : fugaKnockback,
+                domainAmplified ? 0f : fugaHitStun,
+                () =>
+                {
+                    combatAudio?.PlayRedImpact();
+                    if (domainAmplified)
+                    {
+                        SukunaDomainFugaBlast.Detonate(
+                            ownHealth,
+                            activeDomainCenter,
+                            activeDomainRadius,
+                            fugaDamage,
+                            fugaKnockback,
+                            fugaHitStun
+                        );
+                    }
+                }
             );
 
             isCasting = false;
@@ -386,6 +490,21 @@ namespace JJKGame.Player
                 }
             }
             return enemies;
+        }
+
+        private List<Health> FindEnemiesInsideRadius(Vector3 center, float radius)
+        {
+            List<Health> targets = new List<Health>();
+            foreach (Health enemy in FindLivingEnemies())
+            {
+                Vector3 offset = enemy.transform.position - center;
+                offset.y = 0f;
+                if (offset.magnitude <= radius)
+                {
+                    targets.Add(enemy);
+                }
+            }
+            return targets;
         }
 
         private List<Health> FindSingleDismantleTarget(List<Health> enemies)
@@ -455,6 +574,37 @@ namespace JJKGame.Player
             {
                 float distance = Vector3.Distance(transform.position, enemy.transform.position);
                 if (distance <= nearestDistance)
+                {
+                    nearestDistance = distance;
+                    nearest = enemy;
+                }
+            }
+            return nearest;
+        }
+
+        private Health ResolvePreferredDomainFugaTarget(
+            List<Health> enemies,
+            Vector3 center,
+            float radius
+        )
+        {
+            Health locked = targetLock != null ? targetLock.CurrentTarget : null;
+            if (locked != null && !locked.IsDead)
+            {
+                Vector3 lockedOffset = locked.transform.position - center;
+                lockedOffset.y = 0f;
+                if (lockedOffset.magnitude <= radius)
+                {
+                    return locked;
+                }
+            }
+
+            Health nearest = null;
+            float nearestDistance = float.MaxValue;
+            foreach (Health enemy in enemies)
+            {
+                float distance = Vector3.Distance(transform.position, enemy.transform.position);
+                if (distance < nearestDistance)
                 {
                     nearestDistance = distance;
                     nearest = enemy;
@@ -585,9 +735,33 @@ namespace JJKGame.Player
             {
                 return $"R · 푸가 · {FugaCooldownRemaining:0.0}s";
             }
+
+            sukunaDomain ??= GetComponent<SukunaDomainController>();
+            bool domainActive = sukunaDomain != null && sukunaDomain.enabled && sukunaDomain.IsActive;
+
             if (!FugaPrepared)
             {
-                return $"R · 푸가 · 해 {(DismantleUsed ? 1 : 0)}/1 · 팔 {(CleaveUsed ? 1 : 0)}/1";
+                string prefix = domainActive ? "영역 내 · " : string.Empty;
+                return $"R · 푸가 · {prefix}해 {(DismantleUsed ? 1 : 0)}/1 · 팔 {(CleaveUsed ? 1 : 0)}/1";
+            }
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            if (cursedEnergy != null && !cursedEnergy.CanSpend(fugaEnergyCost))
+            {
+                return $"R · 푸가 · 주력 부족 · CE {fugaEnergyCost:0}";
+            }
+
+            if (domainActive)
+            {
+                int domainTargets = FindEnemiesInsideRadius(
+                    sukunaDomain.DomainCenter,
+                    sukunaDomain.DomainRadius
+                ).Count;
+                if (domainTargets <= 0)
+                {
+                    return "R · 푸가 · 영역 내 대상 없음";
+                }
+                return $"R · 푸가 · READY · 영역 내 광역 {domainTargets}명 · CE {fugaEnergyCost:0}";
             }
 
             List<Health> enemies = FindLivingEnemies();
@@ -603,12 +777,6 @@ namespace JJKGame.Player
             )
             {
                 return $"R · 푸가 · 대상 거리 초과 · 최대 {fugaRange:0}m";
-            }
-
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            if (cursedEnergy != null && !cursedEnergy.CanSpend(fugaEnergyCost))
-            {
-                return $"R · 푸가 · 주력 부족 · CE {fugaEnergyCost:0}";
             }
 
             return $"R · 푸가 · READY · CE {fugaEnergyCost:0} · 단일 대상";
