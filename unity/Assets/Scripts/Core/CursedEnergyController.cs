@@ -81,6 +81,10 @@ namespace JJKGame.Core
         {
             if (profileApplied && activeProfile == profileId)
             {
+                if (refill)
+                {
+                    ResetEnergy();
+                }
                 return;
             }
 
@@ -164,12 +168,17 @@ namespace JJKGame.Core
             }
         }
 
-        public void ResetEnergy()
+        public void SetCurrentEnergy(float value)
         {
             nextRegenerationAt = 0f;
             noticeUntil = 0f;
             noticeText = string.Empty;
-            SetEnergy(Mathf.Clamp(startingEnergy, 0f, maxEnergy));
+            SetEnergy(value);
+        }
+
+        public void ResetEnergy()
+        {
+            SetCurrentEnergy(Mathf.Clamp(startingEnergy, 0f, maxEnergy));
         }
 
         private void ConfigureValues(
