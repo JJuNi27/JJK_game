@@ -277,7 +277,7 @@ namespace JJKGame.Player
         private void DrawTeamPanel()
         {
             float width = Mathf.Min(340f, Screen.width - 24f);
-            Rect panel = new Rect(12f, Screen.height - 118f, width, 92f);
+            Rect panel = new Rect(12f, 108f, width, 92f);
             DrawRect(panel, new Color(0.012f, 0.016f, 0.025f, 0.96f));
             DrawBorder(panel, new Color(0.58f, 0.68f, 0.88f, 0.90f), 2f);
 
@@ -303,8 +303,15 @@ namespace JJKGame.Player
         private void DrawMemberRow(Rect rect, int index, bool active)
         {
             TeamMemberState member = members[index];
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+
             bool sukuna = member.CharacterId == PrototypeCharacterId.SukunaShibuyaYujiBody;
-            Color accent = member.KnockedOut
+            float displayedHealth = active && health != null ? health.CurrentHealth : member.Health;
+            float displayedEnergy = active && cursedEnergy != null ? cursedEnergy.CurrentEnergy : member.Energy;
+            bool initialized = active || member.Initialized;
+            bool knockedOut = member.KnockedOut;
+
+            Color accent = knockedOut
                 ? new Color(0.40f, 0.40f, 0.44f)
                 : sukuna
                     ? new Color(0.96f, 0.24f, 0.14f)
@@ -313,14 +320,14 @@ namespace JJKGame.Player
             DrawBorder(rect, accent, active ? 2f : 1f);
 
             string role = active ? "ACTIVE" : "RESERVE";
-            string hpText = member.Initialized
-                ? $"HP {member.Health:0}"
+            string hpText = initialized
+                ? $"HP {displayedHealth:0}"
                 : "HP READY";
-            string energyText = member.Initialized
-                ? $"CE {member.Energy:0}"
+            string energyText = initialized
+                ? $"CE {displayedEnergy:0}"
                 : "CE START";
-            string down = member.KnockedOut ? " · KO" : string.Empty;
-            rowStyle.normal.textColor = member.KnockedOut ? new Color(0.60f, 0.60f, 0.64f) : Color.white;
+            string down = knockedOut ? " · KO" : string.Empty;
+            rowStyle.normal.textColor = knockedOut ? new Color(0.60f, 0.60f, 0.64f) : Color.white;
             GUI.Label(
                 rect,
                 $"{role} · {CharacterShortName(member.CharacterId)} · {hpText} · {energyText}{down}",
