@@ -30,6 +30,8 @@ namespace JJKGame.Core
         private TargetLockController targetLock;
         private CursedEnergyController cursedEnergy;
         private GojoVariantController gojoVariant;
+        private PrototypeCharacterController prototypeCharacter;
+        private PrototypePlayerTeamController playerTeam;
 
         private GUIStyle headerStyle;
         private GUIStyle valueStyle;
@@ -52,6 +54,32 @@ namespace JJKGame.Core
                     }
                 }
                 return living;
+            }
+        }
+
+        private bool TeamHudActive
+        {
+            get
+            {
+                if (playerTeam == null && playerHealth != null)
+                {
+                    playerTeam = playerHealth.GetComponent<PrototypePlayerTeamController>();
+                }
+
+                return playerTeam != null && playerTeam.enabled;
+            }
+        }
+
+        private bool IsSukunaActive
+        {
+            get
+            {
+                if (prototypeCharacter == null && playerHealth != null)
+                {
+                    prototypeCharacter = playerHealth.GetComponent<PrototypeCharacterController>();
+                }
+
+                return prototypeCharacter != null && prototypeCharacter.IsSukuna;
             }
         }
 
@@ -83,6 +111,8 @@ namespace JJKGame.Core
             targetLock = playerHealth.GetComponent<TargetLockController>();
             cursedEnergy = CursedEnergyController.GetOrCreate(playerHealth.gameObject);
             gojoVariant = GojoVariantController.GetOrCreate(playerHealth.gameObject);
+            prototypeCharacter = playerHealth.GetComponent<PrototypeCharacterController>();
+            playerTeam = playerHealth.GetComponent<PrototypePlayerTeamController>();
             GojoPrototypeAvatar.GetOrCreate(playerHealth.gameObject);
 
             playerHealth.Died += HandlePlayerDeath;
@@ -361,7 +391,10 @@ namespace JJKGame.Core
             const float margin = 12f;
             float panelWidth = Mathf.Clamp((Screen.width - margin * 3f) * 0.36f, 230f, 340f);
             Rect playerRect = new Rect(margin, margin, panelWidth, 62f);
-            DrawPlayerPanel(playerRect);
+            if (!TeamHudActive)
+            {
+                DrawPlayerPanel(playerRect);
+            }
 
             float enemyWidth = Mathf.Clamp(panelWidth * 0.92f, 220f, 320f);
             for (int index = 0; index < enemyHealths.Count; index++)
@@ -385,7 +418,10 @@ namespace JJKGame.Core
             DrawDodgeChip(playerRect);
             DrawAttackIndicators();
             DrawEnemyAttackWarning();
-            DrawDomainPanel();
+            if (!IsSukunaActive)
+            {
+                DrawDomainPanel();
+            }
         }
 
         private void DrawPlayerPanel(Rect rect)
@@ -585,16 +621,43 @@ namespace JJKGame.Core
 
         private void DrawControlHelp()
         {
-            float width = 330f;
-            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 178f, width, 118f);
-            DrawRect(rect, new Color(0.012f, 0.018f, 0.032f, 0.95f));
-            DrawBorder(rect, new Color(0.24f, 0.55f, 1f), 2f);
-            string text =
-                "F1 · 닫기\n"
-                + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
-                + "LMB 기본 공격 · Q 창 · E 혁 · R 허식 자\n"
-                + "V 영역 준비 · X 영역 입력 취소\n"
-                + "영역: RMB 유지 → LMB → 초록 구간 RMB 해제";
+            bool teamMode = TeamHudActive;
+            bool sukuna = IsSukunaActive;
+            float width = 370f;
+            float height = sukuna ? 154f : 148f;
+            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - height - 60f, width, height);
+            Color accent = sukuna
+                ? new Color(0.96f, 0.22f, 0.12f)
+                : new Color(0.24f, 0.55f, 1f);
+            DrawRect(rect, sukuna
+                ? new Color(0.040f, 0.010f, 0.012f, 0.98f)
+                : new Color(0.012f, 0.018f, 0.032f, 0.95f));
+            DrawBorder(rect, accent, 2f);
+
+            string teamLine = teamMode ? "T 팀 교대 · 현재 2인 팀 프로토타입\n" : string.Empty;
+            string text;
+            if (sukuna)
+            {
+                text =
+                    "F1 · 닫기\n"
+                    + teamLine
+                    + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
+                    + "LMB 기본 공격 · Q 해 · E 팔\n"
+                    + "R 푸가: 해·팔 사용 후 영역 밖 적 1명\n"
+                    + "V 복마어주자: 짧은 준비 후 개방형 영역";
+            }
+            else
+            {
+                text =
+                    "F1 · 닫기\n"
+                    + teamLine
+                    + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
+                    + "LMB 기본 공격 · Q 창 · E 혁 · R 허식 자\n"
+                    + "V 영역 준비 · X 영역 입력 취소\n"
+                    + "영역: RMB 유지 → LMB → 초록 구간 RMB 해제";
+            }
+
+            smallStyle.normal.textColor = Color.white;
             GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, rect.height - 16f), text, smallStyle);
         }
 
