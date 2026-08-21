@@ -32,8 +32,24 @@ namespace JJKGame.Enemy
 
         public PrototypeEncounterMode Mode => requestedMode;
         public bool IsTeamBattle => Mode == PrototypeEncounterMode.TeamBattle;
+        public static bool TeamBattleModeRequested => requestedMode == PrototypeEncounterMode.TeamBattle;
         public Health ActiveMember => initialized ? members[activeIndex] : null;
         public Health ReserveMember => initialized ? members[1 - activeIndex] : null;
+        public int LivingMemberCount
+        {
+            get
+            {
+                int living = 0;
+                for (int index = 0; index < members.Length; index++)
+                {
+                    if (members[index] != null && !members[index].IsDead)
+                    {
+                        living += 1;
+                    }
+                }
+                return living;
+            }
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void BootstrapAfterSceneLoad()
@@ -282,24 +298,24 @@ namespace JJKGame.Enemy
         private void DrawOpponentTeamPanel()
         {
             float width = Mathf.Min(310f, Screen.width - 24f);
-            Rect panel = new Rect(Screen.width - width - 12f, 112f, width, 75f);
+            Rect panel = new Rect(Screen.width - width - 12f, 12f, width, 83f);
             DrawRect(panel, new Color(0.025f, 0.016f, 0.020f, 0.96f));
             DrawBorder(panel, new Color(1f, 0.34f, 0.14f, 0.95f), 2f);
 
             string notice = Time.time < entryNoticeUntil ? " · RESERVE ENTRY" : string.Empty;
             GUI.Label(
-                new Rect(panel.x + 8f, panel.y + 2f, panel.width - 16f, 20f),
-                $"OPPONENT TEAM{notice}",
+                new Rect(panel.x + 8f, panel.y + 2f, panel.width - 16f, 22f),
+                $"OPPONENT TEAM · {LivingMemberCount}/2{notice}",
                 titleStyle
             );
 
             DrawMemberRow(
-                new Rect(panel.x + 8f, panel.y + 25f, panel.width - 16f, 21f),
+                new Rect(panel.x + 8f, panel.y + 27f, panel.width - 16f, 23f),
                 activeIndex,
                 true
             );
             DrawMemberRow(
-                new Rect(panel.x + 8f, panel.y + 49f, panel.width - 16f, 21f),
+                new Rect(panel.x + 8f, panel.y + 54f, panel.width - 16f, 23f),
                 1 - activeIndex,
                 false
             );
