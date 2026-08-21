@@ -306,11 +306,12 @@ KO 표시
 - 게임 시작 후 고죠 → T → 스쿠나 교대 정상
 - 장면 재시작 없이 캐릭터가 변경됨
 - 다시 T로 교대하는 기본 Tag 동작 정상
+- 고죠가 피해를 받은 뒤 스쿠나로 교대했다가 복귀해도 기존 HP가 그대로 보존됨
+- 캐릭터별 HP snapshot 저장/복원 동작 정상
 
 [아직 확인 필요]
-- HP 독립 보존
 - CE 독립 보존
-- Reserve 상태 수치 정지
+- Reserve CE 상태 수치 정지
 - Action Lock
 - 첫 KO Auto Tag
 - 최종 KO 시에만 DEFEAT
@@ -320,7 +321,7 @@ KO 표시
 - 기존 고죠/스쿠나 기술 회귀 여부
 ```
 
-기본 교대 Acceptance Criteria는 사용자 확인 완료했지만 Gate 2A 전체를 완료로 판정하지 않는다. 남은 상태 보존·KO·Action Lock·회귀 테스트까지 통과해야 한다.
+기본 교대와 HP 보존 Acceptance Criteria는 사용자 확인 완료했지만 Gate 2A 전체를 완료로 판정하지 않는다. 남은 CE 보존·KO·Action Lock·회귀 테스트까지 통과해야 한다.
 
 ## 테스트 대기 상태
 
@@ -328,6 +329,7 @@ KO 표시
 Gate 1 Core Combat: USER VERIFIED
 적 겹침 수정: USER VERIFIED
 Gate 2A Basic Tag: USER VERIFIED
+Gate 2A HP Preservation: USER VERIFIED
 Gate 2A Team Runtime: USER TEST IN PROGRESS
 ```
 
