@@ -64,6 +64,17 @@ namespace JJKGame.Player
             domainController = newDomainController;
         }
 
+        public void ResetCombatSequence()
+        {
+            nextAttackAt = 0f;
+            nextChainIndex = 0;
+            chainExpiresAt = 0f;
+            chainDisplayUntil = 0f;
+            lastPerformedStep = 0;
+            hitComboCount = 0;
+            hitComboExpiresAt = 0f;
+        }
+
         private void Awake()
         {
             ownHealth = GetComponent<Health>();
