@@ -121,11 +121,16 @@ namespace JJKGame.Core
             HealthChanged?.Invoke(this, CurrentHealth);
         }
 
-        public void ResetHealth()
+        public void SetCurrentHealth(float value)
         {
-            CurrentHealth = maxHealth;
+            CurrentHealth = Mathf.Clamp(value, 0f, maxHealth);
             invulnerableUntil = 0f;
             HealthChanged?.Invoke(this, CurrentHealth);
+        }
+
+        public void ResetHealth()
+        {
+            SetCurrentHealth(maxHealth);
         }
 
         private DamageResolution Resolve(DamageContext context, DamageResolution resolution)
