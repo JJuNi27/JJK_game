@@ -9,7 +9,8 @@ Gate 1 Core Combat Proof: USER VERIFIED
 Gate 2 Match Architecture Proof: USER VERIFIED
 Gate 3 Beauty Corner: STARTED
 Gate 3A Combat Feel Pass 1: USER VERIFIED
-Gate 3A Combat Feel Pass 2 Bundle: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3A Combat Feel Pass 2 Bundle: USER VERIFIED
+Gate 3A Combat Feel Pass 3 Impact VFX: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -250,38 +251,101 @@ Pass 1과 동일하게:
 
 여러 적이 한 번의 기본 공격 범위에 맞아도 해당 공격 1회당 피드백은 한 번만 발생한다.
 
+## 사용자 검증
+
+2026-08-21 사용자 실제 Unity 테스트:
+
+```text
+[USER VERIFIED]
+- 1/2/3타 Hit Stop 정상
+- Hit Flash 정상
+- 기존 Shake 정상
+- 3타 FINISH 강조 정상
+- 허공 공격에는 피드백 없음
+- 눈에 띄는 기존 전투 회귀 없음
+```
+
+사용자 판정: `다 정상`.
+
+따라서:
+
+```text
+Gate 3A Combat Feel Pass 2 Bundle: USER VERIFIED
+```
+
+---
+
+# Gate 3A — Combat Feel Pass 3 Impact VFX
+
+## 목적
+
+카메라 전체 피드백만으로는 `어디를 때렸는지`의 공간적 정보가 약하므로 실제 충돌 위치에 짧은 Hit Burst를 추가한다.
+
+외부 Particle/VFX 자산이 아직 없으므로 지금은 최종 이펙트가 아니라 Beauty Corner용 procedural placeholder다.
+
+## 변경 파일
+
+```text
+unity/Assets/Scripts/Core/PrototypeHitImpactVfx.cs
+unity/Assets/Scripts/Player/BasicAttack.cs
+```
+
+## 규칙
+
+`DamageResolution.Applied`가 발생한 적의 ImpactPoint에만 VFX를 생성한다.
+
+```text
+1타
+→ 작고 짧은 흰색/청백색 Burst
+
+2타
+→ 조금 더 큰 청백색 Burst
+
+3타 FINISH
+→ 가장 큰 금빛 Burst
+```
+
+외형은 런타임 LineRenderer ray를 여러 방향으로 순간 확장하고 사라지게 하는 방식이다.
+
+Hit Stop 중에도 자연스럽게 사라져야 하므로 VFX 수명/확장은 `Time.unscaledTime` 기준으로 동작한다.
+
+여러 적이 동시에 실제 피해를 받으면 각 피해 위치에 각각 Burst가 생긴다.
+
+## 이번에도 바꾸지 않는 것
+
+```text
+데미지
+범위
+쿨타임
+넉백
+히트스턴
+Hit Stop 수치
+Tag
+Target Lock
+술식/영역 규칙
+```
+
 ## 사용자 테스트
 
 ```text
 1. git pull origin master
-2. Unity Console 빨간 오류 없는지 확인
+2. Console 빨간 오류 확인
 3. 주령에게 기본 3타 적중
 
 확인:
-- 맞는 순간 아주 짧게 '턱' 걸리는 느낌이 있는지
-- 1타 < 2타 < 3타 순으로 무게가 커지는지
-- 3타가 특히 FINISH처럼 느껴지는지
-- 화면 Flash가 눈 아프거나 과하지 않은지
-- 카메라 Shake가 Hit Stop 뒤에 이상하게 오래 남지 않는지
+- 맞은 위치에 짧은 Burst가 실제로 보이는지
+- 1타 < 2타 < 3타 순으로 크기/강조가 커지는지
+- 3타 금빛 FINISH Burst가 과하게 화면을 가리지 않는지
+- Hit Stop 중 VFX가 멈춘 채 오래 남지 않는지
 
-4. 허공에 LMB
-→ Hit Stop/Flash/Shake 없음
+4. 허공 공격
+→ Impact VFX 없음
 
-5. T Tag / TAB Target Lock 정상
-6. 고죠 Q/E/R/V, 스쿠나 Q/E/R/V 중 눈에 띄는 시간 이상이 없는지 간단 회귀
+5. 두 주령을 한 번에 맞히는 상황
+→ 실제 피해를 받은 각 대상 위치에 VFX가 생기는지
 ```
 
-사용자 체감 피드백은 세부 숫자보다 다음으로 받는다.
-
-```text
-좋음
-Hit Stop 너무 약함
-Hit Stop 너무 강함/끊김
-Flash 너무 강함
-기타 이상
-```
-
-정상이면 Pass 2 묶음을 USER VERIFIED로 닫고 Gate 3A 다음 묶음 또는 3B로 넘어간다.
+정상 확인되면 Gate 3A Combat Feel을 여기서 닫고 Gate 3B로 넘어간다.
 
 ---
 
