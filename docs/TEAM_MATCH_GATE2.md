@@ -246,7 +246,7 @@ RESERVE row
 KO 표시
 ```
 
-기존 MatchController/캐릭터 HUD가 아직 완전히 Team-aware로 통합된 것은 아니다. 이번 2A에서는 Team state correctness를 먼저 검증한다. HUD 통합은 2A 정상 확인 뒤 정리한다.
+기존 MatchController/캐릭터 HUD가 아직 완전히 Team-aware로 통합된 것은 아니다. Gate 2A에서는 Team state correctness를 먼저 검증했고 사용자 확인을 완료했다. HUD 통합은 다음 작업으로 진행한다.
 
 ## 사용자 테스트 순서
 
@@ -310,20 +310,20 @@ KO 표시
 - 캐릭터별 HP snapshot 저장/복원 동작 정상
 - 스쿠나에서 주력을 소비한 뒤 고죠로 교대했다가 복귀해도 기존 CE가 그대로 보존됨
 - 캐릭터별 CE snapshot 저장/복원 및 Reserve 상태 CE 정지 동작 정상
-
-[아직 확인 필요]
-- Action Lock
-- 첫 KO Auto Tag
-- 최종 KO 시에만 DEFEAT
-- KO 캐릭터 수동 교대 차단
-- 교대 시 콤보 초기화
-- 카메라/Target Lock 유지
-- 기존 고죠/스쿠나 기술 회귀 여부
+- 회피/술식 시전/영역 상태의 Action Lock 중 수동 T 교대 차단 정상
+- 첫 Active KO 시 DEFEAT 없이 살아 있는 Reserve 자동 입장 정상
+- KO된 캐릭터로 수동 교대 차단 정상
+- 마지막 팀원 KO 시에만 DEFEAT 정상
+- 교대 시 기본 공격 콤보 상태 초기화 정상
+- 교대 뒤 카메라 추적과 TAB Target Lock/대상 전환 정상
+- Curse A / Curse B 두 주령 훈련 환경 유지 정상
+- 고죠 창/혁/허식 자/무량공처/무하한 회귀 정상
+- 스쿠나 해/팔/푸가/복마어주자/영역 안 푸가 회귀 정상
 ```
 
-기본 교대와 HP/CE 보존 Acceptance Criteria는 사용자 확인 완료했지만 Gate 2A 전체를 완료로 판정하지 않는다. 남은 KO·Action Lock·회귀 테스트까지 통과해야 한다.
+Gate 2A Acceptance Criteria 전 항목을 사용자가 실제 Unity에서 확인했다.
 
-## 테스트 대기 상태
+## 테스트 상태
 
 ```text
 Gate 1 Core Combat: USER VERIFIED
@@ -331,23 +331,23 @@ Gate 1 Core Combat: USER VERIFIED
 Gate 2A Basic Tag: USER VERIFIED
 Gate 2A HP Preservation: USER VERIFIED
 Gate 2A CE Preservation: USER VERIFIED
-Gate 2A Team Runtime: USER TEST IN PROGRESS
+Gate 2A Action/KO/Regression: USER VERIFIED
+Gate 2A Team Runtime: USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 컴파일했다고 주장하지 않는다.
 
 ## Gate 2A 이후
 
-정상 확인 시 다음 순서:
+정상 확인 완료. 다음 순서:
 
 ```text
-1. Gate 2A 사용자 확인 완료 기록
-2. Legacy HUD를 Team-aware HUD로 정리
-3. 실제 Team Match에서 상대편도 Active/Reserve가 필요한 구조 설계
-4. 훈련용 다중 Curse 모드와 Team Battle 모드 분리 여부 결정
-5. Gate 2B 최소 상대 팀 구현
-6. 카메라/Target/KO Entry 검증
-7. 이후 Beauty Corner
+1. Legacy HUD를 Team-aware HUD로 정리
+2. 실제 Team Match에서 상대편도 Active/Reserve가 필요한 구조 설계
+3. 훈련용 다중 Curse 모드와 Team Battle 모드 분리 여부 결정
+4. Gate 2B 최소 상대 팀 구현
+5. 카메라/Target/KO Entry 검증
+6. 이후 Beauty Corner
 ```
 
 Beauty Corner 전에는 지원공격, 합동 궁극기, 3인 팀, 편성 비용, 온라인을 넣지 않는다.
