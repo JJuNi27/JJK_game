@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using JJKGame.Core;
+using JJKGame.Player;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -263,7 +264,24 @@ namespace JJKGame.Enemy
                 reserveBot.enabled = true;
             }
 
+            TransferTargetLockTo(reserve);
             entryNoticeUntil = Time.time + 1.5f;
+        }
+
+        private static void TransferTargetLockTo(Health newActive)
+        {
+            if (newActive == null || newActive.IsDead || !newActive.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            TargetLockController targetLock = FindFirstObjectByType<TargetLockController>();
+            if (targetLock == null || !targetLock.enabled)
+            {
+                return;
+            }
+
+            targetLock.TryLockTarget(newActive);
         }
 
         private void OnGUI()
