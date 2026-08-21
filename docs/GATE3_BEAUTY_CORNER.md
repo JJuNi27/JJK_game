@@ -9,6 +9,7 @@ Gate 1 Core Combat Proof: USER VERIFIED
 Gate 2 Match Architecture Proof: USER VERIFIED
 Gate 3 Beauty Corner: STARTED
 Gate 3A Combat Feel Pass 1: USER VERIFIED
+Gate 3A Combat Feel Pass 2 Bundle: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -167,18 +168,124 @@ Target Lock
 Gate 3A Combat Feel Pass 1: USER VERIFIED
 ```
 
-## 다음 Pass
+---
 
-다음은:
+# Gate 3A — Combat Feel Pass 2 Bundle
+
+## 속도 조정
+
+Gate 1~2처럼 작은 변경마다 사용자 pull/test를 반복하지 않고, Gate 3부터는 관련된 국소 표현 작업을 2~4개씩 묶어 한 번에 검증한다.
+
+이번 묶음:
 
 ```text
-Gate 3A Combat Feel Pass 2
-- 짧은 Hit Stop
-- 3타 FINISH 중심으로 시작
-- 영역/술식 시간 로직에 영향이 없는지 검증
+1. 짧은 Hit Stop
+2. 미세한 Hit Flash
+3. Hit Stop 중에도 Camera Shake/Flash가 정상 진행되도록 unscaled feedback timing
 ```
 
-Hit Stop은 Time Scale을 건드릴 가능성이 있어 Shake보다 리스크가 높다.
+## 변경 파일
+
+```text
+unity/Assets/Scripts/Core/PrototypeHitStopController.cs
+unity/Assets/Scripts/Camera/SimpleCameraFollow.cs
+unity/Assets/Scripts/Player/BasicAttack.cs
+```
+
+## Hit Stop
+
+`PrototypeHitStopController`는 첫 사용 시 런타임에 자동 생성되며 별도 Scene 세팅이 필요 없다.
+
+```text
+실제 적중
+→ 짧게 Time.timeScale 감소
+→ Time.unscaledTime 기준으로 종료
+→ 원래 Time Scale 복원
+```
+
+현재 기본 3타 값:
+
+```text
+1타 0.022초
+2타 0.030초
+3타 FINISH 0.055초
+
+Hit Stop 중 상대 Time Scale = 기존의 8%
+```
+
+전체 전투 시간을 잠깐 같이 늦추므로 현재 `Time.time` 기반 공격 쿨타임/영역/술식 타이머도 같은 양만큼 같이 멈춘다. 즉 특정 시스템만 시간이 흘러가는 불일치를 피한다.
+
+## Hit Flash
+
+실제 HP 피해가 적용된 기본 공격에만 아주 약한 전체 화면 Flash를 추가한다.
+
+```text
+1타 0.025 alpha / 0.055초
+2타 0.040 alpha / 0.070초
+3타 0.075 alpha / 0.095초
+```
+
+1~2타는 흰색, 3타 FINISH는 약한 금빛 계열이다.
+
+## Camera Feedback Timing
+
+Hit Stop으로 `Time.time`이 느려져도 Shake/Flash가 멈춰서 길게 남지 않도록 `SimpleCameraFollow`의 해당 피드백 타이밍만 `Time.unscaledTime`으로 전환했다.
+
+카메라 기본 Follow 자체는 기존 scaled `Time.deltaTime`을 유지한다.
+
+## 발생 조건
+
+Pass 1과 동일하게:
+
+```text
+헛공격
+→ Hit Stop 없음 / Flash 없음 / Shake 없음
+
+피해가 방어되어 DamageResolution.Applied가 아님
+→ 피드백 없음
+
+실제 HP 피해 적용
+→ Shake + Hit Stop + Flash
+```
+
+여러 적이 한 번의 기본 공격 범위에 맞아도 해당 공격 1회당 피드백은 한 번만 발생한다.
+
+## 사용자 테스트
+
+```text
+1. git pull origin master
+2. Unity Console 빨간 오류 없는지 확인
+3. 주령에게 기본 3타 적중
+
+확인:
+- 맞는 순간 아주 짧게 '턱' 걸리는 느낌이 있는지
+- 1타 < 2타 < 3타 순으로 무게가 커지는지
+- 3타가 특히 FINISH처럼 느껴지는지
+- 화면 Flash가 눈 아프거나 과하지 않은지
+- 카메라 Shake가 Hit Stop 뒤에 이상하게 오래 남지 않는지
+
+4. 허공에 LMB
+→ Hit Stop/Flash/Shake 없음
+
+5. T Tag / TAB Target Lock 정상
+6. 고죠 Q/E/R/V, 스쿠나 Q/E/R/V 중 눈에 띄는 시간 이상이 없는지 간단 회귀
+```
+
+사용자 체감 피드백은 세부 숫자보다 다음으로 받는다.
+
+```text
+좋음
+Hit Stop 너무 약함
+Hit Stop 너무 강함/끊김
+Flash 너무 강함
+기타 이상
+```
+
+정상이면 Pass 2 묶음을 USER VERIFIED로 닫고 Gate 3A 다음 묶음 또는 3B로 넘어간다.
+
+---
+
+## Codex 사용 기준
 
 속도 향상을 위해 이후 작업은 범위에 따라 직접 수정과 Codex를 병행한다.
 
@@ -195,4 +302,4 @@ Codex 우선
 - 테스트 추가
 ```
 
-Gate 4에서는 Beauty Corner에서 실제 반복된 계약을 추출하므로 Codex 사용 비중이 더 커질 예정이다.
+Gate 3B부터 Codex 사용 비중을 높이고, Gate 4에서는 Beauty Corner에서 실제 반복된 계약 추출에 본격 사용한다.
