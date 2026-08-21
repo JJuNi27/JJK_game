@@ -8,7 +8,7 @@
 
 ```text
 Gate 2A Team Runtime: USER VERIFIED
-Team-aware HUD Cleanup: REMOTE IMPLEMENTED / USER TEST PENDING
+Team-aware HUD Cleanup: USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -66,7 +66,7 @@ PrototypePlayerTeamController
 
 ## 사용자 시각 확인 기록
 
-2026-08-21 첫 HUD 정리 사용자 캡처:
+### 2026-08-21 첫 HUD 정리 캡처
 
 ```text
 [정상 확인]
@@ -82,47 +82,50 @@ PrototypePlayerTeamController
 - TEAM 패널이 Q/E/R 기술 카드 뒤에 겹쳐 ACTIVE/RESERVE 정보 가독성 저하
 ```
 
-위 겹침 문제는 `Move team HUD clear of technique cards` 변경으로 원격 수정했다. 실제 Unity 최종 확인은 아직 필요하다.
+위 겹침 문제는 `Move team HUD clear of technique cards` 변경으로 수정했다.
 
-## 사용자 테스트
+### 2026-08-21 수정 후 사용자 캡처
 
 ```text
-1. git pull origin master
-2. Unity Console 빨간 오류가 없는지 확인
-3. 게임 시작
-
-[고죠 Active]
-4. 좌측 상단에 ACTIVE 고죠 HP/CE 패널이 한 번만 보이는지
-5. DODGE와 Q/E/R 기술 카드가 정상인지
-6. TEAM 패널이 기술 카드 아래쪽 빈 공간에 독립적으로 보이고 어떤 패널과도 겹치지 않는지
-7. TEAM ACTIVE 행 HP/CE가 피해/주력 소비 시 실시간으로 변하는지
-8. 하단 중앙에 고죠 무량공처 상태 패널이 정상인지
-9. F1 도움말에 고죠 Q/E/R/V와 T 팀 교대가 표시되는지
-
-[스쿠나 Active]
-10. T로 스쿠나 교대
-11. 좌측 상단 PLAYER/ACTIVE 패널이 중복되지 않고 하나만 보이는지
-12. TEAM 패널이 스쿠나 Q/E/R 기술 카드와 겹치지 않는지
-13. 고죠 영역 패널이 사라지고 스쿠나 복마어주자 패널만 보이는지
-14. F1 도움말이 Q 해 / E 팔 / R 푸가 / V 복마어주자 기준인지
-15. TEAM ACTIVE 행 HP/CE가 실시간으로 변하는지
-16. RESERVE 고죠 HP/CE가 저장값 그대로인지
-
-[회귀]
-17. T 교대 정상
-18. TAB Target Lock 정상
-19. 회피/기본공격/술식 정상
-20. 첫 KO Auto Tag와 최종 DEFEAT 정상
+[USER VERIFIED]
+- 고죠 Active 화면에서 TEAM 패널이 Q/E/R 기술 카드와 완전히 분리됨
+- 스쿠나 Active 화면에서도 TEAM 패널이 Q/E/R 기술 카드와 겹치지 않음
+- TEAM 패널이 좌측 중하단 빈 공간에 독립적으로 표시됨
+- 고죠 Active/Reserve 행 표시 정상
+- 스쿠나 Active/Reserve 행 표시 정상
+- 고죠 ↔ 스쿠나 교대 시 ACTIVE 이름/색상 전환 정상
+- Active HP/CE와 Reserve snapshot 정보 표시 정상
+- 고죠 영역 상태 패널과 스쿠나 복마어주자 패널 전환 정상
+- 화면 하단 영역 패널과 TEAM 패널도 겹치지 않음
 ```
 
-## 완료 기준
+스쿠나 캡처의 CE가 시작값보다 높게 보이는 것은 기존 스쿠나 주력 프로필의 초당 회복이 진행된 결과이며 HUD 배치 문제와 무관하다.
 
-위 항목을 사용자가 실제 Unity에서 확인하면:
+## 회귀 상태
+
+Gate 2A 완료 시 이미 다음 전투 회귀 항목을 사용자 확인했다.
+
+```text
+T 교대 정상
+TAB Target Lock 정상
+회피/기본공격/술식 정상
+첫 KO Auto Tag 정상
+최종 팀원 KO 시 DEFEAT 정상
+```
+
+따라서 이번 HUD 수정에서는 시각 배치 회귀를 중심으로 재확인했고 정상 통과했다.
+
+## 완료 판정
 
 ```text
 Team-aware HUD Cleanup: USER VERIFIED
 ```
 
-로 변경한다.
+다음 작업:
 
-그 다음 Gate 2B에서 상대 팀 Active/Reserve 구조와 훈련용 다중 Curse 모드 분리를 설계한다.
+```text
+Gate 2B Opponent Team Architecture
+- 실제 Team Battle용 상대 Active / Reserve 구조 설계
+- 기존 두 Curse 동시 훈련 환경은 별도 Training 용도로 보존
+- 최소 상대 팀 runtime을 먼저 검증
+```
