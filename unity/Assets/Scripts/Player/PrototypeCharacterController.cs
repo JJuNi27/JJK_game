@@ -81,7 +81,7 @@ namespace JJKGame.Player
                 }
             }
 
-            if (IsSukuna && Input.GetKeyDown(KeyCode.F1))
+            if (!teamMode && IsSukuna && Input.GetKeyDown(KeyCode.F1))
             {
                 showSukunaHelp = !showSukunaHelp;
             }
@@ -221,9 +221,16 @@ namespace JJKGame.Player
                 return;
             }
 
-            DrawSukunaPlayerPanel();
+            PrototypePlayerTeamController team = GetComponent<PrototypePlayerTeamController>();
+            bool teamMode = team != null && team.enabled;
+
+            if (!teamMode)
+            {
+                DrawSukunaPlayerPanel();
+            }
+
             DrawSukunaDomainPanel();
-            if (showSukunaHelp)
+            if (!teamMode && showSukunaHelp)
             {
                 DrawSukunaHelp();
             }
@@ -311,12 +318,11 @@ namespace JJKGame.Player
         private void DrawSukunaHelp()
         {
             float width = 360f;
-            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 208f, width, 148f);
+            Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 188f, width, 128f);
             DrawRect(rect, new Color(0.040f, 0.010f, 0.012f, 0.98f));
             DrawBorder(rect, new Color(0.96f, 0.22f, 0.12f), 2f);
             string text =
                 "F1 · 닫기\n"
-                + "T 팀 교대 · 현재 2인 팀 프로토타입\n"
                 + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
                 + "LMB 기본 공격 · Q 해 · E 팔\n"
                 + "R 푸가: 해·팔 사용 후 영역 밖 적 1명\n"
