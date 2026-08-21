@@ -70,6 +70,8 @@ namespace JJKGame.Core
             }
         }
 
+        private bool OpponentTeamHudActive => PrototypeOpponentTeamController.TeamBattleModeRequested;
+
         private bool IsSukunaActive
         {
             get
@@ -396,25 +398,29 @@ namespace JJKGame.Core
                 DrawPlayerPanel(playerRect);
             }
 
-            float enemyWidth = Mathf.Clamp(panelWidth * 0.92f, 220f, 320f);
-            for (int index = 0; index < enemyHealths.Count; index++)
+            if (!OpponentTeamHudActive)
             {
-                Health health = enemyHealths[index];
-                if (health == null)
+                float enemyWidth = Mathf.Clamp(panelWidth * 0.92f, 220f, 320f);
+                for (int index = 0; index < enemyHealths.Count; index++)
                 {
-                    continue;
+                    Health health = enemyHealths[index];
+                    if (health == null)
+                    {
+                        continue;
+                    }
+
+                    Rect rect = new Rect(
+                        Screen.width - margin - enemyWidth,
+                        margin + index * 48f,
+                        enemyWidth,
+                        43f
+                    );
+                    DrawEnemyPanel(rect, health, index);
                 }
 
-                Rect rect = new Rect(
-                    Screen.width - margin - enemyWidth,
-                    margin + index * 48f,
-                    enemyWidth,
-                    43f
-                );
-                DrawEnemyPanel(rect, health, index);
+                DrawEnemyCount();
             }
 
-            DrawEnemyCount();
             DrawDodgeChip(playerRect);
             DrawAttackIndicators();
             DrawEnemyAttackWarning();
@@ -563,7 +569,7 @@ namespace JJKGame.Core
             float progress = 0f;
             foreach (CurseBotController bot in enemyBots)
             {
-                if (bot != null && bot.IsAttackTelegraphing)
+                if (bot != null && bot.gameObject.activeInHierarchy && bot.IsAttackTelegraphing)
                 {
                     count += 1;
                     progress = Mathf.Max(progress, bot.AttackWindupProgress);
