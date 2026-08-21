@@ -11,6 +11,7 @@ namespace JJKGame.CameraSystem
 
         [Header("Prototype Combat Feedback")]
         [SerializeField, Range(0f, 1f)] private float maximumShakeAmplitude = 0.75f;
+        [SerializeField, Range(0f, 0.75f)] private float maximumFocusStrength = 0.58f;
 
         private float shakeStartedAt;
         private float shakeEndsAt;
@@ -25,6 +26,11 @@ namespace JJKGame.CameraSystem
         private float fovKickStartedAt;
         private float fovKickEndsAt;
         private float fovKickDelta;
+
+        private float focusStartedAt;
+        private float focusEndsAt;
+        private float focusStrength;
+        private Vector3 focusWorldPoint;
 
         private void Awake()
         {
@@ -95,6 +101,20 @@ namespace JJKGame.CameraSystem
             fovKickDelta = delta;
         }
 
+        public void AddWorldFocus(Vector3 worldPoint, float strength, float duration)
+        {
+            if (strength <= 0f || duration <= 0f)
+            {
+                return;
+            }
+
+            float now = Time.unscaledTime;
+            focusStartedAt = now;
+            focusEndsAt = now + duration;
+            focusStrength = Mathf.Clamp(strength, 0f, maximumFocusStrength);
+            focusWorldPoint = worldPoint;
+        }
+
         private void LateUpdate()
         {
             ApplyFovKick();
@@ -114,8 +134,29 @@ namespace JJKGame.CameraSystem
             );
 
             transform.position = smoothedPosition + BuildShakeOffset();
-            Vector3 lookPoint = target.position + Vector3.up * lookHeight;
-            transform.rotation = Quaternion.LookRotation(lookPoint - transform.position, Vector3.up);
+            Vector3 lookPoint = BuildLookPoint();
+            Vector3 lookDirection = lookPoint - transform.position;
+            if (lookDirection.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.LookRotation(lookDirection, Vector3.up);
+            }
+        }
+
+        private Vector3 BuildLookPoint()
+        {
+            Vector3 baseLookPoint = target.position + Vector3.up * lookHeight;
+            float now = Time.unscaledTime;
+            if (now >= focusEndsAt || focusStrength <= 0f)
+            {
+                focusStrength = 0f;
+                return baseLookPoint;
+            }
+
+            float duration = Mathf.Max(0.01f, focusEndsAt - focusStartedAt);
+            float progress = Mathf.Clamp01((now - focusStartedAt) / duration);
+            float envelope = Mathf.Sin(progress * Mathf.PI);
+            float blend = focusStrength * envelope;
+            return Vector3.Lerp(baseLookPoint, focusWorldPoint, blend);
         }
 
         private void ApplyFovKick()
@@ -161,6 +202,7 @@ namespace JJKGame.CameraSystem
 
         private void OnDisable()
         {
+            focusStrength = 0f;
             if (controlledCamera != null && baseFieldOfView > 0f)
             {
                 controlledCamera.fieldOfView = baseFieldOfView;
