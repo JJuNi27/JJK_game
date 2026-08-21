@@ -32,8 +32,9 @@ namespace JJKGame.CameraSystem
                 return;
             }
 
-            shakeStartedAt = Time.time;
-            shakeEndsAt = Mathf.Max(shakeEndsAt, Time.time + duration);
+            float now = Time.unscaledTime;
+            shakeStartedAt = now;
+            shakeEndsAt = Mathf.Max(shakeEndsAt, now + duration);
             shakeAmplitude = Mathf.Clamp(
                 Mathf.Max(shakeAmplitude, amplitude),
                 0f,
@@ -48,10 +49,11 @@ namespace JJKGame.CameraSystem
                 return;
             }
 
+            float now = Time.unscaledTime;
             flashColor = color;
             flashPeakAlpha = Mathf.Clamp01(Mathf.Max(flashPeakAlpha, peakAlpha));
-            flashStartedAt = Time.time;
-            flashEndsAt = Mathf.Max(flashEndsAt, Time.time + duration);
+            flashStartedAt = now;
+            flashEndsAt = Mathf.Max(flashEndsAt, now + duration);
         }
 
         private void LateUpdate()
@@ -77,28 +79,30 @@ namespace JJKGame.CameraSystem
 
         private Vector3 BuildShakeOffset()
         {
-            if (Time.time >= shakeEndsAt)
+            float now = Time.unscaledTime;
+            if (now >= shakeEndsAt)
             {
                 shakeAmplitude = 0f;
                 return Vector3.zero;
             }
 
             float duration = Mathf.Max(0.01f, shakeEndsAt - shakeStartedAt);
-            float remaining = Mathf.Clamp01((shakeEndsAt - Time.time) / duration);
+            float remaining = Mathf.Clamp01((shakeEndsAt - now) / duration);
             Vector2 random = Random.insideUnitCircle * shakeAmplitude * remaining;
             return transform.right * random.x + Vector3.up * random.y;
         }
 
         private void OnGUI()
         {
-            if (Time.time >= flashEndsAt)
+            float now = Time.unscaledTime;
+            if (now >= flashEndsAt)
             {
                 flashPeakAlpha = 0f;
                 return;
             }
 
             float duration = Mathf.Max(0.01f, flashEndsAt - flashStartedAt);
-            float remaining = Mathf.Clamp01((flashEndsAt - Time.time) / duration);
+            float remaining = Mathf.Clamp01((flashEndsAt - now) / duration);
             Color previousColor = GUI.color;
             Color current = flashColor;
             current.a = flashPeakAlpha * remaining;
