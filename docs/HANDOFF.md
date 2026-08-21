@@ -2,7 +2,7 @@
 
 작성 기준일: 2026-08-21
 
-> 새 ChatGPT 대화에서는 이 문서와 `docs/PROJECT_DIRECTION.md`, `docs/ORIGINAL_FIDELITY_POLICY.md`, `docs/CANON_SKILL_RULES.md`, `docs/DEVELOPMENT_ROADMAP.md`, `docs/PHANTOM_PARADE_REFERENCE.md`, `docs/SUKUNA_FIRST_VERSION_RESEARCH.md`, `docs/AUDIO_SETUP.md`, `unity/README.md`, 최신 코드를 먼저 읽는다.
+> 새 ChatGPT 대화에서는 이 문서와 `docs/PROJECT_DIRECTION.md`, `docs/ORIGINAL_FIDELITY_POLICY.md`, `docs/CANON_SKILL_RULES.md`, `docs/DEVELOPMENT_ROADMAP.md`, `docs/PHANTOM_PARADE_REFERENCE.md`, `docs/SUKUNA_FIRST_VERSION_RESEARCH.md`, `docs/TEAM_MATCH_GATE2.md`, `docs/AUDIO_SETUP.md`, `unity/README.md`, 최신 코드를 먼저 읽는다.
 
 이 문서는 현재 사용자 확인 상태, 게임 방향, 작업 방식과 다음 우선순위를 기록하는 단일 인수인계 기준이다.
 
@@ -365,111 +365,125 @@ Sukuna_DomainFuga
 
 파일이 없어도 스쿠나 전용 합성 fallback이 재생된다.
 
-## 10. 2026-08-21 적 2마리 겹침 버그 — 수정 원격 반영 / 사용자 테스트 필요
+## 10. 적 2마리 겹침 버그 — 사용자 확인 완료
 
-사용자 보고:
+기존 문제:
 
 ```text
-적이 두 마리 있어야 하는데 가끔 화면에는 한 마리만 보임
-예전부터 간헐적으로 존재
+각 CurseBot이 플레이어의 동일한 중심점을 추적
+→ 접근 뒤 서로 같은 위치/카메라 선상에 겹쳐 한 마리처럼 보일 수 있음
 ```
 
-조사 결과:
-
-`MatchController`는 실제로 기본 적 + 런타임 clone을 서로 다른 위치에 배치한다.
-
-하지만 `CurseBotController`의 기존 AI는 모든 적이:
+수정:
 
 ```text
-각자 스폰
-→ 플레이어의 정확히 같은 중심점 추적
-→ 가까워지며 서로 같은 위치/카메라 선상에 겹칠 수 있음
-```
-
-구조였다.
-
-수정 파일:
-
-```text
-unity/Assets/Scripts/Enemy/CurseBotController.cs
-```
-
-새 동작:
-
-```text
-Start에서 현재 활성 CurseBot 목록 확인
-→ 이름 기준으로 안정적으로 슬롯 배정
+Start에서 활성 CurseBot 목록 확인
+→ 이름 기준 안정적 슬롯 배정
 → 플레이어 주변 원형 engagement slot 계산
 → 각 봇이 자기 슬롯으로 접근
-→ 충분히 자리 잡은 뒤 공격
 ```
 
-현재 두 마리면 서로 약 180도 반대 자리로 접근한다.
-
-목적:
-
-- 모델이 한 위치에 겹쳐 한 마리처럼 보이는 현상 방지
-- 두 적의 공격 텔레그래프 가독성 개선
-- 나중에 테스트 적 수가 늘어도 원형으로 자리를 분산
-
-이 변경은 사용자 Unity 테스트 전이다.
-
-테스트:
+2026-08-21 사용자 확인:
 
 ```text
-1. git pull
-2. Unity Console 빨간 오류 확인
-3. 전투 재시작을 여러 번 반복
-4. 적 두 마리가 처음부터 실제로 보이는지
-5. 플레이어에게 접근한 뒤에도 두 모델이 겹쳐 한 마리처럼 보이지 않는지
-6. Curse A 일반 공격 / Curse B 영역전연 공격이 둘 다 정상인지
-7. TAB 타깃 전환으로 두 적 모두 선택 가능한지
+Curse A / Curse B 둘 다 정상 표시 ✅
+접근 뒤 겹침 문제 정상 ✅
+TAB으로 두 적 대상 전환 정상 ✅
+기존 일반 공격 / 영역전연 훈련 환경 정상 ✅
 ```
 
-## 11. Gate 상태
+## 11. Gate 2A Team Runtime — 사용자 확인 완료
+
+상세 기록: `docs/TEAM_MATCH_GATE2.md`
+
+현재 플레이어 팀:
+
+```text
+GOJO SATORU · 현대 · 교사
+RYOMEN SUKUNA · 시부야 사변
+```
+
+임시 프로토타입 입력:
+
+```text
+T · TAG
+```
+
+구현 구조:
+
+```text
+기존 Player GameObject = Fighter Shell
+PrototypePlayerTeamController
+- Active / Reserve
+- 캐릭터별 HP snapshot
+- 캐릭터별 CE snapshot
+- 수동 Tag
+- KO Auto Tag
+```
+
+2026-08-21 사용자 Unity 검증 완료:
+
+```text
+장면 재시작 없는 고죠 ↔ 스쿠나 T 교대 ✅
+Active 1명 + Reserve 1명 ✅
+캐릭터별 HP 독립 보존 ✅
+캐릭터별 CE 독립 보존 ✅
+Reserve 중 HP/CE 상태 정지 ✅
+회피/술식/영역 Action 중 수동 교대 차단 ✅
+첫 Active KO 시 Reserve 자동 입장 / DEFEAT 미발생 ✅
+KO 캐릭터로 수동 교대 차단 ✅
+마지막 팀원 KO 시에만 DEFEAT ✅
+교대 시 기본 공격 콤보 초기화 ✅
+카메라 추적 유지 ✅
+TAB Target Lock / 대상 전환 유지 ✅
+고죠 전체 기술 회귀 정상 ✅
+스쿠나 전체 기술 회귀 정상 ✅
+두 주령 훈련 환경 유지 ✅
+```
+
+현재 상태:
+
+```text
+Gate 2A Team Runtime: USER VERIFIED
+```
+
+## 12. Gate 상태
 
 ```text
 Gate 0 Vision Lock: 충분히 진행됨
-Gate 1 Core Combat Proof: 고죠/스쿠나 기능 기준 완료
-Gate 1 잔여: 적 겹침 버그 회귀 확인만 필요
-Gate 2 Match Architecture Proof: 다음 큰 작업
+Gate 1 Core Combat Proof: USER VERIFIED
+적 engagement slot 수정: USER VERIFIED
+Gate 2A Player Active/Reserve: USER VERIFIED
+Gate 2B Opponent Team Architecture: NEXT
+Gate 3 Beauty Corner: PENDING
 ```
 
-## 12. 다음 우선순위
+## 13. 다음 우선순위
 
-적 겹침 수정이 정상이라면 Team Match Architecture로 넘어간다.
+Gate 2A가 사용자 검증 완료됐으므로 다음은 Gate 2B로 넘어가기 전의 정리 작업이다.
 
-여기부터는 여러 파일에 걸친 구조 변경이므로 Codex 사용을 적극 검토한다.
-
-먼저 코드베이스 전체를 분석하고 Acceptance Criteria를 확정한 뒤 구현한다.
-
-최소 목표:
+순서:
 
 ```text
-Solo 1v1 유지
-2v2 Team Prototype
-Active Fighter
-Reserve Fighter
-전투 중 교대
-각 캐릭터 HP/CE 독립 보존
-KO 시 다음 캐릭터 입장
-팀 HUD
-교대 후 Target Lock/Camera 정상 재연결
+1. Legacy HUD를 Team-aware HUD로 정리
+2. 실제 Team Match에서 상대편도 Active/Reserve가 필요한 구조 설계
+3. 훈련용 다중 Curse 모드와 Team Battle 모드 분리 여부 결정
+4. Gate 2B 최소 상대 팀 구현
+5. 카메라/Target/KO Entry 검증
+6. 이후 Gate 3 Beauty Corner
 ```
 
-초기에는 넣지 않음:
+Gate 2B/Beauty Corner 전에는 다음을 넣지 않는다.
 
 ```text
 지원 공격
 합동 궁극기
-완성형 캐릭터 선택 화면
-3인 팀 최종 UI
+3인 팀 완성형
+Character Cost 실제 밸런스
 온라인 네트워크
 ```
 
-현재 `1/2 키 → 장면 재시작` 구조는 Gate 2에서 교체 대상이다.
-
-## 13. Gate 2 뒤 — Beauty Corner
+## 14. Gate 2 뒤 — Beauty Corner
 
 Team Match 최소 구조가 검증된 뒤 작은 범위를 거의 완성품 품질로 만든다.
 
@@ -506,7 +520,7 @@ Hit stop
 
 거대한 범용 Ability System을 미리 만들지 않는다.
 
-## 14. Codex 사용 기준
+## 15. Codex 사용 기준
 
 직접 수정 적합:
 
@@ -541,14 +555,15 @@ Codex 절차:
 
 게임 디자인/원작 판정은 Codex에게 맡기지 않는다.
 
-## 15. 새 채팅에서 먼저 할 일
+## 16. 새 채팅에서 먼저 할 일
 
-1. 이 문서를 읽는다.
-2. 고죠 Core Combat은 사용자 확인 완료로 유지한다.
-3. 스쿠나 해/팔/영역 밖 푸가/복마어주자/영역 안 푸가/전용 영역 오디오는 사용자 확인 완료로 유지한다.
-4. 적 2마리 engagement slot 수정이 사용자 테스트됐는지 확인한다.
-5. 정상이라면 Gate 2 Team Match Architecture 설계로 이동한다.
-6. Gate 2는 Codex 사용을 적극 검토한다.
-7. 주팬퍼를 단순 번역이 아니라 전체 게임 설계 참고자료로 사용한다.
-8. 밸런스보다 원작 재현을 우선한다.
-9. 작업 뒤 이 문서를 갱신한다.
+1. 이 문서와 `docs/TEAM_MATCH_GATE2.md`를 읽는다.
+2. 고죠와 시부야 스쿠나 Core Combat은 사용자 확인 완료로 유지한다.
+3. 적 2마리 engagement slot 수정은 사용자 확인 완료로 유지한다.
+4. Gate 2A Player Active/Reserve는 사용자 확인 완료로 유지한다.
+5. 다음 작업은 Legacy HUD의 Team-aware 정리부터 시작한다.
+6. 그다음 Gate 2B 상대 Team Architecture를 설계한다.
+7. 큰 다중 파일 구조 변경은 Codex 사용을 적극 검토한다.
+8. 주팬퍼를 단순 번역이 아니라 전체 게임 설계 참고자료로 사용한다.
+9. 밸런스보다 원작 재현을 우선한다.
+10. 작업 뒤 이 문서를 갱신한다.
