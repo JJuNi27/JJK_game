@@ -5,12 +5,9 @@
 ## 상태
 
 ```text
-Gate 3A Combat Feel Pass 1: USER VERIFIED
-Gate 3A Combat Feel Pass 2 Bundle: USER VERIFIED
-Gate 3A Combat Feel Pass 3 Impact VFX: USER VERIFIED
 Gate 3A Combat Feel: USER VERIFIED
-
-Gate 3B Character Presentation Pass 1: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3B Character Presentation Pass 1: USER VERIFIED
+Gate 3B Character Presentation Pass 2 Bundle: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -30,13 +27,7 @@ Hit Flash
 
 Pass 3 첫 구현에서 `DamageContext.ImpactPoint`를 잘못 참조해 CS1061 컴파일 오류가 발생했다.
 
-실제 DamageContext 프로퍼티는:
-
-```text
-HitPoint
-```
-
-이므로 `context.HitPoint`로 수정했고, 사용자가 수정본을 다시 확인했다.
+실제 DamageContext 프로퍼티는 `HitPoint`이므로 `context.HitPoint`로 수정했고 이후 사용자 확인을 통과했다.
 
 따라서 Gate 3A Combat Feel은 USER VERIFIED로 종료한다.
 
@@ -63,7 +54,9 @@ SukunaPrototypeAvatar
 
 # Pass 1 — Basic Attack Pose + Tag Entry Readability
 
-## 새 파일
+## 구현
+
+파일:
 
 ```text
 unity/Assets/Scripts/Player/PrototypeFighterPresentationController.cs
@@ -71,66 +64,141 @@ unity/Assets/Scripts/Player/PrototypeFighterPresentationController.cs
 
 씬 세팅 없이 `RuntimeInitializeOnLoadMethod(AfterSceneLoad)`로 BasicAttack이 있는 Fighter Shell에 자동 부착한다.
 
-`DefaultExecutionOrder(1500)`으로 기존 Prototype Avatar의 이동 흔들림 계산 뒤에 동작해 공격 포즈만 덧씌운다.
+`DefaultExecutionOrder(1500)`으로 기존 Prototype Avatar의 이동 흔들림 계산 뒤에 공격 포즈를 덧씌운다.
 
-## 기본 공격 포즈
-
-기존 `BasicAttack.DisplayChainStep`을 읽어 1/2/3타마다 짧은 포즈를 만든다.
+기본 공격:
 
 ```text
-1타
-→ 한쪽 팔 전진
-
-2타
-→ 반대쪽 팔 전진
-
-3타 FINISH
-→ 양팔 + 상체 전진 강조
+1타 → 한쪽 팔 전진
+2타 → 반대쪽 팔 전진
+3타 FINISH → 양팔 + 상체 전진 강조
 ```
 
-Hit Stop 중 캐릭터 포즈도 같이 멈추는 편이 자연스러우므로 이 포즈 시간은 `Time.time` 기준이다.
-
-## 캐릭터별 차이
-
-고죠와 스쿠나가 같은 기본 3타 시스템을 사용해도 몸짓은 같지 않게 한다.
+고죠와 스쿠나는 같은 기본 3타 시스템을 사용하지만 포즈 수치를 다르게 했다.
 
 ```text
 GOJO
-- 비교적 정돈되고 가벼운 회전
-- FINISH 상체 전진은 절제
+- 비교적 정돈된 회전
+- FINISH 상체 전진 절제
 
 SUKUNA
 - 더 큰 팔 각도
 - 더 공격적인 상체 전진/회전
 ```
 
-현재 수치는 모두 GAME_ORIGINAL Beauty Corner placeholder다.
+Tag 시 새 Active Visual Root에 약 0.22초 Scale Pulse를 준다.
 
-## Tag Entry Readability
+## 사용자 검증
 
-Active 캐릭터 Visual Root가 고죠 ↔ 스쿠나로 바뀌면 약 0.22초 동안 작은 Scale Pulse를 준다.
+2026-08-21 사용자 실제 Unity 확인:
 
 ```text
-Tag
-→ 새 캐릭터 외형 활성
-→ 약 1.075 scale에서 1.0으로 빠르게 복귀
+[USER VERIFIED]
+- 고죠 기본 1/2/3타 포즈 동작 정상
+- 스쿠나 기본 1/2/3타 포즈 동작 정상
+- 3타 FINISH가 더 큰 포즈로 보임
+- Tag Entry Pulse 동작 정상
+- 기존 공격/적중 피드백 흐름 정상
 ```
 
-최종 Tag Animation이 아니라 현재 Fighter Shell 방식에서 교대가 시각적으로 읽히는지만 검증하기 위한 placeholder다.
+사용자 체감상 Primitive 포즈가 매우 단순하고 코믹하게 보였지만 이는 현재 placeholder 품질 한계이며, 동작 규칙 검증 자체는 정상 통과했다.
+
+따라서:
+
+```text
+Gate 3B Character Presentation Pass 1: USER VERIFIED
+```
+
+---
+
+# Pass 2 Bundle — Locomotion Stance + Dodge Readability
+
+## 목적
+
+실제 Animator가 없는 상태에서도 `가만히 있음 / 이동 / 회피 / 공격`이 실루엣만으로 조금 더 구분되도록 한다.
+
+이번 작업도 최종 애니메이션이 아니라 Character Presentation 규칙 검증용 placeholder다.
+
+## 변경 파일
+
+```text
+unity/Assets/Scripts/Player/ThirdPersonPlayerController.cs
+unity/Assets/Scripts/Player/PrototypeFighterPresentationController.cs
+```
+
+## ThirdPersonPlayerController
+
+Presentation이 회피 상태를 추측하지 않도록 기존 이동 시스템에서 읽기 전용 정보를 공개한다.
+
+```text
+DodgeProgress
+DodgeDirection
+```
+
+회피 판정/속도/무적/쿨타임 수치는 변경하지 않았다.
+
+## Locomotion Stance
+
+CharacterController의 실제 평면 속도를 읽어 Visual Root에 아주 약한 전진 기울기/호흡 회전을 덧씌운다.
+
+```text
+GOJO
+- 비교적 직립
+- 이동 시 작은 전진 기울기
+
+SUKUNA
+- 기본적으로 조금 더 앞으로 숙임
+- 이동 시 공격적인 전진 기울기 증가
+```
+
+기존 Prototype Avatar의 팔/다리 걷기 흔들림은 그대로 사용한다.
+
+## Dodge Presentation
+
+`ThirdPersonPlayerController.IsDodging` 동안:
+
+```text
+Visual Root 전방 기울기
+팔을 뒤로 빼는 Dash 자세
+아주 약한 세로 Stretch
+```
+
+를 적용한다.
+
+스쿠나는 고죠보다 각도와 Stretch를 조금 더 크게 둔다.
+
+회피 자체의 실제 이동/무적 프레임은 기존 코드 그대로다.
+
+## 우선순위
+
+같은 프레임에 여러 Presentation 상태가 겹칠 경우:
+
+```text
+Attack Pose
+> Dodge Pose
+> Locomotion Stance
+```
+
+순서로 표현한다.
+
+Tag Entry Scale Pulse는 별도로 적용되며 이후 상태가 필요한 경우 Scale을 덮어쓸 수 있다. 이는 현재 Prototype 한정이며 실제 Animator 파이프라인에서 다시 설계한다.
 
 ## 바꾸지 않은 것
 
 ```text
+이동 속도
+회전 속도
+회피 속도
+회피 거리
+회피 쿨타임
+회피 무적
 Damage
-Hit Stop 수치
+Hit Stop
 Hit VFX
-공격 판정
-콤보 시간
 HP / CE
 Tag 규칙
 Target Lock
-고죠/스쿠나 술식
-영역
+술식/영역
 ```
 
 ## 사용자 테스트
@@ -138,33 +206,39 @@ Target Lock
 ```text
 1. git pull origin master
 2. Unity Console 빨간 오류 없는지 확인
-3. 고죠로 LMB 1→2→3
-→ 팔/상체가 공격마다 실제로 움직이는지
-→ 3타가 가장 큰 포즈인지
 
-4. T → 스쿠나
-→ 교대 직후 아주 짧은 크기 Pulse가 보이는지
+[이동]
+3. 고죠 WASD 이동
+→ 정지 상태보다 이동 중 몸이 조금 앞으로 기울어 보이는지
 
-5. 스쿠나 LMB 1→2→3
-→ 고죠보다 조금 더 공격적인 동작으로 보이는지
+4. T → 스쿠나 후 이동
+→ 고죠보다 조금 더 공격적으로 숙인 느낌인지
 
-6. 이동하면서 공격
-→ 기존 걷기 팔/다리 흔들림이 완전히 깨지지 않는지
+[회피]
+5. 고죠 SPACE
+→ 회피 동안 몸이 앞으로 숙고 팔이 뒤로 빠지는 Dash Pose가 보이는지
 
-7. 허공 공격
-→ Impact VFX/Hit Stop은 없어도 공격 포즈 자체는 나오는지
+6. 스쿠나 SPACE
+→ 같은 구조지만 조금 더 과격한 자세인지
+
+[회귀]
+7. LMB 1/2/3
+→ Pass 1 공격 포즈 정상
+
+8. T Tag / TAB Target Lock / Q/E/R/V
+→ 기존 기능에 이상 없는지 간단 확인
 ```
 
-공격 포즈는 `공격 시도`의 표현이므로 허공에서도 나오는 것이 정상이다. 반대로 Hit Stop/Flash/Impact VFX는 실제 적중에서만 발생한다.
+Primitive 외형이라 자세 자체가 우스워 보이는 것은 실패 조건이 아니다.
 
-## 완료 기준
-
-사용자가 실제 Unity에서 다음을 확인하면:
+이번 Pass의 성공 기준은:
 
 ```text
-Gate 3B Character Presentation Pass 1: USER VERIFIED
+상태 구분이 눈에 보임
+기존 전투 로직을 건드리지 않음
+컴파일/런타임 오류 없음
 ```
 
-로 변경한다.
+이다.
 
-다음 Pass에서는 실제 모델 자산이 아직 없다면 회피/이동 stance readability를 묶어서 진행하고, 실제 모델이 준비되면 즉시 Animator/Model integration으로 전환한다.
+정상 확인되면 Gate 3B의 Prototype Presentation 검증을 닫고, 실제 모델/애니메이션 자산 준비와 함께 Gate 3C Signature Technique Presentation으로 넘어간다.
