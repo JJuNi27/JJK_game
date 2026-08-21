@@ -8,7 +8,8 @@
 Gate 3C Pass 1 · Signature Activation Feedback: USER VERIFIED
 Gate 3C Pass 2A · Anticipation + Release/Impact Timing: USER FEEDBACK · TOO SUBTLE
 Gate 3C Pass 2B · Readability Tuning + FOV Kick: USER VERIFIED
-Gate 3C Pass 3 · Spatial Signature VFX: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3C Pass 3 · Spatial Signature VFX: USER VERIFIED
+Gate 3C Pass 3A · Hollow Purple Form Correction: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -29,7 +30,7 @@ Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
 
 화면 전체 Flash/FOV만으로 끝내지 않고 술식이 실제 월드 공간을 점유하는 느낌을 추가한다.
 
-새 파일:
+파일:
 
 ```text
 unity/Assets/Scripts/Player/PrototypeSignatureSpatialVfx.cs
@@ -47,9 +48,6 @@ unity/Assets/Scripts/Player/PrototypeSignatureSpatialVfxController.cs
 복마어주자 Casting
 → 스쿠나 주변 적색 이중 에너지 링 확장
 
-허식 자 Release
-→ 캐릭터 전방에서 보라색 공간 Burst
-
 푸가 Release
 → Projectile 생성 위치에서 주황/적색 Burst
 
@@ -66,6 +64,89 @@ unity/Assets/Scripts/Player/PrototypeSignatureSpatialVfxController.cs
 
 Ring과 Light는 `Time.unscaledTime` 기준으로 움직여 짧은 Hit Stop 중에도 연출이 읽히도록 했다.
 
+## Pass 3 사용자 확인
+
+2026-08-22 사용자 실제 Unity 확인:
+
+```text
+[USER VERIFIED]
+- 무량공처 준비/개방 공간 VFX 적용 확인
+- 복마어주자 Casting/개방 공간 VFX 적용 확인
+- 푸가 발사/폭발 공간 VFX 적용 확인
+- 앞서 안내한 Pass 3 변경사항이 실제 화면에 적용됨
+```
+
+단, 허식 「자」의 기존 자체 Visual이 레이저/빔처럼 보이는 원작 재현 문제를 사용자가 지적했다.
+
+따라서 공간 VFX 시스템 자체는 USER VERIFIED로 닫되, 허식 「자」의 형태는 별도 교정한다.
+
+---
+
+# Pass 3A — Hollow Purple Form Correction
+
+## 사용자 원작 기준 피드백
+
+사용자 지적:
+
+```text
+허식 「자」는 레이저포가 아니다.
+아오(창)와 아카(혁)가 합쳐져 하나의 거대한 보라색 구체가 되고,
+그 구체를 전방으로 발사하는 형태여야 한다.
+```
+
+기존 `GojoTechniqueChainController`의 Prototype Visual은:
+
+```text
+PurpleOuterBeam
+PurpleCoreBeam
+```
+
+두 LineRenderer가 전방 전체 길이를 즉시 그려 레이저처럼 보였다.
+
+## 교정 구현
+
+새 파일:
+
+```text
+unity/Assets/Scripts/Player/PrototypeHollowPurpleOrbVisual.cs
+```
+
+씬 세팅 없이 Fighter Shell에 자동 부착된다.
+
+기존 `HollowPurplePrototypeVisual`의 Beam LineRenderer와 중간 고정 Light를 Presentation 단계에서 비활성화하고 새 Visual로 덮어쓴다.
+
+새 흐름:
+
+```text
+아오 계열 청색 구체 + 아카 계열 적색 구체
+→ 좌우에서 중앙으로 약 0.18초 수렴
+→ 두 구체가 사라지며 거대한 보라색 구체 생성
+→ 보라 구체가 전방으로 약 18m 이동
+→ 짧은 보라 Trail + 구체 주변 회전 Energy Ring + Point Light
+```
+
+핵심은 전방 전체를 한 번에 채우는 Beam을 없애고 `이동하는 단일 거대 구체`의 실루엣으로 바꾼 것이다.
+
+현재 구체 이동은 `Time.unscaledTime` 기반 Presentation이다.
+
+## 아직 유지하는 Prototype 판정
+
+이번 Pass는 형태 교정이 목적이므로 Gate 1에서 검증한 기존 전투 판정은 변경하지 않았다.
+
+현재 Damage는 여전히 `GojoTechniqueChainController.ApplyPurpleDamage()`의 즉시 Capsule 판정을 사용한다.
+
+즉:
+
+```text
+시각 표현
+→ 아오 + 아카 합체 후 거대 보라 구체 이동
+
+현재 Prototype Damage timing
+→ 기존 즉시 Capsule 판정 유지
+```
+
+최종 제작 단계에서는 실제 Purple Projectile/Volume의 이동과 Damage timing을 일치시키는 것이 목표다.
+
 ## 바꾸지 않은 것
 
 ```text
@@ -73,11 +154,8 @@ Damage
 CE Cost
 Cooldown
 Range
-Cast Time
-Domain Duration
-Sure Hit
-푸가 준비 조건
 허식 자 준비 조건
+Blue / Red 연계 규칙
 Tag
 Target Lock
 ```
@@ -87,24 +165,19 @@ Target Lock
 ```text
 1. git pull origin master
 2. Unity Console 빨간 오류 확인
+3. 고죠로 창 + 혁 준비 후 R
 
-3. 고죠 V
-→ 캐릭터 주변에서 청색 링이 실제 월드 공간으로 퍼지는지
-
-4. 무량공처 성공
-→ Active 순간 더 큰 청색 개방 링
-
-5. 허식 자
-→ 발사 시작점 주변에 보라 공간 Burst
-
-6. T → 스쿠나
-7. 복마어주자 V
-→ Casting 때 적색 링
-→ Active 때 큰 적색 개방 링
-
-8. 푸가
-→ 발사 위치 Burst
-→ 실제 폭발 위치에 큰 Ring Burst
+확인 포인트
+- 기존 긴 보라 레이저가 더 이상 보이지 않는지
+- 청색/적색 작은 구체가 좌우에서 합쳐지는지
+- 합쳐진 뒤 큰 보라색 구체 하나가 전방으로 날아가는지
+- 보라 구체가 캐릭터보다 충분히 큰 기술로 읽히는지
 ```
 
-성공 기준은 화면 Tint만 보이는 것이 아니라 `어디서 힘이 모이고 어디서 터졌는지`가 월드 공간에서 읽히는 것이다.
+정상 확인되면:
+
+```text
+Gate 3C Pass 3A · Hollow Purple Form Correction: USER VERIFIED
+```
+
+로 닫는다.
