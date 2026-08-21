@@ -10,16 +10,27 @@
 - E 술식반전 「혁」 시전과 첫 적중
 - R 허식 「자」 발동
 - V 무량공처 성공 발동
+- 스쿠나 V 복마어주자 전개
+- 복마어주자 안 푸가 광역 폭발
 - 기본 공격 1·2·3타 휘두름과 적중
 - 플레이어 피격
 - SPACE 회피
 - 승리와 패배
 
-허식 자와 무량공처는 단순 키 입력이 아니라 실제 기술 시각효과가 활성화되는 순간에 재생됩니다. 따라서 발동 조건이 실패했을 때 대사나 효과음만 잘못 나오는 상황을 줄입니다.
+고죠용 영역 음성과 스쿠나용 영역 음성은 분리되어 있습니다.
+
+```text
+PrototypeCombatAudio
+- 고죠 창/혁/자/무량공처와 공통 전투 SFX
+
+SukunaCombatAudio
+- 스쿠나 복마어주자 음성/SFX
+- 복마어주자 안 푸가 광역 폭발 SFX
+```
+
+따라서 `Gojo_Domain`을 넣어도 스쿠나 복마어주자에서 고죠 대사가 재생되지 않습니다.
 
 전투 사운드 이벤트는 카메라 흔들림과 화면 플래시에도 함께 연결되어 있습니다. 회전 카메라는 사용하지 않고 위치 흔들림만 짧게 적용해 멀미 가능성을 낮춥니다.
-
-사용자 테스트에서 1·2타와 3타의 차이가 약하게 느껴졌기 때문에 3타에는 일반 타격음 위에 별도의 저음·노이즈 충격음을 겹치고, 카메라 흔들림과 화면 플래시도 더 강하게 적용합니다.
 
 ## 개인 로컬 BGM·대사·효과음 덮어쓰기
 
@@ -39,6 +50,10 @@ Gojo_Red.wav
 Gojo_Purple.wav
 Gojo_Domain.wav
 
+Sukuna_Domain.wav
+Sukuna_DomainSFX.wav
+Sukuna_DomainFuga.wav
+
 BasicSwing.wav
 BasicHit.wav
 BasicFinisher.wav
@@ -55,13 +70,18 @@ Defeat.wav
 - `Gojo_Red`: E 사용 시 대사
 - `Gojo_Purple`: 허식 자가 실제 발동할 때 대사
 - `Gojo_Domain`: 무량공처 입력에 성공해 영역이 실제 전개될 때 대사
+- `Sukuna_Domain`: 복마어주자가 실제 전개될 때 스쿠나 대사
+- `Sukuna_DomainSFX`: 복마어주자 전개 효과음
+- `Sukuna_DomainFuga`: 복마어주자 안 푸가가 영역 전체 폭발로 전환될 때 효과음
 - `BasicSwing`: 기본 공격을 휘두를 때
 - `BasicHit`: 기본 공격 1·2타와 3타의 공통 타격층
 - `BasicFinisher`: 3타에만 추가로 겹치는 강한 마무리 충격음
-- `PlayerHit`: 고죠가 피해를 입었을 때
+- `PlayerHit`: 플레이어가 피해를 입었을 때
 - `Dodge`: 회피가 시작될 때
 - `Victory`: 모든 적을 쓰러뜨렸을 때
-- `Defeat`: 고죠가 쓰러졌을 때
+- `Defeat`: 플레이어가 쓰러졌을 때
+
+로컬 음원이 없으면 각각의 런타임 합성 fallback 효과음을 사용합니다.
 
 ## 저장소 원칙
 
