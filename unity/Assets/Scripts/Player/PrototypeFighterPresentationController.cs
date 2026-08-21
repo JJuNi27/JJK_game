@@ -11,6 +11,8 @@ namespace JJKGame.Player
         private const string SukunaRootName = "PrototypeSukunaAvatar";
 
         private BasicAttack basicAttack;
+        private ThirdPersonPlayerController movementController;
+        private CharacterController characterController;
         private Transform activeVisualRoot;
         private Transform leftArm;
         private Transform rightArm;
@@ -37,6 +39,8 @@ namespace JJKGame.Player
         private void Awake()
         {
             basicAttack = GetComponent<BasicAttack>();
+            movementController = GetComponent<ThirdPersonPlayerController>();
+            characterController = GetComponent<CharacterController>();
             ResolveActiveVisual(true);
         }
 
@@ -65,7 +69,20 @@ namespace JJKGame.Player
             }
 
             ApplyEntryPulse();
-            ApplyAttackPose(attackStep);
+
+            if (attackStep > 0)
+            {
+                ApplyAttackPose(attackStep);
+                return;
+            }
+
+            if (movementController != null && movementController.IsDodging)
+            {
+                ApplyDodgePose();
+                return;
+            }
+
+            ApplyLocomotionStance();
         }
 
         private void ResolveActiveVisual(bool force)
@@ -116,6 +133,88 @@ namespace JJKGame.Player
             float progress = Mathf.Clamp01(elapsed / duration);
             float pulse = (1f - progress) * 0.075f;
             activeVisualRoot.localScale = Vector3.one * (1f + pulse);
+        }
+
+        private void ApplyLocomotionStance()
+        {
+            float planarSpeed = 0f;
+            if (characterController != null)
+            {
+                Vector3 velocity = characterController.velocity;
+                velocity.y = 0f;
+                planarSpeed = velocity.magnitude;
+            }
+
+            float moveWeight = Mathf.Clamp01(planarSpeed / 5.5f);
+            bool sukuna = activeRootName == SukunaRootName;
+            float breathing = Mathf.Sin(Time.time * (sukuna ? 3.6f : 2.8f));
+
+            Vector3 targetRootEuler;
+            if (sukuna)
+            {
+                targetRootEuler = new Vector3(
+                    4f + moveWeight * 7f,
+                    breathing * (1.2f + moveWeight * 1.6f),
+                    breathing * 0.8f * moveWeight
+                );
+            }
+            else
+            {
+                targetRootEuler = new Vector3(
+                    1.5f + moveWeight * 4f,
+                    breathing * (0.8f + moveWeight * 0.8f),
+                    breathing * 0.5f * moveWeight
+                );
+            }
+
+            activeVisualRoot.localRotation = Quaternion.Slerp(
+                activeVisualRoot.localRotation,
+                Quaternion.Euler(targetRootEuler),
+                1f - Mathf.Exp(-10f * Time.deltaTime)
+            );
+        }
+
+        private void ApplyDodgePose()
+        {
+            float progress = movementController != null ? movementController.DodgeProgress : 0f;
+            float envelope = Mathf.Sin(Mathf.Clamp01(progress) * Mathf.PI);
+            bool sukuna = activeRootName == SukunaRootName;
+
+            float forwardLean = sukuna ? 34f : 27f;
+            float twist = sukuna ? 10f : 6f;
+            Vector3 rootEuler = new Vector3(forwardLean * envelope, twist * envelope, 0f);
+            activeVisualRoot.localRotation = Quaternion.Euler(rootEuler);
+
+            if (leftArm != null)
+            {
+                Vector3 leftEuler = sukuna
+                    ? new Vector3(48f, -16f, 24f)
+                    : new Vector3(38f, -10f, 16f);
+                leftArm.localRotation = Quaternion.Slerp(
+                    leftArm.localRotation,
+                    Quaternion.Euler(leftEuler),
+                    envelope
+                );
+            }
+
+            if (rightArm != null)
+            {
+                Vector3 rightEuler = sukuna
+                    ? new Vector3(52f, 18f, -28f)
+                    : new Vector3(42f, 12f, -18f);
+                rightArm.localRotation = Quaternion.Slerp(
+                    rightArm.localRotation,
+                    Quaternion.Euler(rightEuler),
+                    envelope
+                );
+            }
+
+            float stretch = envelope * (sukuna ? 0.06f : 0.045f);
+            activeVisualRoot.localScale = new Vector3(
+                1f - stretch * 0.35f,
+                1f + stretch,
+                1f - stretch * 0.20f
+            );
         }
 
         private void ApplyAttackPose(int attackStep)
