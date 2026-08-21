@@ -101,6 +101,49 @@ TEAM BATTLE
 
 F2는 최종 게임 조작이 아닌 `GAME_ORIGINAL` 개발용 임시 입력이다.
 
+### 2026-08-21 첫 사용자 테스트에서 발견된 문제
+
+사용자 실제 Unity 테스트:
+
+```text
+F2 입력 자체는 첫 전환을 시도함
+→ Scene reload 뒤에도 Curse 두 마리가 계속 보임
+→ 이후 F2를 다시 눌러도 모드가 돌아가지 않음
+```
+
+원인:
+
+```text
+초기 구현은 RuntimeInitializeOnLoadMethod(AfterSceneLoad)로
+PrototypeOpponentTeamController를 최초 한 번 생성했다.
+
+F2
+→ requestedMode 변경
+→ SceneManager.LoadScene
+→ 기존 scene-local controller가 파괴됨
+→ 새 Scene에서는 controller가 다시 생성되지 않음
+→ TEAM BATTLE 구성을 적용할 주체가 없어 두 Curse가 그대로 활성
+→ F2 입력을 받을 controller도 없어져 복귀 불가
+```
+
+수정:
+
+```text
+PrototypeOpponentTeamController를 DontDestroyOnLoad로 유지
+SceneManager.sceneLoaded 이벤트 구독
+F2 전환 전 기존 member 이벤트 연결 해제
+Scene reload 완료 뒤 새 Scene의 Curse A/B를 다시 탐색
+requestedMode를 새 Scene에 다시 적용
+```
+
+따라서 수정 후에는 같은 Play 세션에서:
+
+```text
+TRAINING → F2 → TEAM BATTLE → F2 → TRAINING
+```
+
+왕복이 가능해야 한다.
+
 ## Team Battle 상대 구조
 
 현재 임시 상대 팀:
@@ -138,6 +181,8 @@ Curse A HP 0
 → Curse B를 저장된 시작 위치에서 활성
 → Curse B가 새 Active
 ```
+
+여기서 `첫 Active KO`는 쉽게 말해 Team Battle에서 현재 화면에 나와 있는 상대 한 마리를 공격해서 HP를 0으로 만드는 테스트다.
 
 마지막 상대 KO:
 
@@ -189,66 +234,64 @@ RESERVE · CURSE B · HP ...
 
 이는 Gate 2B 구조 검증을 우선하기 위한 임시 상태이며, 상대 Team Runtime 검증 뒤 Enemy HUD를 team-aware로 정리할지 판단한다.
 
-## 사용자 테스트
+## 수정 후 사용자 테스트
 
 ```text
 1. git pull origin master
 2. Unity Console 빨간 오류 없는지 확인
 3. Play 시작
 
-[Training 보존]
-4. 첫 시작이 TRAINING · MULTI CURSE인지 확인
-5. Curse A와 Curse B가 둘 다 동시에 전장에 보이는지
-6. TAB으로 두 적을 각각 Target Lock 할 수 있는지
+[Training]
+4. 상단에 TRAINING · MULTI CURSE 표시
+5. Curse A와 Curse B 두 마리가 모두 보이는지 확인
 
-[Team Battle 진입]
-7. F2
-→ 같은 Scene이 재시작되어야 함
-8. 상단 칩이 TEAM BATTLE로 바뀌는지
-9. 전장에는 상대가 한 명만 보이는지
-10. OPPONENT TEAM 패널에서
-→ ACTIVE CURSE A
-→ RESERVE CURSE B
-인지
-11. TAB으로 현재 Active만 잡히는지
+[Team Battle 전환]
+6. F2 한 번
+→ Scene 재시작
+→ 상단 표시가 TEAM BATTLE로 바뀌어야 함
+→ 전장에는 Curse 한 마리만 보여야 함
+→ 우측 OPPONENT TEAM 패널이 보여야 함
+
+[모드 왕복 먼저 확인]
+7. 아직 싸우지 말고 F2 다시 한 번
+→ Scene 재시작
+→ TRAINING · MULTI CURSE로 돌아와야 함
+→ 두 Curse가 다시 보여야 함
+
+8. F2 다시 눌러 TEAM BATTLE 진입
 
 [첫 상대 KO]
-12. Active Curse를 HP 0까지 공격
+9. TEAM BATTLE에서 지금 화면에 보이는 Curse 한 마리를 공격해서 HP 0으로 만듦
 → VICTORY가 뜨지 않아야 함
 → 죽은 Curse가 사라져야 함
-→ Reserve가 자동으로 전장에 들어와야 함
+→ 숨어 있던 Reserve Curse가 자동 등장해야 함
 → OPPONENT TEAM의 ACTIVE / RESERVE 역할이 바뀌어야 함
-→ 전 캐릭터는 KO 표시되어야 함
-13. TAB으로 새 Active를 락온할 수 있는지
+
+10. TAB으로 새 Active를 락온할 수 있는지 확인
 
 [최종 상대 KO]
-14. 새 Active도 HP 0
+11. 새로 등장한 Curse도 HP 0
 → 그때 VICTORY
 
-[Training 복귀]
-15. 재시작 뒤 F2로 TRAINING 복귀
-16. 다시 두 Curse가 동시에 존재하는지
-
 [플레이어 회귀]
-17. 고죠 ↔ 스쿠나 T Tag 정상
-18. HP / CE 보존 정상
-19. 고죠/스쿠나 기존 기술 정상
-20. 두 Curse Training 환경에서 다중 기술 회귀 정상
+12. 고죠 ↔ 스쿠나 T Tag 정상
+13. 고죠/스쿠나 기존 기술 정상
 ```
 
 ## Acceptance Criteria
 
 ```text
 1. Training과 Team Battle을 분리 가능
-2. Training에서는 두 Curse 동시 전투 유지
-3. Team Battle에서는 1 Active + 1 Reserve
-4. Reserve는 전장/타깃/광역 대상에서 제외
-5. 첫 상대 KO에 VICTORY 발생하지 않음
-6. 첫 상대 KO 뒤 Reserve 자동 입장
-7. KO된 전 상대는 다시 등장하지 않음
-8. 마지막 상대 KO에만 VICTORY
-9. 새 Active를 TAB으로 락온 가능
-10. 기존 플레이어 팀/기술 회귀 없음
+2. F2로 Training ↔ Team Battle 왕복 가능
+3. Training에서는 두 Curse 동시 전투 유지
+4. Team Battle에서는 1 Active + 1 Reserve
+5. Reserve는 전장/타깃/광역 대상에서 제외
+6. 첫 상대 KO에 VICTORY 발생하지 않음
+7. 첫 상대 KO 뒤 Reserve 자동 입장
+8. KO된 전 상대는 다시 등장하지 않음
+9. 마지막 상대 KO에만 VICTORY
+10. 새 Active를 TAB으로 락온 가능
+11. 기존 플레이어 팀/기술 회귀 없음
 ```
 
 ## 아직 하지 않는 것
