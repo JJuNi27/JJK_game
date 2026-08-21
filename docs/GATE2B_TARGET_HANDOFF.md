@@ -7,7 +7,7 @@
 ```text
 Gate 2B Opponent Team Core Runtime: USER VERIFIED
 Enemy Team HUD · Team Battle View: USER VERIFIED
-Automatic Target Lock Handoff: REMOTE IMPLEMENTED / USER TEST PENDING
+Automatic Target Lock Handoff: USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -66,34 +66,26 @@ Reserve GameObject 활성
 
 마지막 상대 KO에는 새 Reserve가 없으므로 자동 승계가 발생하지 않는다.
 
-## 사용자 테스트
+## 사용자 검증
+
+2026-08-21 사용자 실제 Unity 확인:
 
 ```text
-1. git pull origin master
-2. Team Battle 진입
-3. 첫 상대를 TAB으로 락온
-4. 첫 상대 HP를 0으로 만들어 KO
-
-기대 결과:
-- 첫 상대 Target Lock이 사라짐
-- Reserve가 새 Active로 등장
-- TAB을 다시 누르지 않아도 즉시 새 Active에 Target Lock 표시가 생김
-- TARGET LOCK HUD 이름도 새 Curse로 변경
-- 공격/이동/고죠↔스쿠나 T Tag 정상
-
-5. 마지막 상대 KO
-- VICTORY 정상
-- 존재하지 않는 대상에 락온이 남지 않음
+[USER VERIFIED]
+- Team Battle에서 첫 상대를 KO하면 Reserve가 새 Active로 등장함
+- TAB을 다시 누르지 않아도 Target Lock이 새 Active로 자동 승계됨
+- 마지막 상대 KO 시 정상적으로 VICTORY 발생
+- 최종 KO 뒤 존재하지 않는 대상에 Target Lock이 남지 않음
 ```
 
-## 완료 기준
+사용자 확인 메시지: `ㅇㅋ 정상확인이야`
 
-위 흐름을 사용자가 실제 Unity에서 확인하면:
+## 완료 판정
 
 ```text
 Automatic Target Lock Handoff: USER VERIFIED
 ```
 
-로 변경한다.
+이 항목으로 Gate 2B의 KO Entry / Target 정책 검증은 완료했다.
 
-이 항목과 Training HUD 회귀까지 통과하면 Gate 2의 Match Architecture Proof 종료 여부를 판정한다.
+Gate 2 전체 종료 판정은 Gate 2A의 기존 사용자 검증, Gate 2B Core Runtime, Enemy Team HUD, 자동 Target Lock 검증을 합쳐 `docs/HANDOFF.md`와 `docs/DEVELOPMENT_ROADMAP.md`에 기록한다.
