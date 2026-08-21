@@ -27,6 +27,7 @@ namespace JJKGame.Enemy
         private bool switchingMode;
         private float entryNoticeUntil;
         private GUIStyle titleStyle;
+        private GUIStyle metaStyle;
         private GUIStyle rowStyle;
         private GUIStyle chipStyle;
         private int styledForHeight = -1;
@@ -301,39 +302,52 @@ namespace JJKGame.Enemy
 
         private void DrawModeChip()
         {
-            float width = Mathf.Min(270f, Screen.width - 24f);
-            Rect rect = new Rect(Screen.width * 0.5f - width * 0.5f, 35f, width, 25f);
+            float width = Mathf.Min(220f, Screen.width - 24f);
+            Rect rect = new Rect(Screen.width * 0.5f - width * 0.5f, 8f, width, 21f);
             Color accent = IsTeamBattle
-                ? new Color(1f, 0.32f, 0.14f)
-                : new Color(0.25f, 0.78f, 1f);
-            DrawRect(rect, new Color(0.020f, 0.025f, 0.040f, 0.94f));
-            DrawBorder(rect, accent, 2f);
-            chipStyle.normal.textColor = accent;
+                ? new Color(1f, 0.30f, 0.12f)
+                : new Color(0.20f, 0.72f, 1f);
+
+            DrawRect(rect, new Color(0.006f, 0.010f, 0.018f, 0.86f));
+            DrawRect(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), new Color(accent.r, accent.g, accent.b, 0.62f));
+            chipStyle.normal.textColor = new Color(0.82f, 0.86f, 0.94f);
             string modeName = IsTeamBattle ? "TEAM BATTLE" : "TRAINING · MULTI CURSE";
-            GUI.Label(rect, $"F2 · MODE · {modeName}", chipStyle);
+            GUI.Label(rect, $"F2   {modeName}", chipStyle);
         }
 
         private void DrawOpponentTeamPanel()
         {
-            float width = Mathf.Min(310f, Screen.width - 24f);
-            Rect panel = new Rect(Screen.width - width - 12f, 12f, width, 83f);
-            DrawRect(panel, new Color(0.025f, 0.016f, 0.020f, 0.96f));
-            DrawBorder(panel, new Color(1f, 0.34f, 0.14f, 0.95f), 2f);
+            float width = Mathf.Min(336f, Screen.width - 24f);
+            Rect panel = new Rect(Screen.width - width - 12f, 12f, width, 76f);
+            Color accent = new Color(1f, 0.30f, 0.12f);
 
-            string notice = Time.time < entryNoticeUntil ? " · RESERVE ENTRY" : string.Empty;
+            DrawHudPlate(panel, accent);
+            DrawRect(new Rect(panel.xMax - 4f, panel.y, 4f, panel.height), accent);
+
+            string notice = Time.time < entryNoticeUntil ? "RESERVE ENTRY" : string.Empty;
             GUI.Label(
-                new Rect(panel.x + 8f, panel.y + 2f, panel.width - 16f, 22f),
-                $"OPPONENT TEAM · {LivingMemberCount}/2{notice}",
+                new Rect(panel.x + 10f, panel.y + 3f, panel.width * 0.55f, 18f),
+                "OPPONENT",
                 titleStyle
             );
+            metaStyle.alignment = TextAnchor.MiddleRight;
+            metaStyle.normal.textColor = notice.Length > 0
+                ? new Color(1f, 0.56f, 0.22f)
+                : accent;
+            GUI.Label(
+                new Rect(panel.x + panel.width * 0.42f, panel.y + 3f, panel.width * 0.54f - 9f, 18f),
+                notice.Length > 0 ? notice : $"{LivingMemberCount} / 2",
+                metaStyle
+            );
+            metaStyle.alignment = TextAnchor.MiddleLeft;
 
             DrawMemberRow(
-                new Rect(panel.x + 8f, panel.y + 27f, panel.width - 16f, 23f),
+                new Rect(panel.x + 9f, panel.y + 24f, panel.width - 18f, 23f),
                 activeIndex,
                 true
             );
             DrawMemberRow(
-                new Rect(panel.x + 8f, panel.y + 54f, panel.width - 16f, 23f),
+                new Rect(panel.x + 9f, panel.y + 50f, panel.width - 18f, 20f),
                 1 - activeIndex,
                 false
             );
@@ -344,19 +358,33 @@ namespace JJKGame.Enemy
             Health member = members[index];
             bool knockedOut = member == null || member.IsDead;
             Color accent = knockedOut
-                ? new Color(0.42f, 0.42f, 0.46f)
+                ? new Color(0.40f, 0.40f, 0.45f)
                 : index == 0
                     ? new Color(0.94f, 0.15f, 0.20f)
-                    : new Color(0.95f, 0.34f, 0.10f);
+                    : new Color(1f, 0.38f, 0.10f);
+            Color background = active
+                ? new Color(accent.r * 0.09f, accent.g * 0.07f, accent.b * 0.06f, 0.94f)
+                : new Color(0.032f, 0.026f, 0.032f, 0.84f);
 
-            DrawRect(rect, new Color(0.040f, 0.035f, 0.045f, 0.98f));
-            DrawBorder(rect, accent, active ? 2f : 1f);
+            DrawRect(rect, background);
+            DrawRect(new Rect(rect.xMax - (active ? 4f : 2f), rect.y, active ? 4f : 2f, rect.height), accent);
+            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, active ? 0.72f : 0.34f), 1f);
 
-            string role = active ? "ACTIVE" : "RESERVE";
+            string role = active ? "A" : "R";
             string hp = member != null ? $"HP {member.CurrentHealth:0}/{member.MaxHealth:0}" : "MISSING";
             string ko = knockedOut ? " · KO" : string.Empty;
             rowStyle.normal.textColor = knockedOut ? new Color(0.62f, 0.62f, 0.66f) : Color.white;
-            GUI.Label(rect, $"{role} · CURSE {(char)('A' + index)} · {hp}{ko}", rowStyle);
+            GUI.Label(rect, $"{role}   CURSE {(char)('A' + index)}   {hp}{ko}", rowStyle);
+        }
+
+        private static void DrawHudPlate(Rect rect, Color accent)
+        {
+            DrawRect(rect, new Color(0.012f, 0.008f, 0.014f, 0.91f));
+            DrawRect(
+                new Rect(rect.x + 5f, rect.y + 4f, rect.width - 10f, rect.height - 8f),
+                new Color(accent.r * 0.04f, accent.g * 0.025f, accent.b * 0.02f, 0.36f)
+            );
+            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, 0.42f), 1f);
         }
 
         private void EnsureStyles()
@@ -370,11 +398,19 @@ namespace JJKGame.Enemy
             int baseSize = Mathf.RoundToInt(Mathf.Clamp(Screen.height / 64f, 11f, 16f));
             titleStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = baseSize,
+                fontSize = baseSize + 1,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleLeft,
             };
             titleStyle.normal.textColor = Color.white;
+
+            metaStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.Max(9, baseSize - 2),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+            };
+            metaStyle.normal.textColor = new Color(0.76f, 0.78f, 0.84f);
 
             rowStyle = new GUIStyle(GUI.skin.label)
             {
@@ -386,7 +422,7 @@ namespace JJKGame.Enemy
 
             chipStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = Mathf.Max(10, baseSize - 1),
+                fontSize = Mathf.Max(9, baseSize - 2),
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
             };
