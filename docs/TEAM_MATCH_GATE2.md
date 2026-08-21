@@ -297,12 +297,38 @@ KO 표시
 19. 스쿠나 해/팔/푸가/복마어주자/영역 푸가 정상
 ```
 
+## 사용자 테스트 진행 기록
+
+2026-08-21:
+
+```text
+[USER VERIFIED]
+- 게임 시작 후 고죠 → T → 스쿠나 교대 정상
+- 장면 재시작 없이 캐릭터가 변경됨
+- 다시 T로 교대하는 기본 Tag 동작 정상
+
+[아직 확인 필요]
+- HP 독립 보존
+- CE 독립 보존
+- Reserve 상태 수치 정지
+- Action Lock
+- 첫 KO Auto Tag
+- 최종 KO 시에만 DEFEAT
+- KO 캐릭터 수동 교대 차단
+- 교대 시 콤보 초기화
+- 카메라/Target Lock 유지
+- 기존 고죠/스쿠나 기술 회귀 여부
+```
+
+기본 교대 Acceptance Criteria는 사용자 확인 완료했지만 Gate 2A 전체를 완료로 판정하지 않는다. 남은 상태 보존·KO·Action Lock·회귀 테스트까지 통과해야 한다.
+
 ## 테스트 대기 상태
 
 ```text
 Gate 1 Core Combat: USER VERIFIED
 적 겹침 수정: USER VERIFIED
-Gate 2A Team Runtime: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 2A Basic Tag: USER VERIFIED
+Gate 2A Team Runtime: USER TEST IN PROGRESS
 ```
 
 Assistant는 Unity를 직접 컴파일했다고 주장하지 않는다.
