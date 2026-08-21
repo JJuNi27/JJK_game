@@ -33,22 +33,39 @@ REJECT
 
 ## 현재 프로젝트 단계
 
-대형 스튜디오식 표현으로는 `Preproduction 후반 / First Playable 완료 직전`에 가깝다.
+대형 스튜디오식 표현으로는 `Preproduction 후반 / First Playable 완료`에 가깝다.
 
-완료:
+사용자 실제 Unity 검증 완료:
 
 ```text
-현대 고죠 Core Gameplay ✅
-시부야 스쿠나 Core Gameplay ✅
-DamageContext / 방어 우회 구조 ✅
-무하한 / 영역전연 / 필중 상호작용 ✅
-주력 자원 ✅
-고죠 무량공처 ✅
-스쿠나 복마어주자 ✅
-푸가 ✅
+Gate 1 Core Combat Proof ✅
+- 현대 고죠 Core Gameplay
+- 시부야 스쿠나 Core Gameplay
+- DamageContext / 방어 우회
+- 무하한 / 영역전연 / 필중 상호작용
+- 주력 자원
+- 무량공처 / 복마어주자 / 푸가
+
+Gate 2 Match Architecture Proof ✅
+- 플레이어 Active / Reserve
+- HP / CE 독립 보존
+- 수동 Tag / KO Auto Tag
+- 상대 Active / Reserve
+- Training / Team Battle 분리
+- 첫 상대 KO 뒤 Reserve 자동 입장
+- 마지막 상대 KO에만 VICTORY
+- Team-aware Player / Enemy HUD
+- 상대 Reserve 등장 시 Target Lock 자동 승계
 ```
 
-사용자 확인 완료 상태는 `docs/HANDOFF.md` 기준을 따른다.
+상세 검증 기록:
+
+```text
+docs/TEAM_MATCH_GATE2.md
+docs/GATE2B_OPPONENT_TEAM.md
+docs/GATE2B_ENEMY_HUD_CLEANUP.md
+docs/GATE2B_TARGET_HANDOFF.md
+```
 
 ## 잠정 게임 방향
 
@@ -75,38 +92,52 @@ LATER:
 
 ### Gate 1 — Core Combat Proof
 
-거의 완료.
-
-남은 마감:
-
 ```text
-1. 스쿠나 전용 영역 사운드 분리
-2. 복마어주자 안 푸가 광역 전환
-3. 고죠/스쿠나 전체 회귀 테스트
+상태: USER VERIFIED
 ```
+
+현대 고죠와 시부야 스쿠나의 핵심 전투 규칙, 방어/영역/주력 상호작용을 사용자 Unity에서 검증했다.
 
 ### Gate 2 — Match Architecture Proof
 
-게임 방향이 팀 아레나로 최종 확정되면 아트 본작업 전에 진행한다.
-
 ```text
-Solo Match 구조
-2v2 Team Prototype
-Active Fighter / Reserve Fighter
-전투 중 교대
-캐릭터별 HP/CE 보존
-KO 후 다음 캐릭터 입장
-팀 HUD
-교대 뒤 카메라/락온 유지
+상태: USER VERIFIED
 ```
 
-현재 `1/2키 → 장면 재시작` 캐릭터 전환은 개발용 임시 구조이므로 이 단계에서 교체한다.
+검증된 최소 Match Architecture:
 
-지원 공격, 합동기, 3인 팀 완성형 UI는 아직 만들지 않는다.
+```text
+Player Team
+- Active + Reserve
+- T 수동 Tag
+- HP / CE 독립 상태
+- KO Auto Tag
+- 마지막 팀원 KO에만 DEFEAT
+
+Opponent Team
+- Active + Reserve
+- 첫 KO 뒤 Reserve 자동 입장
+- Target Lock 자동 승계
+- 마지막 팀원 KO에만 VICTORY
+
+Encounter Mode
+- Training · Multi Curse
+- Team Battle
+```
+
+현재 T/F2는 개발용 `GAME_ORIGINAL` 임시 입력이다.
+
+지원 공격, 합동기, 3인 팀 완성형 UI, Character Cost, 온라인은 아직 만들지 않는다.
 
 ### Gate 3 — Beauty Corner
 
+```text
+상태: STARTING
+```
+
 작은 범위를 거의 완성품 품질로 만든다.
+
+Beauty Corner 목표:
 
 ```text
 대표 맵 한 구역
@@ -120,6 +151,33 @@ HUD
 ```
 
 게임 전체를 90% 완성하는 것이 아니다.
+
+### Gate 3 진행 순서
+
+현재 자산 의존도가 낮은 전투 감각부터 시작하고, 실제 모델/맵 자산이 준비되는 즉시 Beauty Corner 본작업과 합친다.
+
+```text
+3A. Combat Feel Pass
+- 기본 공격 카메라 피드백
+- 이후 짧은 Hit Stop 검토
+- 강타/술식별 피드백 강도 구분
+
+3B. Representative Character Presentation
+- 실제 고죠/스쿠나 모델
+- 이동/기본공격/회피 애니메이션
+
+3C. Signature Technique Presentation
+- 허식 자 / 푸가
+- 무량공처 / 복마어주자
+- VFX / SFX / Voice / Camera
+
+3D. Representative Arena + HUD Polish
+- 대표 맵 한 구역
+- HUD 시각 통합
+- 최종 Beauty Corner 회귀
+```
+
+현재 3A 첫 작업은 기존 `SimpleCameraFollow`의 combat feedback API를 실제 기본 공격 적중에 연결하는 것이다.
 
 ### Gate 4 — Production Pipeline Extraction
 
@@ -213,14 +271,12 @@ Codex에게 원작 규칙이나 게임 디자인 결정을 맡기지 않는다.
 
 ## 현재 NEXT
 
-사용자 추가 아이디어를 검토한 뒤 게임 방향을 확정한다.
-
-그와 무관하게 안전하게 진행 가능한 다음 코드는:
-
 ```text
-1. 스쿠나 전용 영역 사운드 분리
-2. 영역 안 푸가 광역 전환
-3. 고죠/스쿠나 회귀 테스트
-```
+Gate 3A — Combat Feel Pass 1
 
-게임 방향을 팀 아레나 추천안으로 확정하면 이후 `Team Match Architecture`가 Beauty Corner보다 먼저다.
+1. 기본 3타 적중에 기존 SimpleCameraFollow 카메라 Shake 연결
+2. 1타 < 2타 < 3타 피니셔 순으로 강도 차등
+3. 전투 규칙/피해량/넉백/쿨타임은 변경하지 않음
+4. 사용자 Unity에서 과도한 흔들림/가독성/회귀 확인
+5. 통과 후 짧은 Hit Stop을 별도 Pass로 검토
+```
