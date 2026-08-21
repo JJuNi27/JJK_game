@@ -104,6 +104,7 @@ namespace JJKGame.Player
                     1f
                 );
                 PlayFovKick(-4.5f, 0.22f);
+                PlayWorldFocus(transform.position + Vector3.up * 2.1f, 0.18f, 0.28f);
             }
             previousGojoDomainState = gojoState;
 
@@ -124,6 +125,7 @@ namespace JJKGame.Player
                     1f
                 );
                 PlayFovKick(-5.5f, 0.24f);
+                PlayWorldFocus(transform.position + Vector3.up * 2.3f, 0.20f, 0.30f);
             }
             sukunaDomainWasCasting = sukunaCasting;
 
@@ -166,6 +168,11 @@ namespace JJKGame.Player
                 1f
             );
             PlayFovKick(domainActive ? -5f : -4f, 0.20f);
+            PlayWorldFocus(
+                transform.position + Vector3.up * 1.25f + transform.forward * 2.8f,
+                domainActive ? 0.24f : 0.20f,
+                0.28f
+            );
         }
 
         private void DetectPurpleRelease()
@@ -184,6 +191,11 @@ namespace JJKGame.Player
                     0.10f
                 );
                 PlayFovKick(7f, 0.26f);
+                PlayWorldFocus(
+                    transform.position + Vector3.up * 1.25f + transform.forward * 7.5f,
+                    0.34f,
+                    0.42f
+                );
 
                 purpleCulminationPending = true;
                 purpleCulminationAt = Time.unscaledTime + 0.09f;
@@ -239,6 +251,11 @@ namespace JJKGame.Player
                 0.10f
             );
             PlayFovKick(domainAmplified ? 6f : 5f, 0.20f);
+            PlayWorldFocus(
+                projectile.transform.position + transform.forward * 4.0f,
+                domainAmplified ? 0.30f : 0.25f,
+                0.32f
+            );
         }
 
         private void HandleFugaExploded(Health projectileOwner, Vector3 worldPosition, bool domainAmplified)
@@ -248,7 +265,6 @@ namespace JJKGame.Player
                 return;
             }
 
-            _ = worldPosition;
             PlayFeedback(
                 domainAmplified ? new Color(1f, 0.12f, 0.015f) : new Color(1f, 0.48f, 0.06f),
                 domainAmplified ? 0.28f : 0.23f,
@@ -259,6 +275,11 @@ namespace JJKGame.Player
                 0.08f
             );
             PlayFovKick(domainAmplified ? 11f : 9f, domainAmplified ? 0.32f : 0.28f);
+            PlayWorldFocus(
+                worldPosition + Vector3.up * 0.70f,
+                domainAmplified ? 0.58f : 0.50f,
+                domainAmplified ? 0.46f : 0.40f
+            );
         }
 
         private void DetectDomainActivation()
@@ -280,6 +301,7 @@ namespace JJKGame.Player
                     0.12f
                 );
                 PlayFovKick(6f, 0.24f);
+                PlayWorldFocus(transform.position + Vector3.up * 3.0f, 0.30f, 0.38f);
             }
             gojoDomainWasActive = gojoActive;
 
@@ -300,6 +322,12 @@ namespace JJKGame.Player
                     0.10f
                 );
                 PlayFovKick(8f, 0.28f);
+                Vector3 center = sukunaDomain.DomainCenter;
+                if (center == Vector3.zero)
+                {
+                    center = transform.position;
+                }
+                PlayWorldFocus(center + Vector3.up * 3.2f, 0.36f, 0.42f);
             }
             sukunaDomainWasActive = sukunaActive;
         }
@@ -329,6 +357,12 @@ namespace JJKGame.Player
         {
             combatCamera ??= FindFirstObjectByType<SimpleCameraFollow>();
             combatCamera?.AddFovKick(delta, duration);
+        }
+
+        private void PlayWorldFocus(Vector3 worldPoint, float strength, float duration)
+        {
+            combatCamera ??= FindFirstObjectByType<SimpleCameraFollow>();
+            combatCamera?.AddWorldFocus(worldPoint, strength, duration);
         }
 
         private void PlayFeedback(
