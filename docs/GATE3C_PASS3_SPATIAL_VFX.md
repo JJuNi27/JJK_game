@@ -9,7 +9,7 @@ Gate 3C Pass 1 · Signature Activation Feedback: USER VERIFIED
 Gate 3C Pass 2A · Anticipation + Release/Impact Timing: USER FEEDBACK · TOO SUBTLE
 Gate 3C Pass 2B · Readability Tuning + FOV Kick: USER VERIFIED
 Gate 3C Pass 3 · Spatial Signature VFX: USER VERIFIED
-Gate 3C Pass 3A · Hollow Purple Form Correction: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 3C Pass 3A · Hollow Purple Form Correction: RETRY IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -111,8 +111,6 @@ PurpleCoreBeam
 unity/Assets/Scripts/Player/PrototypeHollowPurpleOrbVisual.cs
 ```
 
-씬 세팅 없이 Fighter Shell에 자동 부착된다.
-
 기존 `HollowPurplePrototypeVisual`의 Beam LineRenderer와 중간 고정 Light를 Presentation 단계에서 비활성화하고 새 Visual로 덮어쓴다.
 
 새 흐름:
@@ -125,9 +123,29 @@ unity/Assets/Scripts/Player/PrototypeHollowPurpleOrbVisual.cs
 → 짧은 보라 Trail + 구체 주변 회전 Energy Ring + Point Light
 ```
 
-핵심은 전방 전체를 한 번에 채우는 Beam을 없애고 `이동하는 단일 거대 구체`의 실루엣으로 바꾼 것이다.
+핵심은 전방 전체를 한 번에 채우는 Beam을 없애고 `이동하는 단일 거대 구체`의 실루엣으로 바꾸는 것이다.
 
 현재 구체 이동은 `Time.unscaledTime` 기반 Presentation이다.
+
+## 첫 적용 실패와 재시도
+
+첫 사용자 확인에서는 기존 레이저 형태가 그대로 보여 Form Correction이 실제 런타임에 적용되지 않았다.
+
+가장 유력한 원인은 최초 부착 로직이 `AfterSceneLoad` 시점에 `BasicAttack`을 한 번만 검색해 Fighter Shell 생성/활성 타이밍에 따라 `PrototypeHollowPurpleOrbVisual` 부착을 놓칠 수 있다는 점이다.
+
+재시도에서는 새 파일:
+
+```text
+unity/Assets/Scripts/Player/PrototypeHollowPurpleOrbBootstrap.cs
+```
+
+을 추가했다.
+
+이 Bootstrap은 Play 중 약 0.2초 간격으로 `GojoTechniqueChainController`를 찾고, 발견 즉시 `PrototypeHollowPurpleOrbVisual`이 없을 때 부착한다.
+
+따라서 Scene load 직후 한 번의 검색 타이밍에 의존하지 않는다.
+
+이번 재시도도 아직 Assistant가 Unity에서 직접 검증한 것은 아니므로 사용자 테스트 전까지 완료 처리하지 않는다.
 
 ## 아직 유지하는 Prototype 판정
 
@@ -165,7 +183,8 @@ Target Lock
 ```text
 1. git pull origin master
 2. Unity Console 빨간 오류 확인
-3. 고죠로 창 + 혁 준비 후 R
+3. Play를 완전히 다시 시작
+4. 고죠로 창 + 혁 준비 후 R
 
 확인 포인트
 - 기존 긴 보라 레이저가 더 이상 보이지 않는지
