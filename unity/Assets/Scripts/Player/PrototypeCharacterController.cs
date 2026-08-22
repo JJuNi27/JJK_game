@@ -134,7 +134,7 @@ namespace JJKGame.Player
         {
             SetGojoComponentsEnabled(true);
             DisableSukunaComponents();
-            DisableMegumiAvatar();
+            DisableMegumiComponents();
 
             GojoPrototypeAvatar gojoAvatar = GojoPrototypeAvatar.GetOrCreate(gameObject);
             gojoAvatar.enabled = true;
@@ -153,7 +153,7 @@ namespace JJKGame.Player
             }
             SetGojoComponentsEnabled(false);
             SetChildActive("PrototypeGojoAvatar", false);
-            DisableMegumiAvatar();
+            DisableMegumiComponents();
 
             SukunaTechniqueController sukunaTechnique = GetComponent<SukunaTechniqueController>();
             if (sukunaTechnique == null)
@@ -183,6 +183,9 @@ namespace JJKGame.Player
             SetGojoComponentsEnabled(false);
             SetChildActive("PrototypeGojoAvatar", false);
             DisableSukunaComponents();
+
+            MegumiTechniqueController megumiTechnique = MegumiTechniqueController.GetOrCreate(gameObject);
+            megumiTechnique.enabled = true;
 
             MegumiPrototypeAvatar megumiAvatar = MegumiPrototypeAvatar.GetOrCreate(gameObject);
             megumiAvatar.enabled = true;
@@ -215,8 +218,14 @@ namespace JJKGame.Player
             SetChildActive("PrototypeSukunaAvatar", false);
         }
 
-        private void DisableMegumiAvatar()
+        private void DisableMegumiComponents()
         {
+            MegumiTechniqueController megumiTechnique = GetComponent<MegumiTechniqueController>();
+            if (megumiTechnique != null)
+            {
+                megumiTechnique.enabled = false;
+            }
+
             MegumiPrototypeAvatar megumiAvatar = GetComponent<MegumiPrototypeAvatar>();
             if (megumiAvatar != null)
             {
