@@ -11,6 +11,7 @@
 ```text
 Alpha1 / Alpha2 / Alpha3
 F3 Stress Roster Toggle
+T prototype Tag
 ```
 
 는 prototype / developer test harness다.
@@ -20,7 +21,9 @@ F3 Stress Roster Toggle
 ```text
 Mode Select
 → Character / Team Select
-→ Variant / Team Slot 확인
+→ 1~3명 Team 구성
+→ Main Fighter / Reserve Slot 확인
+→ Variant 확인
 → Match Setup 확정
 → Battle Scene
 ```
@@ -41,7 +44,7 @@ Naruto Storm / Sparking 계열을 포함한 3D arena fighter 참고
 
 따라서 플레이어가 전투 전에 캐릭터와 팀을 구성하는 UX 자체는 장기 방향상 필요했다.
 
-다만 2026-08-23 이전 문서에는 다음과 같은 **구체적인 프런트엔드 구현 형태**까지는 확정되어 있지 않았다.
+다만 2026-08-23 이전 문서에는 다음과 같은 구체적인 프런트엔드 구현 형태까지는 확정되어 있지 않았다.
 
 ```text
 portrait/card grid
@@ -51,9 +54,91 @@ variant panel
 confirm flow
 ```
 
-즉 `캐릭터 선택 UX가 필요하다`는 방향은 기존 구조에서 자연스럽게 전제됐지만, Naruto Storm/Sparking처럼 보이는 선택 grid를 언제 어떤 UI로 만들지까지는 명시되지 않았다.
+이 문서에서 이를 명시적으로 고정한다.
 
-이 문서에서 처음 명시적으로 고정한다.
+---
+
+# 최종 Team 구성 규칙
+
+최종 목표는 Naruto Storm 계열처럼 한 팀을 최소 1명, 최대 3명까지 고를 수 있게 하는 것이다.
+
+```text
+1명 선택
+MAIN
+
+2명 선택
+MAIN
+RESERVE 1
+
+3명 선택
+MAIN
+RESERVE 1
+RESERVE 2
+```
+
+전투 시작 시 항상 `MAIN`이 Active Fighter다.
+
+현재 Gate 2 / Gate 5A의 2인 Active + Reserve 구조는 이 최종 구조의 첫 검증 단계다.
+
+---
+
+# 전투 중 교대 입력 목표
+
+최종 PC 기본안:
+
+```text
+1 → Reserve Slot 1과 Active를 교대
+2 → Reserve Slot 2와 Active를 교대
+```
+
+고정 캐릭터 번호로 순간이동하는 방식이 아니라 `Active ↔ 해당 Reserve Slot`을 서로 교환하는 방식으로 설계한다.
+
+예:
+
+```text
+시작
+ACTIVE: GOJO
+R1: SUKUNA
+R2: MEGUMI
+
+1 입력
+ACTIVE: SUKUNA
+R1: GOJO
+R2: MEGUMI
+
+1 다시 입력
+ACTIVE: GOJO
+R1: SUKUNA
+R2: MEGUMI
+```
+
+또는 첫 교대 뒤 `2`를 누르면:
+
+```text
+ACTIVE: MEGUMI
+R1: GOJO
+R2: SUKUNA
+```
+
+처럼 현재 Active와 선택한 Reserve 슬롯이 교환된다.
+
+이 방식의 장점:
+
+```text
+최대 3인 팀이어도 교대 키가 2개면 충분함
+현재 Active가 누구든 같은 입력 규칙 유지
+메인 캐릭터로 돌아오기 위한 별도 3번 키가 필요 없음
+HUD의 R1 / R2 슬롯과 입력이 직접 대응
+```
+
+2인 팀에서는 `1`만 사용하고 `2`는 비활성이다.
+1인 Solo에서는 두 교대 입력 모두 비활성이다.
+KO된 Reserve 슬롯은 교대 불가 처리한다.
+
+현재 `T Tag`는 Gate 2/5A prototype 검증 키이며 production 입력으로 고정하지 않는다.
+현재 Solo용 `Alpha1/2/3` 개발 캐릭터 전환도 production에서는 제거하거나 developer-only로 격리한다.
+
+게임패드 입력은 동일한 `Reserve Slot 1 / Reserve Slot 2` Gameplay Command에 별도 버튼을 매핑한다.
 
 ---
 
@@ -74,7 +159,7 @@ Dragon Ball Sparking! ZERO 계열
 한눈에 보이는 roster grid
 빠른 캐릭터 탐색
 선택한 Fighter의 큰 preview/info
-팀 슬롯을 명확히 보여주는 flow
+1~3명 팀 슬롯을 명확히 보여주는 flow
 variant를 헷갈리지 않게 표시
 대전 시작 전 최종 조합 확인
 ```
@@ -87,7 +172,7 @@ variant를 헷갈리지 않게 표시
 
 ## Gate 5A — 지금
 
-Character Select 화면을 먼저 만들지 않는다.
+Character Select 화면이나 3인 팀 Runtime을 먼저 만들지 않는다.
 
 Gate 5A의 목적은:
 
@@ -106,7 +191,7 @@ GOJO + SUKUNA
 GOJO + MEGUMI
 ```
 
-이 UI를 production feature로 승격하지 않는다.
+메구미는 현재 `세 번째 Character 구조 검증`용 스트레스 캐릭터이며, F3 자체를 production feature로 승격하지 않는다.
 
 ## Gate 5B — First Production-Quality Vertical Slice
 
@@ -126,7 +211,8 @@ Sukuna
 Megumi
 ```
 
-실제 slice의 주력 매치가 Gojo vs Sukuna여도, Gate 5A에서 검증한 Megumi 데이터를 선택 시스템이 읽을 수 있게 구성한다.
+Character Select 데이터 구조는 처음부터 `1~3명 선택 가능`을 표현할 수 있게 만든다.
+다만 Battle Runtime의 3인 Active/Reserve2 확장은 현재 검증된 2인 구조를 깨지 않도록 별도 단계에서 검증한다.
 
 ---
 
@@ -160,25 +246,21 @@ Q / E / R / V 대표 기술
 
 을 보여준다.
 
-## 3. Match Formation
+## 3. Team Formation
 
-Solo:
-
-```text
-P1 Fighter
-vs
-Opponent Fighter
-```
-
-Team:
+선택 단계에서 명확히 표시한다.
 
 ```text
-ACTIVE
+MAIN
 RESERVE 1
-RESERVE 2 (2~3인 팀 기능이 실제 production 범위에 들어올 때)
+RESERVE 2
 ```
 
-Gate 5B 첫 slice에서는 현재 검증된 Active + Reserve 구조부터 UI에 연결한다.
+선택 인원이 1명이면 MAIN만 사용한다.
+2명이면 MAIN + RESERVE 1,
+3명이면 세 슬롯을 모두 사용한다.
+
+전투 HUD에서는 Reserve 슬롯과 교대 입력 `1 / 2`가 눈으로 바로 대응되게 한다.
 
 ## 4. Match Setup Data
 
@@ -238,6 +320,13 @@ Story-specific roster restriction
 
 ```text
 F3 = 개발용 stress-test shortcut
+Megumi Gate 5A = 세 번째 Character / Summon 구조 스트레스 테스트
+
+최종 Character Select = roster grid
+최종 Team Size = 1~3명
+MAIN + RESERVE 1 + RESERVE 2
+전투 중 Reserve 교대 = 1 / 2
+
 Character Select Grid = Gate 5B production front-end
 ```
 
