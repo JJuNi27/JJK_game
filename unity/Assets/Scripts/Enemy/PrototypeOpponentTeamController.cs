@@ -26,6 +26,7 @@ namespace JJKGame.Enemy
         private bool initialized;
         private bool switchingMode;
         private float entryNoticeUntil;
+        private OpponentCombatHudDataSource hudDataSource;
         private GUIStyle titleStyle;
         private GUIStyle metaStyle;
         private GUIStyle rowStyle;
@@ -35,6 +36,10 @@ namespace JJKGame.Enemy
         public PrototypeEncounterMode Mode => requestedMode;
         public bool IsTeamBattle => Mode == PrototypeEncounterMode.TeamBattle;
         public static bool TeamBattleModeRequested => requestedMode == PrototypeEncounterMode.TeamBattle;
+        public bool IsInitialized => initialized;
+        public int ActiveMemberIndex => activeIndex;
+        public int TeamSize => members.Length;
+        public bool EntryNoticeActive => initialized && Time.time < entryNoticeUntil;
         public Health ActiveMember => initialized ? members[activeIndex] : null;
         public Health ReserveMember => initialized ? members[1 - activeIndex] : null;
         public int LivingMemberCount
@@ -51,6 +56,11 @@ namespace JJKGame.Enemy
                 }
                 return living;
             }
+        }
+
+        public Health GetMember(int index)
+        {
+            return index >= 0 && index < members.Length ? members[index] : null;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -77,6 +87,7 @@ namespace JJKGame.Enemy
         {
             DontDestroyOnLoad(gameObject);
             SceneManager.sceneLoaded += HandleSceneLoaded;
+            hudDataSource = OpponentCombatHudDataSource.GetOrCreate(gameObject);
         }
 
         private void InitializeFromScene()
@@ -287,35 +298,36 @@ namespace JJKGame.Enemy
 
         private void OnGUI()
         {
-            if (!initialized)
+            hudDataSource ??= OpponentCombatHudDataSource.GetOrCreate(gameObject);
+            OpponentCombatHudSnapshot snapshot = hudDataSource != null ? hudDataSource.Snapshot : default;
+            if (!snapshot.IsValid)
             {
                 return;
             }
 
             EnsureStyles();
-            DrawModeChip();
-            if (IsTeamBattle)
+            DrawModeChip(snapshot);
+            if (snapshot.IsTeamBattle)
             {
-                DrawOpponentTeamPanel();
+                DrawOpponentTeamPanel(snapshot);
             }
         }
 
-        private void DrawModeChip()
+        private void DrawModeChip(OpponentCombatHudSnapshot snapshot)
         {
             float width = Mathf.Min(220f, Screen.width - 24f);
             Rect rect = new Rect(Screen.width * 0.5f - width * 0.5f, 8f, width, 21f);
-            Color accent = IsTeamBattle
+            Color accent = snapshot.IsTeamBattle
                 ? new Color(1f, 0.30f, 0.12f)
                 : new Color(0.20f, 0.72f, 1f);
 
             DrawRect(rect, new Color(0.006f, 0.010f, 0.018f, 0.86f));
             DrawRect(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), new Color(accent.r, accent.g, accent.b, 0.62f));
             chipStyle.normal.textColor = new Color(0.82f, 0.86f, 0.94f);
-            string modeName = IsTeamBattle ? "TEAM BATTLE" : "TRAINING · MULTI CURSE";
-            GUI.Label(rect, $"F2   {modeName}", chipStyle);
+            GUI.Label(rect, $"F2   {snapshot.ModeLabel}", chipStyle);
         }
 
-        private void DrawOpponentTeamPanel()
+        private void DrawOpponentTeamPanel(OpponentCombatHudSnapshot snapshot)
         {
             float width = Mathf.Min(336f, Screen.width - 24f);
             Rect panel = new Rect(Screen.width - width - 12f, 12f, width, 76f);
@@ -324,7 +336,7 @@ namespace JJKGame.Enemy
             DrawHudPlate(panel, accent);
             DrawRect(new Rect(panel.xMax - 4f, panel.y, 4f, panel.height), accent);
 
-            string notice = Time.time < entryNoticeUntil ? "RESERVE ENTRY" : string.Empty;
+            string notice = snapshot.ReserveEntryNotice ? "RESERVE ENTRY" : string.Empty;
             GUI.Label(
                 new Rect(panel.x + 10f, panel.y + 3f, panel.width * 0.55f, 18f),
                 "OPPONENT",
@@ -336,45 +348,42 @@ namespace JJKGame.Enemy
                 : accent;
             GUI.Label(
                 new Rect(panel.x + panel.width * 0.42f, panel.y + 3f, panel.width * 0.54f - 9f, 18f),
-                notice.Length > 0 ? notice : $"{LivingMemberCount} / 2",
+                notice.Length > 0 ? notice : $"{snapshot.LivingMemberCount} / {snapshot.TeamSize}",
                 metaStyle
             );
             metaStyle.alignment = TextAnchor.MiddleLeft;
 
             DrawMemberRow(
                 new Rect(panel.x + 9f, panel.y + 24f, panel.width - 18f, 23f),
-                activeIndex,
-                true
+                snapshot.ActiveMember
             );
             DrawMemberRow(
                 new Rect(panel.x + 9f, panel.y + 50f, panel.width - 18f, 20f),
-                1 - activeIndex,
-                false
+                snapshot.ReserveMember
             );
         }
 
-        private void DrawMemberRow(Rect rect, int index, bool active)
+        private void DrawMemberRow(Rect rect, OpponentTeamMemberHudSnapshot member)
         {
-            Health member = members[index];
-            bool knockedOut = member == null || member.IsDead;
+            bool knockedOut = !member.IsValid || member.KnockedOut;
             Color accent = knockedOut
                 ? new Color(0.40f, 0.40f, 0.45f)
-                : index == 0
+                : member.MemberIndex == 0
                     ? new Color(0.94f, 0.15f, 0.20f)
                     : new Color(1f, 0.38f, 0.10f);
-            Color background = active
+            Color background = member.IsActive
                 ? new Color(accent.r * 0.09f, accent.g * 0.07f, accent.b * 0.06f, 0.94f)
                 : new Color(0.032f, 0.026f, 0.032f, 0.84f);
 
             DrawRect(rect, background);
-            DrawRect(new Rect(rect.xMax - (active ? 4f : 2f), rect.y, active ? 4f : 2f, rect.height), accent);
-            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, active ? 0.72f : 0.34f), 1f);
+            DrawRect(new Rect(rect.xMax - (member.IsActive ? 4f : 2f), rect.y, member.IsActive ? 4f : 2f, rect.height), accent);
+            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, member.IsActive ? 0.72f : 0.34f), 1f);
 
-            string role = active ? "A" : "R";
-            string hp = member != null ? $"HP {member.CurrentHealth:0}/{member.MaxHealth:0}" : "MISSING";
+            string role = member.IsActive ? "A" : "R";
+            string hp = member.IsValid ? $"HP {member.CurrentHealth:0}/{member.MaxHealth:0}" : "MISSING";
             string ko = knockedOut ? " · KO" : string.Empty;
             rowStyle.normal.textColor = knockedOut ? new Color(0.62f, 0.62f, 0.66f) : Color.white;
-            GUI.Label(rect, $"{role}   CURSE {(char)('A' + index)}   {hp}{ko}", rowStyle);
+            GUI.Label(rect, $"{role}   {member.DisplayName}   {hp}{ko}", rowStyle);
         }
 
         private static void DrawHudPlate(Rect rect, Color accent)
