@@ -26,10 +26,10 @@ Gate 1 Core Combat Proof: USER VERIFIED
 Gate 2 Match Architecture Proof: USER VERIFIED
 Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
 Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
-Gate 5A Third Character Stress Test: IN PROGRESS
-- Pass 1 Identity / Roster / HUD Plumbing: USER VERIFIED
-- Pass 2 Divine Dog Summon Contract Reuse: REMOTE IMPLEMENTED / USER TEST PENDING
-Gate 5B First Production-Quality Vertical Slice: PENDING
+Gate 5A Third Character Stress Test: USER VERIFIED / CLOSED
+Gate 5B First Production-Quality Vertical Slice: STARTED
+- Pass 1 Character / Team Select Data Boundary: REMOTE IMPLEMENTED
+- Runtime wiring / UI: PENDING
 Gate 6 Production: PENDING
 ```
 
@@ -121,64 +121,42 @@ Gate 4에서는 실제 반복된 것만 공통화했고 고유 Gameplay를 거�
 
 ---
 
-# Gate 5A — Third Character Stress Test · IN PROGRESS
+# Gate 5A — Third Character Stress Test · USER VERIFIED / CLOSED
 
-1차 스트레스 캐릭터:
+스트레스 캐릭터:
 
 ```text
 후시구로 메구미
 ```
 
-선택 이유:
+검증 완료:
 
 ```text
-옥견 / 누에 / 만상처럼 식신이 별도 전투 주체가 되므로
-고죠/스쿠나의 직접 술식 구조와 다르다.
+새 Character ID/Profile을 기존 HUD가 수용
+HP / CE / Team state 보존
+Animation State/Cue 재사용
+Q 옥견 별도 combat actor 소환
+Technique Presentation Request 재사용
+VFX Lifecycle 재사용
+Audio Event 재사용
+기존 고죠/스쿠나 Presentation/HUD 대량 복붙 없음
 ```
 
-검증 질문:
+옥견은 실제로 소환·추적·근접 공격·Damage가 정상 작동했고 final cleanup regression도 사용자 확인 완료.
+
+F3/T/Alpha 키는 production UX가 아니라 developer harness다.
+
+세부:
 
 ```text
-새 Character ID/Profile만 추가해 HUD가 따라오는가?
-Animation State/Cue를 새 Fighter가 재사용하는가?
-소환 술식이 Technique Presentation/VFX Lifecycle/Audio Event를 재사용하는가?
-고죠/스쿠나 Presentation/HUD 코드를 복붙하지 않아도 되는가?
+docs/GATE5A_THIRD_CHARACTER_STRESS_TEST.md
 ```
-
-Pass 1 · USER VERIFIED:
-
-```text
-Identity / Profile
-2인 팀 구조를 유지한 Stress Roster
-F3: GOJO + SUKUNA ↔ GOJO + MEGUMI
-Megumi prototype visual
-HUD / Skill Deck / Animation State plumbing
-HP / CE state preservation
-```
-
-F3는 production character selection이 아니라 Gate 5A 개발용 stress-test shortcut이다.
-
-Pass 2 · REMOTE IMPLEMENTED / USER TEST PENDING:
-
-```text
-Q 옥견 첫 소환 Gameplay
-별도 summon actor lifetime / targeting / damage ownership
-TechniquePresentationRequest.DivineDog
-PresentationVfxRuntime 재사용
-CombatAudioEvent.DivineDog
-기존 Animation cue 경계 재사용
-```
-
-첫 옥견 경로의 실제 결과를 보기 전에는 범용 Summon Framework를 선행 구축하지 않는다.
-
-고유 식신 AI/소환 규칙이 별도 코드인 것은 정상이다.
-공통 HUD/Presentation을 복붙해야 한다면 Gate 4 contract를 보강한다.
 
 ---
 
-# Gate 5B — First Production-Quality Vertical Slice
+# Gate 5B — First Production-Quality Vertical Slice · STARTED
 
-Gate 5A 구조 검증 뒤, 최초 Gate 3에서 자산 부재로 미룬 production-quality 부분을 대표 한 판에 실제 연결한다.
+Gate 3에서 자산 부재로 미룬 production-quality 부분을 대표 한 판에 실제 연결한다.
 
 ```text
 고죠 vs 스쿠나 대표 매치
@@ -192,20 +170,36 @@ production SFX / Voice / Music
 
 이 단계에서 첫 정식 pre-match Character / Team Select front-end도 만든다.
 
+최종 Team Select 방향:
+
 ```text
-Canvas + TMP
-Character portrait/card grid
-Character + Variant 표시
-Solo / Active + Reserve team slot 선택
-Match Setup 확정 후 Battle Scene 진입
+1명: MAIN
+2명: MAIN + RESERVE 1
+3명: MAIN + RESERVE 1 + RESERVE 2
+
+1 → Active ↔ Reserve 1
+2 → Active ↔ Reserve 2
 ```
 
-현재 Alpha/F3 keyboard roster switching은 developer-only 경로로 남기거나 제거하며 최종 사용자 캐릭터 선택 방식으로 사용하지 않는다.
+현재 시작한 Pass 1:
+
+```text
+MatchTeamSelection
+- Team Size 1~3
+- Main / Reserve1 / Reserve2 slot data
+
+MatchTeamSelectionStore
+- Character Select와 Battle Scene 사이의 임시 selection holder
+- prototype default GOJO + SUKUNA
+```
+
+다음 작업은 Battle Runtime이 이 selection 데이터를 소비하도록 연결하고, 이후 Character Select Canvas/TMP front-end를 붙이는 것이다.
 
 세부:
 
 ```text
 docs/CHARACTER_TEAM_SELECT_PLAN.md
+docs/GATE5B_FIRST_PRODUCTION_SLICE.md
 ```
 
 목표 체감:
