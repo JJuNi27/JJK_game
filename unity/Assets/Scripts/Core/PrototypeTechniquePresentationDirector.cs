@@ -6,7 +6,8 @@ namespace JJKGame.Core
     /// <summary>
     /// Gate 4C prototype consumer that translates semantic technique presentation
     /// requests into the existing camera and hit-stop implementation.
-    /// Gameplay controllers no longer need to know these tuning details.
+    /// Gameplay-adjacent producers provide event identity/origin only; this director
+    /// owns camera-specific offsets and tuning.
     /// </summary>
     [DefaultExecutionOrder(1550)]
     [DisallowMultipleComponent]
@@ -71,7 +72,7 @@ namespace JJKGame.Core
                     0.10f
                 );
                 PlayFovKick(7f, 0.26f);
-                PlayWorldFocus(request, 0.34f, 0.42f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.34f, 0.42f);
                 return;
             }
 
@@ -105,7 +106,12 @@ namespace JJKGame.Core
                     1f
                 );
                 PlayFovKick(amplified ? -5f : -4f, 0.20f);
-                PlayWorldFocus(request, amplified ? 0.24f : 0.20f, 0.28f);
+                PlayWorldFocus(
+                    request,
+                    ResolveCameraFocusPoint(request),
+                    amplified ? 0.24f : 0.20f,
+                    0.28f
+                );
                 return;
             }
 
@@ -121,7 +127,12 @@ namespace JJKGame.Core
                     0.10f
                 );
                 PlayFovKick(amplified ? 6f : 5f, 0.20f);
-                PlayWorldFocus(request, amplified ? 0.30f : 0.25f, 0.32f);
+                PlayWorldFocus(
+                    request,
+                    ResolveCameraFocusPoint(request),
+                    amplified ? 0.30f : 0.25f,
+                    0.32f
+                );
                 return;
             }
 
@@ -137,7 +148,12 @@ namespace JJKGame.Core
                     0.08f
                 );
                 PlayFovKick(amplified ? 11f : 9f, amplified ? 0.32f : 0.28f);
-                PlayWorldFocus(request, amplified ? 0.58f : 0.50f, amplified ? 0.46f : 0.40f);
+                PlayWorldFocus(
+                    request,
+                    ResolveCameraFocusPoint(request),
+                    amplified ? 0.58f : 0.50f,
+                    amplified ? 0.46f : 0.40f
+                );
             }
         }
 
@@ -155,7 +171,7 @@ namespace JJKGame.Core
                     1f
                 );
                 PlayFovKick(-4.5f, 0.22f);
-                PlayWorldFocus(request, 0.18f, 0.28f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.18f, 0.28f);
                 return;
             }
 
@@ -171,7 +187,7 @@ namespace JJKGame.Core
                     0.12f
                 );
                 PlayFovKick(6f, 0.24f);
-                PlayWorldFocus(request, 0.30f, 0.38f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.30f, 0.38f);
             }
         }
 
@@ -189,7 +205,7 @@ namespace JJKGame.Core
                     1f
                 );
                 PlayFovKick(-5.5f, 0.24f);
-                PlayWorldFocus(request, 0.20f, 0.30f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.20f, 0.30f);
                 return;
             }
 
@@ -205,8 +221,80 @@ namespace JJKGame.Core
                     0.10f
                 );
                 PlayFovKick(8f, 0.28f);
-                PlayWorldFocus(request, 0.36f, 0.42f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.36f, 0.42f);
             }
+        }
+
+        private static Vector3 ResolveCameraFocusPoint(TechniquePresentationRequest request)
+        {
+            Vector3 origin = request.HasWorldPoint
+                ? request.WorldPoint
+                : request.Owner != null
+                    ? request.Owner.transform.position
+                    : Vector3.zero;
+            Vector3 forward = request.HasDirection
+                ? request.Direction
+                : request.Owner != null
+                    ? request.Owner.transform.forward
+                    : Vector3.forward;
+
+            if (forward.sqrMagnitude > 0.0001f)
+            {
+                forward.Normalize();
+            }
+            else
+            {
+                forward = Vector3.forward;
+            }
+
+            switch (request.TechniqueId)
+            {
+                case TechniquePresentationId.HollowPurple:
+                    if (request.Phase == TechniquePresentationPhase.Release)
+                    {
+                        return origin + Vector3.up * 0.20f + forward * 6.45f;
+                    }
+                    break;
+
+                case TechniquePresentationId.Fuga:
+                    if (request.Phase == TechniquePresentationPhase.Anticipation)
+                    {
+                        return origin + Vector3.up * 1.25f + forward * 2.8f;
+                    }
+                    if (request.Phase == TechniquePresentationPhase.Release)
+                    {
+                        return origin + forward * 4.0f;
+                    }
+                    if (request.Phase == TechniquePresentationPhase.Impact)
+                    {
+                        return origin + Vector3.up * 0.70f;
+                    }
+                    break;
+
+                case TechniquePresentationId.UnlimitedVoid:
+                    if (request.Phase == TechniquePresentationPhase.Anticipation)
+                    {
+                        return origin + Vector3.up * 2.1f;
+                    }
+                    if (request.Phase == TechniquePresentationPhase.Active)
+                    {
+                        return origin + Vector3.up * 3.0f;
+                    }
+                    break;
+
+                case TechniquePresentationId.MalevolentShrine:
+                    if (request.Phase == TechniquePresentationPhase.Anticipation)
+                    {
+                        return origin + Vector3.up * 2.3f;
+                    }
+                    if (request.Phase == TechniquePresentationPhase.Active)
+                    {
+                        return origin + Vector3.up * 3.2f;
+                    }
+                    break;
+            }
+
+            return origin;
         }
 
         private SimpleCameraFollow GetCombatCamera()
@@ -229,11 +317,12 @@ namespace JJKGame.Core
 
         private void PlayWorldFocus(
             TechniquePresentationRequest request,
+            Vector3 focusPoint,
             float strength,
             float duration
         )
         {
-            if (!request.HasWorldPoint)
+            if (!request.HasWorldPoint && request.Owner == null)
             {
                 return;
             }
@@ -241,7 +330,7 @@ namespace JJKGame.Core
             SimpleCameraFollow camera = GetCombatCamera();
             if (camera != null)
             {
-                camera.AddWorldFocus(request.WorldPoint, strength, duration);
+                camera.AddWorldFocus(focusPoint, strength, duration);
             }
         }
 
