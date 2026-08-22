@@ -9,7 +9,10 @@ Gate 4A Character Presentation Contract: USER VERIFIED
 Gate 4B Pass 1 · Active Fighter / Skill Deck Binding: USER VERIFIED
 Gate 4B Pass 2 · Player Team HUD Binding: USER VERIFIED
 Gate 4B Pass 3 · Opponent Team HUD Binding: USER VERIFIED
-Gate 4B Pass 4 · Match HUD Snapshot Migration: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 4B Pass 4 · Match HUD Snapshot Migration: USER VERIFIED
+
+Gate 4B HUD Data Binding Extraction: USER VERIFIED
+NEXT: Gate 4C Technique Presentation Request
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -27,7 +30,7 @@ HUD → Player/Opponent Team Controller
 HUD → BasicAttack / Movement / CurseBot telegraph
 ```
 
-Gate 4B에서는 UI가 구체 Controller 대신 `읽기 전용 HUD 데이터 계약`을 소비하도록 단계적으로 바꾼다.
+Gate 4B에서는 UI가 구체 Controller 대신 `읽기 전용 HUD 데이터 계약`을 소비하도록 단계적으로 바꿨다.
 
 ---
 
@@ -55,12 +58,6 @@ Gameplay Command도 실행하지 않는다.
 
 ```text
 정상임
-```
-
-따라서:
-
-```text
-Gate 4B Pass 1: USER VERIFIED
 ```
 
 ---
@@ -102,12 +99,6 @@ HUD가 필요한 Reserve 저장 상태만 읽도록 `TryGetStoredMemberState(...
 
 ```text
 모두 정상!
-```
-
-따라서:
-
-```text
-Gate 4B Pass 2: USER VERIFIED
 ```
 
 ---
@@ -157,17 +148,11 @@ Target Lock 승계
 정상!
 ```
 
-따라서:
-
-```text
-Gate 4B Pass 3: USER VERIFIED
-```
-
 ---
 
-# Pass 4 — Match HUD Snapshot Migration
+# Pass 4 — Match HUD Snapshot Migration · USER VERIFIED
 
-이번 마지막 migration에서는 `MatchController`의 표시 코드가 직접 Gameplay 컴포넌트를 읽는 부분을 추가로 줄였다.
+마지막 migration에서는 `MatchController`의 표시 코드가 직접 Gameplay 컴포넌트를 읽는 부분을 추가로 줄였다.
 
 ## Player snapshot 확장
 
@@ -182,8 +167,6 @@ Hit combo count / label
 
 이 값들은 기존 `CursedEnergyController`, `ThirdPersonPlayerController`, `BasicAttack`에서 읽기만 한다.
 
-Gameplay ownership은 바뀌지 않는다.
-
 ## Opponent snapshot 확장
 
 `OpponentCombatHudSnapshot`에 다음 표시 값을 추가했다.
@@ -197,7 +180,7 @@ Maximum telegraph progress
 
 ## MatchController Migration
 
-기존 HUD 직접 참조 중 다음을 Snapshot 경로로 전환했다.
+다음 표시 경로를 Snapshot 기반으로 바꿨다.
 
 ```text
 Player identity / accent
@@ -220,58 +203,36 @@ Gameplay Components
 → MatchController temporary IMGUI renderer
 ```
 
-`MatchController`가 실제 전투 종료를 위해 사용하는 `BasicAttack`, `Movement`, `TargetLock`, enemy bot references는 Gameplay 책임이라 그대로 남겨 둔다.
+`MatchController`가 실제 전투 종료를 위해 사용하는 `BasicAttack`, `Movement`, `TargetLock`, enemy bot references는 Gameplay 책임이라 유지한다.
 
-고죠의 영역 입력 timing bar도 현재는 `GojoDomainController` 고유 UI라 직접 연결을 유지하고, 이후 Gate 4C Technique Presentation Contract에서 다룬다.
+고죠 영역 입력 timing bar는 현재 `GojoDomainController` 고유 UI라 직접 연결을 유지하며 Gate 4C 이후 presentation contract와 함께 재검토한다.
 
 ## 작은 HUD 회귀 수정
 
-Team HUD의 Active fighter panel이 76px인데 기존 MatchController의 Dodge chip 기준 rect는 62px였다.
+Team HUD의 Active fighter panel이 76px인데 기존 Dodge chip 기준 rect는 62px였다.
 
-이번 migration에서 Team mode일 때 Dodge chip 기준 높이를 76px로 맞춰 Active HUD 하단과 겹칠 가능성을 제거했다.
+Pass 4에서 Team mode일 때 Dodge chip 기준 높이를 76px로 맞춰 겹침 가능성을 줄였다.
 
----
-
-# Pass 4 사용자 테스트
+2026-08-23 사용자 실제 확인:
 
 ```text
-1. cd D:\GitHub\JJK_game
-2. git pull origin master
-3. Unity compile 완료 대기
-4. Console 빨간 오류 확인
-5. CombatMVP Play
+정상이긴 해
 ```
 
-빠른 확인:
+추가 피드백:
 
 ```text
-[ ] 시작 화면 Player / Curse HUD 정상
-[ ] Dodge Ready / cooldown / DODGING chip 정상
-[ ] 기본 1/2/3 chain 및 combo 표시 정상
-[ ] 주령 공격 예고 때 중앙 DODGE! 경고 + 진행 bar 정상
-[ ] F1 도움말에서 고죠 기술명 정상
-[ ] T Tag 후 스쿠나 Skill/Help identity 정상
-[ ] Team mode에서 Dodge chip이 좌측 Active HUD와 겹치지 않음
-[ ] F2 Training / Team Battle 전환 정상
-[ ] Training에서 CURSE A/B HP panel 정상
-[ ] Team Battle에서 기존 Opponent Team HUD 정상
-[ ] 첫/마지막 KO Victory 규칙 정상
-[ ] HP/CE/Tag/Target Lock/술식 Gameplay 회귀 없음
+F1 도움말을 열면 일부 화면을 가리지만 현재 단계에서는 큰 문제는 아님.
 ```
 
-통과하면:
+이 항목은 기능 오류가 아니라 Prototype IMGUI 레이아웃 부채로 기록하고 최종 Canvas/TMP HUD 교체 시 함께 정리한다.
+
+따라서:
 
 ```text
+Gate 4B Pass 4: USER VERIFIED
 Gate 4B HUD Data Binding Extraction: USER VERIFIED
 ```
-
-로 닫고 다음은:
-
-```text
-Gate 4C Technique Presentation Request
-```
-
-로 넘어간다.
 
 ---
 
@@ -292,4 +253,10 @@ Opponent Reserve Entry
 Victory / Defeat
 ```
 
-Gate 4B는 HUD가 상태를 `어디서 읽는지`만 분리한다.
+Gate 4B는 HUD가 상태를 `어디서 읽는지`만 분리했다.
+
+다음:
+
+```text
+Gate 4C Technique Presentation Request
+```
