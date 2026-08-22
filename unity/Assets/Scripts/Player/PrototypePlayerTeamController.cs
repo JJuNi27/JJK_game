@@ -236,14 +236,12 @@ namespace JJKGame.Player
 
         private void DrawActivePlayerOverlay()
         {
+            CharacterPresentationProfile profile = CharacterPresentationProfiles.Get(ActiveCharacter);
             const float margin = 12f;
             float panelWidth = Mathf.Clamp((Screen.width - margin * 3f) * 0.37f, 255f, 370f);
             Rect rect = new Rect(margin, margin, panelWidth, 76f);
-            bool sukuna = ActiveCharacter == PrototypeCharacterId.SukunaShibuyaYujiBody;
-            Color accent = CharacterAccent(ActiveCharacter);
-            Color secondary = sukuna
-                ? new Color(0.66f, 0.08f, 0.12f)
-                : new Color(0.20f, 0.24f, 0.90f);
+            Color accent = profile.HudAccent;
+            Color secondary = profile.EnergyAccent;
 
             DrawHudPlate(rect, accent, true);
             DrawRect(new Rect(rect.x, rect.y, 5f, rect.height), accent);
@@ -251,7 +249,7 @@ namespace JJKGame.Player
 
             GUI.Label(
                 new Rect(rect.x + 14f, rect.y + 5f, rect.width - 92f, 18f),
-                CharacterShortName(ActiveCharacter).ToUpperInvariant(),
+                profile.ShortName.ToUpperInvariant(),
                 titleStyle
             );
             metaStyle.alignment = TextAnchor.MiddleRight;
@@ -265,7 +263,7 @@ namespace JJKGame.Player
             metaStyle.normal.textColor = new Color(0.68f, 0.73f, 0.84f);
             GUI.Label(
                 new Rect(rect.x + 14f, rect.y + 21f, rect.width - 28f, 15f),
-                CharacterEraLabel(ActiveCharacter),
+                profile.DisplayName,
                 metaStyle
             );
 
@@ -296,7 +294,7 @@ namespace JJKGame.Player
             float panelY = Mathf.Max(298f, Screen.height - 176f);
             panelY = Mathf.Min(panelY, Screen.height - 86f);
             Rect panel = new Rect(12f, panelY, width, 76f);
-            Color activeAccent = CharacterAccent(ActiveCharacter);
+            Color activeAccent = CharacterPresentationProfiles.Get(ActiveCharacter).HudAccent;
 
             DrawHudPlate(panel, new Color(0.46f, 0.55f, 0.76f), false);
             DrawRect(new Rect(panel.x, panel.y, 3f, panel.height), new Color(activeAccent.r, activeAccent.g, activeAccent.b, 0.78f));
@@ -333,6 +331,7 @@ namespace JJKGame.Player
         private void DrawMemberRow(Rect rect, int index, bool active)
         {
             TeamMemberState member = members[index];
+            CharacterPresentationProfile profile = CharacterPresentationProfiles.Get(member.CharacterId);
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
 
             float displayedHealth = active && health != null ? health.CurrentHealth : member.Health;
@@ -342,7 +341,7 @@ namespace JJKGame.Player
 
             Color accent = knockedOut
                 ? new Color(0.38f, 0.39f, 0.44f)
-                : CharacterAccent(member.CharacterId);
+                : profile.HudAccent;
             Color background = active
                 ? new Color(accent.r * 0.10f, accent.g * 0.10f, accent.b * 0.10f, 0.94f)
                 : new Color(0.025f, 0.030f, 0.045f, 0.84f);
@@ -358,7 +357,7 @@ namespace JJKGame.Player
             rowStyle.normal.textColor = knockedOut ? new Color(0.58f, 0.59f, 0.64f) : Color.white;
             GUI.Label(
                 rect,
-                $"{role}  {CharacterShortName(member.CharacterId)}   {hpText}   {energyText}{down}",
+                $"{role}  {profile.ShortName}   {hpText}   {energyText}{down}",
                 rowStyle
             );
         }
@@ -381,34 +380,6 @@ namespace JJKGame.Player
                 return "ACTION LOCK";
             }
             return "READY";
-        }
-
-        private static Color CharacterAccent(PrototypeCharacterId characterId)
-        {
-            return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
-                ? new Color(0.96f, 0.20f, 0.12f)
-                : new Color(0.18f, 0.66f, 1f);
-        }
-
-        private static string CharacterName(PrototypeCharacterId characterId)
-        {
-            return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
-                ? "RYOMEN SUKUNA · 시부야 사변"
-                : "GOJO SATORU · 현대 · 교사";
-        }
-
-        private static string CharacterShortName(PrototypeCharacterId characterId)
-        {
-            return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
-                ? "스쿠나"
-                : "고죠";
-        }
-
-        private static string CharacterEraLabel(PrototypeCharacterId characterId)
-        {
-            return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
-                ? "RYOMEN SUKUNA · 시부야 사변"
-                : "GOJO SATORU · 현대 · 교사";
         }
 
         private void DrawValueBar(Rect rect, float value, float max, Color fill, string text)
