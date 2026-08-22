@@ -57,6 +57,7 @@ namespace JJKGame.Core
             float currentEnergy,
             float maxEnergy,
             bool hasEnergy,
+            string energyProfileLabel,
             CombatActionState actionState,
             bool techniqueBurnedOut,
             bool canUseTechnique,
@@ -68,7 +69,14 @@ namespace JJKGame.Core
             float tagCooldownRemaining,
             PlayerTagHudState tagState,
             PlayerTeamMemberHudSnapshot activeMember,
-            PlayerTeamMemberHudSnapshot reserveMember
+            PlayerTeamMemberHudSnapshot reserveMember,
+            bool isDodging,
+            bool dodgeReady,
+            float dodgeCooldownRemaining,
+            int displayChainStep,
+            string chainLabel,
+            int displayHitComboCount,
+            string hitComboLabel
         )
         {
             IsValid = isValid;
@@ -80,6 +88,7 @@ namespace JJKGame.Core
             CurrentEnergy = currentEnergy;
             MaxEnergy = maxEnergy;
             HasEnergy = hasEnergy;
+            EnergyProfileLabel = energyProfileLabel;
             ActionState = actionState;
             TechniqueBurnedOut = techniqueBurnedOut;
             CanUseTechnique = canUseTechnique;
@@ -92,6 +101,13 @@ namespace JJKGame.Core
             TagState = tagState;
             ActiveMember = activeMember;
             ReserveMember = reserveMember;
+            IsDodging = isDodging;
+            DodgeReady = dodgeReady;
+            DodgeCooldownRemaining = dodgeCooldownRemaining;
+            DisplayChainStep = displayChainStep;
+            ChainLabel = chainLabel;
+            DisplayHitComboCount = displayHitComboCount;
+            HitComboLabel = hitComboLabel;
         }
 
         public bool IsValid { get; }
@@ -103,6 +119,7 @@ namespace JJKGame.Core
         public float CurrentEnergy { get; }
         public float MaxEnergy { get; }
         public bool HasEnergy { get; }
+        public string EnergyProfileLabel { get; }
         public CombatActionState ActionState { get; }
         public bool TechniqueBurnedOut { get; }
         public bool CanUseTechnique { get; }
@@ -115,6 +132,13 @@ namespace JJKGame.Core
         public PlayerTagHudState TagState { get; }
         public PlayerTeamMemberHudSnapshot ActiveMember { get; }
         public PlayerTeamMemberHudSnapshot ReserveMember { get; }
+        public bool IsDodging { get; }
+        public bool DodgeReady { get; }
+        public float DodgeCooldownRemaining { get; }
+        public int DisplayChainStep { get; }
+        public string ChainLabel { get; }
+        public int DisplayHitComboCount { get; }
+        public string HitComboLabel { get; }
     }
 
     /// <summary>
@@ -132,6 +156,8 @@ namespace JJKGame.Core
         private PrototypeCharacterController characterController;
         private CombatActionGate actionGate;
         private PrototypePlayerTeamController teamController;
+        private ThirdPersonPlayerController movement;
+        private BasicAttack basicAttack;
 
         public static PlayerCombatHudDataSource GetOrCreate(GameObject owner)
         {
@@ -189,6 +215,7 @@ namespace JJKGame.Core
                     cursedEnergy != null ? cursedEnergy.CurrentEnergy : 0f,
                     cursedEnergy != null ? cursedEnergy.MaxEnergy : 0f,
                     cursedEnergy != null,
+                    cursedEnergy != null ? cursedEnergy.ProfileLabel : string.Empty,
                     actionState,
                     burnedOut,
                     actionGate == null || actionGate.CanStartTechnique,
@@ -200,7 +227,14 @@ namespace JJKGame.Core
                     tagCooldown,
                     tagState,
                     activeMember,
-                    reserveMember
+                    reserveMember,
+                    movement != null && movement.IsDodging,
+                    movement != null && movement.DodgeReady,
+                    movement != null ? movement.DodgeCooldownRemaining : 0f,
+                    basicAttack != null ? basicAttack.DisplayChainStep : 0,
+                    basicAttack != null ? basicAttack.ChainLabel : string.Empty,
+                    basicAttack != null ? basicAttack.DisplayHitComboCount : 0,
+                    basicAttack != null ? basicAttack.HitComboLabel : string.Empty
                 );
             }
         }
@@ -298,6 +332,8 @@ namespace JJKGame.Core
             characterController ??= GetComponent<PrototypeCharacterController>();
             actionGate ??= GetComponent<CombatActionGate>();
             teamController ??= GetComponent<PrototypePlayerTeamController>();
+            movement ??= GetComponent<ThirdPersonPlayerController>();
+            basicAttack ??= GetComponent<BasicAttack>();
         }
     }
 }
