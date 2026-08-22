@@ -8,6 +8,7 @@ namespace JJKGame.Player
     {
         GojoModern,
         SukunaShibuyaYujiBody,
+        MegumiStudent,
     }
 
     [DefaultExecutionOrder(1000)]
@@ -31,6 +32,7 @@ namespace JJKGame.Player
         public static PrototypeCharacterId SelectedCharacter => selectedCharacter;
         public PrototypeCharacterId ActiveCharacter => activeCharacter;
         public bool IsSukuna => activeCharacter == PrototypeCharacterId.SukunaShibuyaYujiBody;
+        public bool IsMegumi => activeCharacter == PrototypeCharacterId.MegumiStudent;
         public CharacterPresentationProfile PresentationProfile => CharacterPresentationProfiles.Get(activeCharacter);
         public string DisplayName => PresentationProfile.DisplayName;
 
@@ -78,6 +80,12 @@ namespace JJKGame.Player
                     SelectAndReload(PrototypeCharacterId.SukunaShibuyaYujiBody);
                     return;
                 }
+
+                if (Input.GetKeyDown(KeyCode.Alpha3))
+                {
+                    SelectAndReload(PrototypeCharacterId.MegumiStudent);
+                    return;
+                }
             }
 
             if (!teamMode && IsSukuna && Input.GetKeyDown(KeyCode.F1))
@@ -90,14 +98,19 @@ namespace JJKGame.Player
         {
             selectedCharacter = nextCharacter;
             activeCharacter = nextCharacter;
+            showSukunaHelp = false;
 
-            if (IsSukuna)
+            switch (nextCharacter)
             {
-                ApplySukuna(resetVitals);
-            }
-            else
-            {
-                ApplyGojo(resetVitals);
+                case PrototypeCharacterId.SukunaShibuyaYujiBody:
+                    ApplySukuna(resetVitals);
+                    break;
+                case PrototypeCharacterId.MegumiStudent:
+                    ApplyMegumi(resetVitals);
+                    break;
+                default:
+                    ApplyGojo(resetVitals);
+                    break;
             }
 
             if (resetVitals)
@@ -120,7 +133,67 @@ namespace JJKGame.Player
         private void ApplyGojo(bool refillEnergy)
         {
             SetGojoComponentsEnabled(true);
+            DisableSukunaComponents();
+            DisableMegumiAvatar();
 
+            GojoPrototypeAvatar gojoAvatar = GojoPrototypeAvatar.GetOrCreate(gameObject);
+            gojoAvatar.enabled = true;
+            SetChildActive("PrototypeGojoAvatar", true);
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency, refillEnergy);
+        }
+
+        private void ApplySukuna(bool refillEnergy)
+        {
+            GojoDomainController gojoDomain = GetComponent<GojoDomainController>();
+            if (gojoDomain != null)
+            {
+                gojoDomain.ResetCommand();
+            }
+            SetGojoComponentsEnabled(false);
+            SetChildActive("PrototypeGojoAvatar", false);
+            DisableMegumiAvatar();
+
+            SukunaTechniqueController sukunaTechnique = GetComponent<SukunaTechniqueController>();
+            if (sukunaTechnique == null)
+            {
+                sukunaTechnique = gameObject.AddComponent<SukunaTechniqueController>();
+            }
+            sukunaTechnique.enabled = true;
+
+            sukunaDomain = SukunaDomainController.GetOrCreate(gameObject);
+            sukunaDomain.enabled = true;
+
+            SukunaPrototypeAvatar sukunaAvatar = SukunaPrototypeAvatar.GetOrCreate(gameObject);
+            sukunaAvatar.enabled = true;
+            SetChildActive("PrototypeSukunaAvatar", true);
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, refillEnergy);
+        }
+
+        private void ApplyMegumi(bool refillEnergy)
+        {
+            GojoDomainController gojoDomain = GetComponent<GojoDomainController>();
+            if (gojoDomain != null)
+            {
+                gojoDomain.ResetCommand();
+            }
+            SetGojoComponentsEnabled(false);
+            SetChildActive("PrototypeGojoAvatar", false);
+            DisableSukunaComponents();
+
+            MegumiPrototypeAvatar megumiAvatar = MegumiPrototypeAvatar.GetOrCreate(gameObject);
+            megumiAvatar.enabled = true;
+            SetChildActive(MegumiPrototypeAvatar.VisualRootName, true);
+
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.Standard, refillEnergy);
+        }
+
+        private void DisableSukunaComponents()
+        {
             SukunaTechniqueController sukunaTechnique = GetComponent<SukunaTechniqueController>();
             if (sukunaTechnique != null)
             {
@@ -140,41 +213,16 @@ namespace JJKGame.Player
                 sukunaAvatar.enabled = false;
             }
             SetChildActive("PrototypeSukunaAvatar", false);
-
-            GojoPrototypeAvatar gojoAvatar = GojoPrototypeAvatar.GetOrCreate(gameObject);
-            gojoAvatar.enabled = true;
-            SetChildActive("PrototypeGojoAvatar", true);
-
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency, refillEnergy);
         }
 
-        private void ApplySukuna(bool refillEnergy)
+        private void DisableMegumiAvatar()
         {
-            GojoDomainController gojoDomain = GetComponent<GojoDomainController>();
-            if (gojoDomain != null)
+            MegumiPrototypeAvatar megumiAvatar = GetComponent<MegumiPrototypeAvatar>();
+            if (megumiAvatar != null)
             {
-                gojoDomain.ResetCommand();
+                megumiAvatar.enabled = false;
             }
-            SetGojoComponentsEnabled(false);
-            SetChildActive("PrototypeGojoAvatar", false);
-
-            SukunaTechniqueController sukunaTechnique = GetComponent<SukunaTechniqueController>();
-            if (sukunaTechnique == null)
-            {
-                sukunaTechnique = gameObject.AddComponent<SukunaTechniqueController>();
-            }
-            sukunaTechnique.enabled = true;
-
-            sukunaDomain = SukunaDomainController.GetOrCreate(gameObject);
-            sukunaDomain.enabled = true;
-
-            SukunaPrototypeAvatar sukunaAvatar = SukunaPrototypeAvatar.GetOrCreate(gameObject);
-            sukunaAvatar.enabled = true;
-            SetChildActive("PrototypeSukunaAvatar", true);
-
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, refillEnergy);
+            SetChildActive(MegumiPrototypeAvatar.VisualRootName, false);
         }
 
         private void SetGojoComponentsEnabled(bool enabledState)
@@ -246,13 +294,18 @@ namespace JJKGame.Player
             CharacterPresentationProfile profile = PresentationProfile;
             CharacterPresentationProfile gojoProfile = CharacterPresentationProfiles.Get(PrototypeCharacterId.GojoModern);
             CharacterPresentationProfile sukunaProfile = CharacterPresentationProfiles.Get(PrototypeCharacterId.SukunaShibuyaYujiBody);
-            float width = 230f;
+            CharacterPresentationProfile megumiProfile = CharacterPresentationProfiles.Get(PrototypeCharacterId.MegumiStudent);
+            float width = 310f;
             Rect rect = new Rect(Screen.width - width - 12f, 108f, width, 24f);
             Color accent = profile.HudAccent;
             DrawRect(rect, new Color(0.018f, 0.020f, 0.032f, 0.92f));
             DrawBorder(rect, accent, 1f);
             smallStyle.normal.textColor = accent;
-            GUI.Label(rect, $"1 · {gojoProfile.ShortName}    2 · {sukunaProfile.ShortName}", smallStyle);
+            GUI.Label(
+                rect,
+                $"1 · {gojoProfile.ShortName}    2 · {sukunaProfile.ShortName}    3 · {megumiProfile.ShortName}",
+                smallStyle
+            );
         }
 
         private void DrawSukunaPlayerPanel()
