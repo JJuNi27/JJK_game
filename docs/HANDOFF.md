@@ -1,12 +1,14 @@
 # JJK Game 프로젝트 인수인계서
 
-작성 기준일: 2026-08-21
+작성 기준일: 2026-08-23
 
 > 새 ChatGPT 대화에서는 이 문서와 `docs/PROJECT_DIRECTION.md`, `docs/ORIGINAL_FIDELITY_POLICY.md`, `docs/CANON_SKILL_RULES.md`, `docs/DEVELOPMENT_ROADMAP.md`, `docs/GATE3_BEAUTY_CORNER.md`, 최신 코드를 먼저 읽는다.
 
-이 문서는 현재 사용자 확인 상태와 다음 작업을 빠르게 복구하기 위한 단일 인수인계 기준이다. 세부 설계/테스트 이력은 연결된 개별 문서를 기준으로 한다.
+이 문서는 현재 사용자 확인 상태와 다음 작업을 빠르게 복구하기 위한 단일 인수인계 기준이다.
 
-## 1. 환경과 작업 방식
+---
+
+# 1. 환경 / 작업 방식
 
 ```text
 프로젝트: 주술사 되어보기
@@ -27,12 +29,13 @@ git pull origin master
 작업 원칙:
 
 ```text
-Assistant 조사/설계
+조사/설계
 → 작은 변경은 master 직접 수정
-→ 큰 구조 변경은 Codex 검토
-→ 사용자 git pull
+→ 여러 파일 구조 변경은 agent/Codex 활용 가능
+→ Git diff 검토
+→ 사용자 pull
 → 사용자 Unity 실제 테스트
-→ USER VERIFIED만 완료로 기록
+→ USER VERIFIED만 완료 처리
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -43,7 +46,7 @@ Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
 Risk-Driven Vertical Slice Production
 ```
 
-새 작업 분류:
+새 아이디어 분류:
 
 ```text
 NOW
@@ -52,12 +55,20 @@ LATER
 REJECT
 ```
 
-## 2. 게임 방향
-
-현재 본체:
+작업 속도 원칙:
 
 ```text
-주술회전 캐릭터의 원작 규칙을 최대한 살린
+국소 변경마다 pull/test를 반복하지 않고
+관련 작업 2~5개를 가능한 범위에서 묶어서 한 번에 검증한다.
+
+단, 컴파일/핵심 Gameplay 위험이 큰 변경은 작은 migration 단위로 검증한다.
+```
+
+---
+
+# 2. 게임 방향
+
+```text
 Character-Authentic 3D Arena Action Fighter
 ```
 
@@ -69,14 +80,15 @@ Character-Authentic 3D Arena Action Fighter
 후속: 4~8인 Incident Battle
 ```
 
-참고 방향:
+참고:
 
 ```text
 NARUTO STORM 4
 - 팀 편성 / 교대
 
 DRAGON BALL: Sparking! ZERO
-- 원작 강함 / 비대칭 캐릭터성
+- 원작 비대칭 강함
+- 캐릭터 특화 방어/이동
 - 스펙터클
 
 Jujutsu Shenanigans
@@ -85,81 +97,62 @@ Jujutsu Shenanigans
 - 후속 난전 감각
 ```
 
-메인으로 하지 않음:
+초기 메인으로 하지 않음:
 
 ```text
 20~50인 상시 FFA
 오픈월드 MMO/RPG
-초기부터 완전 동적 파괴
+완전 동적 파괴
 ```
 
-## 3. 원작 / 주팬퍼 정책
-
-상세:
-
-```text
-docs/ORIGINAL_FIDELITY_POLICY.md
-docs/CANON_SKILL_RULES.md
-docs/PHANTOM_PARADE_REFERENCE.md
-```
-
-우선순위:
+원작 우선순위:
 
 ```text
 1. 만화 완결 범위 + 공식 팬북/애니/극장판/공식 설정
-2. 주술회전 팬텀 퍼레이드 캐릭터 설계
+2. 주술회전 팬텀 퍼레이드 캐릭터 설계 참고
 3. 글로벌 한국어 공식 명칭
 4. 실시간 격투용 GAME_ORIGINAL 보완
 5. 경쟁 밸런스
 ```
 
-핵심:
-
-```text
-밸런스보다 원작 구현 우선
-```
-
-주팬퍼는 턴제 수치를 그대로 복사하지 않고 캐릭터 특성을 해석해 실시간 3D 규칙으로 재설계한다.
-
-같은 캐릭터라도 시대/육체/전투 방식이 크게 다르면 별도 Fighter Slot로 분리한다.
-
-사용자 검수 글로벌 한국어:
+사용자 검수 명칭:
 
 ```text
 스쿠나 R = 푸가
 내부 ID = Fuga
 ```
 
-## 4. 입력 인식 방향
+---
 
-기존 장인/음성 인식 아이디어는 폐기하지 않는다.
-
-```text
-Standard Input Mode
-- 키보드 / 패드
-
-Immersion Input Mode
-- 카메라 장인 인식
-- 음성 인식
-```
-
-둘 다 나중에 같은 Gameplay Command를 발생시키는 구조를 목표로 한다.
-
-## 5. Gate 상태
+# 3. Gate 상태
 
 ```text
 Gate 0 Vision Lock: 충분히 진행됨
 Gate 1 Core Combat Proof: USER VERIFIED
 Gate 2 Match Architecture Proof: USER VERIFIED
-Gate 3 Beauty Corner: STARTED
-Gate 4 Production Pipeline Extraction: PENDING
+Gate 3 Beauty Corner: FINAL REGRESSION
+Gate 4 Production Pipeline Extraction: PREPARED / PENDING
 Gate 5 Third Character Stress Test: PENDING
 Gate 6 Production: PENDING
 ```
 
-## 6. Gate 1 — Core Combat USER VERIFIED
+Gate 3 최종 체크:
 
-### 현대 고죠
+```text
+docs/GATE3_FINAL_REGRESSION.md
+```
+
+Gate 4 계획:
+
+```text
+docs/GATE4_PRODUCTION_PIPELINE_PLAN.md
+```
+
+---
+
+# 4. Gate 1 — Core Combat · USER VERIFIED
+
+## 현대 고죠
 
 ```text
 GOJO SATORU · 현대 · 교사
@@ -176,7 +169,7 @@ DomainSureHit 상호작용
 육안 효율 CE
 ```
 
-### 시부야 스쿠나 · 이타도리 육체
+## 시부야 스쿠나 · 이타도리 육체
 
 ```text
 RYOMEN SUKUNA · 시부야 사변
@@ -190,7 +183,7 @@ V 복마어주자
 스쿠나 전용 영역 사운드
 ```
 
-스쿠나 CE 프로토타입:
+스쿠나 CE prototype:
 
 ```text
 최대 160
@@ -198,19 +191,47 @@ V 복마어주자
 초당 회복 4
 ```
 
-### 훈련 주령
-
-두 CurseBot이 한 위치에 겹치던 문제는 engagement slot으로 수정했고 사용자 확인 완료.
+훈련 주령:
 
 ```text
-Curse A / Curse B 동시 표시
-두 대상 TAB 전환
-일반 공격 / 영역전연 훈련
+Curse A / Curse B
+TAB 전환
+engagement slot 겹침 방지
 ```
 
-모두 정상.
+---
 
-## 7. Gate 2A — Player Team USER VERIFIED
+# 5. Gate 2 — Match Architecture · USER VERIFIED
+
+## Player Team
+
+현재 팀:
+
+```text
+GOJO SATORU · 현대 · 교사
+RYOMEN SUKUNA · 시부야 사변
+```
+
+입력:
+
+```text
+T · TAG
+```
+
+검증 완료:
+
+```text
+고죠 ↔ 스쿠나 장면 재시작 없는 Tag
+HP 독립 보존
+CE 독립 보존
+Reserve 상태 정지
+Action Lock 중 Tag 차단
+첫 KO Auto Tag / DEFEAT 없음
+KO Fighter 재Tag 차단
+마지막 Player KO에만 DEFEAT
+Tag 시 기본 콤보 초기화
+카메라/Target Lock 유지
+```
 
 상세:
 
@@ -219,51 +240,26 @@ docs/TEAM_MATCH_GATE2.md
 docs/TEAM_HUD_CLEANUP.md
 ```
 
-현재 플레이어 팀:
+## Opponent Team
+
+모드:
 
 ```text
-GOJO SATORU · 현대 · 교사
-RYOMEN SUKUNA · 시부야 사변
+F2
+TRAINING · MULTI CURSE
+TEAM BATTLE
 ```
 
-임시 입력:
+검증 완료:
 
 ```text
-T · TAG
+상대 Active + Reserve
+첫 Active KO 뒤 Reserve Entry
+첫 KO에는 VICTORY 없음
+마지막 상대 KO에만 VICTORY
+Enemy Team HUD
+Reserve 등장 시 Target Lock 자동 승계
 ```
-
-구조:
-
-```text
-Player GameObject = Fighter Shell
-PrototypePlayerTeamController
-- Active / Reserve
-- 캐릭터별 HP snapshot
-- 캐릭터별 CE snapshot
-- 수동 Tag
-- KO Auto Tag
-```
-
-사용자 검증:
-
-```text
-고죠 ↔ 스쿠나 장면 재시작 없는 T Tag ✅
-HP 독립 보존 ✅
-CE 독립 보존 ✅
-Reserve 중 상태 정지 ✅
-Action Lock 중 Tag 차단 ✅
-첫 KO Auto Tag / DEFEAT 미발생 ✅
-KO 캐릭터 재Tag 차단 ✅
-마지막 팀원 KO에만 DEFEAT ✅
-기본 공격 콤보 Tag 시 초기화 ✅
-카메라 추적 유지 ✅
-Target Lock 유지 ✅
-고죠/스쿠나 기술 회귀 ✅
-```
-
-Player Team-aware HUD도 사용자 캡처로 검증 완료.
-
-## 8. Gate 2B — Opponent Team USER VERIFIED
 
 상세:
 
@@ -273,191 +269,281 @@ docs/GATE2B_ENEMY_HUD_CLEANUP.md
 docs/GATE2B_TARGET_HANDOFF.md
 ```
 
-모드:
+---
+
+# 6. Gate 3A — Combat Feel · USER VERIFIED
 
 ```text
-TRAINING · MULTI CURSE
-- Curse A + Curse B 동시 전투
-
-TEAM BATTLE
-- Curse A Active
-- Curse B Reserve
+기본 공격 실제 적중 Camera Shake
+1 < 2 < 3 FINISH 강도
+Hit Stop
+Hit Flash
+Impact position procedural Burst
 ```
 
-임시 개발 입력:
+헛공격/실제 Damage 미적용 상황에는 적중 피드백이 나오지 않게 유지.
+
+핵심:
 
 ```text
-F2 · MODE
+BasicAttack.cs
+PrototypeHitStopController.cs
+PrototypeHitImpactVfx.cs
+SimpleCameraFollow.cs
 ```
 
-사용자 검증:
+---
+
+# 7. Gate 3B — Prototype Character Presentation · USER VERIFIED
+
+현재 실제 rigged model/Animator 자산은 저장소에 없다.
+
+따라서 procedural avatar에 대해 다음만 검증했다.
 
 ```text
-Training / Team Battle 분리 ✅
-상대가 한 번에 한 명씩 등장 ✅
-첫 Active KO 뒤 Reserve 자동 등장 ✅
-첫 상대 KO에는 VICTORY 없음 ✅
-마지막 상대 KO에만 VICTORY ✅
-Team Battle Enemy HUD 단일 OPPONENT TEAM 패널 ✅
-최종 0/2 + VICTORY 캡처 확인 ✅
-새 Reserve 등장 시 Target Lock 자동 승계 ✅
+Gojo/Sukuna 기본 pose 차이
+locomotion lean
+dodge presentation
+tag entry presentation
+Fighter Shell 유지 상태에서 Active identity 교체
 ```
 
-첫 F2 구현에서는 Scene reload 뒤 controller가 사라지는 런타임 버그가 있었고 사용자 테스트에서 발견했다.
+사용자 피드백상 동작은 정상이나 자세는 placeholder답게 하찮은 느낌이 강함.
 
-수정:
+최종 목표:
 
 ```text
-PrototypeOpponentTeamController DontDestroyOnLoad
-sceneLoaded 재연결
-새 Scene의 Curse A/B 재탐색
-requestedMode 재적용
+실제 rigged model
+Animator Controller
+전용 locomotion/basic/dodge/technique/domain animation
 ```
-
-이후 정상 검증 완료.
-
-현재 Team Battle Target 정책:
-
-```text
-상대 Active KO
-→ Reserve 자동 입장
-→ 플레이어 Target Lock 자동 승계
-```
-
-`GAME_ORIGINAL` 프로토타입 규칙.
-
-## 9. Gate 2 종료 판정
-
-2026-08-21 누적 사용자 Unity 검증으로:
-
-```text
-Gate 2 Match Architecture Proof: USER VERIFIED
-```
-
-로 종료한다.
-
-Gate 2가 증명한 것:
-
-```text
-플레이어와 상대 모두 Active / Reserve 전투가 가능
-캐릭터별 상태 보존이 가능
-KO 다음 멤버 입장 가능
-팀 마지막 멤버 기준 승패 가능
-카메라/Target Lock 흐름 유지 가능
-Training과 Team Battle을 분리 가능
-```
-
-Beauty Corner 전에는 다음을 확장하지 않는다.
-
-```text
-지원 공격
-합동 궁극기
-3인 팀 완성형
-Character Cost 실제 밸런스
-온라인
-```
-
-## 10. Gate 3 — Beauty Corner STARTED
 
 상세:
 
 ```text
-docs/GATE3_BEAUTY_CORNER.md
+docs/GATE3B_CHARACTER_PRESENTATION.md
 ```
 
-목표:
+---
+
+# 8. Gate 3C — Signature Technique Presentation · USER VERIFIED
+
+검증:
 
 ```text
-대표 맵 한 구역
-실제 고죠/스쿠나 모델
-공통 이동/기본공격/회피 애니메이션
-허식 자 / 무량공처 대표 연출
-푸가 / 복마어주자 대표 연출
-Voice / SFX
-Camera / Hit Stop / Hit Feedback
-HUD polish
+Signature Flash / Shake
+Hit Stop
+FOV Kick
+Camera World Focus
+Spatial Ring / Burst
+푸가 Release / Explosion emphasis
+무량공처 / 복마어주자 anticipation + activation
 ```
 
-진행 순서:
+## 허식 「자」 중요 수정
+
+기존:
 
 ```text
-3A Combat Feel Pass
-3B Representative Character Presentation
-3C Signature Technique Presentation
-3D Representative Arena + HUD Polish
+PurpleOuterBeam + PurpleCoreBeam
+→ 긴 레이저처럼 표시
 ```
 
-## 11. 현재 구현 — Gate 3A Combat Feel Pass 1
+사용자 원작 기준:
+
+```text
+청색(창) + 적색(혁)
+→ 합류
+→ 하나의 큰 보라 구체
+→ 전방 발사
+```
+
+첫 override/Bootstrap 방식은 실제 Unity에서 실패했고 compile error도 한 번 발생.
+
+최종:
+
+```text
+PrototypeHollowPurplePresentationRuntime
+```
+
+독립 Runtime runner가 legacy Beam을 지속 비활성화하고:
+
+```text
+청색 + 적색 구체 수렴
+→ 큰 보라 구체 생성
+→ 약 18m 전방 이동
+```
+
+을 표시한다.
+
+사용자 실제 확인:
+
+```text
+"그래 이제 좀 정상적이구나"
+```
+
+중요 Prototype 부채:
+
+```text
+Visual = 이동하는 구체
+Damage = 기존 즉시 Capsule 판정
+```
+
+따라서 Visual/Damage timing은 아직 완전히 일치하지 않는다.
+
+상세:
+
+```text
+docs/GATE3C_SIGNATURE_TECHNIQUE_PRESENTATION.md
+docs/GATE3C_PASS3_SPATIAL_VFX.md
+docs/GATE3C_PASS4_CINEMATIC_FRAMING.md
+```
+
+---
+
+# 9. Gate 3D — Arena + HUD · FINAL REGRESSION
+
+## Pass 1 Arena Mood · USER VERIFIED
+
+```text
+야간 Ambient / Fog
+비충돌 도심 실루엣
+Neon
+Arena ring
+Mood light
+```
+
+현재 건물은 배경 장식이라 통과 가능이 정상.
+
+## Pass 2 Team HUD · USER VERIFIED
+
+```text
+Player Active / Reserve HUD
+Opponent Active / Reserve HUD
+HP / CE
+Tag state
+KO
+Reserve Entry
+F2 Mode strip
+```
+
+## Pass 3 Skill Deck
+
+```text
+PrototypeSkillDeckHud
+```
+
+고죠:
+
+```text
+Q 창
+E 혁
+R 허식 자
+V 무량공처
+```
+
+스쿠나:
+
+```text
+Q 해
+E 팔
+R 푸가
+V 복마어주자
+```
 
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+READY
+DODGE
+CASTING
+DOMAIN INPUT
+DOMAIN ACTIVE
+TECHNIQUE BURNOUT
+DISABLED
 ```
 
-변경:
+사용자 화면 첫 피드백은 긍정적이지만 전체 상태 전환까지 최종 회귀로 묶어 확인 예정.
+
+상세:
 
 ```text
-unity/Assets/Scripts/Player/BasicAttack.cs
+docs/GATE3D_ARENA_HUD_POLISH.md
 ```
 
-기존 `SimpleCameraFollow.AddShake()`를 기본 3타의 실제 적중에 연결했다.
+---
 
-규칙:
+# 10. 현재 바로 할 일
 
-```text
-헛공격 → Shake 없음
-방어로 실제 피해 미적용 → Shake 없음
-DamageResolution.Applied → Shake
-
-1타 < 2타 < 3타 FINISH
-```
-
-현재 수치:
-
-```text
-1타 0.075 / 0.07s
-2타 0.11  / 0.085s
-3타 0.22  / 0.13s
-```
-
-피해량, 범위, 넉백, 히트스턴, 쿨타임은 변경하지 않았다.
-
-사용자에게 다음을 확인받는다.
-
-```text
-기본 3타 적중 카메라 충격 체감
-1 < 2 < 3 강도 차이
-과도한 흔들림 여부
-허공 공격 시 Shake 미발생
-T Tag / TAB Lock 회귀
-```
-
-이 Pass가 통과하면 Gate 3A Pass 2에서 짧은 Hit Stop을 별도 구현/검증한다.
-
-## 12. 다음 우선순위
+새 기능 추가보다 Gate 3 종료 회귀가 우선.
 
 ```text
 NOW
-Gate 3A Combat Feel Pass 1 사용자 검증
-
-PASS 후
-Gate 3A Combat Feel Pass 2 — Hit Stop
-
-그 뒤
-실제 모델/애니메이션/대표 기술 연출 자산 준비 수준에 맞춰 3B/3C 진행
+1. git pull origin master
+2. docs/GATE3_FINAL_REGRESSION.md 순서로 CombatMVP 한 세션 테스트
+3. Console error / Tag / HUD / Purple / Fuga / Domain / Opponent Team / Victory/Defeat 확인
 ```
 
-Gate 4에서는 Beauty Corner에서 실제 반복된 구조만 다음 형태로 추출한다.
+사용자가 최종적으로 정상 확인하면:
 
 ```text
-Character Asset Contract
-Animation Event Contract
-Technique Presentation Profile
-VFX lifecycle
-Voice/SFX event
-Camera feedback
-Hit Stop
+Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
+Gate 4 Production Pipeline Extraction: STARTED
 ```
 
-거대한 범용 Ability System을 미리 만들지 않는다.
+로 갱신한다.
+
+---
+
+# 11. Gate 4 — Production Pipeline Extraction
+
+목표:
+
+```text
+새 캐릭터 추가 시
+고죠/스쿠나 코드를 복사하지 않고
+공통 제작 절차를 반복 가능하게 만들기
+```
+
+우선:
+
+```text
+4A Character Presentation Contract
+4B HUD Data Binding
+4C Technique Presentation Request
+4D VFX Lifecycle
+4E Animation Contract
+4F Audio Event Contract
+```
+
+거대한 범용 Ability System은 만들지 않는다.
+
+## Codex / Agent
+
+Gate 4는 여러 파일에 걸친 중복 탐색과 migration이 많아 Codex류 agent가 특히 유용한 단계다.
+
+```text
+agent multi-file edit
+→ Git diff review
+→ 작은 migration 단위
+→ 사용자 Unity test
+```
+
+현재 ChatGPT 대화에 별도 로컬 Codex/Unity Editor 제어 도구가 연결되지 않았다면 실행했다고 가장하지 않는다.
+
+사용자가 Unity AI Gateway / Codex를 로컬에 구성하면 Editor-side hierarchy/component/animator 작업과 코드 작업을 나눌 수 있다.
+
+---
+
+# 12. Gate 5 이후
+
+Gate 5 Third Character Stress Test 후보:
+
+```text
+메구미 — 식신/소환 구조
+유타 — 리카 동반체/상태 변화
+```
+
+Gate 5가 Gate 4 계약을 깨뜨리면 공통 구조를 수정한다.
+
+그 뒤 Gate 6에서 캐릭터/맵/온라인/Incident Battle/PvE를 본격 확장한다.
