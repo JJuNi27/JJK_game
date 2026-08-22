@@ -102,6 +102,16 @@ namespace JJKGame.Player
                 case CombatAudioEventId.Fuga:
                     HandleFugaAudio(audioEvent);
                     break;
+                case CombatAudioEventId.DivineDog:
+                    if (audioEvent.Variant <= 1)
+                    {
+                        prototypeAudio.PlayBlueCastRuntime();
+                    }
+                    else
+                    {
+                        prototypeAudio.PlayBasicHitRuntime(2);
+                    }
+                    break;
                 case CombatAudioEventId.PlayerHit:
                     prototypeAudio.PlayPlayerHitRuntime();
                     break;
