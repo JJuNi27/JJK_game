@@ -1,9 +1,10 @@
 using System.Collections.Generic;
+using JJKGame.Core;
 using UnityEngine;
 
 namespace JJKGame.Player
 {
-    public sealed class PrototypeSignatureSpatialVfx : MonoBehaviour
+    public sealed class PrototypeSignatureSpatialVfx : MonoBehaviour, IPresentationVfxInstance
     {
         private readonly List<Material> runtimeMaterials = new List<Material>();
 
@@ -16,9 +17,50 @@ namespace JJKGame.Player
         private float duration;
         private float startedAt;
         private float spinSpeed;
+        private bool useUnscaledTime = true;
+        private bool stopRequested;
+        private float stopRequestedAt;
+        private float stopFadeDuration = 0.14f;
+        private bool destroying;
         private LineRenderer outerRing;
         private LineRenderer innerRing;
         private Light pulseLight;
+
+        public bool IsAlive => !destroying && this != null && gameObject != null;
+
+        public static PrototypeSignatureSpatialVfx Spawn(PresentationVfxSpawnRequest request)
+        {
+            Vector3 worldPosition = request.WorldPosition;
+            if (request.FollowsTarget && request.FollowTarget != null)
+            {
+                worldPosition =
+                    request.FollowTarget.position
+                    + request.FollowTarget.TransformDirection(request.FollowLocalOffset);
+            }
+
+            PrototypeSignatureSpatialVfx effect = CreateInstance(
+                worldPosition,
+                request.PrimaryColor,
+                request.SecondaryColor,
+                request.StartRadius,
+                request.EndRadius,
+                request.Duration,
+                request.SpinSpeed,
+                request.TimePolicy == PresentationVfxTimePolicy.Unscaled
+            );
+            if (effect == null)
+            {
+                return null;
+            }
+
+            if (request.FollowsTarget && request.FollowTarget != null)
+            {
+                effect.followTarget = request.FollowTarget;
+                effect.followOffset = request.FollowLocalOffset;
+            }
+
+            return effect;
+        }
 
         public static void SpawnFollowAura(
             Transform target,
@@ -31,27 +73,19 @@ namespace JJKGame.Player
             float spinSpeed = 120f
         )
         {
-            if (target == null)
-            {
-                return;
-            }
-
-            PrototypeSignatureSpatialVfx effect = CreateInstance(
-                target.position + target.TransformDirection(localOffset),
-                primary,
-                secondary,
-                startRadius,
-                endRadius,
-                duration,
-                spinSpeed
+            Spawn(
+                PresentationVfxSpawnRequest.Follow(
+                    target,
+                    localOffset,
+                    primary,
+                    secondary,
+                    startRadius,
+                    endRadius,
+                    duration,
+                    spinSpeed,
+                    PresentationVfxTimePolicy.Unscaled
+                )
             );
-            if (effect == null)
-            {
-                return;
-            }
-
-            effect.followTarget = target;
-            effect.followOffset = localOffset;
         }
 
         public static void SpawnWorldBurst(
@@ -64,15 +98,39 @@ namespace JJKGame.Player
             float spinSpeed = 160f
         )
         {
-            CreateInstance(
-                worldPosition,
-                primary,
-                secondary,
-                startRadius,
-                endRadius,
-                duration,
-                spinSpeed
+            Spawn(
+                PresentationVfxSpawnRequest.AtWorld(
+                    worldPosition,
+                    primary,
+                    secondary,
+                    startRadius,
+                    endRadius,
+                    duration,
+                    spinSpeed,
+                    PresentationVfxTimePolicy.Unscaled
+                )
             );
+        }
+
+        public void Stop(PresentationVfxStopMode mode = PresentationVfxStopMode.FadeOut)
+        {
+            if (destroying)
+            {
+                return;
+            }
+
+            if (mode == PresentationVfxStopMode.Immediate)
+            {
+                destroying = true;
+                Destroy(gameObject);
+                return;
+            }
+
+            if (!stopRequested)
+            {
+                stopRequested = true;
+                stopRequestedAt = CurrentTime;
+            }
         }
 
         private static PrototypeSignatureSpatialVfx CreateInstance(
@@ -82,7 +140,8 @@ namespace JJKGame.Player
             float initialRadius,
             float finalRadius,
             float effectDuration,
-            float effectSpinSpeed
+            float effectSpinSpeed,
+            bool useUnscaled
         )
         {
             if (effectDuration <= 0f || finalRadius <= 0f)
@@ -99,7 +158,8 @@ namespace JJKGame.Player
                 Mathf.Max(0.05f, initialRadius),
                 Mathf.Max(initialRadius, finalRadius),
                 effectDuration,
-                effectSpinSpeed
+                effectSpinSpeed,
+                useUnscaled
             );
             return effect;
         }
@@ -110,7 +170,8 @@ namespace JJKGame.Player
             float initialRadius,
             float finalRadius,
             float effectDuration,
-            float effectSpinSpeed
+            float effectSpinSpeed,
+            bool useUnscaled
         )
         {
             primaryColor = primary;
@@ -119,7 +180,8 @@ namespace JJKGame.Player
             endRadius = finalRadius;
             duration = Mathf.Max(0.05f, effectDuration);
             spinSpeed = effectSpinSpeed;
-            startedAt = Time.unscaledTime;
+            useUnscaledTime = useUnscaled;
+            startedAt = CurrentTime;
 
             outerRing = CreateRing(
                 "OuterRing",
@@ -143,8 +205,11 @@ namespace JJKGame.Player
             pulseLight.intensity = 4.5f;
             pulseLight.shadows = LightShadows.None;
 
-            ApplyVisual(0f);
+            ApplyVisual(0f, 1f);
         }
+
+        private float CurrentTime => useUnscaledTime ? Time.unscaledTime : Time.time;
+        private float CurrentDeltaTime => useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
 
         private void Update()
         {
@@ -154,28 +219,36 @@ namespace JJKGame.Player
                     followTarget.position + followTarget.TransformDirection(followOffset);
             }
 
-            float elapsed = Time.unscaledTime - startedAt;
+            float elapsed = CurrentTime - startedAt;
             float progress = Mathf.Clamp01(elapsed / duration);
-            ApplyVisual(progress);
+            float stopAlpha = 1f;
+            if (stopRequested)
+            {
+                stopAlpha = 1f - Mathf.Clamp01((CurrentTime - stopRequestedAt) / stopFadeDuration);
+            }
 
-            transform.Rotate(Vector3.up, spinSpeed * Time.unscaledDeltaTime, Space.World);
+            ApplyVisual(progress, stopAlpha);
+
+            transform.Rotate(Vector3.up, spinSpeed * CurrentDeltaTime, Space.World);
             if (innerRing != null)
             {
                 innerRing.transform.Rotate(
                     Vector3.forward,
-                    -spinSpeed * 1.35f * Time.unscaledDeltaTime,
+                    -spinSpeed * 1.35f * CurrentDeltaTime,
                     Space.Self
                 );
             }
 
-            if (progress >= 1f)
+            if (progress >= 1f || (stopRequested && stopAlpha <= 0f))
             {
+                destroying = true;
                 Destroy(gameObject);
             }
         }
 
         private void OnDestroy()
         {
+            destroying = true;
             foreach (Material material in runtimeMaterials)
             {
                 if (material != null)
@@ -185,12 +258,12 @@ namespace JJKGame.Player
             }
         }
 
-        private void ApplyVisual(float progress)
+        private void ApplyVisual(float progress, float lifetimeAlpha)
         {
             float eased = 1f - (1f - progress) * (1f - progress);
             float radius = Mathf.Lerp(startRadius, endRadius, eased);
-            float alpha = Mathf.Clamp01(1f - progress);
-            float pulse = 1f + Mathf.Sin(Time.unscaledTime * 26f) * 0.06f;
+            float alpha = Mathf.Clamp01(1f - progress) * Mathf.Clamp01(lifetimeAlpha);
+            float pulse = 1f + Mathf.Sin(CurrentTime * 26f) * 0.06f;
 
             if (outerRing != null)
             {
@@ -211,7 +284,7 @@ namespace JJKGame.Player
                     Mathf.Max(5f, endRadius * 1.8f),
                     eased
                 );
-                pulseLight.intensity = Mathf.Lerp(5.5f, 0f, progress);
+                pulseLight.intensity = Mathf.Lerp(5.5f, 0f, progress) * lifetimeAlpha;
             }
         }
 
