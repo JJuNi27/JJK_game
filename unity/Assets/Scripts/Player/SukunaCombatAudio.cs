@@ -1,9 +1,11 @@
 using JJKGame.CameraSystem;
+using JJKGame.Core;
 using UnityEngine;
 
 namespace JJKGame.Player
 {
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(Health))]
     public sealed class SukunaCombatAudio : MonoBehaviour
     {
         [Header("Optional Local Sukuna Audio")]
@@ -15,6 +17,7 @@ namespace JJKGame.Player
         [SerializeField, Range(0f, 1f)] private float sfxVolume = 0.92f;
         [SerializeField, Range(0f, 1f)] private float voiceVolume = 0.98f;
 
+        private Health ownHealth;
         private AudioSource sfxSource;
         private AudioSource voiceSource;
         private SimpleCameraFollow cameraFeedback;
@@ -34,6 +37,7 @@ namespace JJKGame.Player
 
         private void Awake()
         {
+            ownHealth = GetComponent<Health>();
             LoadLocalOverrides();
             BuildSources();
             BuildFallbackClips();
@@ -51,17 +55,42 @@ namespace JJKGame.Player
             }
         }
 
+        // Compatibility shims for existing prototype gameplay callers.
+        // They now emit semantic events instead of playing clips directly.
         public void PlayDomain()
+        {
+            Raise(CombatAudioEventId.MalevolentShrine);
+        }
+
+        public void PlayDomainFuga()
+        {
+            Raise(CombatAudioEventId.Fuga, 2, true);
+        }
+
+        public void PlayDomainRuntime()
         {
             PlayVoice(domainVoice);
             PlaySfx(domainSound != null ? domainSound : domainFallback, 1f);
             ShakeAndFlash(0.44f, 0.52f, new Color(0.82f, 0.035f, 0.02f), 0.24f, 0.46f);
         }
 
-        public void PlayDomainFuga()
+        public void PlayDomainFugaRuntime()
         {
             PlaySfx(domainFugaSound != null ? domainFugaSound : domainFugaFallback, 1f);
             ShakeAndFlash(0.72f, 0.48f, new Color(1f, 0.16f, 0.015f), 0.30f, 0.38f);
+        }
+
+        private void Raise(CombatAudioEventId eventId, int variant = 0, bool amplified = false)
+        {
+            ownHealth ??= GetComponent<Health>();
+            if (ownHealth == null)
+            {
+                return;
+            }
+
+            CombatAudioEvents.Raise(
+                CombatAudioEvent.ForOwner(ownHealth, eventId, variant, amplified)
+            );
         }
 
         private void LoadLocalOverrides()
