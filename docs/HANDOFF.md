@@ -2,7 +2,7 @@
 
 작성 기준일: 2026-08-23
 
-> 새 ChatGPT 대화에서는 이 문서와 `docs/PROJECT_DIRECTION.md`, `docs/ROADMAP_SCOPE_REFINEMENT.md`, `docs/DEVELOPMENT_ROADMAP.md`, `docs/GATE4_PRODUCTION_PIPELINE_PLAN.md`, `docs/GATE4_PRODUCTION_BOUNDARIES.md`, `docs/GATE4_FINAL_REGRESSION.md`, 최신 코드를 먼저 읽는다.
+> 새 ChatGPT 대화에서는 이 문서와 `docs/PROJECT_DIRECTION.md`, `docs/ROADMAP_SCOPE_REFINEMENT.md`, `docs/DEVELOPMENT_ROADMAP.md`, `docs/GATE4_PRODUCTION_PIPELINE_PLAN.md`, `docs/GATE4_PRODUCTION_BOUNDARIES.md`, `docs/GATE4_FINAL_REGRESSION.md`, `docs/GATE5A_THIRD_CHARACTER_STRESS_TEST.md`, 최신 코드를 먼저 읽는다.
 
 ---
 
@@ -52,12 +52,9 @@ Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
 
 ```text
 Character-Authentic 3D Arena Action Fighter
-```
-
-```text
-Core: 1v1
-핵심 확장: 2~3인 Active/Reserve Team Battle
-후속: 4~8인 Incident Battle
+Core 1v1
+2~3인 Active/Reserve Team Battle
+후속 4~8인 Incident Battle
 ```
 
 핵심 Pillar:
@@ -70,97 +67,63 @@ Spectacle + Destruction
 Optional Hand Sign / Voice Immersion
 ```
 
-원작 우선. 캐릭터의 고유 Gameplay Rule을 거대한 범용 Ability System에 억지로 합치지 않는다.
+캐릭터 고유 Gameplay Rule을 거대한 범용 Ability System에 억지로 합치지 않는다.
 
 ---
 
 # 3. Gate 상태
 
 ```text
-Gate 0 Vision Lock: 충분히 진행됨
 Gate 1 Core Combat Proof: USER VERIFIED
 Gate 2 Match Architecture Proof: USER VERIFIED
 Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
-Gate 4 Production Pipeline Extraction: FINAL REGRESSION PENDING
-Gate 5A Third Character Stress Test: PENDING
+Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
+Gate 5A Third Character Stress Test: IN PROGRESS
 Gate 5B First Production-Quality Vertical Slice: PENDING
 Gate 6 Production: PENDING
 ```
 
-Gate 3 초기 계획과 실제 prototype scope 차이는:
+Gate 3 초기 production asset 목표가 뒤로 이동한 이유:
 
 ```text
 docs/ROADMAP_SCOPE_REFINEMENT.md
 ```
 
-에 기록했다.
-
 ---
 
-# 4. Gate 1 — Core Combat · USER VERIFIED
+# 4. Gate 1 / 2 핵심 검증
 
-현대 고죠:
+Gojo:
 
 ```text
-이동 / 기본 3타 / 회피
-Q 창
-E 혁
-R 허식 자
-V 무량공처
-무하한
-영역전연 우회
-DomainSureHit
-술식 번아웃
+기본 3타 / 회피
+창 / 혁 / 허식 자 / 무량공처
+무하한 / 영역전연 우회 / 필중 / 번아웃
 ```
 
-시부야 스쿠나:
+Sukuna:
 
 ```text
-Q 해
-E 팔
-R 푸가
-V 복마어주자
+해 / 팔 / 푸가 / 복마어주자
 영역 밖 푸가
 영역 안 광역 푸가
 ```
 
----
-
-# 5. Gate 2 — Match Architecture · USER VERIFIED
-
-Player Team:
+Team:
 
 ```text
-Gojo ↔ Sukuna T Tag
+T Tag
 HP / CE 독립 보존
-Reserve freeze
-Action Lock Tag 차단
-첫 KO Auto Tag
-마지막 Player KO에만 DEFEAT
-Tag 시 콤보 초기화
-카메라/Target Lock 유지
-```
-
-Opponent Team:
-
-```text
-F2 Training / Team Battle
-Active + Reserve
-첫 KO → Reserve Entry
-첫 KO에는 VICTORY 없음
-Reserve 등장 시 Target Lock 자동 승계
-마지막 상대 KO에만 VICTORY
+KO Auto Tag
+마지막 Player KO만 DEFEAT
+Opponent Reserve Entry
+Target Lock handoff
+마지막 상대 KO만 VICTORY
 ```
 
 ---
 
-# 6. Gate 3 — Beauty Corner Prototype Proof · USER VERIFIED
-
-사용자 최종 판정:
-
-```text
-다 정상!
-```
+# 5. Gate 3 · USER VERIFIED
 
 검증:
 
@@ -169,13 +132,13 @@ Combat Feel
 Prototype Character Presentation
 Signature Technique Presentation
 Arena Mood
-HUD Information Hierarchy
+HUD / Skill Deck
 ```
 
-현재 Production 자산은 아직 없음:
+아직 production 자산 아님:
 
 ```text
-실제 rigged Gojo/Sukuna model
+실제 rigged character model
 Animator animation set
 final environment art
 Canvas/TMP final HUD
@@ -185,32 +148,13 @@ production Voice/SFX/Music
 허식 자 prototype debt:
 
 ```text
-Visual = 이동하는 보라 구체
-Damage = 기존 즉시 Capsule
+Visual = 이동 구체
+Damage = 즉시 Capsule
 ```
 
 ---
 
-# 7. Gate 4 — Production Pipeline Extraction
-
-상세:
-
-```text
-docs/GATE4_PRODUCTION_PIPELINE_PLAN.md
-```
-
-현재 결과:
-
-```text
-4A Character Presentation Contract: USER VERIFIED
-4B HUD Data Binding: USER VERIFIED
-4C Technique Presentation Request: USER VERIFIED
-4D VFX Lifecycle Contract: USER VERIFIED
-4E Animation Contract: USER VERIFIED
-4F Audio Event Contract: USER VERIFIED
-Prototype / Production Boundary Review: COMPLETE
-Gate 4 Final Regression: USER TEST PENDING
-```
+# 6. Gate 4 · USER VERIFIED / CLOSED
 
 Production-candidate contract:
 
@@ -223,83 +167,91 @@ Fighter Animation State/Cue
 CombatAudioEvent
 ```
 
-Prototype-only renderer/runtime과 구분:
+Prototype-only 구현과의 경계:
 
 ```text
 docs/GATE4_PRODUCTION_BOUNDARIES.md
 ```
 
-주의:
-
-```text
-현재 procedural avatar / LineRenderer VFX / IMGUI HUD / fallback audio는 최종 자산이 아니다.
-Gate 5B에서 contract를 유지하고 실제 모델/Animator/VFX/UI/Audio consumer로 교체한다.
-```
-
----
-
-# 8. 현재 바로 할 일
-
-```text
-Gate 4 Final Regression
-```
-
-체크리스트:
+최종 전체 회귀에서 사용자가 `정상` 확인.
 
 ```text
 docs/GATE4_FINAL_REGRESSION.md
 ```
 
-한 세션에서 확인:
+---
+
+# 7. 현재 바로 할 일 — Gate 5A Pass 1
+
+세 번째 캐릭터:
 
 ```text
-Gojo combat + Purple + Unlimited Void
-Player Tag + HP/CE 보존
-Sukuna 해/팔/푸가/복마어주자
-Player first KO auto-tag / final defeat
-Opponent Team reserve entry / target handoff / final victory
-HUD snapshot 상태
-Camera / HitStop
-VFX lifecycle 중복/잔류 없음
-Audio 중복/누락 없음
-F2 scene reload
-Console 핵심 오류 없음
+후시구로 메구미
 ```
 
-사용자가 전체를 정상 확인하면:
+선택 이유:
 
 ```text
-Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
-Gate 5A Third Character Stress Test: START
+식신/소환체가 별도 전투 주체가 되어
+고죠/스쿠나와 다른 구조로 Gate 4 contract를 stress test할 수 있음
+```
+
+현재 REMOTE IMPLEMENTED:
+
+```text
+PrototypeCharacterId.MegumiStudent
+CharacterPresentationProfile 등록
+Q 옥견 / E 누에 / R 만상 / V 감합암예정 metadata
+MegumiPrototypeAvatar
+PrototypeFighterPresentationController에서 Megumi root 선택
+F3 Stress Roster toggle
+- GOJO + SUKUNA
+- GOJO + MEGUMI
+```
+
+중요:
+
+```text
+Gate 5A Pass 1에서는 메구미 Q/E/R/V Gameplay가 아직 없는 것이 정상.
+먼저 identity / HUD / Team state / Animation contract가 세 번째 Character ID에서 버티는지 확인한다.
+```
+
+테스트:
+
+```text
+F3 → G/M roster
+T → Megumi
+HUD / Skill Deck / avatar
+movement / basic 1-2-3 / Dodge
+HP/CE Tag 보존
+F3 → G/S 복귀
+Gojo/Sukuna 회귀
+Console 오류
+```
+
+세부:
+
+```text
+docs/GATE5A_THIRD_CHARACTER_STRESS_TEST.md
+```
+
+통과 후:
+
+```text
+Gate 5A Pass 2 · First Summon Gameplay
+→ 옥견부터 구현
+→ summon lifetime/target ownership 검증
+→ Technique Presentation / VFX Lifecycle / Audio Event 재사용
 ```
 
 ---
 
-# 9. Gate 5A / 5B / 6
+# 8. Gate 5B
 
-## Gate 5A — Third Character Stress Test
-
-목적:
+Gate 5A 이후 최초 production-quality 한 판을 만든다.
 
 ```text
-고죠/스쿠나와 구조가 다른 세 번째 Fighter 추가
-→ Gate 4 contract 실제 재사용성 검증
-→ 공통 Presentation/HUD를 복붙해야 하면 contract 보강
-```
-
-후보:
-
-```text
-메구미 — 식신/소환 구조
-유타 — 리카 동반체/상태 변화
-```
-
-## Gate 5B — First Production-Quality Vertical Slice
-
-Gate 3에서 자산 부재로 미룬 production-quality 목표를 회수한다.
-
-```text
-실제 rigged character model
+실제 rigged model
 Animator + animation set
 production-grade technique VFX
 Canvas/TMP final-style HUD
@@ -313,40 +265,19 @@ production SFX / Voice / Music
 "이제 실제 주술회전 게임처럼 보이고 느껴진다"
 ```
 
-## Gate 6 — Production
-
-Gate 5A 구조 검증 + Gate 5B 품질 검증 뒤:
-
-```text
-캐릭터 로스터 확장
-맵 확장
-게임 모드 확장
-온라인
-Incident Battle
-PvE / Story
-```
-
-을 순차 생산한다.
-
 ---
 
-# 10. Codex 사용 기준
-
-Codex가 유리한 작업:
+# 9. Codex 사용 기준
 
 ```text
-여러 파일 구조 변경
-Character/Team/Match 리팩터링
-반복 migration
-테스트 추가
-코드베이스 전체 탐색이 필요한 변경
+여러 파일 구조 변경 + Codex/agent 실행 인터페이스 실제 사용 가능
+→ agent 우선 검토
+→ diff review
+→ 사용자 Unity test
+
+작은 변경 또는 현재 agent 실행 인터페이스 없음
+→ GitHub 직접 수정
+→ 사용자 Unity test
 ```
 
-작은 1~3파일 수정은 직접 수정이 더 빠를 수 있다.
-
-중요:
-
-```text
-Codex가 실제 실행 가능한 경우에만 "Codex 사용"이라고 말한다.
-현재 대화에 Codex 실행 도구가 없다면 GitHub 직접 작업으로 진행한다.
-```
+실제로 실행하지 않았다면 Codex를 사용했다고 말하지 않는다.
