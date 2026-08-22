@@ -8,7 +8,8 @@
 Gate 4A Character Presentation Contract: USER VERIFIED
 Gate 4B Pass 1 · Active Fighter / Skill Deck Binding: USER VERIFIED
 Gate 4B Pass 2 · Player Team HUD Binding: USER VERIFIED
-Gate 4B Pass 3 · Opponent Team HUD Binding: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 4B Pass 3 · Opponent Team HUD Binding: USER VERIFIED
+Gate 4B Pass 4 · Match HUD Snapshot Migration: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -23,6 +24,7 @@ HUD → CursedEnergyController
 HUD → PrototypeCharacterController
 HUD → CombatActionGate
 HUD → Player/Opponent Team Controller
+HUD → BasicAttack / Movement / CurseBot telegraph
 ```
 
 Gate 4B에서는 UI가 구체 Controller 대신 `읽기 전용 HUD 데이터 계약`을 소비하도록 단계적으로 바꾼다.
@@ -110,9 +112,9 @@ Gate 4B Pass 2: USER VERIFIED
 
 ---
 
-# Pass 3 — Opponent Team HUD Binding
+# Pass 3 — Opponent Team HUD Binding · USER VERIFIED
 
-새 파일:
+파일:
 
 ```text
 unity/Assets/Scripts/Core/OpponentCombatHudDataSource.cs
@@ -134,15 +136,12 @@ TEAM BATTLE 여부
 Living member count
 Team size
 Reserve Entry notice
-Active member
-Reserve member
-- index / CURSE A,B identity
-- active 여부
-- HP current / max
-- KO
+Active / Reserve member
+HP current / max
+KO
 ```
 
-`OpponentCombatHudDataSource`는 다음을 하지 않는다.
+`PrototypeOpponentTeamController`는 HUD용 read-only access만 공개하고 실제 Gameplay는 계속 직접 소유한다.
 
 ```text
 F2 Mode 전환
@@ -150,40 +149,90 @@ Scene reload
 KO 처리
 Reserve 입장
 Target Lock 승계
-Victory 판정
 ```
 
-이 Gameplay는 기존 `PrototypeOpponentTeamController` / `MatchController`가 계속 소유한다.
-
-## PrototypeOpponentTeamController Migration
-
-Controller에 HUD용 read-only access만 추가했다.
+2026-08-23 사용자 실제 확인:
 
 ```text
-IsInitialized
-ActiveMemberIndex
-TeamSize
-EntryNoticeActive
-GetMember(index)
+정상!
 ```
 
-기존 IMGUI 렌더링은 이제 직접 private `members[]`, `activeIndex`, `entryNoticeUntil`을 조합하지 않고:
+따라서:
 
 ```text
-OpponentCombatHudDataSource
-→ OpponentCombatHudSnapshot
-→ Mode chip
-→ Opponent Team panel
-→ Active / Reserve rows
+Gate 4B Pass 3: USER VERIFIED
 ```
-
-경로로 화면을 그린다.
-
-즉 Controller 내부에 임시 IMGUI가 아직 같이 있지만 UI 데이터 경계는 분리했다.
 
 ---
 
-# Pass 3 사용자 테스트
+# Pass 4 — Match HUD Snapshot Migration
+
+이번 마지막 migration에서는 `MatchController`의 표시 코드가 직접 Gameplay 컴포넌트를 읽는 부분을 추가로 줄였다.
+
+## Player snapshot 확장
+
+`PlayerCombatHudSnapshot`에 Match HUD용 read-only 표시 값을 추가했다.
+
+```text
+CE Profile Label
+Dodge active / ready / cooldown
+Basic attack chain step / label
+Hit combo count / label
+```
+
+이 값들은 기존 `CursedEnergyController`, `ThirdPersonPlayerController`, `BasicAttack`에서 읽기만 한다.
+
+Gameplay ownership은 바뀌지 않는다.
+
+## Opponent snapshot 확장
+
+`OpponentCombatHudSnapshot`에 다음 표시 값을 추가했다.
+
+```text
+Attack telegraph count
+Maximum telegraph progress
+```
+
+현재 활성 상태인 CurseBot만 계산한다.
+
+## MatchController Migration
+
+기존 HUD 직접 참조 중 다음을 Snapshot 경로로 전환했다.
+
+```text
+Player identity / accent
+Player HP / CE
+Team mode 여부
+Dodge chip
+Basic chain / combo indicator
+Opponent Training HP panels
+Living Curse count
+Enemy attack DODGE warning
+F1 control help의 캐릭터/기술명
+```
+
+현재 경로:
+
+```text
+Gameplay Components
+→ PlayerCombatHudDataSource / OpponentCombatHudDataSource
+→ Snapshot
+→ MatchController temporary IMGUI renderer
+```
+
+`MatchController`가 실제 전투 종료를 위해 사용하는 `BasicAttack`, `Movement`, `TargetLock`, enemy bot references는 Gameplay 책임이라 그대로 남겨 둔다.
+
+고죠의 영역 입력 timing bar도 현재는 `GojoDomainController` 고유 UI라 직접 연결을 유지하고, 이후 Gate 4C Technique Presentation Contract에서 다룬다.
+
+## 작은 HUD 회귀 수정
+
+Team HUD의 Active fighter panel이 76px인데 기존 MatchController의 Dodge chip 기준 rect는 62px였다.
+
+이번 migration에서 Team mode일 때 Dodge chip 기준 높이를 76px로 맞춰 Active HUD 하단과 겹칠 가능성을 제거했다.
+
+---
+
+# Pass 4 사용자 테스트
 
 ```text
 1. cd D:\GitHub\JJK_game
@@ -193,29 +242,36 @@ OpponentCombatHudDataSource
 5. CombatMVP Play
 ```
 
-확인:
+빠른 확인:
 
 ```text
-[ ] 시작 TRAINING · MULTI CURSE 표시 정상
-[ ] F2 → TEAM BATTLE 전환 정상
-[ ] 우측 OPPONENT panel 정상
-[ ] A CURSE A / R CURSE B HP 표시 정상
-[ ] 첫 Active KO 뒤 Reserve 입장
-[ ] RESERVE ENTRY 약 1.5초 표시
-[ ] 새 Reserve가 Active row로 이동
-[ ] Target Lock 자동 승계 정상
-[ ] 첫 KO에는 VICTORY 없음
-[ ] 마지막 상대 KO에만 VICTORY
-[ ] 다시 F2 mode 전환 시 기존 동작 정상
+[ ] 시작 화면 Player / Curse HUD 정상
+[ ] Dodge Ready / cooldown / DODGING chip 정상
+[ ] 기본 1/2/3 chain 및 combo 표시 정상
+[ ] 주령 공격 예고 때 중앙 DODGE! 경고 + 진행 bar 정상
+[ ] F1 도움말에서 고죠 기술명 정상
+[ ] T Tag 후 스쿠나 Skill/Help identity 정상
+[ ] Team mode에서 Dodge chip이 좌측 Active HUD와 겹치지 않음
+[ ] F2 Training / Team Battle 전환 정상
+[ ] Training에서 CURSE A/B HP panel 정상
+[ ] Team Battle에서 기존 Opponent Team HUD 정상
+[ ] 첫/마지막 KO Victory 규칙 정상
+[ ] HP/CE/Tag/Target Lock/술식 Gameplay 회귀 없음
 ```
 
 통과하면:
 
 ```text
-Gate 4B Pass 3: USER VERIFIED
+Gate 4B HUD Data Binding Extraction: USER VERIFIED
 ```
 
-그 뒤 `MatchController`에 남아 있는 legacy non-team player/enemy HUD 및 전투 상태 표시를 조사해 4B의 마지막 범위를 결정한다.
+로 닫고 다음은:
+
+```text
+Gate 4C Technique Presentation Request
+```
+
+로 넘어간다.
 
 ---
 
