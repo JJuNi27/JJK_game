@@ -1,3 +1,4 @@
+using JJKGame.Core;
 using UnityEngine;
 
 namespace JJKGame.Player
@@ -5,21 +6,20 @@ namespace JJKGame.Player
     [DefaultExecutionOrder(1500)]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BasicAttack))]
+    [RequireComponent(typeof(FighterAnimationStateSource))]
     public sealed class PrototypeFighterPresentationController : MonoBehaviour
     {
         private const string GojoRootName = "PrototypeGojoAvatar";
         private const string SukunaRootName = "PrototypeSukunaAvatar";
 
-        private BasicAttack basicAttack;
-        private ThirdPersonPlayerController movementController;
-        private CharacterController characterController;
+        private FighterAnimationStateSource animationStateSource;
         private Transform activeVisualRoot;
         private Transform leftArm;
         private Transform rightArm;
+        private PrototypeCharacterId activeCharacterId;
         private int observedAttackStep;
         private float poseStartedAt;
         private float entryStartedAt;
-        private string activeRootName = string.Empty;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void BootstrapAfterSceneLoad()
@@ -38,26 +38,33 @@ namespace JJKGame.Player
 
         private void Awake()
         {
-            basicAttack = GetComponent<BasicAttack>();
-            movementController = GetComponent<ThirdPersonPlayerController>();
-            characterController = GetComponent<CharacterController>();
-            ResolveActiveVisual(true);
+            animationStateSource = FighterAnimationStateSource.GetOrCreate(gameObject);
+            FighterAnimationStateSnapshot snapshot = animationStateSource != null
+                ? animationStateSource.Snapshot
+                : default;
+            ResolveActiveVisual(true, snapshot.IsValid
+                ? snapshot.CharacterId
+                : PrototypeCharacterId.GojoModern);
         }
 
         private void Update()
         {
-            if (basicAttack == null)
+            animationStateSource ??= FighterAnimationStateSource.GetOrCreate(gameObject);
+            FighterAnimationStateSnapshot snapshot = animationStateSource != null
+                ? animationStateSource.Snapshot
+                : default;
+            if (!snapshot.IsValid)
             {
                 return;
             }
 
-            ResolveActiveVisual(false);
+            ResolveActiveVisual(false, snapshot.CharacterId);
             if (activeVisualRoot == null)
             {
                 return;
             }
 
-            int attackStep = basicAttack.DisplayChainStep;
+            int attackStep = snapshot.BasicAttackStep;
             if (attackStep != 0 && attackStep != observedAttackStep)
             {
                 observedAttackStep = attackStep;
@@ -76,31 +83,27 @@ namespace JJKGame.Player
                 return;
             }
 
-            if (movementController != null && movementController.IsDodging)
+            if (snapshot.IsDodging)
             {
-                ApplyDodgePose();
+                ApplyDodgePose(snapshot.DodgeProgress);
                 return;
             }
 
-            ApplyLocomotionStance();
+            ApplyLocomotionStance(snapshot.PlanarSpeed);
         }
 
-        private void ResolveActiveVisual(bool force)
+        private void ResolveActiveVisual(bool force, PrototypeCharacterId characterId)
         {
-            Transform gojoRoot = transform.Find(GojoRootName);
-            Transform sukunaRoot = transform.Find(SukunaRootName);
-
-            Transform nextRoot = null;
-            if (gojoRoot != null && gojoRoot.gameObject.activeInHierarchy)
+            string desiredRootName = characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
+                ? SukunaRootName
+                : GojoRootName;
+            Transform nextRoot = transform.Find(desiredRootName);
+            if (nextRoot != null && !nextRoot.gameObject.activeInHierarchy)
             {
-                nextRoot = gojoRoot;
-            }
-            else if (sukunaRoot != null && sukunaRoot.gameObject.activeInHierarchy)
-            {
-                nextRoot = sukunaRoot;
+                nextRoot = null;
             }
 
-            if (!force && nextRoot == activeVisualRoot)
+            if (!force && nextRoot == activeVisualRoot && characterId == activeCharacterId)
             {
                 return;
             }
@@ -111,10 +114,10 @@ namespace JJKGame.Player
                 activeVisualRoot.localScale = Vector3.one;
             }
 
+            activeCharacterId = characterId;
             activeVisualRoot = nextRoot;
             leftArm = activeVisualRoot != null ? activeVisualRoot.Find("LeftArm") : null;
             rightArm = activeVisualRoot != null ? activeVisualRoot.Find("RightArm") : null;
-            activeRootName = activeVisualRoot != null ? activeVisualRoot.name : string.Empty;
             observedAttackStep = 0;
             poseStartedAt = 0f;
             entryStartedAt = Time.time;
@@ -135,18 +138,10 @@ namespace JJKGame.Player
             activeVisualRoot.localScale = Vector3.one * (1f + pulse);
         }
 
-        private void ApplyLocomotionStance()
+        private void ApplyLocomotionStance(float planarSpeed)
         {
-            float planarSpeed = 0f;
-            if (characterController != null)
-            {
-                Vector3 velocity = characterController.velocity;
-                velocity.y = 0f;
-                planarSpeed = velocity.magnitude;
-            }
-
             float moveWeight = Mathf.Clamp01(planarSpeed / 5.5f);
-            bool sukuna = activeRootName == SukunaRootName;
+            bool sukuna = activeCharacterId == PrototypeCharacterId.SukunaShibuyaYujiBody;
             float breathing = Mathf.Sin(Time.time * (sukuna ? 3.6f : 2.8f));
 
             Vector3 targetRootEuler;
@@ -174,11 +169,10 @@ namespace JJKGame.Player
             );
         }
 
-        private void ApplyDodgePose()
+        private void ApplyDodgePose(float dodgeProgress)
         {
-            float progress = movementController != null ? movementController.DodgeProgress : 0f;
-            float envelope = Mathf.Sin(Mathf.Clamp01(progress) * Mathf.PI);
-            bool sukuna = activeRootName == SukunaRootName;
+            float envelope = Mathf.Sin(Mathf.Clamp01(dodgeProgress) * Mathf.PI);
+            bool sukuna = activeCharacterId == PrototypeCharacterId.SukunaShibuyaYujiBody;
 
             float forwardLean = sukuna ? 34f : 27f;
             float twist = sukuna ? 10f : 6f;
@@ -238,7 +232,7 @@ namespace JJKGame.Player
                 return;
             }
 
-            bool sukuna = activeRootName == SukunaRootName;
+            bool sukuna = activeCharacterId == PrototypeCharacterId.SukunaShibuyaYujiBody;
             if (sukuna)
             {
                 ApplySukunaPose(attackStep, envelope);
