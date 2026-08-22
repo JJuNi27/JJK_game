@@ -43,7 +43,6 @@ namespace JJKGame.Player
         private Health[] combatHealth;
         private GojoDomainController domainController;
         private TargetLockController targetLock;
-        private PrototypeCombatAudio combatAudio;
         private CursedEnergyController cursedEnergy;
         private CombatActionGate actionGate;
         private TechniqueBurnoutController burnout;
@@ -84,7 +83,6 @@ namespace JJKGame.Player
             ownHealth = GetComponent<Health>();
             domainController = GetComponent<GojoDomainController>();
             targetLock = GetComponent<TargetLockController>();
-            combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
             cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             burnout = TechniqueBurnoutController.GetOrCreate(gameObject);
@@ -157,7 +155,9 @@ namespace JJKGame.Player
                 FaceHorizontalPoint(pendingBluePoint);
                 nextBlueAt = Time.time + blueCooldown;
                 BeginCast(CastState.Blue, blueCastTime);
-                combatAudio?.PlayBlueCast();
+                CombatAudioEvents.Raise(
+                    CombatAudioEvent.ForOwner(ownHealth, CombatAudioEventId.GojoBlueCast)
+                );
             }
             else
             {
@@ -165,7 +165,9 @@ namespace JJKGame.Player
                 transform.rotation = Quaternion.LookRotation(pendingRedDirection, Vector3.up);
                 nextRedAt = Time.time + redCooldown;
                 BeginCast(CastState.Red, redCastTime);
-                combatAudio?.PlayRedCast();
+                CombatAudioEvents.Raise(
+                    CombatAudioEvent.ForOwner(ownHealth, CombatAudioEventId.GojoRedCast)
+                );
             }
         }
 
@@ -211,7 +213,9 @@ namespace JJKGame.Player
                 bluePullSpeed,
                 blueHitStun,
                 target => BlueHit?.Invoke(target),
-                () => combatAudio?.PlayBlueImpact()
+                () => CombatAudioEvents.Raise(
+                    CombatAudioEvent.ForOwner(ownHealth, CombatAudioEventId.GojoBlueImpact)
+                )
             );
         }
 
@@ -232,7 +236,9 @@ namespace JJKGame.Player
                 redPushSpeed,
                 redHitStun,
                 target => RedHit?.Invoke(target),
-                () => combatAudio?.PlayRedImpact()
+                () => CombatAudioEvents.Raise(
+                    CombatAudioEvent.ForOwner(ownHealth, CombatAudioEventId.GojoRedImpact)
+                )
             );
         }
 
