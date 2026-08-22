@@ -44,13 +44,16 @@ namespace JJKGame.Player
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void BootstrapAfterSceneLoad()
         {
-            PrototypeCharacterController[] characters =
-                FindObjectsByType<PrototypeCharacterController>(FindObjectsSortMode.None);
-            foreach (PrototypeCharacterController character in characters)
+            // Gate 5A fighter characters may receive PrototypeCharacterController through
+            // another runtime bootstrap, so do not depend on that component already existing.
+            // BasicAttack is the stable player fighter-shell marker used by the presentation
+            // bootstraps as well, and the controller can resolve character identity later.
+            BasicAttack[] fighterShells = FindObjectsByType<BasicAttack>(FindObjectsSortMode.None);
+            foreach (BasicAttack fighterShell in fighterShells)
             {
-                if (character != null)
+                if (fighterShell != null)
                 {
-                    GetOrCreate(character.gameObject);
+                    GetOrCreate(fighterShell.gameObject);
                 }
             }
         }
