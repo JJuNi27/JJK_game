@@ -8,7 +8,8 @@
 Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
 Gate 5A Third Character Stress Test: IN PROGRESS
 
-Pass 1 · Third Character Identity / Roster / HUD Plumbing:
+Pass 1 · Third Character Identity / Roster / HUD Plumbing: USER VERIFIED
+Pass 2 · First Summon Gameplay / Divine Dog Contract Reuse:
 REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
@@ -39,9 +40,9 @@ Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
 1. 새 Character ID/Profile을 추가해 기존 HUD가 수정 없이 identity를 표시한다.
 2. Team state/HP/CE 보존 구조가 세 번째 Character ID에서도 동작한다.
 3. Animation State/Cue contract가 세 번째 Fighter를 받아들인다.
-4. 이후 식신 술식이 Technique Presentation Request를 재사용한다.
-5. 이후 식신 VFX가 VFX Lifecycle을 재사용한다.
-6. 이후 메구미 SFX가 CombatAudioEvent를 재사용한다.
+4. 식신 술식이 Technique Presentation Request를 재사용한다.
+5. 식신 VFX가 VFX Lifecycle을 재사용한다.
+6. 메구미 SFX가 CombatAudioEvent를 재사용한다.
 7. 고죠/스쿠나 Presentation/HUD 코드를 대량 복붙하지 않는다.
 ```
 
@@ -49,19 +50,13 @@ Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
 
 ---
 
-# Pass 1 — Identity / Roster / HUD Plumbing
+# Pass 1 — Identity / Roster / HUD Plumbing · USER VERIFIED
 
-이번 Pass는 술식 구현 전에 Gate 4의 가장 바깥쪽 contract부터 검증한다.
-
-## 새 Character ID
+## 새 Character ID / Profile
 
 ```text
 PrototypeCharacterId.MegumiStudent
-```
 
-## Presentation Profile
-
-```text
 FUSHIGURO MEGUMI · 도쿄고 학생
 HUD: MEGUMI
 Short: 메구미
@@ -72,9 +67,6 @@ R 만상
 V 감합암예정
 ```
 
-현재 skill label은 향후 Gameplay slot 계획을 위한 presentation metadata다.
-Pass 1에서는 Q/E/R/V Gameplay는 아직 구현하지 않는다.
-
 ## Prototype Visual
 
 ```text
@@ -82,19 +74,13 @@ MegumiPrototypeAvatar
 → PrototypeMegumiAvatar
 ```
 
-이것은 Gate 5A 구조 테스트용 procedural placeholder다.
-실제 메구미 모델이 아니다.
+Gate 5A 구조 테스트용 procedural placeholder이며 실제 메구미 모델이 아니다.
 
-`PrototypeFighterPresentationController`는 Gate 4E의 `FighterAnimationStateSnapshot.CharacterId`를 보고 새 Megumi visual root를 선택한다.
-
-Pass 1에서는 별도 production animation을 만들지 않고 기존 non-Sukuna prototype pose fallback을 재사용한다.
+`PrototypeFighterPresentationController`는 Gate 4E의 `FighterAnimationStateSnapshot.CharacterId`를 통해 메구미 visual root를 선택한다.
 
 ## Stress Roster
 
-기존 2인 팀 규칙 자체를 3인 팀으로 확장하지 않는다.
-Gate 5A 목적은 `세 번째 Character` 검증이지 `3인 Team UI` 검증이 아니기 때문이다.
-
-대신 동일한 2인 Active/Reserve 구조에서 roster만 교체한다.
+현재 F3는 최종 캐릭터 선택 UX가 아니라 개발/스트레스 테스트용 harness다.
 
 ```text
 기본:
@@ -107,38 +93,138 @@ GOJO + MEGUMI
 GOJO + SUKUNA
 ```
 
-F3를 누르면 현재 scene을 reload해 roster를 안전하게 다시 초기화한다.
+기존 2인 Active/Reserve 규칙을 유지하면서 roster 데이터만 바꿔 세 번째 Character ID가 공통 경계를 통과하는지 빠르게 검증한다.
 
-Team HUD 상단:
+최종 Character / Team Select UX는 별도 계획 문서 `docs/CHARACTER_TEAM_SELECT_PLAN.md`를 따른다.
+
+## 사용자 검증
+
+2026-08-23 사용자 확인:
 
 ```text
-TEAM · G/S
-TEAM · G/M
+F3 stress roster 정상
+메구미 HUD / Skill Deck 정상
+T Tag 정상
+메구미 이동 / 기본공격 / Dodge 정상
+HP / CE 왕복 보존 정상
+기존 고죠/스쿠나 회귀 없음
 ```
 
-으로 현재 stress roster를 표시한다.
+사용자 결과:
+
+```text
+정상
+```
+
+따라서:
+
+```text
+Gate 5A Pass 1: USER VERIFIED
+```
 
 ---
 
-# 이번 Pass에서 의도적으로 하지 않은 것
+# Pass 2 — First Summon Gameplay / Divine Dog Contract Reuse
+
+Pass 1에서 identity/HUD/roster 경계가 통과했으므로 첫 구조 차이인 `별도 전투 주체`를 실제로 넣는다.
+
+## Gameplay
+
+새 파일:
 
 ```text
-옥견 Gameplay
-누에 Gameplay
-만상 Gameplay
-감합암예정 Gameplay
-식신 AI
-식신 HP/소환 지속시간
-메구미 전용 camera/VFX/audio tuning
-3인 팀 UI
-production model / animation
+unity/Assets/Scripts/Player/MegumiTechniqueController.cs
+unity/Assets/Scripts/Player/MegumiDivineDogSummon.cs
 ```
 
-먼저 `세 번째 Character ID가 Gate 4 경계를 통과하는가`를 확인한 뒤 식신 Gameplay로 들어간다.
+현재 prototype 규칙:
+
+```text
+Q 옥견
+CE 20
+Cooldown 6.5s
+Summon lifetime 약 6s
+Damage 16
+
+Target Lock 대상이 있으면 우선 추적
+없으면 가장 가까운 living target 탐색
+접근 후 반복 공격
+```
+
+옥견 자체에는 `Health`를 붙이지 않았다.
+
+목적:
+
+```text
+플레이어/상대 Fighter처럼 Target Lock 후보가 되거나
+Opponent Team 생존 수/Victory 판정을 오염시키지 않으면서
+별도 gameplay actor ownership을 검증
+```
+
+현재 Pass 2에서는 새 옥견을 다시 부르면 이전 옥견을 종료해 `1 active summon`을 유지한다.
+메구미에서 Tag Out 하면 옥견을 종료한다. 이 persistence 규칙은 Gate 5A prototype 결정이며 최종 원작 충실 규칙으로 고정한 것은 아니다.
+
+## Gate 4 Contract 재사용
+
+### Technique Presentation Request
+
+```text
+TechniquePresentationId.DivineDog
+Release
+Impact
+End
+```
+
+옥견 Gameplay는 camera 수치나 renderer를 직접 모른다.
+
+### VFX Lifecycle
+
+`PrototypeSignatureSpatialVfxController`가 `DivineDog` semantic request를 받아:
+
+```text
+소환 위치 teal burst
+공격 impact teal burst
+```
+
+를 `PresentationVfxRuntime`으로 생성한다.
+
+### Camera / HitStop
+
+`PrototypeTechniquePresentationDirector`가 동일 request를 소비해 소환/타격의 가벼운 focus, shake, FOV, impact hit-stop을 담당한다.
+
+### Audio Event
+
+```text
+CombatAudioEventId.DivineDog
+variant 1 = summon
+variant 2 = hit
+```
+
+현재 prototype audio bridge는 기존 fallback sound를 재사용한다. 실제 메구미 SFX는 Gate 5B production audio에서 교체 가능하다.
+
+### Animation Contract
+
+Gate 4E의 `FighterAnimationStateSource`가 Technique Presentation Request를 이미 animation-facing cue로 연결하므로 옥견 추가를 위해 별도 고죠/스쿠나 animation plumbing을 복사하지 않는다.
 
 ---
 
-# 사용자 테스트
+# Pass 2에서 의도적으로 하지 않은 것
+
+```text
+E 누에 Gameplay
+R 만상 Gameplay
+V 감합암예정 Gameplay
+범용 Summon Framework 선행 구축
+식신별 HP/피격 시스템
+production model / animation / SFX
+최종 캐릭터 선택 화면
+```
+
+첫 옥견 경로에서 실제 중복이 드러난 뒤에만 공통 Summon contract가 필요한지 판단한다.
+
+---
+
+# Pass 2 사용자 테스트
 
 ```powershell
 cd D:\GitHub\JJK_game
@@ -147,21 +233,22 @@ git pull origin master
 
 Unity compile 완료 후 `CombatMVP` Play.
 
-빠른 확인:
-
 ```text
-[ ] 기본 시작은 기존 GOJO + SUKUNA이며 회귀 없음
-[ ] F3 → scene reload
-[ ] Team HUD가 TEAM · G/M으로 바뀜
-[ ] Reserve row가 메구미로 표시됨
-[ ] T Tag → 메구미 전환
-[ ] 메구미의 검은 머리/남색 계열 prototype avatar가 표시됨
-[ ] Active HUD 이름/색이 MEGUMI profile로 바뀜
-[ ] Skill Deck이 Q 옥견 / E 누에 / R 만상 / V 감합암예정 표시
-[ ] 메구미 상태에서 이동 / 기본 1-2-3 / Dodge 동작
-[ ] 기본 attack/dodge prototype pose가 깨지지 않음
-[ ] 메구미 HP/CE 저장 후 T → 고죠 → 다시 T → 메구미 시 값 보존
-[ ] 다시 F3 → 기본 GOJO + SUKUNA roster 복귀
+[ ] F3 → GOJO + MEGUMI
+[ ] T → 메구미
+[ ] Q → CE 약 20 감소
+[ ] 메구미 근처에 어두운 색 prototype 옥견 등장
+[ ] 소환 시 teal VFX / camera / sound 정상
+[ ] TAB Target Lock 대상이 있으면 옥견이 해당 적을 우선 추적
+[ ] Target Lock이 없어도 가까운 적을 찾아 이동
+[ ] 적 근접 후 물기 공격으로 HP 감소
+[ ] 공격 시 impact VFX / camera / sound 정상
+[ ] 약 6초 후 옥견 자연 종료
+[ ] cooldown 중 Q 연타로 무한 생성되지 않음
+[ ] 다시 소환해도 active 옥견은 1마리만 유지
+[ ] 옥견 활성 중 T Tag Out → 옥견 종료
+[ ] 옥견에는 Target Lock 링이 잡히지 않음
+[ ] 옥견이 상대 HUD/Victory 생존 판정을 방해하지 않음
 [ ] 고죠/스쿠나 기존 전투 회귀 없음
 [ ] Console 빨간 오류 없음
 ```
@@ -169,20 +256,13 @@ Unity compile 완료 후 `CombatMVP` Play.
 주의:
 
 ```text
-메구미 Q/E/R/V는 Pass 1에서는 아직 동작하지 않는 것이 정상이다.
+E 누에 / R 만상 / V 감합암예정은 아직 미구현이 정상이다.
 ```
 
 통과하면:
 
 ```text
-Gate 5A Pass 1: USER VERIFIED
+Gate 5A Pass 2: USER VERIFIED
 ```
 
-다음:
-
-```text
-Pass 2 · First Summon Gameplay
-→ 옥견을 첫 대표 식신으로 구현
-→ 소환체 lifetime/targeting/gameplay ownership 검증
-→ Technique Presentation Request / VFX Lifecycle / Audio Event 재사용
-```
+다음은 옥견 결과를 보고 두 번째 소환 구조를 추가할지, 먼저 드러난 contract gap을 보강할지 결정한다.
