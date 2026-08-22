@@ -25,7 +25,6 @@ namespace JJKGame.Player
         private GojoTechniqueController gojoTechnique;
         private SukunaTechniqueController sukunaTechnique;
         private SukunaDomainController sukunaDomain;
-        private PrototypeCombatAudio combatAudio;
         private CombatActionGate actionGate;
         private float verticalVelocity;
         private float dodgeEndsAt;
@@ -73,7 +72,6 @@ namespace JJKGame.Player
             gojoTechnique = GetComponent<GojoTechniqueController>();
             sukunaTechnique = GetComponent<SukunaTechniqueController>();
             sukunaDomain = GetComponent<SukunaDomainController>();
-            combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
 
             if (cameraTransform == null && Camera.main != null)
@@ -139,8 +137,9 @@ namespace JJKGame.Player
             dodgeEndsAt = Time.time + dodgeDuration;
             nextDodgeAt = Time.time + dodgeCooldown;
             health.GrantInvulnerability(dodgeInvulnerabilityDuration);
-            combatAudio ??= PrototypeCombatAudio.GetOrCreate(gameObject);
-            combatAudio?.PlayDodge();
+            CombatAudioEvents.Raise(
+                CombatAudioEvent.ForOwner(health, CombatAudioEventId.Dodge)
+            );
         }
 
         private void ApplyDodgeMovement()
