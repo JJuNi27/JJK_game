@@ -31,9 +31,8 @@ namespace JJKGame.Player
         public static PrototypeCharacterId SelectedCharacter => selectedCharacter;
         public PrototypeCharacterId ActiveCharacter => activeCharacter;
         public bool IsSukuna => activeCharacter == PrototypeCharacterId.SukunaShibuyaYujiBody;
-        public string DisplayName => IsSukuna
-            ? "RYOMEN SUKUNA · 시부야 사변"
-            : "GOJO SATORU · 현대 · 교사";
+        public CharacterPresentationProfile PresentationProfile => CharacterPresentationProfiles.Get(activeCharacter);
+        public string DisplayName => PresentationProfile.DisplayName;
 
         public static PrototypeCharacterController GetOrCreate(GameObject owner)
         {
@@ -244,29 +243,31 @@ namespace JJKGame.Player
                 return;
             }
 
+            CharacterPresentationProfile profile = PresentationProfile;
+            CharacterPresentationProfile gojoProfile = CharacterPresentationProfiles.Get(PrototypeCharacterId.GojoModern);
+            CharacterPresentationProfile sukunaProfile = CharacterPresentationProfiles.Get(PrototypeCharacterId.SukunaShibuyaYujiBody);
             float width = 230f;
             Rect rect = new Rect(Screen.width - width - 12f, 108f, width, 24f);
-            Color accent = IsSukuna
-                ? new Color(0.96f, 0.22f, 0.12f)
-                : new Color(0.20f, 0.72f, 1f);
+            Color accent = profile.HudAccent;
             DrawRect(rect, new Color(0.018f, 0.020f, 0.032f, 0.92f));
             DrawBorder(rect, accent, 1f);
             smallStyle.normal.textColor = accent;
-            GUI.Label(rect, "1 · 고죠    2 · 스쿠나", smallStyle);
+            GUI.Label(rect, $"1 · {gojoProfile.ShortName}    2 · {sukunaProfile.ShortName}", smallStyle);
         }
 
         private void DrawSukunaPlayerPanel()
         {
+            CharacterPresentationProfile profile = PresentationProfile;
             const float margin = 12f;
             float panelWidth = Mathf.Clamp((Screen.width - margin * 3f) * 0.36f, 230f, 340f);
             Rect rect = new Rect(margin, margin, panelWidth, 62f);
-            Color accent = new Color(0.96f, 0.20f, 0.12f);
+            Color accent = profile.HudAccent;
 
             DrawRect(rect, new Color(0.040f, 0.010f, 0.012f, 0.98f));
             DrawBorder(rect, accent, 2f);
             GUI.Label(
                 new Rect(rect.x + 10f, rect.y + 3f, rect.width - 20f, 18f),
-                $"PLAYER · {DisplayName}",
+                $"PLAYER · {profile.DisplayName}",
                 headerStyle
             );
 
@@ -285,7 +286,7 @@ namespace JJKGame.Player
                     new Rect(rect.x + 10f, rect.y + 44f, rect.width - 20f, 12f),
                     cursedEnergy.CurrentEnergy,
                     cursedEnergy.MaxEnergy,
-                    new Color(0.72f, 0.12f, 0.20f),
+                    profile.EnergyAccent,
                     $"CE {cursedEnergy.CurrentEnergy:0}/{cursedEnergy.MaxEnergy:0} · {cursedEnergy.ProfileLabel}"
                 );
             }
@@ -294,17 +295,18 @@ namespace JJKGame.Player
         private void DrawSukunaDomainPanel()
         {
             sukunaDomain ??= GetComponent<SukunaDomainController>();
+            CharacterPresentationProfile profile = PresentationProfile;
             float width = Mathf.Min(680f, Screen.width - 24f);
             Rect rect = new Rect((Screen.width - width) * 0.5f, Screen.height - 48f, width, 36f);
             Color accent = sukunaDomain != null && sukunaDomain.IsActive
                 ? new Color(1f, 0.08f, 0.04f)
-                : new Color(0.90f, 0.18f, 0.10f);
+                : profile.HudAccent;
             DrawRect(rect, new Color(0.055f, 0.010f, 0.012f, 0.98f));
             DrawBorder(rect, accent, sukunaDomain != null && sukunaDomain.IsActive ? 3f : 2f);
             centerStyle.normal.textColor = Color.white;
             GUI.Label(
                 new Rect(rect.x + 10f, rect.y + 2f, rect.width - 20f, 22f),
-                sukunaDomain != null ? sukunaDomain.StatusText : "V · 복마어주자 · 연결 안 됨",
+                sukunaDomain != null ? sukunaDomain.StatusText : $"V · {profile.Domain.Label} · 연결 안 됨",
                 centerStyle
             );
             smallStyle.normal.textColor = new Color(0.92f, 0.66f, 0.60f);
@@ -317,16 +319,17 @@ namespace JJKGame.Player
 
         private void DrawSukunaHelp()
         {
+            CharacterPresentationProfile profile = PresentationProfile;
             float width = 360f;
             Rect rect = new Rect(Screen.width - width - 12f, Screen.height - 188f, width, 128f);
             DrawRect(rect, new Color(0.040f, 0.010f, 0.012f, 0.98f));
-            DrawBorder(rect, new Color(0.96f, 0.22f, 0.12f), 2f);
+            DrawBorder(rect, profile.HudAccent, 2f);
             string text =
                 "F1 · 닫기\n"
                 + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
-                + "LMB 기본 공격 · Q 해 · E 팔\n"
-                + "R 푸가: 해·팔 사용 후 영역 밖 적 1명\n"
-                + "V 복마어주자: 짧은 준비 후 개방형 영역";
+                + $"LMB 기본 공격 · Q {profile.Skill1.Label} · E {profile.Skill2.Label}\n"
+                + $"R {profile.Ultimate.Label}: 해·팔 사용 후 영역 밖 적 1명\n"
+                + $"V {profile.Domain.Label}: 짧은 준비 후 개방형 영역";
             smallStyle.normal.textColor = Color.white;
             GUI.Label(
                 new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, rect.height - 16f),
