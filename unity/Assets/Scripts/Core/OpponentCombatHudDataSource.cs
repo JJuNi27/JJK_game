@@ -40,7 +40,9 @@ namespace JJKGame.Core
             int teamSize,
             bool reserveEntryNotice,
             OpponentTeamMemberHudSnapshot activeMember,
-            OpponentTeamMemberHudSnapshot reserveMember
+            OpponentTeamMemberHudSnapshot reserveMember,
+            int attackTelegraphCount,
+            float attackTelegraphProgress
         )
         {
             IsValid = isValid;
@@ -50,6 +52,8 @@ namespace JJKGame.Core
             ReserveEntryNotice = reserveEntryNotice;
             ActiveMember = activeMember;
             ReserveMember = reserveMember;
+            AttackTelegraphCount = attackTelegraphCount;
+            AttackTelegraphProgress = attackTelegraphProgress;
         }
 
         public bool IsValid { get; }
@@ -60,6 +64,8 @@ namespace JJKGame.Core
         public bool ReserveEntryNotice { get; }
         public OpponentTeamMemberHudSnapshot ActiveMember { get; }
         public OpponentTeamMemberHudSnapshot ReserveMember { get; }
+        public int AttackTelegraphCount { get; }
+        public float AttackTelegraphProgress { get; }
         public string ModeLabel => IsTeamBattle ? "TEAM BATTLE" : "TRAINING · MULTI CURSE";
     }
 
@@ -97,6 +103,8 @@ namespace JJKGame.Core
 
                 int activeIndex = teamController.ActiveMemberIndex;
                 int reserveIndex = 1 - activeIndex;
+                ResolveAttackTelegraph(out int telegraphCount, out float telegraphProgress);
+
                 return new OpponentCombatHudSnapshot(
                     true,
                     teamController.Mode,
@@ -104,7 +112,9 @@ namespace JJKGame.Core
                     teamController.TeamSize,
                     teamController.EntryNoticeActive,
                     BuildMember(activeIndex, true),
-                    BuildMember(reserveIndex, false)
+                    BuildMember(reserveIndex, false),
+                    telegraphCount,
+                    telegraphProgress
                 );
             }
         }
@@ -125,6 +135,34 @@ namespace JJKGame.Core
                 member.MaxHealth,
                 member.IsDead
             );
+        }
+
+        private void ResolveAttackTelegraph(out int count, out float progress)
+        {
+            count = 0;
+            progress = 0f;
+            if (teamController == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < teamController.TeamSize; index++)
+            {
+                Health member = teamController.GetMember(index);
+                if (member == null || !member.gameObject.activeInHierarchy || member.IsDead)
+                {
+                    continue;
+                }
+
+                CurseBotController bot = member.GetComponent<CurseBotController>();
+                if (bot == null || !bot.IsAttackTelegraphing)
+                {
+                    continue;
+                }
+
+                count += 1;
+                progress = Mathf.Max(progress, bot.AttackWindupProgress);
+            }
         }
     }
 }
