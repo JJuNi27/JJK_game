@@ -9,6 +9,7 @@ namespace JJKGame.Core
         Fuga,
         UnlimitedVoid,
         MalevolentShrine,
+        DivineDog,
     }
 
     public enum TechniquePresentationPhase
