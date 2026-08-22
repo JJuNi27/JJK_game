@@ -28,10 +28,8 @@ namespace JJKGame.Core
         private BasicAttack playerAttack;
         private ThirdPersonPlayerController playerMovement;
         private TargetLockController targetLock;
-        private CursedEnergyController cursedEnergy;
-        private GojoVariantController gojoVariant;
-        private PrototypeCharacterController prototypeCharacter;
-        private PrototypePlayerTeamController playerTeam;
+        private PlayerCombatHudDataSource playerHudDataSource;
+        private OpponentCombatHudDataSource opponentHudDataSource;
 
         private GUIStyle headerStyle;
         private GUIStyle valueStyle;
@@ -57,31 +55,33 @@ namespace JJKGame.Core
             }
         }
 
-        private bool TeamHudActive
+        private PlayerCombatHudSnapshot PlayerHudSnapshot
         {
             get
             {
-                if (playerTeam == null && playerHealth != null)
+                if (playerHudDataSource == null && playerHealth != null)
                 {
-                    playerTeam = playerHealth.GetComponent<PrototypePlayerTeamController>();
+                    playerHudDataSource = PlayerCombatHudDataSource.GetOrCreate(playerHealth.gameObject);
                 }
 
-                return playerTeam != null && playerTeam.enabled;
+                return playerHudDataSource != null ? playerHudDataSource.Snapshot : default;
             }
         }
 
-        private bool OpponentTeamHudActive => PrototypeOpponentTeamController.TeamBattleModeRequested;
-
-        private bool IsSukunaActive
+        private OpponentCombatHudSnapshot OpponentHudSnapshot
         {
             get
             {
-                if (prototypeCharacter == null && playerHealth != null)
+                if (opponentHudDataSource == null)
                 {
-                    prototypeCharacter = playerHealth.GetComponent<PrototypeCharacterController>();
+                    PrototypeOpponentTeamController opponentTeam = FindFirstObjectByType<PrototypeOpponentTeamController>();
+                    if (opponentTeam != null)
+                    {
+                        opponentHudDataSource = OpponentCombatHudDataSource.GetOrCreate(opponentTeam.gameObject);
+                    }
                 }
 
-                return prototypeCharacter != null && prototypeCharacter.IsSukuna;
+                return opponentHudDataSource != null ? opponentHudDataSource.Snapshot : default;
             }
         }
 
@@ -111,10 +111,7 @@ namespace JJKGame.Core
             playerAttack = playerHealth.GetComponent<BasicAttack>();
             playerMovement = playerHealth.GetComponent<ThirdPersonPlayerController>();
             targetLock = playerHealth.GetComponent<TargetLockController>();
-            cursedEnergy = CursedEnergyController.GetOrCreate(playerHealth.gameObject);
-            gojoVariant = GojoVariantController.GetOrCreate(playerHealth.gameObject);
-            prototypeCharacter = playerHealth.GetComponent<PrototypeCharacterController>();
-            playerTeam = playerHealth.GetComponent<PrototypePlayerTeamController>();
+            playerHudDataSource = PlayerCombatHudDataSource.GetOrCreate(playerHealth.gameObject);
             GojoPrototypeAvatar.GetOrCreate(playerHealth.gameObject);
 
             playerHealth.Died += HandlePlayerDeath;
@@ -390,78 +387,130 @@ namespace JJKGame.Core
 
         private void DrawCompactCombatHud()
         {
+            PlayerCombatHudSnapshot playerHud = PlayerHudSnapshot;
+            OpponentCombatHudSnapshot opponentHud = OpponentHudSnapshot;
+            bool teamHudActive = playerHud.IsValid && playerHud.TeamMode;
+            bool opponentTeamHudActive = opponentHud.IsValid
+                ? opponentHud.IsTeamBattle
+                : PrototypeOpponentTeamController.TeamBattleModeRequested;
+
             const float margin = 12f;
             float panelWidth = Mathf.Clamp((Screen.width - margin * 3f) * 0.36f, 230f, 340f);
-            Rect playerRect = new Rect(margin, margin, panelWidth, 62f);
-            if (!TeamHudActive)
+            Rect playerRect = new Rect(margin, margin, panelWidth, teamHudActive ? 76f : 62f);
+            if (!teamHudActive && playerHud.IsValid)
             {
-                DrawPlayerPanel(playerRect);
+                DrawPlayerPanel(playerRect, playerHud);
             }
 
-            if (!OpponentTeamHudActive)
+            if (!opponentTeamHudActive)
             {
                 float enemyWidth = Mathf.Clamp(panelWidth * 0.92f, 220f, 320f);
-                for (int index = 0; index < enemyHealths.Count; index++)
+                if (opponentHud.IsValid)
                 {
-                    Health health = enemyHealths[index];
-                    if (health == null)
+                    DrawEnemyPanel(
+                        new Rect(Screen.width - margin - enemyWidth, margin, enemyWidth, 43f),
+                        opponentHud.ActiveMember
+                    );
+                    DrawEnemyPanel(
+                        new Rect(Screen.width - margin - enemyWidth, margin + 48f, enemyWidth, 43f),
+                        opponentHud.ReserveMember
+                    );
+                    DrawEnemyCount(opponentHud.LivingMemberCount, opponentHud.TeamSize);
+                }
+                else
+                {
+                    for (int index = 0; index < enemyHealths.Count; index++)
                     {
-                        continue;
+                        Health health = enemyHealths[index];
+                        if (health == null)
+                        {
+                            continue;
+                        }
+
+                        Rect rect = new Rect(
+                            Screen.width - margin - enemyWidth,
+                            margin + index * 48f,
+                            enemyWidth,
+                            43f
+                        );
+                        DrawLegacyEnemyPanel(rect, health, index);
                     }
 
-                    Rect rect = new Rect(
-                        Screen.width - margin - enemyWidth,
-                        margin + index * 48f,
-                        enemyWidth,
-                        43f
-                    );
-                    DrawEnemyPanel(rect, health, index);
+                    DrawEnemyCount(LivingEnemyCount, enemyHealths.Count);
                 }
-
-                DrawEnemyCount();
             }
 
-            DrawDodgeChip(playerRect);
-            DrawAttackIndicators();
-            DrawEnemyAttackWarning();
-            if (!IsSukunaActive)
+            DrawDodgeChip(playerRect, playerHud);
+            DrawAttackIndicators(playerHud);
+            DrawEnemyAttackWarning(opponentHud);
+            if (playerHud.IsValid && playerHud.CharacterId != PrototypeCharacterId.SukunaShibuyaYujiBody)
             {
                 DrawDomainPanel();
             }
         }
 
-        private void DrawPlayerPanel(Rect rect)
+        private void DrawPlayerPanel(Rect rect, PlayerCombatHudSnapshot hud)
         {
+            CharacterPresentationProfile profile = hud.PresentationProfile;
+            Color accent = profile.HudAccent;
             DrawRect(rect, new Color(0.012f, 0.018f, 0.032f, 0.90f));
-            DrawBorder(rect, new Color(0.18f, 0.66f, 1f, 0.92f), 2f);
+            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, 0.92f), 2f);
 
-            string title = gojoVariant != null
-                ? $"PLAYER · {gojoVariant.DisplayName}"
-                : "PLAYER · GOJO SATORU";
-            GUI.Label(new Rect(rect.x + 10f, rect.y + 3f, rect.width - 20f, 18f), title, headerStyle);
+            GUI.Label(
+                new Rect(rect.x + 10f, rect.y + 3f, rect.width - 20f, 18f),
+                $"PLAYER · {profile.DisplayName}",
+                headerStyle
+            );
 
             DrawValueBar(
                 new Rect(rect.x + 10f, rect.y + 23f, rect.width - 20f, 18f),
-                playerHealth.CurrentHealth,
-                playerHealth.MaxHealth,
-                new Color(0.18f, 0.66f, 1f),
-                $"HP  {playerHealth.CurrentHealth:0} / {playerHealth.MaxHealth:0}"
+                hud.CurrentHealth,
+                hud.MaxHealth,
+                accent,
+                $"HP  {hud.CurrentHealth:0} / {hud.MaxHealth:0}"
             );
 
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(playerHealth.gameObject);
-            if (cursedEnergy != null)
+            if (hud.HasEnergy)
             {
                 DrawValueBar(
                     new Rect(rect.x + 10f, rect.y + 44f, rect.width - 20f, 12f),
-                    cursedEnergy.CurrentEnergy,
-                    cursedEnergy.MaxEnergy,
-                    new Color(0.34f, 0.20f, 0.96f),
-                    $"CE {cursedEnergy.CurrentEnergy:0}/{cursedEnergy.MaxEnergy:0} · {cursedEnergy.ProfileLabel}"
+                    hud.CurrentEnergy,
+                    hud.MaxEnergy,
+                    profile.EnergyAccent,
+                    $"CE {hud.CurrentEnergy:0}/{hud.MaxEnergy:0} · {hud.EnergyProfileLabel}"
                 );
             }
         }
 
-        private void DrawEnemyPanel(Rect rect, Health health, int index)
+        private void DrawEnemyPanel(Rect rect, OpponentTeamMemberHudSnapshot member)
+        {
+            if (!member.IsValid)
+            {
+                return;
+            }
+
+            int index = member.MemberIndex;
+            Color accent = index % 2 == 0
+                ? new Color(0.94f, 0.15f, 0.20f)
+                : new Color(0.95f, 0.34f, 0.10f);
+            DrawRect(rect, new Color(0.018f, 0.020f, 0.030f, 0.90f));
+            DrawBorder(rect, accent, 2f);
+            string defeated = member.KnockedOut ? " · DOWN" : string.Empty;
+            GUI.Label(
+                new Rect(rect.x + 9f, rect.y + 2f, rect.width - 18f, 17f),
+                $"{member.DisplayName}{defeated}",
+                headerStyle
+            );
+            DrawValueBar(
+                new Rect(rect.x + 9f, rect.y + 21f, rect.width - 18f, 16f),
+                member.CurrentHealth,
+                member.MaxHealth,
+                accent,
+                $"{member.CurrentHealth:0} / {member.MaxHealth:0}"
+            );
+        }
+
+        private void DrawLegacyEnemyPanel(Rect rect, Health health, int index)
         {
             Color accent = index % 2 == 0
                 ? new Color(0.94f, 0.15f, 0.20f)
@@ -479,41 +528,40 @@ namespace JJKGame.Core
             );
         }
 
-        private void DrawEnemyCount()
+        private void DrawEnemyCount(int livingCount, int totalCount)
         {
             Rect rect = new Rect(Screen.width * 0.5f - 82f, 7f, 164f, 23f);
-            Color accent = LivingEnemyCount > 0
+            Color accent = livingCount > 0
                 ? new Color(1f, 0.55f, 0.18f)
                 : new Color(0.20f, 0.78f, 1f);
             DrawRect(rect, new Color(0.045f, 0.025f, 0.012f, 0.90f));
             DrawBorder(rect, accent, 2f);
             centerStyle.normal.textColor = accent;
-            GUI.Label(rect, $"CURSES  {LivingEnemyCount}/{enemyHealths.Count}", centerStyle);
+            GUI.Label(rect, $"CURSES  {livingCount}/{totalCount}", centerStyle);
         }
 
-        private void DrawDodgeChip(Rect playerRect)
+        private void DrawDodgeChip(Rect playerRect, PlayerCombatHudSnapshot hud)
         {
-            playerMovement ??= playerHealth.GetComponent<ThirdPersonPlayerController>();
-            if (playerMovement == null || matchFinished)
+            if (!hud.IsValid || matchFinished)
             {
                 return;
             }
 
             string text;
             Color accent;
-            if (playerMovement.IsDodging)
+            if (hud.IsDodging)
             {
                 text = "DODGING";
                 accent = new Color(0.35f, 0.95f, 1f);
             }
-            else if (playerMovement.DodgeReady)
+            else if (hud.DodgeReady)
             {
                 text = "SPACE · DODGE READY";
                 accent = new Color(0.22f, 0.82f, 1f);
             }
             else
             {
-                text = $"DODGE {playerMovement.DodgeCooldownRemaining:0.0}s";
+                text = $"DODGE {hud.DodgeCooldownRemaining:0.0}s";
                 accent = new Color(0.48f, 0.56f, 0.68f);
             }
 
@@ -524,18 +572,17 @@ namespace JJKGame.Core
             GUI.Label(rect, text, smallStyle);
         }
 
-        private void DrawAttackIndicators()
+        private void DrawAttackIndicators(PlayerCombatHudSnapshot hud)
         {
-            playerAttack ??= playerHealth.GetComponent<BasicAttack>();
-            if (playerAttack == null || matchFinished)
+            if (!hud.IsValid || matchFinished)
             {
                 return;
             }
 
             float y = 34f;
-            if (playerAttack.DisplayChainStep > 0)
+            if (hud.DisplayChainStep > 0)
             {
-                bool finisher = playerAttack.DisplayChainStep == 3;
+                bool finisher = hud.DisplayChainStep == 3;
                 Rect rect = new Rect(Screen.width * 0.5f - 115f, y, 230f, 26f);
                 Color accent = finisher
                     ? new Color(0.72f, 0.38f, 1f)
@@ -543,39 +590,24 @@ namespace JJKGame.Core
                 DrawRect(rect, new Color(0.018f, 0.025f, 0.055f, 0.88f));
                 DrawBorder(rect, accent, 2f);
                 centerStyle.normal.textColor = accent;
-                GUI.Label(rect, playerAttack.ChainLabel, centerStyle);
+                GUI.Label(rect, hud.ChainLabel, centerStyle);
                 y += 30f;
             }
 
-            if (playerAttack.DisplayHitComboCount > 0)
+            if (hud.DisplayHitComboCount > 0)
             {
                 Rect rect = new Rect(Screen.width * 0.5f - 90f, y, 180f, 24f);
                 Color accent = new Color(1f, 0.80f, 0.22f);
                 DrawRect(rect, new Color(0.055f, 0.038f, 0.012f, 0.90f));
                 DrawBorder(rect, accent, 1f);
                 centerStyle.normal.textColor = accent;
-                GUI.Label(rect, playerAttack.HitComboLabel, centerStyle);
+                GUI.Label(rect, hud.HitComboLabel, centerStyle);
             }
         }
 
-        private void DrawEnemyAttackWarning()
+        private void DrawEnemyAttackWarning(OpponentCombatHudSnapshot hud)
         {
-            if (matchFinished)
-            {
-                return;
-            }
-
-            int count = 0;
-            float progress = 0f;
-            foreach (CurseBotController bot in enemyBots)
-            {
-                if (bot != null && bot.gameObject.activeInHierarchy && bot.IsAttackTelegraphing)
-                {
-                    count += 1;
-                    progress = Mathf.Max(progress, bot.AttackWindupProgress);
-                }
-            }
-            if (count == 0)
+            if (matchFinished || !hud.IsValid || hud.AttackTelegraphCount <= 0)
             {
                 return;
             }
@@ -586,10 +618,14 @@ namespace JJKGame.Core
             DrawRect(rect, new Color(0.10f, 0.025f, 0.008f, 0.90f));
             DrawBorder(rect, accent, 2f);
             warningStyle.normal.textColor = accent;
-            GUI.Label(new Rect(rect.x, rect.y + 2f, rect.width, 31f), count > 1 ? $"DODGE! × {count}" : "DODGE!", warningStyle);
+            GUI.Label(
+                new Rect(rect.x, rect.y + 2f, rect.width, 31f),
+                hud.AttackTelegraphCount > 1 ? $"DODGE! × {hud.AttackTelegraphCount}" : "DODGE!",
+                warningStyle
+            );
             Rect bar = new Rect(rect.x + 18f, rect.y + 38f, rect.width - 36f, 8f);
             DrawRect(bar, new Color(0.18f, 0.08f, 0.025f));
-            DrawRect(new Rect(bar.x, bar.y, bar.width * progress, bar.height), accent);
+            DrawRect(new Rect(bar.x, bar.y, bar.width * hud.AttackTelegraphProgress, bar.height), accent);
         }
 
         private void DrawDomainPanel()
@@ -627,20 +663,24 @@ namespace JJKGame.Core
 
         private void DrawControlHelp()
         {
-            bool teamMode = TeamHudActive;
-            bool sukuna = IsSukunaActive;
+            PlayerCombatHudSnapshot hud = PlayerHudSnapshot;
+            if (!hud.IsValid)
+            {
+                return;
+            }
+
+            CharacterPresentationProfile profile = hud.PresentationProfile;
+            bool sukuna = hud.CharacterId == PrototypeCharacterId.SukunaShibuyaYujiBody;
             float width = 370f;
             float height = sukuna ? 154f : 148f;
             Rect rect = new Rect(Screen.width - width - 12f, Screen.height - height - 60f, width, height);
-            Color accent = sukuna
-                ? new Color(0.96f, 0.22f, 0.12f)
-                : new Color(0.24f, 0.55f, 1f);
+            Color accent = profile.HudAccent;
             DrawRect(rect, sukuna
                 ? new Color(0.040f, 0.010f, 0.012f, 0.98f)
                 : new Color(0.012f, 0.018f, 0.032f, 0.95f));
             DrawBorder(rect, accent, 2f);
 
-            string teamLine = teamMode ? "T 팀 교대 · 현재 2인 팀 프로토타입\n" : string.Empty;
+            string teamLine = hud.TeamMode ? "T 팀 교대 · 현재 2인 팀 프로토타입\n" : string.Empty;
             string text;
             if (sukuna)
             {
@@ -648,9 +688,9 @@ namespace JJKGame.Core
                     "F1 · 닫기\n"
                     + teamLine
                     + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
-                    + "LMB 기본 공격 · Q 해 · E 팔\n"
-                    + "R 푸가: 해·팔 사용 후 영역 밖 적 1명\n"
-                    + "V 복마어주자: 짧은 준비 후 개방형 영역";
+                    + $"LMB 기본 공격 · Q {profile.Skill1.Label} · E {profile.Skill2.Label}\n"
+                    + $"R {profile.Ultimate.Label}: 해·팔 사용 후 영역 밖 적 1명\n"
+                    + $"V {profile.Domain.Label}: 짧은 준비 후 개방형 영역";
             }
             else
             {
@@ -658,8 +698,8 @@ namespace JJKGame.Core
                     "F1 · 닫기\n"
                     + teamLine
                     + "WASD 이동 · SPACE 회피 · TAB 타깃\n"
-                    + "LMB 기본 공격 · Q 창 · E 혁 · R 허식 자\n"
-                    + "V 영역 준비 · X 영역 입력 취소\n"
+                    + $"LMB 기본 공격 · Q {profile.Skill1.Label} · E {profile.Skill2.Label} · R {profile.Ultimate.Label}\n"
+                    + $"V {profile.Domain.Label} 준비 · X 영역 입력 취소\n"
                     + "영역: RMB 유지 → LMB → 초록 구간 RMB 해제";
             }
 
