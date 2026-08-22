@@ -1,369 +1,246 @@
 # Gate 3 — Beauty Corner
 
-작성 기준일: 2026-08-21
+작성 기준일: 2026-08-23
 
-## 상태
+## 현재 상태
 
 ```text
 Gate 1 Core Combat Proof: USER VERIFIED
 Gate 2 Match Architecture Proof: USER VERIFIED
-Gate 3 Beauty Corner: STARTED
-Gate 3A Combat Feel Pass 1: USER VERIFIED
-Gate 3A Combat Feel Pass 2 Bundle: USER VERIFIED
-Gate 3A Combat Feel Pass 3 Impact VFX: REMOTE IMPLEMENTED / USER TEST PENDING
+
+Gate 3 Beauty Corner: FINAL REGRESSION
+Gate 3A Combat Feel: USER VERIFIED
+Gate 3B Prototype Character Presentation: USER VERIFIED
+Gate 3C Signature Technique Presentation: USER VERIFIED
+Gate 3D Arena + HUD Polish: FINAL REGRESSION
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
 
-## Gate 3 목적
-
-이 단계는 게임 전체를 90% 완성하는 단계가 아니다.
-
-작은 대표 범위를 거의 완성품 품질로 만들어 실제 제작 파이프라인과 표현 품질 기준을 찾는 단계다.
-
-목표:
+Gate 3 최종 회귀 절차:
 
 ```text
-대표 맵 한 구역
-실제 고죠/스쿠나 모델
-공통 이동/기본공격/회피 애니메이션
-고죠: 허식 자 + 무량공처 대표 연출
-스쿠나: 푸가 + 복마어주자 대표 연출
-전용 보이스/SFX
-카메라/Hit Stop/피격 피드백
-HUD
+docs/GATE3_FINAL_REGRESSION.md
 ```
 
-## Gate 2 종료 근거
+## Gate 3 목적
 
-2026-08-21까지 사용자 실제 Unity 검증으로 다음이 통과했다.
+Gate 3은 게임 전체를 90% 완성하는 단계가 아니다.
+
+대표 전투 범위에서:
 
 ```text
-Player Active / Reserve
-HP / CE 독립 보존
-수동 Tag / KO Auto Tag
-상대 Active / Reserve
-Training / Team Battle 분리
-첫 상대 KO 뒤 Reserve 자동 입장
-마지막 상대 KO에만 VICTORY
-Player / Enemy Team-aware HUD
-상대 Reserve 등장 시 Target Lock 자동 승계
+Combat Feel
+Character Presentation
+Signature Technique Presentation
+Arena Mood
+HUD Information Hierarchy
+```
+
+가 실제 플레이에서 함께 성립하는지 증명하는 단계다.
+
+실제 모델/애니메이션/환경/UI 아트 자산은 이후 교체할 수 있지만, 연결 규칙과 표현 타이밍은 지금 검증한다.
+
+---
+
+# 3A — Combat Feel · USER VERIFIED
+
+검증 완료:
+
+```text
+기본 3타 적중 Camera Shake
+짧은 Hit Stop
+Hit Flash
+실제 Impact 위치 Procedural Burst
+1타 < 2타 < 3타 FINISH 강도
+허공/방어 시 잘못된 적중 피드백 방지
+```
+
+핵심 파일:
+
+```text
+unity/Assets/Scripts/Player/BasicAttack.cs
+unity/Assets/Scripts/Core/PrototypeHitStopController.cs
+unity/Assets/Scripts/Core/PrototypeHitImpactVfx.cs
+unity/Assets/Scripts/Camera/SimpleCameraFollow.cs
+```
+
+---
+
+# 3B — Prototype Character Presentation · USER VERIFIED
+
+실제 리깅 모델/Animator가 아직 없기 때문에 최종 애니메이션 제작은 자산 의존 상태다.
+
+현재 Prototype에서 검증한 것:
+
+```text
+고죠 / 스쿠나 Fighter별 기본 자세 차이
+이동 lean
+Dodge presentation
+Tag entry presentation
+Fighter Shell 유지 상태에서 Active Fighter 표현 교체 가능
+```
+
+현재 procedural 자세는 최종 애니메이션이 아니다.
+
+실제 모델이 들어오면 Animator 기반 전용 모션으로 교체한다.
+
+상세:
+
+```text
+docs/GATE3B_CHARACTER_PRESENTATION.md
+```
+
+---
+
+# 3C — Signature Technique Presentation · USER VERIFIED
+
+검증 완료:
+
+```text
+Signature Flash / Shake / Hit Stop
+FOV Kick
+Camera World Focus
+Spatial Ring / Burst VFX
+푸가 Release / Explosion emphasis
+무량공처 / 복마어주자 anticipation + activation
+```
+
+허식 「자」 형태 교정:
+
+```text
+기존 긴 Purple LineRenderer Beam
+→ 폐기
+
+청색 + 적색 구체 수렴
+→ 큰 보라 구체 생성
+→ 전방 이동
 ```
 
 상세:
 
 ```text
-docs/TEAM_MATCH_GATE2.md
-docs/GATE2B_OPPONENT_TEAM.md
-docs/GATE2B_ENEMY_HUD_CLEANUP.md
-docs/GATE2B_TARGET_HANDOFF.md
+docs/GATE3C_SIGNATURE_TECHNIQUE_PRESENTATION.md
+docs/GATE3C_PASS3_SPATIAL_VFX.md
+docs/GATE3C_PASS4_CINEMATIC_FRAMING.md
 ```
 
-## Gate 3 진행 순서
+현재 Prototype 제한:
 
 ```text
-3A. Combat Feel Pass
-3B. Representative Character Presentation
-3C. Signature Technique Presentation
-3D. Representative Arena + HUD Polish
+허식 자 Visual은 이동하는 구체
+Damage는 기존 즉시 Capsule 판정
 ```
 
-실제 모델/맵 자산이 아직 완성되지 않아도 반복 작업이 적은 `전투 감각`부터 먼저 진행한다.
-
-거대한 범용 Presentation/Ability 시스템은 만들지 않는다.
-
-Beauty Corner에서 실제 반복이 확인된 뒤 Gate 4에서 공통 계약으로 추출한다.
+Damage timing과 Visual projectile 일치는 Gate 4 이후 production 구조에서 다룬다.
 
 ---
 
-# Gate 3A — Combat Feel Pass 1
+# 3D — Arena + HUD Polish · FINAL REGRESSION
 
-## 목표
-
-기본 3타의 게임 규칙은 바꾸지 않고 `적중했다`는 감각만 강화한다.
-
-현재 `SimpleCameraFollow`에는 이미 프로토타입용:
+상세:
 
 ```text
-AddShake(amplitude, duration)
-Flash(...)
+docs/GATE3D_ARENA_HUD_POLISH.md
 ```
 
-API가 존재한다.
-
-이번 Pass에서는 새 거대 시스템을 만들지 않고 기존 `AddShake`만 실제 기본 공격 적중에 연결한다.
-
-## 변경 파일
+Pass 1 Arena Mood Scaffold:
 
 ```text
-unity/Assets/Scripts/Player/BasicAttack.cs
+USER VERIFIED
+
+야간 도심 분위기
+Fog
+비충돌 건물 실루엣
+Neon accent
+Arena ring
+Mood light
 ```
 
-## 구현 규칙
-
-공격이 실제 `DamageResolution.Applied`일 때만 카메라 피드백이 발생한다.
+Pass 2 Team HUD Visual Integration:
 
 ```text
-헛공격
-→ Shake 없음
+USER VERIFIED
 
-무하한/방어 등에 막힌 공격
-→ Shake 없음
-
-실제 HP에 적용된 공격
-→ Shake 발생
-```
-
-강도:
-
-```text
-1타: 약한 Shake
-2타: 조금 강한 Shake
-3타 FINISH: 가장 강한 Shake
-```
-
-현재 프로토타입 수치:
-
-```text
-1타 amplitude 0.075 / 0.07s
-2타 amplitude 0.11  / 0.085s
-3타 amplitude 0.22  / 0.13s
-```
-
-이 수치는 `GAME_ORIGINAL` Beauty Corner 튜닝 값이며 최종값이 아니다.
-
-## 이번 Pass에서 바꾸지 않는 것
-
-```text
-피해량
-공격 범위
-공격 쿨타임
-넉백
-히트스턴
+Player Active / Reserve
+Opponent Active / Reserve
 HP / CE
-Tag
-Target Lock
-술식
-영역
+Tag / KO / Reserve Entry
+F2 Mode strip
 ```
 
-즉 전투 규칙 회귀 리스크를 최소화한다.
-
-## 사용자 테스트
-
-2026-08-21 사용자 실제 Unity 테스트:
+Pass 3 Contextual Skill Deck:
 
 ```text
-[USER VERIFIED]
-- 기본 공격 적중 카메라 Shake 정상
-- 1타 < 2타 < 3타 FINISH 순서의 강도 차이 정상
-- 허공 공격에는 Shake 없음
-- 기존 전투 흐름에 이상 없음
-```
+화면 표시 사용자 긍정 피드백 확인
+최종 회귀에서 상태 전환까지 묶어서 검증 예정
 
-사용자 판정: `정상`.
-
-따라서:
-
-```text
-Gate 3A Combat Feel Pass 1: USER VERIFIED
+고죠: Q 창 / E 혁 / R 허식 자 / V 무량공처
+스쿠나: Q 해 / E 팔 / R 푸가 / V 복마어주자
 ```
 
 ---
 
-# Gate 3A — Combat Feel Pass 2 Bundle
+# Gate 3 종료 조건
 
-## 속도 조정
-
-Gate 1~2처럼 작은 변경마다 사용자 pull/test를 반복하지 않고, Gate 3부터는 관련된 국소 표현 작업을 2~4개씩 묶어 한 번에 검증한다.
-
-이번 묶음:
+다음을 한 세션에서 확인하면 닫는다.
 
 ```text
-1. 짧은 Hit Stop
-2. 미세한 Hit Flash
-3. Hit Stop 중에도 Camera Shake/Flash가 정상 진행되도록 unscaled feedback timing
+1. Console 빨간 오류 없음
+2. Player Tag / HP / CE / KO Auto Tag 회귀 없음
+3. Opponent Team / Reserve Entry / Victory 회귀 없음
+4. Target Lock 정상
+5. 기본 Hit Feedback 정상
+6. 고죠 대표 술식 + 무량공처 정상
+7. 스쿠나 대표 술식 + 복마어주자 + 푸가 정상
+8. 허식 자가 레이저가 아닌 구체형
+9. Arena presentation 정상
+10. HUD / Skill Deck가 Active Fighter와 Match State를 잘못 표시하지 않음
 ```
 
-## 변경 파일
+통과 시:
 
 ```text
-unity/Assets/Scripts/Core/PrototypeHitStopController.cs
-unity/Assets/Scripts/Camera/SimpleCameraFollow.cs
-unity/Assets/Scripts/Player/BasicAttack.cs
-```
-
-## Hit Stop
-
-`PrototypeHitStopController`는 첫 사용 시 런타임에 자동 생성되며 별도 Scene 세팅이 필요 없다.
-
-```text
-실제 적중
-→ 짧게 Time.timeScale 감소
-→ Time.unscaledTime 기준으로 종료
-→ 원래 Time Scale 복원
-```
-
-현재 기본 3타 값:
-
-```text
-1타 0.022초
-2타 0.030초
-3타 FINISH 0.055초
-
-Hit Stop 중 상대 Time Scale = 기존의 8%
-```
-
-전체 전투 시간을 잠깐 같이 늦추므로 현재 `Time.time` 기반 공격 쿨타임/영역/술식 타이머도 같은 양만큼 같이 멈춘다. 즉 특정 시스템만 시간이 흘러가는 불일치를 피한다.
-
-## Hit Flash
-
-실제 HP 피해가 적용된 기본 공격에만 아주 약한 전체 화면 Flash를 추가한다.
-
-```text
-1타 0.025 alpha / 0.055초
-2타 0.040 alpha / 0.070초
-3타 0.075 alpha / 0.095초
-```
-
-1~2타는 흰색, 3타 FINISH는 약한 금빛 계열이다.
-
-## Camera Feedback Timing
-
-Hit Stop으로 `Time.time`이 느려져도 Shake/Flash가 멈춰서 길게 남지 않도록 `SimpleCameraFollow`의 해당 피드백 타이밍만 `Time.unscaledTime`으로 전환했다.
-
-카메라 기본 Follow 자체는 기존 scaled `Time.deltaTime`을 유지한다.
-
-## 발생 조건
-
-Pass 1과 동일하게:
-
-```text
-헛공격
-→ Hit Stop 없음 / Flash 없음 / Shake 없음
-
-피해가 방어되어 DamageResolution.Applied가 아님
-→ 피드백 없음
-
-실제 HP 피해 적용
-→ Shake + Hit Stop + Flash
-```
-
-여러 적이 한 번의 기본 공격 범위에 맞아도 해당 공격 1회당 피드백은 한 번만 발생한다.
-
-## 사용자 검증
-
-2026-08-21 사용자 실제 Unity 테스트:
-
-```text
-[USER VERIFIED]
-- 1/2/3타 Hit Stop 정상
-- Hit Flash 정상
-- 기존 Shake 정상
-- 3타 FINISH 강조 정상
-- 허공 공격에는 피드백 없음
-- 눈에 띄는 기존 전투 회귀 없음
-```
-
-사용자 판정: `다 정상`.
-
-따라서:
-
-```text
-Gate 3A Combat Feel Pass 2 Bundle: USER VERIFIED
+Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
+Gate 4 Production Pipeline Extraction: STARTED
 ```
 
 ---
 
-# Gate 3A — Combat Feel Pass 3 Impact VFX
+# Gate 4로 넘길 것
 
-## 목적
-
-카메라 전체 피드백만으로는 `어디를 때렸는지`의 공간적 정보가 약하므로 실제 충돌 위치에 짧은 Hit Burst를 추가한다.
-
-외부 Particle/VFX 자산이 아직 없으므로 지금은 최종 이펙트가 아니라 Beauty Corner용 procedural placeholder다.
-
-## 변경 파일
+Beauty Corner에서 실제 반복된 구조만 공통화한다.
 
 ```text
-unity/Assets/Scripts/Core/PrototypeHitImpactVfx.cs
-unity/Assets/Scripts/Player/BasicAttack.cs
+Character Asset Contract
+Character Presentation Data
+Animation Event Contract
+Technique Presentation Profile
+VFX Spawn / Follow / Stop lifecycle
+Voice / SFX Event Contract
+Camera Feedback Request
+Hit Stop Request
+HUD Fighter/Skill Data Binding
 ```
 
-## 규칙
-
-`DamageResolution.Applied`가 발생한 적의 ImpactPoint에만 VFX를 생성한다.
+하지 않을 것:
 
 ```text
-1타
-→ 작고 짧은 흰색/청백색 Burst
-
-2타
-→ 조금 더 큰 청백색 Burst
-
-3타 FINISH
-→ 가장 큰 금빛 Burst
+모든 캐릭터를 억지로 같은 Ability 구조에 넣는 거대 범용 시스템
+지원 공격 / 합동기 / 3인 팀 완성형 확장
+온라인 선행 구현
 ```
 
-외형은 런타임 LineRenderer ray를 여러 방향으로 순간 확장하고 사라지게 하는 방식이다.
-
-Hit Stop 중에도 자연스럽게 사라져야 하므로 VFX 수명/확장은 `Time.unscaledTime` 기준으로 동작한다.
-
-여러 적이 동시에 실제 피해를 받으면 각 피해 위치에 각각 Burst가 생긴다.
-
-## 이번에도 바꾸지 않는 것
+Gate 4 계획:
 
 ```text
-데미지
-범위
-쿨타임
-넉백
-히트스턴
-Hit Stop 수치
-Tag
-Target Lock
-술식/영역 규칙
+docs/GATE4_PRODUCTION_PIPELINE_PLAN.md
 ```
-
-## 사용자 테스트
-
-```text
-1. git pull origin master
-2. Console 빨간 오류 확인
-3. 주령에게 기본 3타 적중
-
-확인:
-- 맞은 위치에 짧은 Burst가 실제로 보이는지
-- 1타 < 2타 < 3타 순으로 크기/강조가 커지는지
-- 3타 금빛 FINISH Burst가 과하게 화면을 가리지 않는지
-- Hit Stop 중 VFX가 멈춘 채 오래 남지 않는지
-
-4. 허공 공격
-→ Impact VFX 없음
-
-5. 두 주령을 한 번에 맞히는 상황
-→ 실제 피해를 받은 각 대상 위치에 VFX가 생기는지
-```
-
-정상 확인되면 Gate 3A Combat Feel을 여기서 닫고 Gate 3B로 넘어간다.
-
----
 
 ## Codex 사용 기준
 
-속도 향상을 위해 이후 작업은 범위에 따라 직접 수정과 Codex를 병행한다.
+Gate 3의 작은 체감 튜닝은 직접 수정 비중이 높았다.
 
-```text
-직접 수정
-- 작은 수치/조건
-- 1~3개 파일의 국소 변경
-- 즉시 사용자 체감 테스트가 필요한 튜닝
+Gate 4부터는 여러 파일에 걸친 반복 구조 추출/이관이 주 작업이므로 Codex류 agent를 활용하기 좋은 구간이다.
 
-Codex 우선
-- 여러 파일을 동시에 읽고 수정해야 하는 Presentation 연결
-- 반복되는 VFX/SFX/Animation 이벤트 연결
-- 구조 리팩터링/마이그레이션
-- 테스트 추가
-```
-
-Gate 3B부터 Codex 사용 비중을 높이고, Gate 4에서는 Beauty Corner에서 실제 반복된 계약 추출에 본격 사용한다.
+단, 이 ChatGPT 대화 자체에서 별도 Codex 실행기가 노출되지 않은 경우 Codex를 실행했다고 가장하지 않는다. 사용자가 로컬 Unity AI Gateway / Codex 환경을 연결한 경우에는 해당 환경에서 Editor/코드 작업을 나누고, Git diff와 실제 Unity 검증을 기준으로 통합한다.
