@@ -6,9 +6,9 @@ namespace JJKGame.Core
 {
     /// <summary>
     /// Beauty Corner-only contextual skill deck.
-    /// Keeps the current IMGUI prototype architecture, but gives the four signature
-    /// inputs a stable fighting-game style visual hierarchy without changing any
-    /// gameplay rule, cooldown, resource cost, or input binding.
+    /// Gate 4A now reads fighter identity, accents and skill labels from the shared
+    /// CharacterPresentationProfile instead of duplicating Gojo/Sukuna display data.
+    /// Gameplay rules and input bindings remain owned by their existing systems.
     /// </summary>
     [DefaultExecutionOrder(1900)]
     [DisallowMultipleComponent]
@@ -110,10 +110,8 @@ namespace JJKGame.Core
 
             EnsureStyles();
 
-            bool sukuna = characterController.IsSukuna;
-            Color fighterAccent = sukuna
-                ? new Color(0.96f, 0.20f, 0.12f)
-                : new Color(0.20f, 0.70f, 1f);
+            CharacterPresentationProfile profile = characterController.PresentationProfile;
+            Color fighterAccent = profile.HudAccent;
 
             float width = Mathf.Min(460f, Screen.width - 24f);
             float height = 58f;
@@ -127,10 +125,9 @@ namespace JJKGame.Core
             DrawRect(new Rect(panel.x, panel.y, panel.width, 2f), fighterAccent);
             DrawRect(new Rect(panel.x, panel.y, 3f, panel.height), new Color(fighterAccent.r, fighterAccent.g, fighterAccent.b, 0.82f));
 
-            string fighterLabel = sukuna ? "SUKUNA · 시부야" : "GOJO · 현대";
             GUI.Label(
                 new Rect(panel.x + 10f, panel.y + 3f, 150f, 18f),
-                fighterLabel,
+                $"{profile.HudName} · {profile.CompactVariantLabel}",
                 headerStyle
             );
 
@@ -147,75 +144,51 @@ namespace JJKGame.Core
             float chipY = panel.y + 23f;
             float chipHeight = 28f;
 
-            if (sukuna)
-            {
-                DrawSkillChip(
-                    new Rect(contentX + (chipWidth + gap) * 0f, chipY, chipWidth, chipHeight),
-                    CombatInputBindings.Skill1Label,
-                    "해",
-                    new Color(0.90f, 0.18f, 0.12f),
-                    CanUseTechnique(),
-                    Time.unscaledTime < qPulseUntil
-                );
-                DrawSkillChip(
-                    new Rect(contentX + (chipWidth + gap) * 1f, chipY, chipWidth, chipHeight),
-                    CombatInputBindings.Skill2Label,
-                    "팔",
-                    new Color(0.92f, 0.26f, 0.12f),
-                    CanUseTechnique(),
-                    Time.unscaledTime < ePulseUntil
-                );
-                DrawSkillChip(
-                    new Rect(contentX + (chipWidth + gap) * 2f, chipY, chipWidth, chipHeight),
-                    CombatInputBindings.UltimateLabel,
-                    "푸가",
-                    new Color(1f, 0.46f, 0.08f),
-                    CanUseUltimate(),
-                    Time.unscaledTime < rPulseUntil
-                );
-                DrawSkillChip(
-                    new Rect(contentX + (chipWidth + gap) * 3f, chipY, chipWidth, chipHeight),
-                    CombatInputBindings.DomainLabel,
-                    "복마어주자",
-                    new Color(0.78f, 0.035f, 0.025f),
-                    CanUseDomain(),
-                    Time.unscaledTime < vPulseUntil
-                );
-                return;
-            }
-
-            DrawSkillChip(
+            DrawProfileSkillChip(
+                profile,
+                CharacterPresentationSkillSlot.Skill1,
                 new Rect(contentX + (chipWidth + gap) * 0f, chipY, chipWidth, chipHeight),
                 CombatInputBindings.Skill1Label,
-                "창",
-                new Color(0.12f, 0.55f, 1f),
                 CanUseTechnique(),
                 Time.unscaledTime < qPulseUntil
             );
-            DrawSkillChip(
+            DrawProfileSkillChip(
+                profile,
+                CharacterPresentationSkillSlot.Skill2,
                 new Rect(contentX + (chipWidth + gap) * 1f, chipY, chipWidth, chipHeight),
                 CombatInputBindings.Skill2Label,
-                "혁",
-                new Color(1f, 0.12f, 0.10f),
                 CanUseTechnique(),
                 Time.unscaledTime < ePulseUntil
             );
-            DrawSkillChip(
+            DrawProfileSkillChip(
+                profile,
+                CharacterPresentationSkillSlot.Ultimate,
                 new Rect(contentX + (chipWidth + gap) * 2f, chipY, chipWidth, chipHeight),
                 CombatInputBindings.UltimateLabel,
-                "허식 자",
-                new Color(0.68f, 0.18f, 1f),
                 CanUseUltimate(),
                 Time.unscaledTime < rPulseUntil
             );
-            DrawSkillChip(
+            DrawProfileSkillChip(
+                profile,
+                CharacterPresentationSkillSlot.Domain,
                 new Rect(contentX + (chipWidth + gap) * 3f, chipY, chipWidth, chipHeight),
                 CombatInputBindings.DomainLabel,
-                "무량공처",
-                new Color(0.36f, 0.72f, 1f),
                 CanUseDomain(),
                 Time.unscaledTime < vPulseUntil
             );
+        }
+
+        private void DrawProfileSkillChip(
+            CharacterPresentationProfile profile,
+            CharacterPresentationSkillSlot slot,
+            Rect rect,
+            string keyLabel,
+            bool available,
+            bool pressed
+        )
+        {
+            CharacterSkillPresentation skill = profile.GetSkill(slot);
+            DrawSkillChip(rect, keyLabel, skill.Label, skill.Accent, available, pressed);
         }
 
         private void DrawSkillChip(
