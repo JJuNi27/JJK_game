@@ -65,6 +65,9 @@ namespace JJKGame.Player
                 case TechniquePresentationId.MalevolentShrine:
                     HandleMalevolentShrine(request);
                     break;
+                case TechniquePresentationId.DivineDog:
+                    HandleDivineDog(request);
+                    break;
             }
         }
 
@@ -183,6 +186,36 @@ namespace JJKGame.Player
                     9.4f,
                     0.68f,
                     240f
+                );
+            }
+        }
+
+        private void HandleDivineDog(TechniquePresentationRequest request)
+        {
+            if (request.Phase == TechniquePresentationPhase.Release)
+            {
+                SpawnWorldBurst(
+                    ResolveOrigin(request),
+                    new Color(0.06f, 0.32f, 0.34f, 0.96f),
+                    new Color(0.30f, 0.82f, 0.78f, 0.90f),
+                    0.20f,
+                    2.2f,
+                    0.30f,
+                    180f
+                );
+                return;
+            }
+
+            if (request.Phase == TechniquePresentationPhase.Impact)
+            {
+                SpawnWorldBurst(
+                    ResolveOrigin(request),
+                    new Color(0.12f, 0.62f, 0.60f, 0.98f),
+                    new Color(0.72f, 1f, 0.92f, 0.90f),
+                    0.14f,
+                    1.5f,
+                    0.20f,
+                    220f
                 );
             }
         }
