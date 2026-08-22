@@ -21,6 +21,7 @@ namespace JJKGame.Core
         private ThirdPersonPlayerController movement;
         private GojoTechniqueController gojoTechnique;
         private SukunaTechniqueController sukunaTechnique;
+        private MegumiTechniqueController megumiTechnique;
         private GojoDomainController gojoDomain;
         private SukunaDomainController sukunaDomain;
         private TechniqueBurnoutController burnout;
@@ -73,6 +74,7 @@ namespace JJKGame.Core
                 if (
                     (gojoTechnique != null && gojoTechnique.enabled && gojoTechnique.IsCasting)
                     || (sukunaTechnique != null && sukunaTechnique.enabled && sukunaTechnique.IsCasting)
+                    || (megumiTechnique != null && megumiTechnique.enabled && megumiTechnique.IsCasting)
                 )
                 {
                     return CombatActionState.TechniqueCasting;
@@ -113,6 +115,7 @@ namespace JJKGame.Core
             movement ??= GetComponent<ThirdPersonPlayerController>();
             gojoTechnique ??= GetComponent<GojoTechniqueController>();
             sukunaTechnique ??= GetComponent<SukunaTechniqueController>();
+            megumiTechnique ??= GetComponent<MegumiTechniqueController>();
             gojoDomain ??= GetComponent<GojoDomainController>();
             sukunaDomain ??= GetComponent<SukunaDomainController>();
             burnout ??= GetComponent<TechniqueBurnoutController>();
