@@ -11,6 +11,7 @@ namespace JJKGame.Player
     {
         private const string GojoRootName = "PrototypeGojoAvatar";
         private const string SukunaRootName = "PrototypeSukunaAvatar";
+        private const string MegumiRootName = MegumiPrototypeAvatar.VisualRootName;
 
         private FighterAnimationStateSource animationStateSource;
         private Transform activeVisualRoot;
@@ -94,9 +95,12 @@ namespace JJKGame.Player
 
         private void ResolveActiveVisual(bool force, PrototypeCharacterId characterId)
         {
-            string desiredRootName = characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
-                ? SukunaRootName
-                : GojoRootName;
+            string desiredRootName = characterId switch
+            {
+                PrototypeCharacterId.SukunaShibuyaYujiBody => SukunaRootName,
+                PrototypeCharacterId.MegumiStudent => MegumiRootName,
+                _ => GojoRootName,
+            };
             Transform nextRoot = transform.Find(desiredRootName);
             if (nextRoot != null && !nextRoot.gameObject.activeInHierarchy)
             {
