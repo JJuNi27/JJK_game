@@ -31,13 +31,13 @@ REJECT
 Gate 1 Core Combat Proof: USER VERIFIED
 Gate 2 Match Architecture Proof: USER VERIFIED
 Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
-Gate 4 Production Pipeline Extraction: IN PROGRESS
+Gate 4 Production Pipeline Extraction: FINAL REGRESSION PENDING
 Gate 5A Third Character Stress Test: PENDING
 Gate 5B First Production-Quality Vertical Slice: PENDING
 Gate 6 Production: PENDING
 ```
 
-현재는 First Playable + Beauty Corner prototype proof를 통과하고 반복 가능한 Production 구조를 추출하는 Gate 4 후반부다.
+현재는 First Playable + Beauty Corner prototype proof를 통과하고 Gate 4의 contract extraction 및 개별 migration 검증까지 끝낸 뒤 전체 회귀만 남은 상태다.
 
 ---
 
@@ -127,8 +127,6 @@ docs/GATE3_FINAL_REGRESSION.md
 - 최종 Match regression
 ```
 
-중요한 scope refinement:
-
 초기 `PROJECT_DIRECTION.md`의 Gate 3 예시에는 실제 rigged model, 실제 animation, 대표 voice까지 포함되어 있었지만 당시 저장소에 해당 production asset이 없었다.
 
 없는 자산을 가짜 최종 구조로 굳히지 않고 Gate 3을 `Prototype Proof`로 닫았으며, 미뤄진 production-quality 자산 연결은 Gate 5B에서 명시적으로 회수한다.
@@ -151,20 +149,14 @@ docs/ROADMAP_SCOPE_REFINEMENT.md
 
 ---
 
-# Gate 4 — Production Pipeline Extraction · IN PROGRESS
+# Gate 4 — Production Pipeline Extraction · FINAL REGRESSION PENDING
 
-계획:
+상세:
 
 ```text
 docs/GATE4_PRODUCTION_PIPELINE_PLAN.md
-```
-
-목표:
-
-```text
-세 번째 Fighter를 추가할 때
-고죠/스쿠나 Prototype 코드를 복사하지 않고
-공통 제작 절차를 반복 가능하게 만들기
+docs/GATE4_PRODUCTION_BOUNDARIES.md
+docs/GATE4_FINAL_REGRESSION.md
 ```
 
 현재 상태:
@@ -175,10 +167,23 @@ docs/GATE4_PRODUCTION_PIPELINE_PLAN.md
 4C Technique Presentation Request: USER VERIFIED
 4D VFX Lifecycle Contract: USER VERIFIED
 4E Animation Contract: USER VERIFIED
-4F Audio Event Contract
-- Pass 1: USER VERIFIED
-- Pass 2: REMOTE IMPLEMENTED / USER TEST PENDING
+4F Audio Event Contract: USER VERIFIED
+Prototype / Production Boundary Review: COMPLETE
+Gate 4 Final Regression: USER TEST PENDING
 ```
+
+Production-candidate contract:
+
+```text
+Character Profile
+HUD Snapshot
+Technique Presentation Request
+VFX Lifecycle
+Animation State/Cue
+Audio Event
+```
+
+현재 procedural avatar / IMGUI / LineRenderer VFX / fallback audio runtime은 prototype-only 구현으로 분류한다.
 
 Gate 4 원칙:
 
@@ -190,17 +195,11 @@ Gate 4 원칙:
 실제 asset이 없는 부분은 가짜 production asset 구조로 굳히지 않음
 ```
 
-Codex류 agent는 Gate 번호 때문에 의무적으로 쓰는 것이 아니라 **여러 파일에 걸친 탐색/마이그레이션 규모일 때 사용하는 가속 도구**다.
+마지막 전체 회귀가 통과하면:
 
 ```text
-Codex/agent 사용 가능 + multi-file 구조 작업
-→ agent edit
-→ Git diff review
-→ 사용자 Unity test
-
-작은 변경 또는 agent 미사용 환경
-→ 직접 수정
-→ 동일하게 diff/Unity regression
+Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
+Gate 5A Third Character Stress Test: START
 ```
 
 ---
@@ -229,8 +228,6 @@ HUD / Camera / VFX / Animation / Audio 경계는 최대한 재사용
 ---
 
 # Gate 5B — First Production-Quality Vertical Slice
-
-2026-08-23 실행 계획을 명확하게 하기 위해 추가한 세부 단계다.
 
 Gate 5A 구조 검증 뒤, 최초 Gate 3에서 자산 부재로 미룬 production-quality 부분을 대표 한 판에 실제 연결한다.
 
@@ -278,3 +275,22 @@ PvE / Story
 - 경쟁 팀전은 Character Cost/편성 제한을 검토한다.
 - 범용 방어보다 캐릭터별 고유 방어 규칙을 우선한다.
 - 영역전개는 단순 대미지 궁극기가 아니라 Match State로 취급한다.
+
+---
+
+# Codex / Agent 사용 원칙
+
+Codex류 agent는 Gate 번호 때문에 의무적으로 쓰는 것이 아니라 여러 파일에 걸친 구조 변경/탐색/마이그레이션 규모일 때 사용하는 가속 도구다.
+
+```text
+Codex/agent 실제 사용 가능 + multi-file 구조 작업
+→ agent edit
+→ Git diff review
+→ 사용자 Unity test
+
+작은 변경 또는 agent 미사용 환경
+→ 직접 수정
+→ 동일하게 diff/Unity regression
+```
+
+실제로 실행하지 않았다면 Codex를 사용했다고 말하지 않는다.
