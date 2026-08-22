@@ -16,6 +16,7 @@ namespace JJKGame.Core
         UnlimitedVoid,
         MalevolentShrine,
         Fuga,
+        DivineDog,
         PlayerHit,
         Victory,
         Defeat,
