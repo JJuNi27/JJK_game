@@ -54,7 +54,6 @@ namespace JJKGame.Player
 
         private Health ownHealth;
         private TargetLockController targetLock;
-        private PrototypeCombatAudio combatAudio;
         private CombatActionGate actionGate;
         private SimpleCameraFollow combatCamera;
         private float nextAttackAt;
@@ -101,7 +100,6 @@ namespace JJKGame.Player
         {
             ownHealth = GetComponent<Health>();
             targetLock = GetComponent<TargetLockController>();
-            combatAudio = PrototypeCombatAudio.GetOrCreate(gameObject);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
             combatCamera = FindFirstObjectByType<SimpleCameraFollow>();
 
@@ -163,14 +161,25 @@ namespace JJKGame.Player
             nextAttackAt = Time.time + cooldown;
             lastPerformedStep = chainIndex + 1;
             chainDisplayUntil = Time.time + comboDisplayDuration;
-            combatAudio ??= PrototypeCombatAudio.GetOrCreate(gameObject);
-            combatAudio?.PlayBasicSwing(lastPerformedStep);
+            CombatAudioEvents.Raise(
+                CombatAudioEvent.ForOwner(
+                    ownHealth,
+                    CombatAudioEventId.BasicSwing,
+                    lastPerformedStep
+                )
+            );
 
             bool hitAnyTarget = PerformAttack(damage, knockback, hitStun);
             if (hitAnyTarget)
             {
                 RegisterSuccessfulHit();
-                combatAudio?.PlayBasicHit(lastPerformedStep);
+                CombatAudioEvents.Raise(
+                    CombatAudioEvent.ForOwner(
+                        ownHealth,
+                        CombatAudioEventId.BasicHit,
+                        lastPerformedStep
+                    )
+                );
                 PlayBasicHitFeedback(chainIndex);
             }
             else
