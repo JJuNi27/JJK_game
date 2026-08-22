@@ -6,11 +6,11 @@
 
 ```text
 Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
-Gate 4 Production Pipeline Extraction: STARTING
-NEXT: 4A Character Presentation Contract
+Gate 4 Production Pipeline Extraction: STARTED
+Gate 4A Character Presentation Contract · Pass 1: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
-2026-08-23 Gate 3 최종 회귀를 사용자가 `다 정상!`으로 확인하여 Gate 4 실행 단계로 전환한다.
+2026-08-23 Gate 3 최종 회귀를 사용자가 `다 정상!`으로 확인하여 Gate 4 실행 단계로 전환했다.
 
 ## 목적
 
@@ -40,51 +40,100 @@ Gate 4의 목적은 단순한 코드 미관 개선이 아니라:
 
 ---
 
-# 4A — Character Presentation Contract · NEXT
+# 4A — Character Presentation Contract · PASS 1 IMPLEMENTED
 
-먼저 추출할 공통 정보:
+새 공통 데이터 파일:
+
+```text
+unity/Assets/Scripts/Player/CharacterPresentationProfile.cs
+```
+
+현재 한 곳에서 제공하는 정보:
 
 ```text
 Character ID
 Display Name
+HUD Name
 Short Name
-Era / Variant Label
+Variant Label
+Compact Variant Label
 HUD Accent
-Skill Labels
-Optional Portrait / Icon hooks
-Presentation Prefab / Animator hooks
+CE Accent
+Q / E / R / V Skill Label
+Q / E / R / V Presentation Accent
 ```
 
-현재 이 정보는 Player Team HUD, Skill Deck, Character Controller 등 여러 파일에 문자열/Color로 중복되어 있다.
-
-목표:
+현재 Profile 등록:
 
 ```text
-CharacterPresentationProfile
+GojoModern
+SukunaShibuyaYujiBody
 ```
 
-같은 데이터 단위에서 HUD와 Presentation이 공통으로 읽게 한다.
-
-주의:
+이 Profile에는 의도적으로 다음을 넣지 않는다.
 
 ```text
 HP / CE 수치
-고유 술식 Gameplay Rule
-Domain Rule
 Damage
+Cooldown
+Cast Time
+Domain Rule
+Character-specific Gameplay Rule
 ```
 
-은 Presentation Profile에 넣지 않는다.
+즉 `Presentation identity data`만 분리한다.
 
-4A 첫 migration 성공 조건:
+## Pass 1 Migration
+
+다음 소비자를 Profile 기반으로 이관했다.
 
 ```text
-[ ] Gojo/Sukuna identity data가 한 곳에서 제공됨
-[ ] 기존 HUD 표시가 그대로 유지됨
-[ ] Skill Deck 이름/색상이 동일하게 표시됨
-[ ] Tag 시 Active identity 정상 전환
-[ ] Gameplay 값 변화 없음
+PrototypeCharacterController
+- DisplayName
+- character switch chip identity/accent
+- Sukuna player/domain/help presentation labels
+
+PrototypePlayerTeamController
+- Active fighter accent
+- CE accent
+- Active/Reserve short name
+- fighter display/variant label
+- 기존 CharacterAccent / CharacterShortName / CharacterEraLabel 중복 제거
+
+PrototypeSkillDeckHud
+- Gojo/Sukuna 분기형 하드코딩 skill label/color 제거
+- Active CharacterPresentationProfile에서 Q/E/R/V label/accent 읽음
+- Tag 시 Profile만 바뀌면 Skill Deck identity도 자동 변경
 ```
+
+상세:
+
+```text
+docs/GATE4A_CHARACTER_PRESENTATION_CONTRACT.md
+```
+
+## Asset Hook 보류
+
+Portrait / Icon / model prefab / Animator reference는 이번 Pass에 억지로 넣지 않는다.
+
+현재 저장소에는 실제 rigged Gojo/Sukuna model/Animator asset이 없기 때문에, 존재하지 않는 asset contract를 추측해 고정하면 오히려 재작업이 커진다.
+
+실제 asset이 들어오는 시점에 Profile을 ScriptableObject 또는 asset-backed registry로 확장하는 방향을 검토한다.
+
+## Pass 1 성공 조건
+
+```text
+[ ] Unity compile error 없음
+[ ] Gojo Active HUD 이름/색상 동일
+[ ] Sukuna Tag 후 이름/색상 동일
+[ ] Skill Deck: Gojo Q 창 / E 혁 / R 허식 자 / V 무량공처
+[ ] Skill Deck: Sukuna Q 해 / E 팔 / R 푸가 / V 복마어주자
+[ ] Skill pulse / availability / state label 정상
+[ ] Tag HP / CE 보존 정상
+[ ] Gojo/Sukuna gameplay 변화 없음
+```
+
+통과하면 4A Pass 1을 USER VERIFIED로 닫고 남은 Presentation identity 하드코딩을 조사한 뒤 4A를 마무리한다.
 
 ---
 
