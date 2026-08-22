@@ -55,6 +55,9 @@ namespace JJKGame.Core
                 case TechniquePresentationId.MalevolentShrine:
                     HandleMalevolentShrine(request);
                     break;
+                case TechniquePresentationId.DivineDog:
+                    HandleDivineDog(request);
+                    break;
             }
         }
 
@@ -225,6 +228,40 @@ namespace JJKGame.Core
             }
         }
 
+        private void HandleDivineDog(TechniquePresentationRequest request)
+        {
+            if (request.Phase == TechniquePresentationPhase.Release)
+            {
+                PlayFeedback(
+                    new Color(0.10f, 0.52f, 0.56f),
+                    0.09f,
+                    0.14f,
+                    0.10f,
+                    0.12f,
+                    0f,
+                    1f
+                );
+                PlayFovKick(2.5f, 0.16f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.18f, 0.24f);
+                return;
+            }
+
+            if (request.Phase == TechniquePresentationPhase.Impact)
+            {
+                PlayFeedback(
+                    new Color(0.42f, 0.86f, 0.82f),
+                    0.055f,
+                    0.09f,
+                    0.14f,
+                    0.10f,
+                    0.025f,
+                    0.12f
+                );
+                PlayFovKick(1.5f, 0.12f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.14f, 0.16f);
+            }
+        }
+
         private static Vector3 ResolveCameraFocusPoint(TechniquePresentationRequest request)
         {
             Vector3 origin = request.HasWorldPoint
@@ -290,6 +327,17 @@ namespace JJKGame.Core
                     if (request.Phase == TechniquePresentationPhase.Active)
                     {
                         return origin + Vector3.up * 3.2f;
+                    }
+                    break;
+
+                case TechniquePresentationId.DivineDog:
+                    if (request.Phase == TechniquePresentationPhase.Release)
+                    {
+                        return origin + Vector3.up * 0.35f + forward * 1.15f;
+                    }
+                    if (request.Phase == TechniquePresentationPhase.Impact)
+                    {
+                        return origin + Vector3.up * 0.25f;
                     }
                     break;
             }
