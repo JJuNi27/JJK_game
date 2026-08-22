@@ -10,6 +10,7 @@ namespace JJKGame.Core
         UnlimitedVoid,
         MalevolentShrine,
         DivineDog,
+        Nue,
     }
 
     public enum TechniquePresentationPhase
