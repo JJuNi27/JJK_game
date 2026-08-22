@@ -11,6 +11,7 @@ namespace JJKGame.Core
         GojoBlueImpact,
         GojoRedCast,
         GojoRedImpact,
+        TechniqueImpact,
         HollowPurple,
         UnlimitedVoid,
         MalevolentShrine,
