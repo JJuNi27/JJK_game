@@ -7,7 +7,7 @@
 ```text
 Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
 Gate 4 Production Pipeline Extraction: STARTED
-Gate 4A Pass 1 · Character Presentation Profile: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 4A Pass 1 · Character Presentation Profile: USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -96,16 +96,6 @@ Tag rule
 
 ## PrototypeCharacterController
 
-기존:
-
-```text
-DisplayName ternary
-character switch chip 색상/이름 하드코딩
-Sukuna HUD/도움말 일부 기술명 하드코딩
-```
-
-현재:
-
 ```text
 PresentationProfile
 → DisplayName
@@ -115,42 +105,13 @@ PresentationProfile
 
 ## PrototypePlayerTeamController
 
-기존 로컬 helper:
-
-```text
-CharacterAccent()
-CharacterName()
-CharacterShortName()
-CharacterEraLabel()
-```
-
-을 제거하고 `CharacterPresentationProfiles.Get(characterId)`에서 읽도록 이관했다.
+기존 로컬 identity helper를 줄이고 `CharacterPresentationProfiles.Get(characterId)`에서 읽도록 이관했다.
 
 Tag/HP/CE/KO 로직은 수정하지 않았다.
 
 ## PrototypeSkillDeckHud
 
-기존:
-
-```text
-if Sukuna
-→ 해 / 팔 / 푸가 / 복마어주자 + red/orange colors
-else
-→ 창 / 혁 / 허식 자 / 무량공처 + blue/red/purple colors
-```
-
-현재:
-
-```text
-Active CharacterPresentationProfile
-→ Q/E/R/V label + accent
-```
-
-으로 바꿨다.
-
-Skill availability는 여전히 `CombatActionGate`를 읽고, 입력은 여전히 `CombatInputBindings`를 사용한다.
-
-즉 Profile은 표시 데이터만 제공한다.
+기존 Gojo/Sukuna 분기형 기술명/색상 하드코딩을 제거하고 Active CharacterPresentationProfile에서 Q/E/R/V label + accent를 읽도록 바꿨다.
 
 ---
 
@@ -158,7 +119,7 @@ Skill availability는 여전히 `CombatActionGate`를 읽고, 입력은 여전�
 
 현재 실제 rigged Gojo/Sukuna model, portrait, Animator Controller asset이 저장소에 없다.
 
-그래서 이번 Pass에서는 존재하지 않는 asset reference를 Profile에 가짜로 설계하지 않았다.
+그래서 존재하지 않는 asset reference를 Profile에 가짜로 설계하지 않았다.
 
 실제 asset이 들어오면 다음을 검토한다.
 
@@ -170,62 +131,33 @@ RuntimeAnimatorController reference
 Technique icon set
 ```
 
-지금은 반복이 실제로 확인된 데이터만 추출한다.
-
 ---
 
-# 사용자 테스트
+# 사용자 검증
+
+2026-08-23 사용자 Unity 실제 확인:
 
 ```text
-1. cd D:\GitHub\JJK_game
-2. git pull origin master
-3. Unity compile 완료 대기
-4. Console 빨간 오류 확인
-5. CombatMVP Play
+- Unity/CombatMVP 정상 실행
+- 고죠 HUD / Skill Deck 정상
+- T Tag 후 스쿠나 identity/HUD 정상
+- Skill pulse/state 표시 정상
+- HP/CE 보존 정상
+- 대표 기술 회귀 없음
 ```
 
-빠른 확인:
+사용자 판정:
 
 ```text
-A. 시작 고죠
-[ ] 좌측 Active HUD가 고죠/청색 계열 그대로
-[ ] 우하단 GOJO · 현대
-[ ] Q 창 / E 혁 / R 허식 자 / V 무량공처
-
-B. T Tag → 스쿠나
-[ ] 좌측 Active HUD가 스쿠나/적색 계열로 변경
-[ ] Team A/R 이름 정상
-[ ] 우하단 SUKUNA · 시부야
-[ ] Q 해 / E 팔 / R 푸가 / V 복마어주자
-
-C. 상태
-[ ] Q/E/R/V pulse 정상
-[ ] DODGE / CASTING / DOMAIN 상태 표시 정상
-[ ] HP/CE Tag 보존 정상
-
-D. Gameplay smoke
-[ ] 창/혁/허식 자 정상
-[ ] 해/팔/푸가 정상
-[ ] 무량공처/복마어주자 정상
+정상이다 다음!
 ```
 
-## 성공 기준
-
-화면은 Gate 3 마지막 모습과 거의 같아야 한다.
-
-이번 작업의 성공은 `새로운 것이 보이는 것`이 아니라:
+따라서:
 
 ```text
-기존 표시/Gameplay는 그대로
-하지만 코드에서는 Fighter identity가 한 Profile에서 공급됨
+Gate 4A Pass 1 · Character Presentation Profile: USER VERIFIED
 ```
 
-이다.
+로 닫는다.
 
-사용자 확인 후:
-
-```text
-Gate 4A Pass 1: USER VERIFIED
-```
-
-로 닫고 남은 identity hardcode를 조사해 4A를 마무리하거나 바로 4B HUD Data Binding으로 이어간다.
+다음은 `Gate 4B — HUD Data Binding Extraction`이다.
