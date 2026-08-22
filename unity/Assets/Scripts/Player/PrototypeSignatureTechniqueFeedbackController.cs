@@ -92,11 +92,12 @@ namespace JJKGame.Player
             )
             {
                 TechniquePresentationRequests.Raise(
-                    TechniquePresentationRequest.AtWorldPoint(
+                    TechniquePresentationRequest.AtPose(
                         ownHealth,
                         TechniquePresentationId.UnlimitedVoid,
                         TechniquePresentationPhase.Anticipation,
-                        transform.position + Vector3.up * 2.1f
+                        transform.position,
+                        transform.forward
                     )
                 );
             }
@@ -110,11 +111,12 @@ namespace JJKGame.Player
             if (sukunaCasting && !sukunaDomainWasCasting)
             {
                 TechniquePresentationRequests.Raise(
-                    TechniquePresentationRequest.AtWorldPoint(
+                    TechniquePresentationRequest.AtPose(
                         ownHealth,
                         TechniquePresentationId.MalevolentShrine,
                         TechniquePresentationPhase.Anticipation,
-                        transform.position + Vector3.up * 2.3f
+                        transform.position,
+                        transform.forward
                     )
                 );
             }
@@ -150,11 +152,12 @@ namespace JJKGame.Player
             }
 
             TechniquePresentationRequests.Raise(
-                TechniquePresentationRequest.AtWorldPoint(
+                TechniquePresentationRequest.AtPose(
                     ownHealth,
                     TechniquePresentationId.Fuga,
                     TechniquePresentationPhase.Anticipation,
-                    transform.position + Vector3.up * 1.25f + transform.forward * 2.8f,
+                    transform.position,
+                    transform.forward,
                     domainActive
                 )
             );
@@ -166,12 +169,15 @@ namespace JJKGame.Player
             bool purpleActive = purpleRoot != null && purpleRoot.gameObject.activeInHierarchy;
             if (purpleActive && !purpleWasActive)
             {
+                Vector3 releaseOrigin =
+                    transform.position + Vector3.up * 1.05f + transform.forward * 1.05f;
                 TechniquePresentationRequests.Raise(
-                    TechniquePresentationRequest.AtWorldPoint(
+                    TechniquePresentationRequest.AtPose(
                         ownHealth,
                         TechniquePresentationId.HollowPurple,
                         TechniquePresentationPhase.Release,
-                        transform.position + Vector3.up * 1.25f + transform.forward * 7.5f
+                        releaseOrigin,
+                        transform.forward
                     )
                 );
 
@@ -216,12 +222,16 @@ namespace JJKGame.Player
 
             observedFugaProjectileId = instanceId;
             bool domainAmplified = projectile.gameObject.name.Contains("Domain");
+            Vector3 direction = projectile.transform.forward.sqrMagnitude > 0.0001f
+                ? projectile.transform.forward
+                : transform.forward;
             TechniquePresentationRequests.Raise(
-                TechniquePresentationRequest.AtWorldPoint(
+                TechniquePresentationRequest.AtPose(
                     ownHealth,
                     TechniquePresentationId.Fuga,
                     TechniquePresentationPhase.Release,
-                    projectile.transform.position + transform.forward * 4.0f,
+                    projectile.transform.position,
+                    direction,
                     domainAmplified
                 )
             );
@@ -235,11 +245,12 @@ namespace JJKGame.Player
             }
 
             TechniquePresentationRequests.Raise(
-                TechniquePresentationRequest.AtWorldPoint(
+                TechniquePresentationRequest.AtPose(
                     ownHealth,
                     TechniquePresentationId.Fuga,
                     TechniquePresentationPhase.Impact,
-                    worldPosition + Vector3.up * 0.70f,
+                    worldPosition,
+                    transform.forward,
                     domainAmplified
                 )
             );
@@ -255,11 +266,12 @@ namespace JJKGame.Player
             if (gojoActive && !gojoDomainWasActive)
             {
                 TechniquePresentationRequests.Raise(
-                    TechniquePresentationRequest.AtWorldPoint(
+                    TechniquePresentationRequest.AtPose(
                         ownHealth,
                         TechniquePresentationId.UnlimitedVoid,
                         TechniquePresentationPhase.Active,
-                        transform.position + Vector3.up * 3.0f
+                        transform.position,
+                        transform.forward
                     )
                 );
             }
@@ -279,11 +291,12 @@ namespace JJKGame.Player
                 }
 
                 TechniquePresentationRequests.Raise(
-                    TechniquePresentationRequest.AtWorldPoint(
+                    TechniquePresentationRequest.AtPose(
                         ownHealth,
                         TechniquePresentationId.MalevolentShrine,
                         TechniquePresentationPhase.Active,
-                        center + Vector3.up * 3.2f
+                        center,
+                        transform.forward
                     )
                 );
             }
