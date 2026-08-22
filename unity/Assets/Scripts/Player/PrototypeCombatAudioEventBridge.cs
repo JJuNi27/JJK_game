@@ -112,6 +112,16 @@ namespace JJKGame.Player
                         prototypeAudio.PlayBasicHitRuntime(2);
                     }
                     break;
+                case CombatAudioEventId.Nue:
+                    if (audioEvent.Variant <= 1)
+                    {
+                        prototypeAudio.PlayBlueCastRuntime();
+                    }
+                    else
+                    {
+                        prototypeAudio.PlayRedImpactRuntime();
+                    }
+                    break;
                 case CombatAudioEventId.PlayerHit:
                     prototypeAudio.PlayPlayerHitRuntime();
                     break;
