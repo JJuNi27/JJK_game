@@ -5,10 +5,9 @@ using UnityEngine.SceneManagement;
 namespace JJKGame.Core
 {
     /// <summary>
-    /// Beauty Corner-only contextual skill deck.
-    /// Gate 4A now reads fighter identity, accents and skill labels from the shared
-    /// CharacterPresentationProfile instead of duplicating Gojo/Sukuna display data.
-    /// Gameplay rules and input bindings remain owned by their existing systems.
+    /// Beauty Corner contextual skill deck.
+    /// Gate 4B consumes a PlayerCombatHudSnapshot instead of reaching directly
+    /// into character, health, energy and action-gate controllers.
     /// </summary>
     [DefaultExecutionOrder(1900)]
     [DisallowMultipleComponent]
@@ -17,9 +16,7 @@ namespace JJKGame.Core
         private const string TargetSceneName = "CombatMVP";
         private const float PressPulseDuration = 0.18f;
 
-        private PrototypeCharacterController characterController;
-        private CombatActionGate actionGate;
-        private Health ownerHealth;
+        private PlayerCombatHudDataSource hudDataSource;
         private float nextReferenceScanAt;
 
         private float qPulseUntil;
@@ -80,37 +77,38 @@ namespace JJKGame.Core
 
         private void RefreshReferences()
         {
-            if (characterController == null)
+            if (hudDataSource != null)
             {
-                characterController = FindFirstObjectByType<PrototypeCharacterController>();
-            }
-
-            if (characterController == null)
-            {
-                actionGate = null;
-                ownerHealth = null;
                 return;
             }
 
-            actionGate ??= characterController.GetComponent<CombatActionGate>();
-            ownerHealth ??= characterController.GetComponent<Health>();
+            PrototypeCharacterController characterController =
+                FindFirstObjectByType<PrototypeCharacterController>();
+            if (characterController != null)
+            {
+                hudDataSource = PlayerCombatHudDataSource.GetOrCreate(characterController.gameObject);
+            }
         }
 
         private void OnGUI()
         {
             if (
                 SceneManager.GetActiveScene().name != TargetSceneName
-                || characterController == null
-                || ownerHealth == null
-                || ownerHealth.IsDead
+                || hudDataSource == null
             )
+            {
+                return;
+            }
+
+            PlayerCombatHudSnapshot snapshot = hudDataSource.Snapshot;
+            if (!snapshot.IsValid || snapshot.IsDead)
             {
                 return;
             }
 
             EnsureStyles();
 
-            CharacterPresentationProfile profile = characterController.PresentationProfile;
+            CharacterPresentationProfile profile = snapshot.PresentationProfile;
             Color fighterAccent = profile.HudAccent;
 
             float width = Mathf.Min(460f, Screen.width - 24f);
@@ -123,7 +121,10 @@ namespace JJKGame.Core
 
             DrawRect(panel, new Color(0.010f, 0.014f, 0.024f, 0.94f));
             DrawRect(new Rect(panel.x, panel.y, panel.width, 2f), fighterAccent);
-            DrawRect(new Rect(panel.x, panel.y, 3f, panel.height), new Color(fighterAccent.r, fighterAccent.g, fighterAccent.b, 0.82f));
+            DrawRect(
+                new Rect(panel.x, panel.y, 3f, panel.height),
+                new Color(fighterAccent.r, fighterAccent.g, fighterAccent.b, 0.82f)
+            );
 
             GUI.Label(
                 new Rect(panel.x + 10f, panel.y + 3f, 150f, 18f),
@@ -133,7 +134,7 @@ namespace JJKGame.Core
 
             GUI.Label(
                 new Rect(panel.x + panel.width - 170f, panel.y + 3f, 160f, 18f),
-                BuildStateLabel(),
+                BuildStateLabel(snapshot),
                 statusStyle
             );
 
@@ -149,7 +150,7 @@ namespace JJKGame.Core
                 CharacterPresentationSkillSlot.Skill1,
                 new Rect(contentX + (chipWidth + gap) * 0f, chipY, chipWidth, chipHeight),
                 CombatInputBindings.Skill1Label,
-                CanUseTechnique(),
+                snapshot.CanUseTechnique,
                 Time.unscaledTime < qPulseUntil
             );
             DrawProfileSkillChip(
@@ -157,7 +158,7 @@ namespace JJKGame.Core
                 CharacterPresentationSkillSlot.Skill2,
                 new Rect(contentX + (chipWidth + gap) * 1f, chipY, chipWidth, chipHeight),
                 CombatInputBindings.Skill2Label,
-                CanUseTechnique(),
+                snapshot.CanUseTechnique,
                 Time.unscaledTime < ePulseUntil
             );
             DrawProfileSkillChip(
@@ -165,7 +166,7 @@ namespace JJKGame.Core
                 CharacterPresentationSkillSlot.Ultimate,
                 new Rect(contentX + (chipWidth + gap) * 2f, chipY, chipWidth, chipHeight),
                 CombatInputBindings.UltimateLabel,
-                CanUseUltimate(),
+                snapshot.CanUseUltimate,
                 Time.unscaledTime < rPulseUntil
             );
             DrawProfileSkillChip(
@@ -173,7 +174,7 @@ namespace JJKGame.Core
                 CharacterPresentationSkillSlot.Domain,
                 new Rect(contentX + (chipWidth + gap) * 3f, chipY, chipWidth, chipHeight),
                 CombatInputBindings.DomainLabel,
-                CanUseDomain(),
+                snapshot.CanUseDomain,
                 Time.unscaledTime < vPulseUntil
             );
         }
@@ -221,8 +222,12 @@ namespace JJKGame.Core
 
             Color previousKeyColor = keyStyle.normal.textColor;
             Color previousChipColor = chipStyle.normal.textColor;
-            keyStyle.normal.textColor = available ? Color.white : new Color(0.72f, 0.72f, 0.75f);
-            chipStyle.normal.textColor = available ? Color.white : new Color(0.56f, 0.58f, 0.64f);
+            keyStyle.normal.textColor = available
+                ? Color.white
+                : new Color(0.72f, 0.72f, 0.75f);
+            chipStyle.normal.textColor = available
+                ? Color.white
+                : new Color(0.56f, 0.58f, 0.64f);
 
             GUI.Label(keyRect, keyLabel, keyStyle);
             GUI.Label(
@@ -235,18 +240,14 @@ namespace JJKGame.Core
             chipStyle.normal.textColor = previousChipColor;
         }
 
-        private string BuildStateLabel()
+        private static string BuildStateLabel(PlayerCombatHudSnapshot snapshot)
         {
-            if (actionGate == null)
-            {
-                return "COMBAT";
-            }
-            if (actionGate.TechniqueBurnedOut)
+            if (snapshot.TechniqueBurnedOut)
             {
                 return "TECHNIQUE BURNOUT";
             }
 
-            return actionGate.CurrentState switch
+            return snapshot.ActionState switch
             {
                 CombatActionState.Dodging => "DODGE",
                 CombatActionState.TechniqueCasting => "CASTING",
@@ -255,21 +256,6 @@ namespace JJKGame.Core
                 CombatActionState.Disabled => "DISABLED",
                 _ => "READY",
             };
-        }
-
-        private bool CanUseTechnique()
-        {
-            return actionGate == null || actionGate.CanStartTechnique;
-        }
-
-        private bool CanUseUltimate()
-        {
-            return actionGate == null || actionGate.CanStartUltimate;
-        }
-
-        private bool CanUseDomain()
-        {
-            return actionGate == null || actionGate.CanStartDomain;
         }
 
         private void EnsureStyles()
