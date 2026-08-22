@@ -5,7 +5,7 @@ namespace JJKGame.Player
 {
     /// <summary>
     /// Gate 4F adapter from semantic CombatAudioEvent requests to the current
-    /// PrototypeCombatAudio implementation. Production audio can replace this adapter
+    /// prototype audio implementations. Production audio can replace this adapter
     /// without forcing gameplay producers to know AudioClip/AudioSource details.
     /// </summary>
     [DefaultExecutionOrder(1430)]
@@ -16,6 +16,7 @@ namespace JJKGame.Player
     {
         private Health ownHealth;
         private PrototypeCombatAudio prototypeAudio;
+        private SukunaCombatAudio sukunaAudio;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void BootstrapAfterSceneLoad()
@@ -68,42 +69,73 @@ namespace JJKGame.Player
             switch (audioEvent.EventId)
             {
                 case CombatAudioEventId.BasicSwing:
-                    prototypeAudio.PlayBasicSwing(Mathf.Max(1, audioEvent.Variant));
+                    prototypeAudio.PlayBasicSwingRuntime(Mathf.Max(1, audioEvent.Variant));
                     break;
                 case CombatAudioEventId.BasicHit:
-                    prototypeAudio.PlayBasicHit(Mathf.Max(1, audioEvent.Variant));
+                    prototypeAudio.PlayBasicHitRuntime(Mathf.Max(1, audioEvent.Variant));
                     break;
                 case CombatAudioEventId.Dodge:
-                    prototypeAudio.PlayDodge();
+                    prototypeAudio.PlayDodgeRuntime();
                     break;
                 case CombatAudioEventId.GojoBlueCast:
-                    prototypeAudio.PlayBlueCast();
+                    prototypeAudio.PlayBlueCastRuntime();
                     break;
                 case CombatAudioEventId.GojoBlueImpact:
-                    prototypeAudio.PlayBlueImpact();
+                    prototypeAudio.PlayBlueImpactRuntime();
                     break;
                 case CombatAudioEventId.GojoRedCast:
-                    prototypeAudio.PlayRedCast();
+                    prototypeAudio.PlayRedCastRuntime();
                     break;
                 case CombatAudioEventId.GojoRedImpact:
-                    prototypeAudio.PlayRedImpact();
+                case CombatAudioEventId.TechniqueImpact:
+                    prototypeAudio.PlayRedImpactRuntime();
                     break;
                 case CombatAudioEventId.HollowPurple:
-                    prototypeAudio.PlayPurple();
+                    prototypeAudio.PlayPurpleRuntime();
                     break;
                 case CombatAudioEventId.UnlimitedVoid:
-                    prototypeAudio.PlayDomain();
+                    prototypeAudio.PlayDomainRuntime();
+                    break;
+                case CombatAudioEventId.MalevolentShrine:
+                    GetSukunaAudio()?.PlayDomainRuntime();
+                    break;
+                case CombatAudioEventId.Fuga:
+                    HandleFugaAudio(audioEvent);
                     break;
                 case CombatAudioEventId.PlayerHit:
-                    prototypeAudio.PlayPlayerHit();
+                    prototypeAudio.PlayPlayerHitRuntime();
                     break;
                 case CombatAudioEventId.Victory:
-                    prototypeAudio.PlayVictory();
+                    prototypeAudio.PlayVictoryRuntime();
                     break;
                 case CombatAudioEventId.Defeat:
-                    prototypeAudio.PlayDefeat();
+                    prototypeAudio.PlayDefeatRuntime();
                     break;
             }
+        }
+
+        private void HandleFugaAudio(CombatAudioEvent audioEvent)
+        {
+            if (audioEvent.Amplified)
+            {
+                GetSukunaAudio()?.PlayDomainFugaRuntime();
+                return;
+            }
+
+            if (audioEvent.Variant <= 1)
+            {
+                prototypeAudio.PlayBasicSwingRuntime(3);
+            }
+            else
+            {
+                prototypeAudio.PlayRedImpactRuntime();
+            }
+        }
+
+        private SukunaCombatAudio GetSukunaAudio()
+        {
+            sukunaAudio ??= SukunaCombatAudio.GetOrCreate(gameObject);
+            return sukunaAudio;
         }
     }
 }
