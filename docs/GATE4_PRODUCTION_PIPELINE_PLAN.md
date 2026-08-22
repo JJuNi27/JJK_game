@@ -7,12 +7,21 @@
 ```text
 Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
 Gate 4 Production Pipeline Extraction: STARTED
-Gate 4A Character Presentation Contract · Pass 1: REMOTE IMPLEMENTED / USER TEST PENDING
+
+4A Character Presentation Contract
+- Pass 1: USER VERIFIED
+
+4B HUD Data Binding Extraction
+- Pass 1 Active Fighter / Skill Deck Binding: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
-2026-08-23 Gate 3 최종 회귀를 사용자가 `다 정상!`으로 확인하여 Gate 4 실행 단계로 전환했다.
+2026-08-23 Gate 3 최종 회귀를 사용자가 `다 정상!`으로 확인해 Gate 4 실행 단계로 전환했다.
 
-## 목적
+Gate 4A 첫 migration은 사용자 Unity에서 `정상이다`로 확인했다.
+
+---
+
+# 목적
 
 Gate 1~3에서는 빠르게 실제 플레이를 검증하기 위해 Character/Presentation 기능이 여러 Prototype Controller에 분산되어 있다.
 
@@ -27,7 +36,7 @@ Gate 4의 목적은 단순한 코드 미관 개선이 아니라:
 
 이다.
 
-## 핵심 원칙
+핵심 원칙:
 
 ```text
 1. 실제로 두 번 이상 반복된 것만 공통화
@@ -40,128 +49,162 @@ Gate 4의 목적은 단순한 코드 미관 개선이 아니라:
 
 ---
 
-# 4A — Character Presentation Contract · PASS 1 IMPLEMENTED
+# 4A — Character Presentation Contract · USER VERIFIED
 
-새 공통 데이터 파일:
+파일:
 
 ```text
 unity/Assets/Scripts/Player/CharacterPresentationProfile.cs
 ```
 
-현재 한 곳에서 제공하는 정보:
+공통화한 정보:
 
 ```text
 Character ID
 Display Name
 HUD Name
 Short Name
-Variant Label
-Compact Variant Label
+Era / Variant Label
 HUD Accent
 CE Accent
-Q / E / R / V Skill Label
-Q / E / R / V Presentation Accent
+Q/E/R/V Skill Label
+Q/E/R/V Skill Accent
 ```
 
-현재 Profile 등록:
+현재 Profile 소비자:
 
 ```text
-GojoModern
-SukunaShibuyaYujiBody
+PrototypeCharacterController
+PrototypePlayerTeamController
+PrototypeSkillDeckHud
 ```
 
-이 Profile에는 의도적으로 다음을 넣지 않는다.
+중요:
 
 ```text
 HP / CE 수치
 Damage
 Cooldown
-Cast Time
+고유 술식 Gameplay Rule
 Domain Rule
-Character-specific Gameplay Rule
 ```
 
-즉 `Presentation identity data`만 분리한다.
+은 Presentation Profile에 넣지 않는다.
 
-## Pass 1 Migration
+실제 Portrait / Model / Animator hook은 해당 자산이 저장소에 들어왔을 때 계약을 확장한다.
 
-다음 소비자를 Profile 기반으로 이관했다.
+사용자 Unity 회귀 확인 후:
 
 ```text
-PrototypeCharacterController
-- DisplayName
-- character switch chip identity/accent
-- Sukuna player/domain/help presentation labels
-
-PrototypePlayerTeamController
-- Active fighter accent
-- CE accent
-- Active/Reserve short name
-- fighter display/variant label
-- 기존 CharacterAccent / CharacterShortName / CharacterEraLabel 중복 제거
-
-PrototypeSkillDeckHud
-- Gojo/Sukuna 분기형 하드코딩 skill label/color 제거
-- Active CharacterPresentationProfile에서 Q/E/R/V label/accent 읽음
-- Tag 시 Profile만 바뀌면 Skill Deck identity도 자동 변경
+Gate 4A Character Presentation Contract Pass 1: USER VERIFIED
 ```
 
-상세:
-
-```text
-docs/GATE4A_CHARACTER_PRESENTATION_CONTRACT.md
-```
-
-## Asset Hook 보류
-
-Portrait / Icon / model prefab / Animator reference는 이번 Pass에 억지로 넣지 않는다.
-
-현재 저장소에는 실제 rigged Gojo/Sukuna model/Animator asset이 없기 때문에, 존재하지 않는 asset contract를 추측해 고정하면 오히려 재작업이 커진다.
-
-실제 asset이 들어오는 시점에 Profile을 ScriptableObject 또는 asset-backed registry로 확장하는 방향을 검토한다.
-
-## Pass 1 성공 조건
-
-```text
-[ ] Unity compile error 없음
-[ ] Gojo Active HUD 이름/색상 동일
-[ ] Sukuna Tag 후 이름/색상 동일
-[ ] Skill Deck: Gojo Q 창 / E 혁 / R 허식 자 / V 무량공처
-[ ] Skill Deck: Sukuna Q 해 / E 팔 / R 푸가 / V 복마어주자
-[ ] Skill pulse / availability / state label 정상
-[ ] Tag HP / CE 보존 정상
-[ ] Gojo/Sukuna gameplay 변화 없음
-```
-
-통과하면 4A Pass 1을 USER VERIFIED로 닫고 남은 Presentation identity 하드코딩을 조사한 뒤 4A를 마무리한다.
+로 닫았다.
 
 ---
 
-# 4B — HUD Data Binding Extraction
+# 4B — HUD Data Binding Extraction · STARTED
 
-현재 Prototype HUD:
+## Pass 1 — Active Fighter / Skill Deck Binding
 
-```text
-MatchController OnGUI
-PrototypePlayerTeamController OnGUI
-PrototypeOpponentTeamController OnGUI
-PrototypeSkillDeckHud OnGUI
-```
-
-먼저 정보 공급 계약을 분리한다.
+새 파일:
 
 ```text
-Active Fighter Identity
-HP / CE
-Reserve State
-Tag State
-Opponent Team State
-Skill Slot Labels
-Skill Availability
-Combat/Domain/Burnout State
+unity/Assets/Scripts/Core/PlayerCombatHudDataSource.cs
 ```
 
-Canvas/TMP 최종 HUD 교체는 이 데이터 계약 위에 얹는다.
+새 읽기 전용 계약:
+
+```text
+PlayerCombatHudSnapshot
+```
+
+현재 공급 정보:
+
+```text
+Active Fighter ID
+CharacterPresentationProfile
+Current / Max HP
+Current / Max CE
+CombatActionState
+Technique Burnout
+Technique / Ultimate / Domain 사용 가능 여부
+Team Mode 여부
+Reserve Fighter ID
+Living Reserve 여부
+Tag Cooldown
+```
+
+`PlayerCombatHudDataSource`는 Gameplay 값을 소유하지 않고 기존 Controller에서 읽어서 Snapshot만 만든다.
+
+즉 HUD가 다음 구현 세부사항을 직접 알 필요를 줄인다.
+
+```text
+Health
+CursedEnergyController
+PrototypeCharacterController
+CombatActionGate
+PrototypePlayerTeamController
+```
+
+## 첫 Consumer Migration
+
+변경:
+
+```text
+PrototypeSkillDeckHud
+```
+
+기존:
+
+```text
+Skill Deck
+→ PrototypeCharacterController 직접 읽음
+→ Health 직접 읽음
+→ CombatActionGate 직접 읽음
+```
+
+현재:
+
+```text
+Skill Deck
+→ PlayerCombatHudDataSource
+→ PlayerCombatHudSnapshot
+```
+
+Character label/accent는 Snapshot 안의 `CharacterPresentationProfile`에서 읽는다.
+
+Gameplay input/pulse 표현 자체는 기존과 동일하다.
+
+## Pass 1에서 바꾸지 않은 것
+
+```text
+Input Binding
+HP / CE 값
+Damage
+Cooldown
+Tag 규칙
+KO Auto Tag
+Technique 조건
+Domain Rule
+Target Lock
+Opponent Team
+```
+
+## 빠른 사용자 테스트
+
+```text
+1. git pull origin master
+2. Unity Console 빨간 오류 확인
+3. CombatMVP Play
+4. 고죠 Skill Deck 표시 확인
+5. Q/E/R/V pulse + READY/CASTING/DODGE 상태 확인
+6. T Tag → 스쿠나 Skill Deck 즉시 변경 확인
+7. 해/팔/푸가 또는 창/혁/허식 자 1회씩 사용
+8. HP/CE/Tag 기존 동작 회귀 확인
+```
+
+통과하면 4B Pass 2에서 Team HUD의 Active/Reserve 상태 공급을 Snapshot 계약으로 더 옮긴다.
 
 ---
 
@@ -182,7 +225,7 @@ Domain Anticipation / Activation cue
 Voice / SFX hook
 ```
 
-목표는 Gameplay Controller가 Camera/VFX 구현 세부사항을 직접 알지 않도록 Presentation 요청 단위를 만드는 것이다.
+목표는 Gameplay Controller가 Camera/VFX 구현 세부사항을 직접 알지 않도록 요청 단위를 만드는 것이다.
 
 개념 후보:
 
@@ -195,7 +238,7 @@ TechniquePresentationRequest
 - intensity profile
 ```
 
-실제 타입명은 코드 조사 후 결정한다.
+거대한 범용 Ability System을 만들지는 않는다.
 
 ---
 
@@ -253,11 +296,13 @@ AudioClip 교체가 Gameplay Controller 수정으로 이어지지 않게 한다.
 # Migration / Regression 순서
 
 ```text
-4A Character Presentation Data
-→ Gojo/Sukuna identity/HUD regression
+4A Character Presentation Data ✅
+→ Gojo/Sukuna identity/HUD regression ✅
 
-4B HUD Binding
-→ Team/Tag/KO regression
+4B HUD Binding ▶
+→ Skill Deck
+→ Player Team HUD
+→ Match / Opponent HUD 공급 계약
 
 4C Camera/Technique Presentation Request
 → Purple/Fuga/Domain regression
