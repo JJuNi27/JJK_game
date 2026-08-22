@@ -6,7 +6,8 @@
 
 ```text
 Gate 4A Character Presentation Contract: USER VERIFIED
-Gate 4B Pass 1 · Active Fighter / Skill Deck Binding: REMOTE IMPLEMENTED / USER TEST PENDING
+Gate 4B Pass 1 · Active Fighter / Skill Deck Binding: USER VERIFIED
+Gate 4B Pass 2 · Player Team HUD Binding: REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -31,9 +32,9 @@ Gate 4B에서는 UI가 구체 Controller 대신 `읽기 전용 HUD 데이터 계
 
 ---
 
-# Pass 1 — PlayerCombatHudDataSource
+# Pass 1 — PlayerCombatHudDataSource · USER VERIFIED
 
-새 파일:
+파일:
 
 ```text
 unity/Assets/Scripts/Core/PlayerCombatHudDataSource.cs
@@ -46,40 +47,10 @@ PlayerCombatHudDataSource
 PlayerCombatHudSnapshot
 ```
 
-Snapshot은 현재 다음을 제공한다.
+DataSource는 값을 소유하지 않고 기존 Gameplay Controller에서 읽어 Snapshot만 만든다.
+Gameplay Command도 실행하지 않는다.
 
-```text
-Active Character ID
-CharacterPresentationProfile
-HP current / max
-CE current / max
-CE 존재 여부
-CombatActionState
-Technique Burnout
-Technique 사용 가능
-Ultimate 사용 가능
-Domain 사용 가능
-Team Mode
-Reserve Character ID
-Living Reserve 여부
-Tag Cooldown remaining
-```
-
-중요:
-
-```text
-DataSource는 값을 소유하지 않는다.
-Gameplay Command를 실행하지 않는다.
-기존 Gameplay Controller에서 읽어서 Snapshot만 만든다.
-```
-
-따라서 Presentation Layer가 Gameplay Rule의 새로운 소유자가 되지 않는다.
-
----
-
-# 첫 Consumer Migration — PrototypeSkillDeckHud
-
-기존 직접 참조:
+첫 Consumer는 `PrototypeSkillDeckHud`였고 다음 직접 참조를 제거했다.
 
 ```text
 PrototypeCharacterController
@@ -87,32 +58,110 @@ Health
 CombatActionGate
 ```
 
-을 제거하고:
+대신:
 
 ```text
 PlayerCombatHudDataSource
 → PlayerCombatHudSnapshot
 ```
 
-만 읽도록 변경했다.
+만 읽는다.
 
-Skill label/accent는 Snapshot에 포함된 `CharacterPresentationProfile`에서 읽는다.
-
-상태:
+2026-08-23 사용자 실제 확인:
 
 ```text
-READY
-DODGE
-CASTING
-DOMAIN INPUT
-DOMAIN ACTIVE
-TECHNIQUE BURNOUT
-DISABLED
+정상임
 ```
 
-도 Snapshot의 ActionState/Burnout에서 결정한다.
+따라서:
 
-Q/E/R/V 입력 pulse는 기존 UI-local presentation이므로 그대로 유지한다.
+```text
+Gate 4B Pass 1: USER VERIFIED
+```
+
+---
+
+# Pass 2 — Player Team HUD Binding
+
+이번 Pass에서는 같은 Snapshot 계약을 Player Team HUD까지 확장했다.
+
+추가 읽기 전용 타입:
+
+```text
+PlayerTagHudState
+PlayerTeamMemberHudSnapshot
+```
+
+`PlayerCombatHudSnapshot`이 이제 추가로 제공한다.
+
+```text
+Active Member snapshot
+Reserve Member snapshot
+- Character ID
+- CharacterPresentationProfile
+- Active 여부
+- Initialized 여부
+- KO 여부
+- HP
+- CE
+
+Tag HUD state
+- READY
+- COOLDOWN
+- ACTION LOCK
+- RESERVE KO
+```
+
+## PrototypePlayerTeamController의 역할 분리
+
+Gameplay 소유권은 그대로 유지한다.
+
+```text
+Tag 실행
+HP / CE 저장 및 복원
+KO Auto Tag
+Invulnerability
+Tag cooldown
+```
+
+은 여전히 `PrototypePlayerTeamController`가 담당한다.
+
+HUD가 필요한 reserve 저장 상태만 읽을 수 있도록 다음 read-only bridge를 추가했다.
+
+```text
+TryGetStoredMemberState(...)
+```
+
+이 메서드는 상태를 변경하지 않는다.
+
+## Player Team HUD Migration
+
+기존 `OnGUI()`는 직접:
+
+```text
+Health
+CursedEnergyController
+private TeamMemberState
+CombatActionGate
+```
+
+를 읽어 Active/Reserve/Tag 화면을 구성했다.
+
+현재 HUD 렌더링 경로는:
+
+```text
+PlayerCombatHudDataSource
+→ PlayerCombatHudSnapshot
+→ Active Fighter panel
+→ Active / Reserve rows
+→ Tag state
+```
+
+으로 변경했다.
+
+즉 같은 `PrototypePlayerTeamController` 안에 Gameplay와 임시 IMGUI 렌더링이 함께 남아 있기는 하지만, 렌더링 부분은 더 이상 Gameplay 필드를 직접 조합하지 않는다.
+
+이 단계는 이후 Canvas/TMP HUD 컴포넌트를 별도 객체로 옮길 때 필요한 중간 migration이다.
 
 ---
 
@@ -122,21 +171,22 @@ Q/E/R/V 입력 pulse는 기존 UI-local presentation이므로 그대로 유지�
 Input Binding
 HP / CE 규칙
 Damage
-Cooldown
+Cooldown 수치
 Technique 조건
 Domain Rule
-Tag
+Tag 실행 규칙
 KO Auto Tag
+Tag invulnerability
 Target Lock
 Opponent Team
 Victory / Defeat
 ```
 
-즉 이번 migration은 HUD가 상태를 `어디서 읽는지`만 바꾼다.
+이번 migration은 HUD가 상태를 `어디서 읽는지`만 바꾼다.
 
 ---
 
-# 사용자 테스트
+# Pass 2 사용자 테스트
 
 ```text
 1. cd D:\GitHub\JJK_game
@@ -146,23 +196,26 @@ Victory / Defeat
 5. CombatMVP Play
 ```
 
-확인:
+빠른 확인:
 
 ```text
-[ ] 고죠 Skill Deck 정상 표시
-[ ] Q 창 / E 혁 / R 허식 자 / V 무량공처
-[ ] Q/E/R/V pulse 정상
-[ ] READY / DODGE / CASTING 상태 정상
-[ ] T Tag 후 스쿠나 Skill Deck 즉시 변경
-[ ] Q 해 / E 팔 / R 푸가 / V 복마어주자
-[ ] HP / CE / Tag 기존 동작 정상
-[ ] 대표 술식 입력 정상
+[ ] 시작 고죠 Active HUD HP/CE 정상
+[ ] Team panel A 고죠 / R 스쿠나 정상
+[ ] T TAG READY 표시 정상
+[ ] T Tag 후 Active/Reserve가 서로 교체
+[ ] Tag 직후 cooldown 초 표시 정상
+[ ] 술식/회피 중 ACTION LOCK 표시 정상
+[ ] 고죠/스쿠나 HP/CE 독립 보존 정상
+[ ] Reserve가 KO면 RESERVE KO 표시 및 수동 Tag 차단
+[ ] 첫 Active KO → 살아있는 Reserve Auto Tag
+[ ] 마지막 Player KO에만 DEFEAT
+[ ] Skill Deck도 Active Fighter와 함께 정상 변경
 ```
 
 통과하면:
 
 ```text
-Gate 4B Pass 1: USER VERIFIED
+Gate 4B Pass 2: USER VERIFIED
 ```
 
-로 닫고 Pass 2에서 Player Team HUD의 Active/Reserve 정보 공급을 같은 HUD 계약 쪽으로 옮긴다.
+다음은 Opponent/Match HUD까지 같은 방식으로 묶을지 조사한 뒤 4B를 닫고 Gate 4C Technique Presentation Request로 넘어간다.
