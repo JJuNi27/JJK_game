@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using JJKGame.CameraSystem;
 using UnityEngine;
 
@@ -28,21 +27,12 @@ namespace JJKGame.Core
         [SerializeField, Range(0f, 1f)] private float voiceVolume = 0.95f;
         [SerializeField, Range(0f, 1f)] private float musicVolume = 0.32f;
 
-        private readonly HashSet<Health> trackedHealth = new HashSet<Health>();
-
         private AudioSource sfxSource;
         private AudioSource voiceSource;
         private AudioSource musicSource;
         private Health ownerHealth;
         private SimpleCameraFollow cameraFeedback;
-        private Transform purpleVisual;
-        private Transform domainVisual;
-        private float lastOwnerHealth;
-        private float nextHealthRefreshAt;
-        private bool purpleWasActive;
-        private bool domainWasActive;
         private bool resultSoundPlayed;
-        private bool ownerHealthBound;
 
         private AudioClip blueCastFallback;
         private AudioClip blueImpactFallback;
@@ -80,82 +70,118 @@ namespace JJKGame.Core
 
         private void Start()
         {
-            RefreshHealthBindings();
-            LocateTechniqueVisuals();
             LocateCameraFeedback();
         }
 
-        private void Update()
-        {
-            if (Time.time >= nextHealthRefreshAt)
-            {
-                RefreshHealthBindings();
-            }
-
-            DetectTechniqueVisualActivations();
-        }
-
-        private void OnDestroy()
-        {
-            if (ownerHealth != null && ownerHealthBound)
-            {
-                ownerHealth.HealthChanged -= HandleOwnerHealthChanged;
-            }
-
-            foreach (Health health in trackedHealth)
-            {
-                if (health != null)
-                {
-                    health.Died -= HandleAnyDeath;
-                }
-            }
-        }
-
+        // Gate 4F compatibility shims. Existing prototype callers may keep these names,
+        // but they no longer play clips directly. New production-facing code should raise
+        // CombatAudioEvents explicitly instead of depending on this prototype component.
         public void PlayBlueCast()
+        {
+            Raise(CombatAudioEventId.GojoBlueCast);
+        }
+
+        public void PlayBlueImpact()
+        {
+            Raise(CombatAudioEventId.GojoBlueImpact);
+        }
+
+        public void PlayRedCast()
+        {
+            Raise(CombatAudioEventId.GojoRedCast);
+        }
+
+        public void PlayRedImpact()
+        {
+            Raise(CombatAudioEventId.TechniqueImpact);
+        }
+
+        public void PlayPurple()
+        {
+            Raise(CombatAudioEventId.HollowPurple);
+        }
+
+        public void PlayDomain()
+        {
+            Raise(CombatAudioEventId.UnlimitedVoid);
+        }
+
+        public void PlayBasicSwing(int chainStep)
+        {
+            Raise(CombatAudioEventId.BasicSwing, chainStep);
+        }
+
+        public void PlayBasicHit(int chainStep)
+        {
+            Raise(CombatAudioEventId.BasicHit, chainStep);
+        }
+
+        public void PlayDodge()
+        {
+            Raise(CombatAudioEventId.Dodge);
+        }
+
+        public void PlayPlayerHit()
+        {
+            Raise(CombatAudioEventId.PlayerHit);
+        }
+
+        public void PlayVictory()
+        {
+            Raise(CombatAudioEventId.Victory);
+        }
+
+        public void PlayDefeat()
+        {
+            Raise(CombatAudioEventId.Defeat);
+        }
+
+        // Runtime-only playback entry points consumed by PrototypeCombatAudioEventBridge.
+        public void PlayBlueCastRuntime()
         {
             PlayVoice(blueVoice);
             PlaySfx(blueCastFallback, 0.75f);
         }
 
-        public void PlayBlueImpact()
+        public void PlayBlueImpactRuntime()
         {
             PlaySfx(blueImpactFallback, 1f);
             ShakeAndFlash(0.18f, 0.18f, new Color(0.12f, 0.62f, 1f), 0.08f, 0.16f);
         }
 
-        public void PlayRedCast()
+        public void PlayRedCastRuntime()
         {
             PlayVoice(redVoice);
             PlaySfx(redCastFallback, 0.82f);
         }
 
-        public void PlayRedImpact()
+        public void PlayRedImpactRuntime()
         {
             PlaySfx(redImpactFallback, 1f);
             ShakeAndFlash(0.30f, 0.24f, new Color(1f, 0.12f, 0.08f), 0.13f, 0.20f);
         }
 
-        public void PlayPurple()
+        public void PlayPurpleRuntime()
         {
             PlayVoice(purpleVoice);
             PlaySfx(purpleFallback, 1f);
             ShakeAndFlash(0.58f, 0.42f, new Color(0.66f, 0.12f, 1f), 0.23f, 0.34f);
         }
 
-        public void PlayDomain()
+        public void PlayDomainRuntime()
         {
             PlayVoice(domainVoice);
             PlaySfx(domainFallback, 1f);
             ShakeAndFlash(0.36f, 0.48f, new Color(0.34f, 0.64f, 1f), 0.20f, 0.42f);
         }
 
-        public void PlayBasicSwing(int chainStep)
+        public void PlayBasicSwingRuntime(int chainStep)
         {
             float volume = chainStep >= 3 ? 0.94f : 0.68f + chainStep * 0.08f;
             PlaySfx(basicSwingSound != null ? basicSwingSound : basicSwingFallback, volume);
         }
 
-        public void PlayBasicHit(int chainStep)
+        public void PlayBasicHitRuntime(int chainStep)
         {
             AudioClip regularHit = basicHitSound != null ? basicHitSound : basicHitFallback;
             if (chainStep >= 3)
@@ -180,19 +206,19 @@ namespace JJKGame.Core
             ShakeAndFlash(amplitude, 0.12f, Color.white, 0.045f, 0.10f);
         }
 
-        public void PlayDodge()
+        public void PlayDodgeRuntime()
         {
             PlaySfx(dodgeSound != null ? dodgeSound : dodgeFallback, 0.90f);
             GetCameraFeedback()?.AddShake(0.05f, 0.10f);
         }
 
-        public void PlayPlayerHit()
+        public void PlayPlayerHitRuntime()
         {
             PlaySfx(playerHitSound != null ? playerHitSound : playerHitFallback, 0.92f);
             ShakeAndFlash(0.22f, 0.20f, new Color(1f, 0.04f, 0.04f), 0.16f, 0.22f);
         }
 
-        public void PlayVictory()
+        public void PlayVictoryRuntime()
         {
             if (resultSoundPlayed)
             {
@@ -205,7 +231,7 @@ namespace JJKGame.Core
             ShakeAndFlash(0.12f, 0.28f, new Color(0.16f, 0.72f, 1f), 0.12f, 0.34f);
         }
 
-        public void PlayDefeat()
+        public void PlayDefeatRuntime()
         {
             if (resultSoundPlayed)
             {
@@ -216,6 +242,19 @@ namespace JJKGame.Core
             FadeMusicForResult();
             PlaySfx(defeatSound != null ? defeatSound : defeatFallback, 1f);
             ShakeAndFlash(0.26f, 0.36f, new Color(0.70f, 0.01f, 0.02f), 0.20f, 0.40f);
+        }
+
+        private void Raise(CombatAudioEventId eventId, int variant = 0, bool amplified = false)
+        {
+            ownerHealth ??= GetComponent<Health>();
+            if (ownerHealth == null)
+            {
+                return;
+            }
+
+            CombatAudioEvents.Raise(
+                CombatAudioEvent.ForOwner(ownerHealth, eventId, variant, amplified)
+            );
         }
 
         private void LoadLocalOverrides()
@@ -277,87 +316,6 @@ namespace JJKGame.Core
 
             musicSource.clip = backgroundMusic;
             musicSource.Play();
-        }
-
-        private void RefreshHealthBindings()
-        {
-            nextHealthRefreshAt = Time.time + 0.5f;
-            Health[] healthObjects = FindObjectsByType<Health>(FindObjectsSortMode.None);
-            foreach (Health health in healthObjects)
-            {
-                if (health == null || !trackedHealth.Add(health))
-                {
-                    continue;
-                }
-
-                health.Died += HandleAnyDeath;
-            }
-
-            if (ownerHealth != null && !ownerHealthBound)
-            {
-                ownerHealthBound = true;
-                lastOwnerHealth = ownerHealth.CurrentHealth;
-                ownerHealth.HealthChanged += HandleOwnerHealthChanged;
-            }
-        }
-
-        private void HandleOwnerHealthChanged(Health _, float currentHealth)
-        {
-            if (currentHealth < lastOwnerHealth)
-            {
-                PlayPlayerHit();
-            }
-
-            lastOwnerHealth = currentHealth;
-        }
-
-        private void HandleAnyDeath(Health deadHealth)
-        {
-            if (deadHealth == ownerHealth)
-            {
-                PlayDefeat();
-                return;
-            }
-
-            bool foundLivingOpponent = false;
-            foreach (Health health in trackedHealth)
-            {
-                if (health != null && health != ownerHealth && !health.IsDead)
-                {
-                    foundLivingOpponent = true;
-                    break;
-                }
-            }
-
-            if (!foundLivingOpponent)
-            {
-                PlayVictory();
-            }
-        }
-
-        private void LocateTechniqueVisuals()
-        {
-            purpleVisual ??= transform.Find("HollowPurplePrototypeVisual");
-            domainVisual ??= transform.Find("UnlimitedVoidPrototypeVisual");
-        }
-
-        private void DetectTechniqueVisualActivations()
-        {
-            LocateTechniqueVisuals();
-
-            bool purpleActive = purpleVisual != null && purpleVisual.gameObject.activeInHierarchy;
-            if (purpleActive && !purpleWasActive)
-            {
-                PlayPurple();
-            }
-            purpleWasActive = purpleActive;
-
-            bool domainActive = domainVisual != null && domainVisual.gameObject.activeInHierarchy;
-            if (domainActive && !domainWasActive)
-            {
-                PlayDomain();
-            }
-            domainWasActive = domainActive;
         }
 
         private SimpleCameraFollow GetCameraFeedback()
