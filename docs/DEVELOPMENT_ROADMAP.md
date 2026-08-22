@@ -4,6 +4,7 @@
 
 상세 게임 방향은 `docs/PROJECT_DIRECTION.md`를 기준으로 한다.
 Gate 3 자산 범위와 Gate 5 세부 순서의 최신 실행 기준은 `docs/ROADMAP_SCOPE_REFINEMENT.md`를 함께 따른다.
+캐릭터/팀 선택 front-end 실행 계획은 `docs/CHARACTER_TEAM_SELECT_PLAN.md`를 따른다.
 
 ## 판단 기준
 
@@ -26,6 +27,8 @@ Gate 2 Match Architecture Proof: USER VERIFIED
 Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
 Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
 Gate 5A Third Character Stress Test: IN PROGRESS
+- Pass 1 Identity / Roster / HUD Plumbing: USER VERIFIED
+- Pass 2 Divine Dog Summon Contract Reuse: REMOTE IMPLEMENTED / USER TEST PENDING
 Gate 5B First Production-Quality Vertical Slice: PENDING
 Gate 6 Production: PENDING
 ```
@@ -142,7 +145,7 @@ Animation State/Cue를 새 Fighter가 재사용하는가?
 고죠/스쿠나 Presentation/HUD 코드를 복붙하지 않아도 되는가?
 ```
 
-Pass 1:
+Pass 1 · USER VERIFIED:
 
 ```text
 Identity / Profile
@@ -150,12 +153,23 @@ Identity / Profile
 F3: GOJO + SUKUNA ↔ GOJO + MEGUMI
 Megumi prototype visual
 HUD / Skill Deck / Animation State plumbing
+HP / CE state preservation
 ```
 
-Pass 1에서는 메구미의 Q/E/R/V Gameplay 자체는 아직 구현하지 않는다.
-먼저 Gate 4의 공통 경계가 세 번째 Character ID를 받아들이는지 확인한다.
+F3는 production character selection이 아니라 Gate 5A 개발용 stress-test shortcut이다.
 
-그 뒤 식신 Gameplay를 단계적으로 붙인다.
+Pass 2 · REMOTE IMPLEMENTED / USER TEST PENDING:
+
+```text
+Q 옥견 첫 소환 Gameplay
+별도 summon actor lifetime / targeting / damage ownership
+TechniquePresentationRequest.DivineDog
+PresentationVfxRuntime 재사용
+CombatAudioEvent.DivineDog
+기존 Animation cue 경계 재사용
+```
+
+첫 옥견 경로의 실제 결과를 보기 전에는 범용 Summon Framework를 선행 구축하지 않는다.
 
 고유 식신 AI/소환 규칙이 별도 코드인 것은 정상이다.
 공통 HUD/Presentation을 복붙해야 한다면 Gate 4 contract를 보강한다.
@@ -174,6 +188,24 @@ production-grade technique VFX
 Canvas/TMP final-style HUD
 production SFX / Voice / Music
 대표 맵 art / lighting / material / post process
+```
+
+이 단계에서 첫 정식 pre-match Character / Team Select front-end도 만든다.
+
+```text
+Canvas + TMP
+Character portrait/card grid
+Character + Variant 표시
+Solo / Active + Reserve team slot 선택
+Match Setup 확정 후 Battle Scene 진입
+```
+
+현재 Alpha/F3 keyboard roster switching은 developer-only 경로로 남기거나 제거하며 최종 사용자 캐릭터 선택 방식으로 사용하지 않는다.
+
+세부:
+
+```text
+docs/CHARACTER_TEAM_SELECT_PLAN.md
 ```
 
 목표 체감:
