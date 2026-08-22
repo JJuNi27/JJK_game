@@ -39,6 +39,7 @@ namespace JJKGame.Player
         private PrototypeCharacterController characterController;
         private CombatActionGate actionGate;
         private BasicAttack basicAttack;
+        private PlayerCombatHudDataSource hudDataSource;
         private int activeIndex;
         private float nextManualTagAt;
         private bool switchingMember;
@@ -64,6 +65,36 @@ namespace JJKGame.Player
             return team != null ? team : owner.AddComponent<PrototypePlayerTeamController>();
         }
 
+        public bool TryGetStoredMemberState(
+            PrototypeCharacterId characterId,
+            out bool initialized,
+            out float storedHealth,
+            out float storedEnergy,
+            out bool knockedOut
+        )
+        {
+            for (int index = 0; index < members.Length; index++)
+            {
+                TeamMemberState member = members[index];
+                if (member.CharacterId != characterId)
+                {
+                    continue;
+                }
+
+                initialized = member.Initialized;
+                storedHealth = member.Health;
+                storedEnergy = member.Energy;
+                knockedOut = member.KnockedOut;
+                return true;
+            }
+
+            initialized = false;
+            storedHealth = 0f;
+            storedEnergy = 0f;
+            knockedOut = false;
+            return false;
+        }
+
         private void Awake()
         {
             health = GetComponent<Health>();
@@ -71,6 +102,7 @@ namespace JJKGame.Player
             characterController = GetComponent<PrototypeCharacterController>();
             actionGate = CombatActionGate.GetOrCreate(gameObject);
             basicAttack = GetComponent<BasicAttack>();
+            hudDataSource = PlayerCombatHudDataSource.GetOrCreate(gameObject);
 
             if (health != null)
             {
@@ -224,19 +256,23 @@ namespace JJKGame.Player
 
         private void OnGUI()
         {
-            if (health == null || characterController == null)
+            hudDataSource ??= PlayerCombatHudDataSource.GetOrCreate(gameObject);
+            PlayerCombatHudSnapshot snapshot = hudDataSource != null
+                ? hudDataSource.Snapshot
+                : default;
+            if (!snapshot.IsValid || !snapshot.TeamMode)
             {
                 return;
             }
 
             EnsureStyles();
-            DrawActivePlayerOverlay();
-            DrawTeamPanel();
+            DrawActivePlayerOverlay(snapshot);
+            DrawTeamPanel(snapshot);
         }
 
-        private void DrawActivePlayerOverlay()
+        private void DrawActivePlayerOverlay(PlayerCombatHudSnapshot snapshot)
         {
-            CharacterPresentationProfile profile = CharacterPresentationProfiles.Get(ActiveCharacter);
+            CharacterPresentationProfile profile = snapshot.PresentationProfile;
             const float margin = 12f;
             float panelWidth = Mathf.Clamp((Screen.width - margin * 3f) * 0.37f, 255f, 370f);
             Rect rect = new Rect(margin, margin, panelWidth, 76f);
@@ -269,44 +305,43 @@ namespace JJKGame.Player
 
             DrawValueBar(
                 new Rect(rect.x + 14f, rect.y + 39f, rect.width - 28f, 18f),
-                health.CurrentHealth,
-                health.MaxHealth,
+                snapshot.CurrentHealth,
+                snapshot.MaxHealth,
                 accent,
-                $"HP  {health.CurrentHealth:0} / {health.MaxHealth:0}"
+                $"HP  {snapshot.CurrentHealth:0} / {snapshot.MaxHealth:0}"
             );
 
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            if (cursedEnergy != null)
+            if (snapshot.HasEnergy)
             {
                 DrawValueBar(
                     new Rect(rect.x + 14f, rect.y + 60f, rect.width - 28f, 10f),
-                    cursedEnergy.CurrentEnergy,
-                    cursedEnergy.MaxEnergy,
+                    snapshot.CurrentEnergy,
+                    snapshot.MaxEnergy,
                     secondary,
-                    $"CE {cursedEnergy.CurrentEnergy:0}/{cursedEnergy.MaxEnergy:0}"
+                    $"CE {snapshot.CurrentEnergy:0}/{snapshot.MaxEnergy:0}"
                 );
             }
         }
 
-        private void DrawTeamPanel()
+        private void DrawTeamPanel(PlayerCombatHudSnapshot snapshot)
         {
             float width = Mathf.Min(336f, Screen.width - 24f);
             float panelY = Mathf.Max(298f, Screen.height - 176f);
             panelY = Mathf.Min(panelY, Screen.height - 86f);
             Rect panel = new Rect(12f, panelY, width, 76f);
-            Color activeAccent = CharacterPresentationProfiles.Get(ActiveCharacter).HudAccent;
+            Color activeAccent = snapshot.PresentationProfile.HudAccent;
 
             DrawHudPlate(panel, new Color(0.46f, 0.55f, 0.76f), false);
             DrawRect(new Rect(panel.x, panel.y, 3f, panel.height), new Color(activeAccent.r, activeAccent.g, activeAccent.b, 0.78f));
 
-            string tagStatus = BuildTagStatus();
+            string tagStatus = BuildTagStatus(snapshot);
             GUI.Label(
                 new Rect(panel.x + 10f, panel.y + 2f, panel.width * 0.52f, 18f),
                 "TEAM",
                 titleStyle
             );
             metaStyle.alignment = TextAnchor.MiddleRight;
-            metaStyle.normal.textColor = tagStatus == "READY"
+            metaStyle.normal.textColor = snapshot.TagState == PlayerTagHudState.Ready
                 ? activeAccent
                 : new Color(0.68f, 0.72f, 0.80f);
             GUI.Label(
@@ -318,43 +353,40 @@ namespace JJKGame.Player
 
             DrawMemberRow(
                 new Rect(panel.x + 9f, panel.y + 23f, panel.width - 18f, 23f),
-                activeIndex,
-                true
+                snapshot.ActiveMember
             );
             DrawMemberRow(
                 new Rect(panel.x + 9f, panel.y + 49f, panel.width - 18f, 21f),
-                1 - activeIndex,
-                false
+                snapshot.ReserveMember
             );
         }
 
-        private void DrawMemberRow(Rect rect, int index, bool active)
+        private void DrawMemberRow(Rect rect, PlayerTeamMemberHudSnapshot member)
         {
-            TeamMemberState member = members[index];
-            CharacterPresentationProfile profile = CharacterPresentationProfiles.Get(member.CharacterId);
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            if (!member.IsValid || member.PresentationProfile == null)
+            {
+                return;
+            }
 
-            float displayedHealth = active && health != null ? health.CurrentHealth : member.Health;
-            float displayedEnergy = active && cursedEnergy != null ? cursedEnergy.CurrentEnergy : member.Energy;
-            bool initialized = active || member.Initialized;
-            bool knockedOut = member.KnockedOut;
-
-            Color accent = knockedOut
+            CharacterPresentationProfile profile = member.PresentationProfile;
+            Color accent = member.KnockedOut
                 ? new Color(0.38f, 0.39f, 0.44f)
                 : profile.HudAccent;
-            Color background = active
+            Color background = member.IsActive
                 ? new Color(accent.r * 0.10f, accent.g * 0.10f, accent.b * 0.10f, 0.94f)
                 : new Color(0.025f, 0.030f, 0.045f, 0.84f);
 
             DrawRect(rect, background);
-            DrawRect(new Rect(rect.x, rect.y, active ? 4f : 2f, rect.height), accent);
-            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, active ? 0.72f : 0.34f), 1f);
+            DrawRect(new Rect(rect.x, rect.y, member.IsActive ? 4f : 2f, rect.height), accent);
+            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, member.IsActive ? 0.72f : 0.34f), 1f);
 
-            string role = active ? "A" : "R";
-            string hpText = initialized ? $"HP {displayedHealth:0}" : "HP READY";
-            string energyText = initialized ? $"CE {displayedEnergy:0}" : "CE START";
-            string down = knockedOut ? " · KO" : string.Empty;
-            rowStyle.normal.textColor = knockedOut ? new Color(0.58f, 0.59f, 0.64f) : Color.white;
+            string role = member.IsActive ? "A" : "R";
+            string hpText = member.Initialized ? $"HP {member.Health:0}" : "HP READY";
+            string energyText = member.Initialized ? $"CE {member.Energy:0}" : "CE START";
+            string down = member.KnockedOut ? " · KO" : string.Empty;
+            rowStyle.normal.textColor = member.KnockedOut
+                ? new Color(0.58f, 0.59f, 0.64f)
+                : Color.white;
             GUI.Label(
                 rect,
                 $"{role}  {profile.ShortName}   {hpText}   {energyText}{down}",
@@ -362,24 +394,16 @@ namespace JJKGame.Player
             );
         }
 
-        private string BuildTagStatus()
+        private static string BuildTagStatus(PlayerCombatHudSnapshot snapshot)
         {
-            TeamMemberState reserve = members[1 - activeIndex];
-            if (reserve.KnockedOut)
+            return snapshot.TagState switch
             {
-                return "RESERVE KO";
-            }
-            if (ManualTagCooldownRemaining > 0f)
-            {
-                return $"{ManualTagCooldownRemaining:0.0}s";
-            }
-
-            actionGate ??= CombatActionGate.GetOrCreate(gameObject);
-            if (actionGate != null && actionGate.CurrentState != CombatActionState.Normal)
-            {
-                return "ACTION LOCK";
-            }
-            return "READY";
+                PlayerTagHudState.ReserveKnockedOut => "RESERVE KO",
+                PlayerTagHudState.Cooldown => $"{snapshot.TagCooldownRemaining:0.0}s",
+                PlayerTagHudState.ActionLocked => "ACTION LOCK",
+                PlayerTagHudState.Ready => "READY",
+                _ => "--",
+            };
         }
 
         private void DrawValueBar(Rect rect, float value, float max, Color fill, string text)
