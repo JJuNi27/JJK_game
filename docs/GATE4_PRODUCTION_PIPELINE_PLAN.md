@@ -6,25 +6,25 @@
 
 ```text
 Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
-Gate 4 Production Pipeline Extraction: IN PROGRESS
+Gate 4 Production Pipeline Extraction: FINAL REGRESSION PENDING
 
 4A Character Presentation Contract: USER VERIFIED
 4B HUD Data Binding Extraction: USER VERIFIED
 4C Technique Presentation Request: USER VERIFIED
 4D VFX Lifecycle Contract: USER VERIFIED
 4E Animation Contract: USER VERIFIED
-4F Audio Event Contract
-- Pass 1: USER VERIFIED
-- Pass 2: REMOTE IMPLEMENTED / USER TEST PENDING
+4F Audio Event Contract: USER VERIFIED
+Prototype / Production Boundary Review: COMPLETE
+Gate 4 Final Regression: USER TEST PENDING
 ```
 
-Gate 3의 초기 production-asset 목표가 실제 asset 부재로 뒤로 이동한 경위는:
+관련 문서:
 
 ```text
 docs/ROADMAP_SCOPE_REFINEMENT.md
+docs/GATE4_PRODUCTION_BOUNDARIES.md
+docs/GATE4_FINAL_REGRESSION.md
 ```
-
-에 명시한다.
 
 ## 목적
 
@@ -149,44 +149,72 @@ Gameplay Components
 
 ---
 
-# 4F — Audio Event Contract ▶
+# 4F — Audio Event Contract ✅ USER VERIFIED
 
-Pass 1 USER VERIFIED:
+```text
+Gameplay / Presentation event
+→ CombatAudioEvent
+→ PrototypeCombatAudioEventBridge
+→ 현재 prototype audio runtime
+```
+
+Pass 1:
 
 ```text
 BasicAttack / Dodge / Gojo 창·혁
-→ CombatAudioEvent
-→ PrototypeCombatAudioEventBridge
-→ prototype runtime
+→ semantic event migration
 ```
 
-Pass 2 REMOTE IMPLEMENTED:
+Pass 2:
 
 ```text
-Prototype audio state observation
-→ PrototypeCombatAudioEventSource
-→ CombatAudioEvent
-→ PrototypeCombatAudioEventBridge
-→ PrototypeCombatAudio / SukunaCombatAudio runtime-only playback
+Sukuna / Signature / PlayerHit / Victory / Defeat
+→ semantic event boundary migration
 ```
 
-추가 정리:
+`PrototypeCombatAudio`는 playback runtime 중심으로 역할을 축소했고, prototype-only 상태 관찰은 `PrototypeCombatAudioEventSource`로 분리했다.
+
+2026-08-23 사용자 결과:
 
 ```text
-Sukuna 참격/푸가에서 남아 있던 기존 PlayBasicSwing/PlayBasicHit/PlayRedImpact 호출
-→ compatibility shim이 semantic CombatAudioEvent로 변환
-
-Sukuna domain / domain Fuga direct audio call
-→ SukunaCombatAudio compatibility shim
-→ MalevolentShrine / Fuga event
-
-Hollow Purple / Unlimited Void visual activation
-PlayerHit / Victory / Defeat health observation
-→ playback runtime에서 분리
-→ PrototypeCombatAudioEventSource가 event만 발행
+정상이다!!
 ```
 
-새 캐릭터/production code는 compatibility shim이 아니라 `CombatAudioEvents`를 직접 사용하는 것을 원칙으로 한다.
+따라서 Gate 4F는 USER VERIFIED.
+
+---
+
+# Prototype / Production Boundary Review ✅ COMPLETE
+
+세부 문서:
+
+```text
+docs/GATE4_PRODUCTION_BOUNDARIES.md
+```
+
+Production-candidate contract:
+
+```text
+Character Profile
+HUD Snapshot
+Technique Presentation Request
+VFX Lifecycle
+Animation State/Cue
+Audio Event
+```
+
+Prototype-only implementation:
+
+```text
+procedural character/avatar rendering
+IMGUI HUD
+prototype arena art
+LineRenderer/procedural VFX renderer
+prototype audio bridge/runtime/fallback
+prototype state observation adapters
+```
+
+Gate 5B에서는 contract를 유지하면서 실제 asset 기반 consumer/runtime으로 교체할 수 있다.
 
 ---
 
@@ -198,13 +226,24 @@ PlayerHit / Victory / Defeat health observation
 [x] Technique semantic presentation request
 [x] VFX runtime/lifecycle contract
 [x] Animation-facing state/cue contract
-[ ] Audio event contract 사용자 회귀 검증
-[ ] Prototype-only / Production-candidate 경계 최종 정리
+[x] Audio event contract 사용자 회귀 검증
+[x] Prototype-only / Production-candidate 경계 최종 정리
 [ ] Gate 4 전체 regression
 ```
 
-4F Pass 2가 사용자 검증되면 prototype/production 경계 문서를 마지막으로 정리하고 Gate 4 전체 회귀를 한 번 수행한다.
+마지막 체크리스트:
 
-그 뒤 Gate 5A Third Character Stress Test에서 세 번째 캐릭터를 추가해 실제로 복붙 없이 확장되는지 검증한다.
+```text
+docs/GATE4_FINAL_REGRESSION.md
+```
+
+이 회귀가 통과하면:
+
+```text
+Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
+Gate 5A Third Character Stress Test: START
+```
+
+Gate 5A에서 세 번째 캐릭터를 추가해 실제로 복붙 없이 확장되는지 검증한다.
 
 Gate 5A 통과 뒤 Gate 5B First Production-Quality Vertical Slice에서 실제 모델/Animator/VFX/Canvas-TMP/Voice/SFX/맵 아트를 대표 한 판에 연결한다.
