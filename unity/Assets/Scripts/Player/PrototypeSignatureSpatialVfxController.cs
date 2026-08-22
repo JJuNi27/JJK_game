@@ -75,9 +75,8 @@ namespace JJKGame.Player
                 return;
             }
 
-            Vector3 origin = ResolveOrigin(request);
-            PrototypeSignatureSpatialVfx.SpawnWorldBurst(
-                origin,
+            SpawnWorldBurst(
+                ResolveOrigin(request),
                 new Color(0.62f, 0.08f, 1f, 0.98f),
                 new Color(0.96f, 0.78f, 1f, 0.92f),
                 0.30f,
@@ -92,7 +91,7 @@ namespace JJKGame.Player
             bool domainAmplified = request.Amplified;
             if (request.Phase == TechniquePresentationPhase.Release)
             {
-                PrototypeSignatureSpatialVfx.SpawnWorldBurst(
+                SpawnWorldBurst(
                     ResolveOrigin(request),
                     domainAmplified
                         ? new Color(1f, 0.07f, 0.01f, 0.98f)
@@ -110,7 +109,7 @@ namespace JJKGame.Player
 
             if (request.Phase == TechniquePresentationPhase.Impact)
             {
-                PrototypeSignatureSpatialVfx.SpawnWorldBurst(
+                SpawnWorldBurst(
                     ResolveOrigin(request),
                     domainAmplified
                         ? new Color(1f, 0.025f, 0.01f, 1f)
@@ -130,7 +129,7 @@ namespace JJKGame.Player
         {
             if (request.Phase == TechniquePresentationPhase.Anticipation)
             {
-                PrototypeSignatureSpatialVfx.SpawnFollowAura(
+                SpawnFollowAura(
                     ownHealth.transform,
                     new Vector3(0f, 0.20f, 0f),
                     new Color(0.20f, 0.55f, 1f, 0.95f),
@@ -145,7 +144,7 @@ namespace JJKGame.Player
 
             if (request.Phase == TechniquePresentationPhase.Active)
             {
-                PrototypeSignatureSpatialVfx.SpawnWorldBurst(
+                SpawnWorldBurst(
                     ResolveOrigin(request) + Vector3.up * 0.15f,
                     new Color(0.16f, 0.42f, 1f, 0.96f),
                     new Color(0.72f, 0.82f, 1f, 0.90f),
@@ -161,7 +160,7 @@ namespace JJKGame.Player
         {
             if (request.Phase == TechniquePresentationPhase.Anticipation)
             {
-                PrototypeSignatureSpatialVfx.SpawnFollowAura(
+                SpawnFollowAura(
                     ownHealth.transform,
                     new Vector3(0f, 0.18f, 0f),
                     new Color(0.72f, 0.025f, 0.015f, 0.96f),
@@ -176,7 +175,7 @@ namespace JJKGame.Player
 
             if (request.Phase == TechniquePresentationPhase.Active)
             {
-                PrototypeSignatureSpatialVfx.SpawnWorldBurst(
+                SpawnWorldBurst(
                     ResolveOrigin(request) + Vector3.up * 0.12f,
                     new Color(0.72f, 0.015f, 0.01f, 0.98f),
                     new Color(1f, 0.24f, 0.04f, 0.92f),
@@ -186,6 +185,56 @@ namespace JJKGame.Player
                     240f
                 );
             }
+        }
+
+        private static void SpawnWorldBurst(
+            Vector3 worldPosition,
+            Color primary,
+            Color secondary,
+            float startRadius,
+            float endRadius,
+            float duration,
+            float spinSpeed
+        )
+        {
+            PresentationVfxRuntime.Spawn(
+                PresentationVfxSpawnRequest.AtWorld(
+                    worldPosition,
+                    primary,
+                    secondary,
+                    startRadius,
+                    endRadius,
+                    duration,
+                    spinSpeed,
+                    PresentationVfxTimePolicy.Unscaled
+                )
+            );
+        }
+
+        private static void SpawnFollowAura(
+            Transform target,
+            Vector3 localOffset,
+            Color primary,
+            Color secondary,
+            float startRadius,
+            float endRadius,
+            float duration,
+            float spinSpeed
+        )
+        {
+            PresentationVfxRuntime.Spawn(
+                PresentationVfxSpawnRequest.Follow(
+                    target,
+                    localOffset,
+                    primary,
+                    secondary,
+                    startRadius,
+                    endRadius,
+                    duration,
+                    spinSpeed,
+                    PresentationVfxTimePolicy.Unscaled
+                )
+            );
         }
 
         private Vector3 ResolveOrigin(TechniquePresentationRequest request)
