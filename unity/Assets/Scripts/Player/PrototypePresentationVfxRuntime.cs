@@ -51,7 +51,10 @@ namespace JJKGame.Player
 
         private void OnEnable()
         {
-            PresentationVfxRuntime.Register(this);
+            if (instance == this)
+            {
+                PresentationVfxRuntime.Register(this);
+            }
         }
 
         private void OnDisable()
