@@ -26,9 +26,6 @@ namespace JJKGame.Player
         private float castEndsAt;
         private float nextDivineDogAt;
         private bool wasMegumi;
-        private string debugStatus = "WAITING";
-        private float debugStatusUntil;
-        private GUIStyle debugStyle;
 
         public bool IsCasting => enabled && Time.time < castEndsAt;
         public float DivineDogCooldownRemaining => Mathf.Max(0f, nextDivineDogAt - Time.time);
@@ -42,23 +39,6 @@ namespace JJKGame.Player
 
             MegumiTechniqueController controller = owner.GetComponent<MegumiTechniqueController>();
             return controller != null ? controller : owner.AddComponent<MegumiTechniqueController>();
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void BootstrapAfterSceneLoad()
-        {
-            // Gate 5A must not depend on the order in which the fighter-shell helper
-            // components are added. Health is the stable scene/runtime combat marker.
-            // Non-player Health objects receive an inert controller because Update()
-            // requires PrototypeCharacterController.IsMegumi before accepting input.
-            Health[] combatants = FindObjectsByType<Health>(FindObjectsSortMode.None);
-            foreach (Health combatant in combatants)
-            {
-                if (combatant != null)
-                {
-                    GetOrCreate(combatant.gameObject);
-                }
-            }
         }
 
         private void Awake()
@@ -92,13 +72,10 @@ namespace JJKGame.Player
             }
 
             wasMegumi = true;
-            if (!Input.GetKeyDown(CombatInputBindings.Skill1))
+            if (Input.GetKeyDown(CombatInputBindings.Skill1))
             {
-                return;
+                TrySummonDivineDog();
             }
-
-            SetDebugStatus("Q RECEIVED");
-            TrySummonDivineDog();
         }
 
         private void OnDisable()
@@ -114,35 +91,20 @@ namespace JJKGame.Player
 
         private void TrySummonDivineDog()
         {
-            if (Time.time < nextDivineDogAt)
+            if (Time.time < nextDivineDogAt || IsCasting)
             {
-                SetDebugStatus($"BLOCKED · COOLDOWN {DivineDogCooldownRemaining:0.0}s");
-                return;
-            }
-
-            if (IsCasting)
-            {
-                SetDebugStatus("BLOCKED · CASTING");
                 return;
             }
 
             actionGate ??= CombatActionGate.GetOrCreate(gameObject);
             if (actionGate != null && !actionGate.CanStartTechnique)
             {
-                SetDebugStatus($"BLOCKED · ACTION {actionGate.CurrentState}");
                 return;
             }
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            if (cursedEnergy == null)
+            if (cursedEnergy == null || !cursedEnergy.TrySpend(divineDogEnergyCost, "옥견"))
             {
-                SetDebugStatus("BLOCKED · NO CE CONTROLLER");
-                return;
-            }
-
-            if (!cursedEnergy.TrySpend(divineDogEnergyCost, "옥견"))
-            {
-                SetDebugStatus($"BLOCKED · CE {cursedEnergy.CurrentEnergy:0}");
                 return;
             }
 
@@ -194,7 +156,6 @@ namespace JJKGame.Player
             CombatAudioEvents.Raise(
                 CombatAudioEvent.ForOwner(ownHealth, CombatAudioEventId.DivineDog, 1)
             );
-            SetDebugStatus($"SUMMONED · CE {cursedEnergy.CurrentEnergy:0}");
         }
 
         private void RefreshReferences()
@@ -203,45 +164,6 @@ namespace JJKGame.Player
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
             characterController ??= GetComponent<PrototypeCharacterController>();
             targetLock ??= GetComponent<TargetLockController>();
-        }
-
-        private void SetDebugStatus(string status)
-        {
-            debugStatus = status;
-            debugStatusUntil = Time.unscaledTime + 2.2f;
-        }
-
-        private void OnGUI()
-        {
-            if (
-                characterController == null
-                || !characterController.IsMegumi
-                || ownHealth == null
-                || ownHealth.IsDead
-            )
-            {
-                return;
-            }
-
-            debugStyle ??= new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleCenter,
-                fontStyle = FontStyle.Bold,
-                fontSize = 13,
-            };
-            debugStyle.normal.textColor = new Color(0.72f, 1f, 0.96f);
-
-            string status = Time.unscaledTime <= debugStatusUntil
-                ? debugStatus
-                : DivineDogCooldownRemaining > 0f
-                    ? $"Q 옥견 · COOLDOWN {DivineDogCooldownRemaining:0.0}s"
-                    : "Q 옥견 · READY";
-
-            GUI.Label(
-                new Rect(Screen.width * 0.5f - 150f, Screen.height - 92f, 300f, 22f),
-                status,
-                debugStyle
-            );
         }
 
         private void CancelActiveSummon()
