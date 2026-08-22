@@ -209,10 +209,22 @@ namespace JJKGame.Core
             }
         }
 
+        private SimpleCameraFollow GetCombatCamera()
+        {
+            if (combatCamera == null)
+            {
+                combatCamera = FindFirstObjectByType<SimpleCameraFollow>();
+            }
+            return combatCamera;
+        }
+
         private void PlayFovKick(float delta, float duration)
         {
-            combatCamera ??= FindFirstObjectByType<SimpleCameraFollow>();
-            combatCamera?.AddFovKick(delta, duration);
+            SimpleCameraFollow camera = GetCombatCamera();
+            if (camera != null)
+            {
+                camera.AddFovKick(delta, duration);
+            }
         }
 
         private void PlayWorldFocus(
@@ -226,8 +238,11 @@ namespace JJKGame.Core
                 return;
             }
 
-            combatCamera ??= FindFirstObjectByType<SimpleCameraFollow>();
-            combatCamera?.AddWorldFocus(request.WorldPoint, strength, duration);
+            SimpleCameraFollow camera = GetCombatCamera();
+            if (camera != null)
+            {
+                camera.AddWorldFocus(request.WorldPoint, strength, duration);
+            }
         }
 
         private void PlayFeedback(
@@ -240,11 +255,11 @@ namespace JJKGame.Core
             float hitStopRelativeScale
         )
         {
-            combatCamera ??= FindFirstObjectByType<SimpleCameraFollow>();
-            if (combatCamera != null)
+            SimpleCameraFollow camera = GetCombatCamera();
+            if (camera != null)
             {
-                combatCamera.Flash(flashColor, flashAlpha, flashDuration);
-                combatCamera.AddShake(shakeAmplitude, shakeDuration);
+                camera.Flash(flashColor, flashAlpha, flashDuration);
+                camera.AddShake(shakeAmplitude, shakeDuration);
             }
 
             if (hitStopDuration > 0f)
