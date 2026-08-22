@@ -84,9 +84,8 @@ namespace JJKGame.Player
     }
 
     /// <summary>
-    /// Central registry for presentation metadata proven to repeat across the
-    /// Gate 3 HUD/presentation prototypes. Asset-backed portrait/model/Animator
-    /// hooks are intentionally deferred until those assets actually exist.
+    /// Central registry for presentation metadata proven to repeat across fighters.
+    /// Asset-backed portrait/model/Animator hooks remain deferred until real assets exist.
     /// </summary>
     public static class CharacterPresentationProfiles
     {
@@ -122,11 +121,30 @@ namespace JJKGame.Player
                 new CharacterSkillPresentation("복마어주자", new Color(0.78f, 0.035f, 0.025f))
             );
 
+        private static readonly CharacterPresentationProfile MegumiStudent =
+            new CharacterPresentationProfile(
+                PrototypeCharacterId.MegumiStudent,
+                "FUSHIGURO MEGUMI · 도쿄고 학생",
+                "MEGUMI",
+                "메구미",
+                "도쿄고 학생",
+                "학생",
+                new Color(0.12f, 0.42f, 0.52f),
+                new Color(0.10f, 0.30f, 0.38f),
+                new CharacterSkillPresentation("옥견", new Color(0.22f, 0.62f, 0.68f)),
+                new CharacterSkillPresentation("누에", new Color(0.46f, 0.66f, 0.84f)),
+                new CharacterSkillPresentation("만상", new Color(0.28f, 0.46f, 0.58f)),
+                new CharacterSkillPresentation("감합암예정", new Color(0.06f, 0.16f, 0.22f))
+            );
+
         public static CharacterPresentationProfile Get(PrototypeCharacterId characterId)
         {
-            return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody
-                ? SukunaShibuya
-                : GojoModern;
+            return characterId switch
+            {
+                PrototypeCharacterId.SukunaShibuyaYujiBody => SukunaShibuya,
+                PrototypeCharacterId.MegumiStudent => MegumiStudent,
+                _ => GojoModern,
+            };
         }
     }
 }
