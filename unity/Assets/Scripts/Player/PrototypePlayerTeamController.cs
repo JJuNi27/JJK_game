@@ -1,5 +1,6 @@
 using JJKGame.Core;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace JJKGame.Player
 {
@@ -23,16 +24,14 @@ namespace JJKGame.Player
             public bool KnockedOut => Initialized && Health <= 0f;
         }
 
+        private static bool megumiStressRosterRequested;
+
         [Header("Gate 2A · Active / Reserve")]
         [SerializeField, Min(0f)] private float manualTagCooldown = 1.25f;
         [SerializeField, Min(0f)] private float manualTagInvulnerability = 0.30f;
         [SerializeField, Min(0f)] private float koTagInvulnerability = 0.80f;
 
-        private readonly TeamMemberState[] members =
-        {
-            new TeamMemberState(PrototypeCharacterId.GojoModern),
-            new TeamMemberState(PrototypeCharacterId.SukunaShibuyaYujiBody),
-        };
+        private TeamMemberState[] members;
 
         private Health health;
         private CursedEnergyController cursedEnergy;
@@ -49,6 +48,7 @@ namespace JJKGame.Player
         private GUIStyle chipStyle;
         private int styledForHeight = -1;
 
+        public static bool MegumiStressRosterRequested => megumiStressRosterRequested;
         public PrototypeCharacterId ActiveCharacter => members[activeIndex].CharacterId;
         public PrototypeCharacterId ReserveCharacter => members[1 - activeIndex].CharacterId;
         public bool HasLivingReserve => !members[1 - activeIndex].KnockedOut;
@@ -73,19 +73,22 @@ namespace JJKGame.Player
             out bool knockedOut
         )
         {
-            for (int index = 0; index < members.Length; index++)
+            if (members != null)
             {
-                TeamMemberState member = members[index];
-                if (member.CharacterId != characterId)
+                for (int index = 0; index < members.Length; index++)
                 {
-                    continue;
-                }
+                    TeamMemberState member = members[index];
+                    if (member.CharacterId != characterId)
+                    {
+                        continue;
+                    }
 
-                initialized = member.Initialized;
-                storedHealth = member.Health;
-                storedEnergy = member.Energy;
-                knockedOut = member.KnockedOut;
-                return true;
+                    initialized = member.Initialized;
+                    storedHealth = member.Health;
+                    storedEnergy = member.Energy;
+                    knockedOut = member.KnockedOut;
+                    return true;
+                }
             }
 
             initialized = false;
@@ -97,6 +100,8 @@ namespace JJKGame.Player
 
         private void Awake()
         {
+            BuildRoster();
+
             health = GetComponent<Health>();
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
             characterController = GetComponent<PrototypeCharacterController>();
@@ -112,9 +117,15 @@ namespace JJKGame.Player
 
         private void Start()
         {
-            activeIndex = ResolveIndex(characterController != null
+            PrototypeCharacterId currentCharacter = characterController != null
                 ? characterController.ActiveCharacter
-                : PrototypeCharacterId.GojoModern);
+                : PrototypeCharacterId.GojoModern;
+            activeIndex = ResolveIndex(currentCharacter);
+            if (activeIndex < 0)
+            {
+                activeIndex = 0;
+                characterController?.ApplyCharacter(members[0].CharacterId, true);
+            }
             CaptureActiveState();
         }
 
@@ -128,6 +139,13 @@ namespace JJKGame.Player
 
         private void Update()
         {
+            if (Input.GetKeyDown(KeyCode.F3))
+            {
+                megumiStressRosterRequested = !megumiStressRosterRequested;
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                return;
+            }
+
             if (
                 health == null
                 || health.IsDead
@@ -139,6 +157,19 @@ namespace JJKGame.Player
             }
 
             TryManualTag();
+        }
+
+        private void BuildRoster()
+        {
+            members = new[]
+            {
+                new TeamMemberState(PrototypeCharacterId.GojoModern),
+                new TeamMemberState(
+                    megumiStressRosterRequested
+                        ? PrototypeCharacterId.MegumiStudent
+                        : PrototypeCharacterId.SukunaShibuyaYujiBody
+                ),
+            };
         }
 
         private void TryManualTag()
@@ -238,7 +269,7 @@ namespace JJKGame.Player
 
         private void CaptureActiveState()
         {
-            if (activeIndex < 0 || activeIndex >= members.Length)
+            if (members == null || activeIndex < 0 || activeIndex >= members.Length)
             {
                 return;
             }
@@ -249,9 +280,22 @@ namespace JJKGame.Player
             active.Energy = cursedEnergy != null ? cursedEnergy.CurrentEnergy : active.Energy;
         }
 
-        private static int ResolveIndex(PrototypeCharacterId characterId)
+        private int ResolveIndex(PrototypeCharacterId characterId)
         {
-            return characterId == PrototypeCharacterId.SukunaShibuyaYujiBody ? 1 : 0;
+            if (members == null)
+            {
+                return -1;
+            }
+
+            for (int index = 0; index < members.Length; index++)
+            {
+                if (members[index].CharacterId == characterId)
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         private void OnGUI()
@@ -337,7 +381,7 @@ namespace JJKGame.Player
             string tagStatus = BuildTagStatus(snapshot);
             GUI.Label(
                 new Rect(panel.x + 10f, panel.y + 2f, panel.width * 0.52f, 18f),
-                "TEAM",
+                megumiStressRosterRequested ? "TEAM · G/M" : "TEAM · G/S",
                 titleStyle
             );
             metaStyle.alignment = TextAnchor.MiddleRight;
