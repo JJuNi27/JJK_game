@@ -10,7 +10,7 @@ Gate 5A Third Character Stress Test: IN PROGRESS
 
 Pass 1 · Third Character Identity / Roster / HUD Plumbing: USER VERIFIED
 Pass 2 · First Summon Gameplay / Divine Dog Contract Reuse:
-REMOTE IMPLEMENTED / USER TEST PENDING
+REMOTE FIX APPLIED / USER RETEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -96,6 +96,16 @@ GOJO + SUKUNA
 기존 2인 Active/Reserve 규칙을 유지하면서 roster 데이터만 바꿔 세 번째 Character ID가 공통 경계를 통과하는지 빠르게 검증한다.
 
 최종 Character / Team Select UX는 별도 계획 문서 `docs/CHARACTER_TEAM_SELECT_PLAN.md`를 따른다.
+
+최종 방향:
+
+```text
+Team Size: 1~3명
+MAIN + RESERVE 1 + RESERVE 2
+전투 중 교대: 1 / 2로 Active ↔ 해당 Reserve Slot 교환
+```
+
+현재 T/F3/Alpha 숫자키는 prototype/developer 입력이며 최종 production 입력으로 고정하지 않는다.
 
 ## 사용자 검증
 
@@ -208,6 +218,40 @@ Gate 4E의 `FighterAnimationStateSource`가 Technique Presentation Request를 �
 
 ---
 
+# Pass 2 첫 테스트 이슈 / 수정
+
+2026-08-23 사용자 첫 테스트:
+
+```text
+Q 입력 시 옥견이 소환되지 않는 것으로 보임
+```
+
+코드 검토에서 `MegumiTechniqueController` runtime bootstrap이 `PrototypeCharacterController`가 이미 존재하는 시점에 의존하고 있어, runtime bootstrap 순서에 따라 fighter shell에 technique component attach가 누락될 수 있는 경로를 확인했다.
+
+수정:
+
+```text
+MegumiTechniqueController.BootstrapAfterSceneLoad
+
+기존:
+PrototypeCharacterController를 찾아 attach
+
+수정:
+BasicAttack이 붙은 player fighter shell을 찾아 attach
+```
+
+`BasicAttack`은 현재 player fighter shell의 안정적인 marker이며, `MegumiTechniqueController`는 이후 Update에서 `PrototypeCharacterController` identity를 다시 resolve한다.
+
+이 수정은 옥견 damage/cooldown/CE/VFX/audio 규칙을 바꾸지 않고 component attach 경로만 안정화한다.
+
+현재 상태:
+
+```text
+REMOTE FIX APPLIED / USER RETEST PENDING
+```
+
+---
+
 # Pass 2에서 의도적으로 하지 않은 것
 
 ```text
@@ -218,13 +262,14 @@ V 감합암예정 Gameplay
 식신별 HP/피격 시스템
 production model / animation / SFX
 최종 캐릭터 선택 화면
+3인 Team Runtime
 ```
 
 첫 옥견 경로에서 실제 중복이 드러난 뒤에만 공통 Summon contract가 필요한지 판단한다.
 
 ---
 
-# Pass 2 사용자 테스트
+# Pass 2 사용자 재테스트
 
 ```powershell
 cd D:\GitHub\JJK_game
@@ -233,10 +278,19 @@ git pull origin master
 
 Unity compile 완료 후 `CombatMVP` Play.
 
+우선 가장 먼저:
+
 ```text
-[ ] F3 → GOJO + MEGUMI
-[ ] T → 메구미
-[ ] Q → CE 약 20 감소
+F3 → GOJO + MEGUMI
+T → 메구미
+Q → 옥견 등장 + CE 약 20 감소
+```
+
+이 세 단계가 통과하는지 확인한다.
+
+그 다음:
+
+```text
 [ ] 메구미 근처에 어두운 색 prototype 옥견 등장
 [ ] 소환 시 teal VFX / camera / sound 정상
 [ ] TAB Target Lock 대상이 있으면 옥견이 해당 적을 우선 추적
