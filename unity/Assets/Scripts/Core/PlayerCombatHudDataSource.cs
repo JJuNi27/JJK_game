@@ -64,12 +64,17 @@ namespace JJKGame.Core
             bool canUseUltimate,
             bool canUseDomain,
             bool teamMode,
+            int teamSize,
             PrototypeCharacterId reserveCharacter,
+            PrototypeCharacterId reserve2Character,
             bool hasLivingReserve,
             float tagCooldownRemaining,
             PlayerTagHudState tagState,
+            PlayerTagHudState reserve1TagState,
+            PlayerTagHudState reserve2TagState,
             PlayerTeamMemberHudSnapshot activeMember,
             PlayerTeamMemberHudSnapshot reserveMember,
+            PlayerTeamMemberHudSnapshot reserve2Member,
             bool isDodging,
             bool dodgeReady,
             float dodgeCooldownRemaining,
@@ -95,12 +100,17 @@ namespace JJKGame.Core
             CanUseUltimate = canUseUltimate;
             CanUseDomain = canUseDomain;
             TeamMode = teamMode;
+            TeamSize = teamSize;
             ReserveCharacter = reserveCharacter;
+            Reserve2Character = reserve2Character;
             HasLivingReserve = hasLivingReserve;
             TagCooldownRemaining = tagCooldownRemaining;
             TagState = tagState;
+            Reserve1TagState = reserve1TagState;
+            Reserve2TagState = reserve2TagState;
             ActiveMember = activeMember;
             ReserveMember = reserveMember;
+            Reserve2Member = reserve2Member;
             IsDodging = isDodging;
             DodgeReady = dodgeReady;
             DodgeCooldownRemaining = dodgeCooldownRemaining;
@@ -126,12 +136,17 @@ namespace JJKGame.Core
         public bool CanUseUltimate { get; }
         public bool CanUseDomain { get; }
         public bool TeamMode { get; }
+        public int TeamSize { get; }
         public PrototypeCharacterId ReserveCharacter { get; }
+        public PrototypeCharacterId Reserve2Character { get; }
         public bool HasLivingReserve { get; }
         public float TagCooldownRemaining { get; }
         public PlayerTagHudState TagState { get; }
+        public PlayerTagHudState Reserve1TagState { get; }
+        public PlayerTagHudState Reserve2TagState { get; }
         public PlayerTeamMemberHudSnapshot ActiveMember { get; }
         public PlayerTeamMemberHudSnapshot ReserveMember { get; }
+        public PlayerTeamMemberHudSnapshot Reserve2Member { get; }
         public bool IsDodging { get; }
         public bool DodgeReady { get; }
         public float DodgeCooldownRemaining { get; }
@@ -143,8 +158,8 @@ namespace JJKGame.Core
 
     /// <summary>
     /// Gate 4B production-candidate read-only binding between gameplay state and HUD.
-    /// It owns no gameplay values and issues no combat commands. HUD implementations
-    /// can consume this snapshot without knowing which concrete controller owns each value.
+    /// Gate 5B extends the same boundary to 1-3 fighter team slots without letting HUD
+    /// issue gameplay commands or own fighter state.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Health))]
@@ -182,10 +197,18 @@ namespace JJKGame.Core
 
                 PrototypeCharacterId activeCharacter = characterController.ActiveCharacter;
                 CharacterPresentationProfile profile = characterController.PresentationProfile;
-                bool teamMode = teamController != null && teamController.enabled;
-                PrototypeCharacterId reserveCharacter = teamMode
-                    ? teamController.ReserveCharacter
-                    : activeCharacter;
+                int teamSize = teamController != null && teamController.enabled
+                    ? Mathf.Max(1, teamController.TeamSize)
+                    : 1;
+                bool teamMode = teamSize > 1;
+                PrototypeCharacterId reserveCharacter =
+                    teamMode && teamController.HasReserve1
+                        ? teamController.ReserveCharacter
+                        : activeCharacter;
+                PrototypeCharacterId reserve2Character =
+                    teamMode && teamController.HasReserve2
+                        ? teamController.Reserve2Character
+                        : activeCharacter;
                 bool hasLivingReserve = teamMode && teamController.HasLivingReserve;
                 float tagCooldown = teamMode ? teamController.ManualTagCooldownRemaining : 0f;
 
@@ -195,12 +218,24 @@ namespace JJKGame.Core
                 bool burnedOut = actionGate != null && actionGate.TechniqueBurnedOut;
 
                 PlayerTeamMemberHudSnapshot activeMember = BuildMemberSnapshot(activeCharacter, true);
-                PlayerTeamMemberHudSnapshot reserveMember = teamMode
-                    ? BuildMemberSnapshot(reserveCharacter, false)
-                    : default;
-                PlayerTagHudState tagState = ResolveTagState(
-                    teamMode,
+                PlayerTeamMemberHudSnapshot reserveMember =
+                    teamMode && teamController.HasReserve1
+                        ? BuildMemberSnapshot(reserveCharacter, false)
+                        : default;
+                PlayerTeamMemberHudSnapshot reserve2Member =
+                    teamMode && teamController.HasReserve2
+                        ? BuildMemberSnapshot(reserve2Character, false)
+                        : default;
+
+                PlayerTagHudState reserve1TagState = ResolveTagState(
+                    teamMode && teamController.HasReserve1,
                     reserveMember,
+                    tagCooldown,
+                    actionState
+                );
+                PlayerTagHudState reserve2TagState = ResolveTagState(
+                    teamMode && teamController.HasReserve2,
+                    reserve2Member,
                     tagCooldown,
                     actionState
                 );
@@ -222,12 +257,17 @@ namespace JJKGame.Core
                     actionGate == null || actionGate.CanStartUltimate,
                     actionGate == null || actionGate.CanStartDomain,
                     teamMode,
+                    teamSize,
                     reserveCharacter,
+                    reserve2Character,
                     hasLivingReserve,
                     tagCooldown,
-                    tagState,
+                    reserve1TagState,
+                    reserve1TagState,
+                    reserve2TagState,
                     activeMember,
                     reserveMember,
+                    reserve2Member,
                     movement != null && movement.IsDodging,
                     movement != null && movement.DodgeReady,
                     movement != null ? movement.DodgeCooldownRemaining : 0f,
@@ -300,13 +340,13 @@ namespace JJKGame.Core
         }
 
         private static PlayerTagHudState ResolveTagState(
-            bool teamMode,
+            bool slotAvailable,
             PlayerTeamMemberHudSnapshot reserveMember,
             float tagCooldown,
             CombatActionState actionState
         )
         {
-            if (!teamMode)
+            if (!slotAvailable)
             {
                 return PlayerTagHudState.Hidden;
             }
