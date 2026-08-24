@@ -26,10 +26,11 @@ namespace JJKGame.Player
 
         private static bool megumiStressRosterRequested;
 
-        [Header("Gate 2A · Active / Reserve")]
+        [Header("Gate 5B · Active / Reserve Slots")]
         [SerializeField, Min(0f)] private float manualTagCooldown = 1.25f;
         [SerializeField, Min(0f)] private float manualTagInvulnerability = 0.30f;
         [SerializeField, Min(0f)] private float koTagInvulnerability = 0.80f;
+        [SerializeField] private bool enableDeveloperHarness = true;
 
         private TeamMemberState[] members;
 
@@ -39,7 +40,6 @@ namespace JJKGame.Player
         private CombatActionGate actionGate;
         private BasicAttack basicAttack;
         private PlayerCombatHudDataSource hudDataSource;
-        private int activeIndex;
         private float nextManualTagAt;
         private bool switchingMember;
         private GUIStyle titleStyle;
@@ -49,9 +49,17 @@ namespace JJKGame.Player
         private int styledForHeight = -1;
 
         public static bool MegumiStressRosterRequested => megumiStressRosterRequested;
-        public PrototypeCharacterId ActiveCharacter => members[activeIndex].CharacterId;
-        public PrototypeCharacterId ReserveCharacter => members[1 - activeIndex].CharacterId;
-        public bool HasLivingReserve => !members[1 - activeIndex].KnockedOut;
+        public int TeamSize => members != null ? members.Length : 0;
+        public bool IsTeamBattle => TeamSize > 1;
+        public bool HasReserve1 => TeamSize >= 2;
+        public bool HasReserve2 => TeamSize >= 3;
+        public PrototypeCharacterId ActiveCharacter =>
+            TeamSize > 0 ? members[0].CharacterId : PrototypeCharacterId.GojoModern;
+        public PrototypeCharacterId ReserveCharacter =>
+            HasReserve1 ? members[1].CharacterId : ActiveCharacter;
+        public PrototypeCharacterId Reserve2Character =>
+            HasReserve2 ? members[2].CharacterId : ActiveCharacter;
+        public bool HasLivingReserve => FindFirstLivingReserveIndex() >= 1;
         public float ManualTagCooldownRemaining => Mathf.Max(0f, nextManualTagAt - Time.time);
 
         public static PrototypePlayerTeamController GetOrCreate(GameObject owner)
@@ -98,6 +106,34 @@ namespace JJKGame.Player
             return false;
         }
 
+        public bool TryGetSlotMemberState(
+            int slotIndex,
+            out PrototypeCharacterId characterId,
+            out bool initialized,
+            out float storedHealth,
+            out float storedEnergy,
+            out bool knockedOut
+        )
+        {
+            if (members != null && slotIndex >= 0 && slotIndex < members.Length)
+            {
+                TeamMemberState member = members[slotIndex];
+                characterId = member.CharacterId;
+                initialized = member.Initialized;
+                storedHealth = member.Health;
+                storedEnergy = member.Energy;
+                knockedOut = member.KnockedOut;
+                return true;
+            }
+
+            characterId = PrototypeCharacterId.GojoModern;
+            initialized = false;
+            storedHealth = 0f;
+            storedEnergy = 0f;
+            knockedOut = false;
+            return false;
+        }
+
         private void Awake()
         {
             BuildRoster();
@@ -117,15 +153,18 @@ namespace JJKGame.Player
 
         private void Start()
         {
-            PrototypeCharacterId currentCharacter = characterController != null
-                ? characterController.ActiveCharacter
-                : PrototypeCharacterId.GojoModern;
-            activeIndex = ResolveIndex(currentCharacter);
-            if (activeIndex < 0)
+            if (TeamSize <= 0)
             {
-                activeIndex = 0;
-                characterController?.ApplyCharacter(members[0].CharacterId, true);
+                BuildPrototypeDefaultRoster();
             }
+
+            characterController ??= GetComponent<PrototypeCharacterController>();
+            PrototypeCharacterId mainCharacter = members[0].CharacterId;
+            if (characterController != null && characterController.ActiveCharacter != mainCharacter)
+            {
+                characterController.ApplyCharacter(mainCharacter, true);
+            }
+
             CaptureActiveState();
         }
 
@@ -139,42 +178,73 @@ namespace JJKGame.Player
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F3))
+            if (enableDeveloperHarness && Input.GetKeyDown(KeyCode.F3))
             {
-                megumiStressRosterRequested = !megumiStressRosterRequested;
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                ToggleMegumiStressRoster();
                 return;
             }
 
-            if (
-                health == null
-                || health.IsDead
-                || switchingMember
-                || !Input.GetKeyDown(CombatInputBindings.Tag)
-            )
+            if (enableDeveloperHarness && Input.GetKeyDown(KeyCode.F4))
+            {
+                CycleRuntimeTeamSizeHarness();
+                return;
+            }
+
+            if (health == null || health.IsDead || switchingMember || TeamSize <= 1)
             {
                 return;
             }
 
-            TryManualTag();
+            bool reserve1Pressed = Input.GetKeyDown(CombatInputBindings.Reserve1Tag);
+            bool reserve2Pressed = Input.GetKeyDown(CombatInputBindings.Reserve2Tag);
+            bool legacyTagPressed =
+                enableDeveloperHarness && Input.GetKeyDown(CombatInputBindings.Tag);
+
+            if (!reserve1Pressed && !reserve2Pressed && !legacyTagPressed)
+            {
+                return;
+            }
+
+            int reserveSlotIndex = reserve2Pressed ? 2 : 1;
+            TryManualTag(reserveSlotIndex);
         }
 
         private void BuildRoster()
         {
-            members = new[]
+            MatchTeamSelection selection = MatchTeamSelectionStore.PlayerTeam;
+            if (selection == null || selection.TeamSize < 1 || selection.TeamSize > 3)
             {
-                new TeamMemberState(PrototypeCharacterId.GojoModern),
-                new TeamMemberState(
-                    megumiStressRosterRequested
-                        ? PrototypeCharacterId.MegumiStudent
-                        : PrototypeCharacterId.SukunaShibuyaYujiBody
-                ),
-            };
+                BuildPrototypeDefaultRoster();
+                return;
+            }
+
+            members = new TeamMemberState[selection.TeamSize];
+            for (int index = 0; index < members.Length; index++)
+            {
+                PrototypeCharacterId characterId = selection.GetRequired((MatchTeamSlot)index);
+                members[index] = new TeamMemberState(characterId);
+            }
         }
 
-        private void TryManualTag()
+        private void BuildPrototypeDefaultRoster()
         {
-            if (Time.time < nextManualTagAt)
+            MatchTeamSelectionStore.ResetPrototypeDefault();
+            MatchTeamSelection selection = MatchTeamSelectionStore.PlayerTeam;
+            members = new[]
+            {
+                new TeamMemberState(selection.Main),
+                new TeamMemberState(selection.Reserve1),
+            };
+            megumiStressRosterRequested = false;
+        }
+
+        private void TryManualTag(int reserveSlotIndex)
+        {
+            if (
+                reserveSlotIndex <= 0
+                || reserveSlotIndex >= TeamSize
+                || Time.time < nextManualTagAt
+            )
             {
                 return;
             }
@@ -185,15 +255,13 @@ namespace JJKGame.Player
                 return;
             }
 
-            int reserveIndex = 1 - activeIndex;
-            TeamMemberState reserve = members[reserveIndex];
+            TeamMemberState reserve = members[reserveSlotIndex];
             if (reserve.KnockedOut)
             {
                 return;
             }
 
-            CaptureActiveState();
-            SwitchTo(reserveIndex, false);
+            SwitchWithReserveSlot(reserveSlotIndex, false);
         }
 
         private void HandleDamageResolved(
@@ -214,48 +282,52 @@ namespace JJKGame.Player
             }
 
             CaptureActiveState();
-            int reserveIndex = 1 - activeIndex;
-            if (members[reserveIndex].KnockedOut)
+            int reserveSlotIndex = FindFirstLivingReserveIndex();
+            if (reserveSlotIndex < 1)
             {
                 return;
             }
 
-            SwitchTo(reserveIndex, true);
+            SwitchWithReserveSlot(reserveSlotIndex, true);
         }
 
-        private void SwitchTo(int nextIndex, bool fromKnockout)
+        private void SwitchWithReserveSlot(int reserveSlotIndex, bool fromKnockout)
         {
-            if (nextIndex < 0 || nextIndex >= members.Length || nextIndex == activeIndex)
-            {
-                return;
-            }
-
-            TeamMemberState next = members[nextIndex];
-            if (next.KnockedOut)
+            if (
+                reserveSlotIndex <= 0
+                || reserveSlotIndex >= TeamSize
+                || members[reserveSlotIndex].KnockedOut
+            )
             {
                 return;
             }
 
             switchingMember = true;
-            bool firstActivation = !next.Initialized;
+            CaptureActiveState();
+
+            TeamMemberState outgoing = members[0];
+            TeamMemberState incoming = members[reserveSlotIndex];
+            bool firstActivation = !incoming.Initialized;
 
             characterController ??= GetComponent<PrototypeCharacterController>();
-            characterController?.ApplyCharacter(next.CharacterId, firstActivation);
+            characterController?.ApplyCharacter(incoming.CharacterId, firstActivation);
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
             if (firstActivation)
             {
-                next.Initialized = true;
-                next.Health = health != null ? health.CurrentHealth : 0f;
-                next.Energy = cursedEnergy != null ? cursedEnergy.CurrentEnergy : 0f;
+                incoming.Initialized = true;
+                incoming.Health = health != null ? health.CurrentHealth : 0f;
+                incoming.Energy = cursedEnergy != null ? cursedEnergy.CurrentEnergy : 0f;
             }
             else
             {
-                health?.SetCurrentHealth(next.Health);
-                cursedEnergy?.SetCurrentEnergy(next.Energy);
+                health?.SetCurrentHealth(incoming.Health);
+                cursedEnergy?.SetCurrentEnergy(incoming.Energy);
             }
 
-            activeIndex = nextIndex;
+            members[0] = incoming;
+            members[reserveSlotIndex] = outgoing;
+
             basicAttack ??= GetComponent<BasicAttack>();
             basicAttack?.ResetCombatSequence();
 
@@ -269,33 +341,84 @@ namespace JJKGame.Player
 
         private void CaptureActiveState()
         {
-            if (members == null || activeIndex < 0 || activeIndex >= members.Length)
+            if (TeamSize <= 0)
             {
                 return;
             }
 
-            TeamMemberState active = members[activeIndex];
+            TeamMemberState active = members[0];
             active.Initialized = true;
             active.Health = health != null ? health.CurrentHealth : active.Health;
             active.Energy = cursedEnergy != null ? cursedEnergy.CurrentEnergy : active.Energy;
         }
 
-        private int ResolveIndex(PrototypeCharacterId characterId)
+        private int FindFirstLivingReserveIndex()
         {
             if (members == null)
             {
                 return -1;
             }
 
-            for (int index = 0; index < members.Length; index++)
+            for (int index = 1; index < members.Length; index++)
             {
-                if (members[index].CharacterId == characterId)
+                if (!members[index].KnockedOut)
                 {
                     return index;
                 }
             }
-
             return -1;
+        }
+
+        private void ToggleMegumiStressRoster()
+        {
+            megumiStressRosterRequested = !megumiStressRosterRequested;
+            MatchTeamSelectionStore.SetPlayerTeam(
+                megumiStressRosterRequested
+                    ? MatchTeamSelection.Duo(
+                        PrototypeCharacterId.GojoModern,
+                        PrototypeCharacterId.MegumiStudent
+                    )
+                    : MatchTeamSelection.Duo(
+                        PrototypeCharacterId.GojoModern,
+                        PrototypeCharacterId.SukunaShibuyaYujiBody
+                    )
+            );
+            ReloadActiveScene();
+        }
+
+        private void CycleRuntimeTeamSizeHarness()
+        {
+            megumiStressRosterRequested = false;
+            MatchTeamSelection current = MatchTeamSelectionStore.PlayerTeam;
+            int currentSize = current != null ? current.TeamSize : 2;
+
+            if (currentSize == 2)
+            {
+                MatchTeamSelectionStore.SetPlayerTeam(
+                    MatchTeamSelection.Trio(
+                        PrototypeCharacterId.GojoModern,
+                        PrototypeCharacterId.SukunaShibuyaYujiBody,
+                        PrototypeCharacterId.MegumiStudent
+                    )
+                );
+            }
+            else if (currentSize == 3)
+            {
+                MatchTeamSelectionStore.SetPlayerTeam(
+                    MatchTeamSelection.Solo(PrototypeCharacterId.GojoModern)
+                );
+            }
+            else
+            {
+                MatchTeamSelectionStore.ResetPrototypeDefault();
+            }
+
+            ReloadActiveScene();
+        }
+
+        private static void ReloadActiveScene()
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
         private void OnGUI()
@@ -325,7 +448,10 @@ namespace JJKGame.Player
 
             DrawHudPlate(rect, accent, true);
             DrawRect(new Rect(rect.x, rect.y, 5f, rect.height), accent);
-            DrawRect(new Rect(rect.x + 5f, rect.y, rect.width - 5f, 2f), new Color(accent.r, accent.g, accent.b, 0.75f));
+            DrawRect(
+                new Rect(rect.x + 5f, rect.y, rect.width - 5f, 2f),
+                new Color(accent.r, accent.g, accent.b, 0.75f)
+            );
 
             GUI.Label(
                 new Rect(rect.x + 14f, rect.y + 5f, rect.width - 92f, 18f),
@@ -369,43 +495,60 @@ namespace JJKGame.Player
 
         private void DrawTeamPanel(PlayerCombatHudSnapshot snapshot)
         {
-            float width = Mathf.Min(336f, Screen.width - 24f);
-            float panelY = Mathf.Max(298f, Screen.height - 176f);
-            panelY = Mathf.Min(panelY, Screen.height - 86f);
-            Rect panel = new Rect(12f, panelY, width, 76f);
+            float width = Mathf.Min(352f, Screen.width - 24f);
+            float height = snapshot.TeamSize >= 3 ? 102f : 78f;
+            float panelY = Mathf.Max(270f, Screen.height - height - 98f);
+            panelY = Mathf.Min(panelY, Screen.height - height - 10f);
+            Rect panel = new Rect(12f, panelY, width, height);
             Color activeAccent = snapshot.PresentationProfile.HudAccent;
 
             DrawHudPlate(panel, new Color(0.46f, 0.55f, 0.76f), false);
-            DrawRect(new Rect(panel.x, panel.y, 3f, panel.height), new Color(activeAccent.r, activeAccent.g, activeAccent.b, 0.78f));
+            DrawRect(
+                new Rect(panel.x, panel.y, 3f, panel.height),
+                new Color(activeAccent.r, activeAccent.g, activeAccent.b, 0.78f)
+            );
 
-            string tagStatus = BuildTagStatus(snapshot);
             GUI.Label(
-                new Rect(panel.x + 10f, panel.y + 2f, panel.width * 0.52f, 18f),
-                megumiStressRosterRequested ? "TEAM · G/M" : "TEAM · G/S",
+                new Rect(panel.x + 10f, panel.y + 2f, panel.width * 0.35f, 18f),
+                $"TEAM · {snapshot.TeamSize}",
                 titleStyle
             );
+
+            string reserveStatus = BuildReserveControlStatus(snapshot);
             metaStyle.alignment = TextAnchor.MiddleRight;
-            metaStyle.normal.textColor = snapshot.TagState == PlayerTagHudState.Ready
-                ? activeAccent
-                : new Color(0.68f, 0.72f, 0.80f);
+            metaStyle.normal.textColor = new Color(0.72f, 0.78f, 0.90f);
             GUI.Label(
-                new Rect(panel.x + panel.width * 0.42f, panel.y + 2f, panel.width * 0.54f - 8f, 18f),
-                $"{CombatInputBindings.TagLabel} TAG · {tagStatus}",
+                new Rect(panel.x + panel.width * 0.30f, panel.y + 2f, panel.width * 0.66f - 8f, 18f),
+                reserveStatus,
                 metaStyle
             );
             metaStyle.alignment = TextAnchor.MiddleLeft;
 
             DrawMemberRow(
                 new Rect(panel.x + 9f, panel.y + 23f, panel.width - 18f, 23f),
-                snapshot.ActiveMember
+                snapshot.ActiveMember,
+                "A"
             );
             DrawMemberRow(
                 new Rect(panel.x + 9f, panel.y + 49f, panel.width - 18f, 21f),
-                snapshot.ReserveMember
+                snapshot.ReserveMember,
+                "R1"
             );
+            if (snapshot.TeamSize >= 3)
+            {
+                DrawMemberRow(
+                    new Rect(panel.x + 9f, panel.y + 73f, panel.width - 18f, 21f),
+                    snapshot.Reserve2Member,
+                    "R2"
+                );
+            }
         }
 
-        private void DrawMemberRow(Rect rect, PlayerTeamMemberHudSnapshot member)
+        private void DrawMemberRow(
+            Rect rect,
+            PlayerTeamMemberHudSnapshot member,
+            string role
+        )
         {
             if (!member.IsValid || member.PresentationProfile == null)
             {
@@ -422,9 +565,12 @@ namespace JJKGame.Player
 
             DrawRect(rect, background);
             DrawRect(new Rect(rect.x, rect.y, member.IsActive ? 4f : 2f, rect.height), accent);
-            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, member.IsActive ? 0.72f : 0.34f), 1f);
+            DrawBorder(
+                rect,
+                new Color(accent.r, accent.g, accent.b, member.IsActive ? 0.72f : 0.34f),
+                1f
+            );
 
-            string role = member.IsActive ? "A" : "R";
             string hpText = member.Initialized ? $"HP {member.Health:0}" : "HP READY";
             string energyText = member.Initialized ? $"CE {member.Energy:0}" : "CE START";
             string down = member.KnockedOut ? " · KO" : string.Empty;
@@ -438,13 +584,27 @@ namespace JJKGame.Player
             );
         }
 
-        private static string BuildTagStatus(PlayerCombatHudSnapshot snapshot)
+        private static string BuildReserveControlStatus(PlayerCombatHudSnapshot snapshot)
         {
-            return snapshot.TagState switch
+            string reserve1 =
+                $"{CombatInputBindings.Reserve1TagLabel} R1 {BuildTagStatus(snapshot.Reserve1TagState, snapshot.TagCooldownRemaining)}";
+            if (snapshot.TeamSize < 3)
             {
-                PlayerTagHudState.ReserveKnockedOut => "RESERVE KO",
-                PlayerTagHudState.Cooldown => $"{snapshot.TagCooldownRemaining:0.0}s",
-                PlayerTagHudState.ActionLocked => "ACTION LOCK",
+                return reserve1;
+            }
+
+            string reserve2 =
+                $"{CombatInputBindings.Reserve2TagLabel} R2 {BuildTagStatus(snapshot.Reserve2TagState, snapshot.TagCooldownRemaining)}";
+            return $"{reserve1} · {reserve2}";
+        }
+
+        private static string BuildTagStatus(PlayerTagHudState state, float cooldownRemaining)
+        {
+            return state switch
+            {
+                PlayerTagHudState.ReserveKnockedOut => "KO",
+                PlayerTagHudState.Cooldown => $"{cooldownRemaining:0.0}s",
+                PlayerTagHudState.ActionLocked => "LOCK",
                 PlayerTagHudState.Ready => "READY",
                 _ => "--",
             };
@@ -468,14 +628,21 @@ namespace JJKGame.Player
 
         private static void DrawHudPlate(Rect rect, Color accent, bool stronger)
         {
-            DrawRect(rect, stronger
-                ? new Color(0.006f, 0.010f, 0.020f, 0.94f)
-                : new Color(0.008f, 0.012f, 0.022f, 0.88f));
+            DrawRect(
+                rect,
+                stronger
+                    ? new Color(0.006f, 0.010f, 0.020f, 0.94f)
+                    : new Color(0.008f, 0.012f, 0.022f, 0.88f)
+            );
             DrawRect(
                 new Rect(rect.x + 5f, rect.y + 4f, rect.width - 10f, rect.height - 8f),
                 new Color(accent.r * 0.05f, accent.g * 0.05f, accent.b * 0.05f, 0.36f)
             );
-            DrawBorder(rect, new Color(accent.r, accent.g, accent.b, stronger ? 0.55f : 0.30f), 1f);
+            DrawBorder(
+                rect,
+                new Color(accent.r, accent.g, accent.b, stronger ? 0.55f : 0.30f),
+                1f
+            );
         }
 
         private void EnsureStyles()
