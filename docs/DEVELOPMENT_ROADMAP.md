@@ -1,6 +1,6 @@
 # 개발 로드맵과 우선순위 판단 기준
 
-작성 기준일: 2026-08-23
+작성 기준일: 2026-08-24
 
 상세 게임 방향은 `docs/PROJECT_DIRECTION.md`를 기준으로 한다.
 Gate 3 자산 범위와 Gate 5 세부 순서의 최신 실행 기준은 `docs/ROADMAP_SCOPE_REFINEMENT.md`를 함께 따른다.
@@ -28,8 +28,9 @@ Gate 3 Beauty Corner Prototype Proof: USER VERIFIED
 Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
 Gate 5A Third Character Stress Test: USER VERIFIED / CLOSED
 Gate 5B First Production-Quality Vertical Slice: STARTED
-- Pass 1 Character / Team Select Data Boundary: REMOTE IMPLEMENTED
-- Runtime wiring / UI: PENDING
+- Pass 1 Character / Team Select Data Boundary: USER VERIFIED
+- Pass 2 Battle Runtime consumes MatchTeamSelection: REMOTE IMPLEMENTED / USER TEST PENDING
+- Character Select Canvas/TMP front-end: PENDING
 Gate 6 Production: PENDING
 ```
 
@@ -43,7 +44,7 @@ Gate 6 Production: PENDING
 Core A: 1v1 Solo Battle
 Core B: 2~3인 Team Battle
 - 전장 Active 1명
-- Reserve 교대
+- Reserve 1 / Reserve 2 교대
 - 캐릭터별 HP/주력 독립 보존
 
 LATER:
@@ -71,7 +72,7 @@ LATER:
 
 ```text
 Player Active / Reserve
-T Tag
+T prototype Tag
 HP / CE 독립 보존
 KO Auto Tag
 마지막 Player KO에만 DEFEAT
@@ -181,7 +182,7 @@ production SFX / Voice / Music
 2 → Active ↔ Reserve 2
 ```
 
-현재 시작한 Pass 1:
+Pass 1 · USER VERIFIED:
 
 ```text
 MatchTeamSelection
@@ -193,7 +194,30 @@ MatchTeamSelectionStore
 - prototype default GOJO + SUKUNA
 ```
 
-다음 작업은 Battle Runtime이 이 selection 데이터를 소비하도록 연결하고, 이후 Character Select Canvas/TMP front-end를 붙이는 것이다.
+Pass 2 · REMOTE IMPLEMENTED / USER TEST PENDING:
+
+```text
+PrototypePlayerTeamController가 MatchTeamSelectionStore를 소비
+Runtime Team Size 1~3
+members[0] Active / [1] R1 / [2] R2
+1 = Active ↔ R1
+2 = Active ↔ R2
+HP / CE / KO state slot swap 보존
+첫/두 번째 KO 시 살아있는 Reserve Auto Tag
+PlayerCombatHudSnapshot에 TeamSize / R2 / per-slot tag state 확장
+```
+
+Developer regression harness:
+
+```text
+F3: G/S ↔ G/M Duo
+F4: Duo G/S → Trio G/S/M → Solo G → Duo G/S
+T: R1 교대 compatibility
+```
+
+F3/F4/T는 최종 사용자 입력이 아니다.
+
+Pass 2를 Unity 회귀로 검증한 뒤 Character Select Canvas/TMP front-end를 연결한다.
 
 세부:
 
@@ -225,7 +249,7 @@ PvE / Story
 
 ---
 
-# Codex / Agent 사용 원칙
+# Codex / Agent / Context7 사용 원칙
 
 Gate 번호 자체가 도구 사용 여부를 결정하지 않는다.
 
@@ -241,6 +265,10 @@ Gate 번호 자체가 도구 사용 여부를 결정하지 않는다.
 ```
 
 실제로 사용하지 않은 도구를 사용했다고 표현하지 않는다.
+
+Context7은 VS Code Codex에 MCP로 연결 완료됐다.
+Unity/package API의 현재 문서가 구현 정확도에 중요한 경우 선택적으로 참고한다.
+프로젝트 자체 코드와 실제 설치 버전은 항상 저장소를 우선한다.
 
 ---
 
