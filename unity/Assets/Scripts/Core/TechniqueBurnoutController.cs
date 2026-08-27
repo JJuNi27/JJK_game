@@ -81,6 +81,11 @@ namespace JJKGame.Core
 
         private void OnGUI()
         {
+            if (CombatHudPresentationMode.ProductionCanvasActive)
+            {
+                return;
+            }
+
             if (!IsBurnedOut)
             {
                 return;
