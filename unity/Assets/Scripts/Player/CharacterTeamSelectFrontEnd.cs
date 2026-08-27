@@ -8,10 +8,10 @@ using UnityEngine.UI;
 namespace JJKGame.Player
 {
     /// <summary>
-    /// Gate 5B functional Character / Team Select front-end.
+    /// Gate 5B Character / Team Select front-end.
     /// CharacterSelect is the dedicated pre-match host scene. SampleScene remains accepted
-    /// only as a developer compatibility host. This UI writes MatchTeamSelectionStore and
-    /// never touches battle GameObjects directly.
+    /// only as a developer compatibility host. The UI writes MatchTeamSelectionStore and
+    /// never touches battle-scene fighter GameObjects directly.
     /// </summary>
     [DefaultExecutionOrder(-500)]
     [DisallowMultipleComponent]
@@ -34,14 +34,22 @@ namespace JJKGame.Player
 
         private readonly Button[] rosterButtons = new Button[Roster.Length];
         private readonly Image[] rosterButtonImages = new Image[Roster.Length];
+        private readonly Text[] rosterBadgeTexts = new Text[Roster.Length];
         private readonly Text[] slotTexts = new Text[MaxTeamSize];
+        private readonly Image[] slotImages = new Image[MaxTeamSize];
 
         private Font uiFont;
         private Text previewName;
         private Text previewVariant;
+        private Text previewRole;
+        private Text previewDescription;
         private Text previewSkills;
-        private Text previewHint;
+        private Text previewMonogram;
+        private Text teamCounterText;
         private Text statusText;
+        private Image previewAccentBar;
+        private Image previewGlow;
+        private Image backgroundGlow;
         private Button startButton;
         private Image startButtonImage;
         private PrototypeCharacterId previewCharacter = PrototypeCharacterId.GojoModern;
@@ -107,6 +115,8 @@ namespace JJKGame.Player
             {
                 StartBattle();
             }
+
+            AnimateVisualShell();
         }
 
         private void BuildUi()
@@ -140,81 +150,154 @@ namespace JJKGame.Player
                 Vector2.one,
                 Vector2.zero,
                 Vector2.zero,
-                new Color(0.010f, 0.014f, 0.026f, 1f)
+                new Color(0.006f, 0.009f, 0.020f, 1f)
             );
 
-            Image topBand = CreatePanel(
+            backgroundGlow = CreatePanel(
                 background.rectTransform,
-                "TopBand",
-                new Vector2(0f, 0.82f),
-                Vector2.one,
+                "BackgroundGlow",
+                new Vector2(0.48f, 0.08f),
+                new Vector2(1.03f, 0.96f),
                 Vector2.zero,
                 Vector2.zero,
-                new Color(0.025f, 0.035f, 0.065f, 0.98f)
+                new Color(0.05f, 0.12f, 0.24f, 0.18f)
             );
 
+            Image leftRail = CreatePanel(
+                background.rectTransform,
+                "LeftRail",
+                new Vector2(0f, 0f),
+                new Vector2(0.012f, 1f),
+                Vector2.zero,
+                Vector2.zero,
+                new Color(0.10f, 0.46f, 0.84f, 1f)
+            );
+
+            CreatePanel(
+                background.rectTransform,
+                "TopDivider",
+                new Vector2(0.035f, 0.805f),
+                new Vector2(0.965f, 0.809f),
+                Vector2.zero,
+                Vector2.zero,
+                new Color(0.18f, 0.28f, 0.48f, 0.78f)
+            );
+
+            BuildHeader(background.rectTransform);
+            BuildRoster(background.rectTransform);
+            BuildPreview(background.rectTransform);
+            BuildTeamFormation(background.rectTransform);
+
+            leftRail.raycastTarget = false;
+            backgroundGlow.raycastTarget = false;
+        }
+
+        private void BuildHeader(RectTransform parent)
+        {
             CreateText(
-                topBand.rectTransform,
-                "Title",
-                "CHARACTER / TEAM SELECT",
-                42,
+                parent,
+                "Eyebrow",
+                "JJK ARENA / PRE-MATCH",
+                16,
                 FontStyle.Bold,
                 TextAnchor.MiddleLeft,
-                new Color(0.92f, 0.95f, 1f),
-                new Vector2(0.04f, 0.36f),
-                new Vector2(0.70f, 0.90f),
+                new Color(0.30f, 0.58f, 0.90f),
+                new Vector2(0.045f, 0.925f),
+                new Vector2(0.44f, 0.965f),
                 Vector2.zero,
                 Vector2.zero
             );
 
+            Text title = CreateText(
+                parent,
+                "Title",
+                "CHARACTER / TEAM SELECT",
+                44,
+                FontStyle.Bold,
+                TextAnchor.MiddleLeft,
+                new Color(0.94f, 0.97f, 1f),
+                new Vector2(0.045f, 0.855f),
+                new Vector2(0.62f, 0.935f),
+                Vector2.zero,
+                Vector2.zero
+            );
+            AddOutline(title, new Color(0f, 0f, 0f, 0.65f), new Vector2(1.5f, -1.5f));
+
             CreateText(
-                topBand.rectTransform,
+                parent,
                 "SubTitle",
-                "1~3 fighters · MAIN + RESERVE 1 + RESERVE 2",
-                22,
+                "팀을 선택한 순서가 MAIN → RESERVE 1 → RESERVE 2가 됩니다.",
+                19,
                 FontStyle.Normal,
                 TextAnchor.MiddleLeft,
-                new Color(0.48f, 0.60f, 0.82f),
-                new Vector2(0.04f, 0.06f),
-                new Vector2(0.70f, 0.40f),
+                new Color(0.55f, 0.64f, 0.78f),
+                new Vector2(0.045f, 0.815f),
+                new Vector2(0.62f, 0.865f),
                 Vector2.zero,
                 Vector2.zero
             );
 
             CreateText(
-                topBand.rectTransform,
+                parent,
                 "Controls",
-                "1 / 2 / 3 ADD   ·   BACKSPACE UNDO   ·   C CLEAR   ·   ENTER BATTLE",
+                "1 / 2 / 3 선택   ·   BACKSPACE 되돌리기   ·   C 초기화   ·   ENTER 전투 시작",
                 17,
                 FontStyle.Bold,
                 TextAnchor.MiddleRight,
-                new Color(0.60f, 0.68f, 0.82f),
-                new Vector2(0.56f, 0.08f),
-                new Vector2(0.96f, 0.44f),
+                new Color(0.56f, 0.64f, 0.78f),
+                new Vector2(0.53f, 0.885f),
+                new Vector2(0.955f, 0.945f),
                 Vector2.zero,
                 Vector2.zero
             );
+        }
 
+        private void BuildRoster(RectTransform parent)
+        {
             Image rosterPanel = CreatePanel(
-                background.rectTransform,
+                parent,
                 "RosterPanel",
-                new Vector2(0.035f, 0.28f),
-                new Vector2(0.60f, 0.79f),
+                new Vector2(0.045f, 0.30f),
+                new Vector2(0.565f, 0.785f),
                 Vector2.zero,
                 Vector2.zero,
-                new Color(0.016f, 0.022f, 0.040f, 0.98f)
+                new Color(0.014f, 0.020f, 0.037f, 0.98f)
+            );
+
+            CreatePanel(
+                rosterPanel.rectTransform,
+                "RosterAccent",
+                new Vector2(0f, 0f),
+                new Vector2(0.006f, 1f),
+                Vector2.zero,
+                Vector2.zero,
+                new Color(0.20f, 0.48f, 0.84f, 0.84f)
             );
 
             CreateText(
                 rosterPanel.rectTransform,
                 "RosterHeader",
-                "ROSTER",
-                25,
+                "FIGHTER ROSTER",
+                24,
                 FontStyle.Bold,
                 TextAnchor.MiddleLeft,
-                new Color(0.78f, 0.84f, 0.96f),
+                new Color(0.80f, 0.86f, 0.96f),
                 new Vector2(0.035f, 0.84f),
-                new Vector2(0.96f, 0.97f),
+                new Vector2(0.96f, 0.96f),
+                Vector2.zero,
+                Vector2.zero
+            );
+
+            CreateText(
+                rosterPanel.rectTransform,
+                "RosterHelp",
+                "카드에 마우스를 올리면 상세 정보 · 클릭하면 다음 팀 슬롯에 배치",
+                15,
+                FontStyle.Normal,
+                TextAnchor.MiddleLeft,
+                new Color(0.44f, 0.52f, 0.66f),
+                new Vector2(0.035f, 0.77f),
+                new Vector2(0.96f, 0.85f),
                 Vector2.zero,
                 Vector2.zero
             );
@@ -231,38 +314,108 @@ namespace JJKGame.Player
                     rosterPanel.rectTransform,
                     $"Roster_{profile.HudName}",
                     BuildRosterCardText(index, profile),
-                    21,
-                    new Vector2(xMin, 0.12f),
-                    new Vector2(xMax, 0.80f),
+                    20,
+                    new Vector2(xMin, 0.10f),
+                    new Vector2(xMax, 0.73f),
                     profile.HudAccent
                 );
 
                 int captured = index;
                 card.onClick.AddListener(() => SelectRosterCharacter(Roster[captured]));
+                AddPointerEnter(card.gameObject, () => PreviewCharacter(Roster[captured]));
+
                 rosterButtons[index] = card;
                 rosterButtonImages[index] = card.GetComponent<Image>();
-            }
 
+                Text badge = CreateText(
+                    card.GetComponent<RectTransform>(),
+                    "SelectionBadge",
+                    string.Empty,
+                    14,
+                    FontStyle.Bold,
+                    TextAnchor.MiddleCenter,
+                    Color.white,
+                    new Vector2(0.58f, 0.87f),
+                    new Vector2(0.94f, 0.97f),
+                    Vector2.zero,
+                    Vector2.zero
+                );
+                badge.gameObject.SetActive(false);
+                rosterBadgeTexts[index] = badge;
+            }
+        }
+
+        private void BuildPreview(RectTransform parent)
+        {
             Image previewPanel = CreatePanel(
-                background.rectTransform,
+                parent,
                 "PreviewPanel",
-                new Vector2(0.63f, 0.28f),
-                new Vector2(0.965f, 0.79f),
+                new Vector2(0.59f, 0.30f),
+                new Vector2(0.955f, 0.785f),
                 Vector2.zero,
                 Vector2.zero,
-                new Color(0.018f, 0.023f, 0.042f, 0.98f)
+                new Color(0.014f, 0.019f, 0.035f, 0.985f)
+            );
+
+            previewGlow = CreatePanel(
+                previewPanel.rectTransform,
+                "PreviewGlow",
+                new Vector2(0.52f, 0f),
+                new Vector2(1f, 1f),
+                Vector2.zero,
+                Vector2.zero,
+                new Color(0.12f, 0.38f, 0.72f, 0.10f)
+            );
+            previewGlow.raycastTarget = false;
+
+            previewAccentBar = CreatePanel(
+                previewPanel.rectTransform,
+                "PreviewAccentBar",
+                new Vector2(0f, 0f),
+                new Vector2(0.012f, 1f),
+                Vector2.zero,
+                Vector2.zero,
+                new Color(0.18f, 0.66f, 1f, 1f)
+            );
+
+            previewMonogram = CreateText(
+                previewPanel.rectTransform,
+                "PreviewMonogram",
+                "GOJO",
+                74,
+                FontStyle.Bold,
+                TextAnchor.MiddleRight,
+                new Color(1f, 1f, 1f, 0.055f),
+                new Vector2(0.34f, 0.58f),
+                new Vector2(0.94f, 0.96f),
+                Vector2.zero,
+                Vector2.zero
+            );
+
+            CreateText(
+                previewPanel.rectTransform,
+                "PreviewHeader",
+                "FIGHTER PROFILE",
+                15,
+                FontStyle.Bold,
+                TextAnchor.MiddleLeft,
+                new Color(0.48f, 0.62f, 0.84f),
+                new Vector2(0.065f, 0.88f),
+                new Vector2(0.50f, 0.96f),
+                Vector2.zero,
+                Vector2.zero
             );
 
             previewName = CreateText(
                 previewPanel.rectTransform,
                 "PreviewName",
                 string.Empty,
-                34,
+                31,
                 FontStyle.Bold,
                 TextAnchor.MiddleLeft,
                 Color.white,
-                new Vector2(0.07f, 0.72f),
-                new Vector2(0.94f, 0.92f),
+                new Vector2(0.065f, 0.73f),
+                new Vector2(0.92f, 0.88f),
                 Vector2.zero,
                 Vector2.zero
             );
@@ -271,12 +424,56 @@ namespace JJKGame.Player
                 previewPanel.rectTransform,
                 "PreviewVariant",
                 string.Empty,
-                21,
+                18,
                 FontStyle.Bold,
                 TextAnchor.MiddleLeft,
                 new Color(0.60f, 0.68f, 0.82f),
-                new Vector2(0.07f, 0.61f),
-                new Vector2(0.94f, 0.73f),
+                new Vector2(0.065f, 0.65f),
+                new Vector2(0.92f, 0.74f),
+                Vector2.zero,
+                Vector2.zero
+            );
+
+            previewRole = CreateText(
+                previewPanel.rectTransform,
+                "PreviewRole",
+                string.Empty,
+                17,
+                FontStyle.Bold,
+                TextAnchor.MiddleLeft,
+                new Color(0.82f, 0.86f, 0.94f),
+                new Vector2(0.065f, 0.55f),
+                new Vector2(0.92f, 0.65f),
+                Vector2.zero,
+                Vector2.zero
+            );
+
+            previewDescription = CreateText(
+                previewPanel.rectTransform,
+                "PreviewDescription",
+                string.Empty,
+                17,
+                FontStyle.Normal,
+                TextAnchor.UpperLeft,
+                new Color(0.68f, 0.73f, 0.82f),
+                new Vector2(0.065f, 0.38f),
+                new Vector2(0.92f, 0.55f),
+                Vector2.zero,
+                Vector2.zero
+            );
+            previewDescription.horizontalOverflow = HorizontalWrapMode.Wrap;
+            previewDescription.verticalOverflow = VerticalWrapMode.Overflow;
+
+            CreateText(
+                previewPanel.rectTransform,
+                "SkillHeader",
+                "TECHNIQUE LOADOUT",
+                14,
+                FontStyle.Bold,
+                TextAnchor.MiddleLeft,
+                new Color(0.48f, 0.62f, 0.84f),
+                new Vector2(0.065f, 0.30f),
+                new Vector2(0.92f, 0.38f),
                 Vector2.zero,
                 Vector2.zero
             );
@@ -285,53 +482,55 @@ namespace JJKGame.Player
                 previewPanel.rectTransform,
                 "PreviewSkills",
                 string.Empty,
-                22,
-                FontStyle.Normal,
+                18,
+                FontStyle.Bold,
                 TextAnchor.UpperLeft,
                 Color.white,
-                new Vector2(0.07f, 0.27f),
-                new Vector2(0.94f, 0.60f),
+                new Vector2(0.065f, 0.07f),
+                new Vector2(0.92f, 0.30f),
                 Vector2.zero,
                 Vector2.zero
             );
-
             previewSkills.horizontalOverflow = HorizontalWrapMode.Wrap;
             previewSkills.verticalOverflow = VerticalWrapMode.Overflow;
+        }
 
-            previewHint = CreateText(
-                previewPanel.rectTransform,
-                "PreviewHint",
-                "Click card or press its number to add it to the next open slot.",
-                17,
-                FontStyle.Normal,
-                TextAnchor.LowerLeft,
-                new Color(0.48f, 0.56f, 0.70f),
-                new Vector2(0.07f, 0.07f),
-                new Vector2(0.94f, 0.25f),
-                Vector2.zero,
-                Vector2.zero
-            );
-
+        private void BuildTeamFormation(RectTransform parent)
+        {
             Image teamPanel = CreatePanel(
-                background.rectTransform,
+                parent,
                 "TeamFormationPanel",
-                new Vector2(0.035f, 0.055f),
-                new Vector2(0.965f, 0.245f),
+                new Vector2(0.045f, 0.055f),
+                new Vector2(0.955f, 0.255f),
                 Vector2.zero,
                 Vector2.zero,
-                new Color(0.018f, 0.024f, 0.044f, 0.98f)
+                new Color(0.014f, 0.020f, 0.038f, 0.985f)
             );
 
             CreateText(
                 teamPanel.rectTransform,
                 "TeamHeader",
                 "TEAM FORMATION",
-                21,
+                20,
                 FontStyle.Bold,
                 TextAnchor.MiddleLeft,
                 new Color(0.72f, 0.80f, 0.94f),
-                new Vector2(0.02f, 0.72f),
+                new Vector2(0.02f, 0.76f),
                 new Vector2(0.23f, 0.96f),
+                Vector2.zero,
+                Vector2.zero
+            );
+
+            teamCounterText = CreateText(
+                teamPanel.rectTransform,
+                "TeamCounter",
+                "0 / 3 READY",
+                15,
+                FontStyle.Bold,
+                TextAnchor.MiddleLeft,
+                new Color(0.42f, 0.58f, 0.82f),
+                new Vector2(0.20f, 0.76f),
+                new Vector2(0.35f, 0.96f),
                 Vector2.zero,
                 Vector2.zero
             );
@@ -345,24 +544,25 @@ namespace JJKGame.Player
                     teamPanel.rectTransform,
                     $"Slot_{slot}",
                     $"{slotNames[slot]}\n— EMPTY —",
-                    18,
+                    17,
                     new Vector2(xMin, 0.12f),
-                    new Vector2(xMax, 0.69f),
-                    new Color(0.22f, 0.28f, 0.42f)
+                    new Vector2(xMax, 0.70f),
+                    new Color(0.20f, 0.28f, 0.44f)
                 );
                 int capturedSlot = slot;
                 slotButton.onClick.AddListener(() => RemoveSelectionAt(capturedSlot));
                 slotTexts[slot] = slotButton.GetComponentInChildren<Text>();
+                slotImages[slot] = slotButton.GetComponent<Image>();
             }
 
             Button undoButton = CreateButton(
                 teamPanel.rectTransform,
                 "UndoButton",
                 "UNDO",
-                18,
+                16,
                 new Vector2(0.65f, 0.12f),
-                new Vector2(0.74f, 0.69f),
-                new Color(0.30f, 0.36f, 0.52f)
+                new Vector2(0.74f, 0.70f),
+                new Color(0.26f, 0.34f, 0.50f)
             );
             undoButton.onClick.AddListener(RemoveLastSelection);
 
@@ -370,10 +570,10 @@ namespace JJKGame.Player
                 teamPanel.rectTransform,
                 "ClearButton",
                 "CLEAR",
-                18,
+                16,
                 new Vector2(0.75f, 0.12f),
-                new Vector2(0.84f, 0.69f),
-                new Color(0.34f, 0.28f, 0.34f)
+                new Vector2(0.84f, 0.70f),
+                new Color(0.38f, 0.22f, 0.30f)
             );
             clearButton.onClick.AddListener(ClearSelection);
 
@@ -381,9 +581,9 @@ namespace JJKGame.Player
                 teamPanel.rectTransform,
                 "BattleButton",
                 "BATTLE",
-                23,
+                22,
                 new Vector2(0.855f, 0.12f),
-                new Vector2(0.98f, 0.69f),
+                new Vector2(0.98f, 0.70f),
                 new Color(0.18f, 0.66f, 1f)
             );
             startButton.onClick.AddListener(StartBattle);
@@ -393,11 +593,11 @@ namespace JJKGame.Player
                 teamPanel.rectTransform,
                 "Status",
                 string.Empty,
-                16,
+                15,
                 FontStyle.Bold,
                 TextAnchor.MiddleRight,
-                new Color(0.62f, 0.72f, 0.90f),
-                new Vector2(0.52f, 0.73f),
+                new Color(0.58f, 0.68f, 0.86f),
+                new Vector2(0.48f, 0.76f),
                 new Vector2(0.98f, 0.96f),
                 Vector2.zero,
                 Vector2.zero
@@ -410,20 +610,21 @@ namespace JJKGame.Player
 
             if (selectedTeam.Contains(characterId))
             {
-                SetStatus("Already assigned · click its slot to remove.");
+                SetStatus("이미 팀에 배치됨 · 아래 팀 슬롯을 클릭하면 제거됩니다.");
                 RefreshUi();
                 return;
             }
 
             if (selectedTeam.Count >= MaxTeamSize)
             {
-                SetStatus("Team full · remove a slot before adding another fighter.");
+                SetStatus("팀이 가득 찼습니다 · 슬롯을 비운 뒤 다시 선택하세요.");
                 RefreshUi();
                 return;
             }
 
             selectedTeam.Add(characterId);
-            SetStatus($"{CharacterPresentationProfiles.Get(characterId).HudName} assigned.");
+            CharacterPresentationProfile profile = CharacterPresentationProfiles.Get(characterId);
+            SetStatus($"{profile.HudName} → {GetSlotLabel(selectedTeam.Count - 1)} 배치");
             RefreshUi();
         }
 
@@ -431,23 +632,54 @@ namespace JJKGame.Player
         {
             previewCharacter = characterId;
             CharacterPresentationProfile profile = CharacterPresentationProfiles.Get(characterId);
+            CharacterSelectPresentationData selectData =
+                CharacterSelectPresentationProfiles.Get(characterId);
 
             if (previewName != null)
             {
                 previewName.text = profile.DisplayName;
                 previewName.color = profile.HudAccent;
             }
+
             if (previewVariant != null)
             {
                 previewVariant.text = $"VARIANT · {profile.VariantLabel}";
             }
+
+            if (previewRole != null)
+            {
+                previewRole.text = $"{selectData.RoleLabel}   /   {selectData.StyleLabel}";
+            }
+
+            if (previewDescription != null)
+            {
+                previewDescription.text = selectData.Description;
+            }
+
             if (previewSkills != null)
             {
                 previewSkills.text =
-                    $"Q  {profile.Skill1.Label}\n"
-                    + $"E  {profile.Skill2.Label}\n"
-                    + $"R  {profile.Ultimate.Label}\n"
-                    + $"V  {profile.Domain.Label}";
+                    $"Q   {profile.Skill1.Label}\n"
+                    + $"E   {profile.Skill2.Label}\n"
+                    + $"R   {profile.Ultimate.Label}\n"
+                    + $"V   {profile.Domain.Label}";
+            }
+
+            if (previewMonogram != null)
+            {
+                previewMonogram.text = profile.HudName;
+            }
+
+            if (previewAccentBar != null)
+            {
+                previewAccentBar.color = profile.HudAccent;
+            }
+
+            if (previewGlow != null)
+            {
+                Color glow = profile.HudAccent;
+                glow.a = 0.12f;
+                previewGlow.color = glow;
             }
         }
 
@@ -455,13 +687,15 @@ namespace JJKGame.Player
         {
             if (selectedTeam.Count <= 0)
             {
-                SetStatus("No fighter to remove.");
+                SetStatus("제거할 파이터가 없습니다.");
                 RefreshUi();
                 return;
             }
 
+            CharacterPresentationProfile removed =
+                CharacterPresentationProfiles.Get(selectedTeam[selectedTeam.Count - 1]);
             selectedTeam.RemoveAt(selectedTeam.Count - 1);
-            SetStatus("Last slot removed.");
+            SetStatus($"{removed.HudName} 배치 취소");
             RefreshUi();
         }
 
@@ -472,15 +706,17 @@ namespace JJKGame.Player
                 return;
             }
 
+            CharacterPresentationProfile removed =
+                CharacterPresentationProfiles.Get(selectedTeam[slotIndex]);
             selectedTeam.RemoveAt(slotIndex);
-            SetStatus("Team slots compacted.");
+            SetStatus($"{removed.HudName} 제거 · 뒤 슬롯 자동 정렬");
             RefreshUi();
         }
 
         private void ClearSelection()
         {
             selectedTeam.Clear();
-            SetStatus("Team cleared.");
+            SetStatus("팀 편성을 초기화했습니다.");
             RefreshUi();
         }
 
@@ -488,7 +724,7 @@ namespace JJKGame.Player
         {
             if (selectedTeam.Count <= 0)
             {
-                SetStatus("Select at least one fighter.");
+                SetStatus("최소 1명의 파이터를 선택하세요.");
                 RefreshUi();
                 return;
             }
@@ -513,13 +749,22 @@ namespace JJKGame.Player
             for (int index = 0; index < Roster.Length; index++)
             {
                 PrototypeCharacterId characterId = Roster[index];
-                bool assigned = selectedTeam.Contains(characterId);
+                int selectedIndex = selectedTeam.IndexOf(characterId);
+                bool assigned = selectedIndex >= 0;
                 CharacterPresentationProfile profile = CharacterPresentationProfiles.Get(characterId);
+
                 if (rosterButtonImages[index] != null)
                 {
                     rosterButtonImages[index].color = assigned
-                        ? Color.Lerp(new Color(0.045f, 0.055f, 0.085f, 1f), profile.HudAccent, 0.42f)
-                        : new Color(0.045f, 0.055f, 0.085f, 1f);
+                        ? Color.Lerp(new Color(0.035f, 0.045f, 0.072f, 1f), profile.HudAccent, 0.40f)
+                        : new Color(0.035f, 0.045f, 0.072f, 0.98f);
+                }
+
+                if (rosterBadgeTexts[index] != null)
+                {
+                    rosterBadgeTexts[index].gameObject.SetActive(assigned);
+                    rosterBadgeTexts[index].text = assigned ? GetSlotLabel(selectedIndex) : string.Empty;
+                    rosterBadgeTexts[index].color = assigned ? profile.HudAccent : Color.white;
                 }
             }
 
@@ -535,13 +780,28 @@ namespace JJKGame.Player
                 {
                     CharacterPresentationProfile profile =
                         CharacterPresentationProfiles.Get(selectedTeam[slot]);
-                    slotTexts[slot].text = $"{slotNames[slot]}\n{profile.HudName} · {profile.CompactVariantLabel}";
+                    slotTexts[slot].text =
+                        $"{slotNames[slot]}\n{profile.HudName} · {profile.CompactVariantLabel}\nCLICK TO REMOVE";
                     slotTexts[slot].color = profile.HudAccent;
+
+                    if (slotImages[slot] != null)
+                    {
+                        slotImages[slot].color = Color.Lerp(
+                            new Color(0.035f, 0.045f, 0.072f, 1f),
+                            profile.HudAccent,
+                            0.26f
+                        );
+                    }
                 }
                 else
                 {
                     slotTexts[slot].text = $"{slotNames[slot]}\n— EMPTY —";
-                    slotTexts[slot].color = new Color(0.55f, 0.60f, 0.70f);
+                    slotTexts[slot].color = new Color(0.50f, 0.56f, 0.68f);
+
+                    if (slotImages[slot] != null)
+                    {
+                        slotImages[slot].color = new Color(0.035f, 0.045f, 0.072f, 0.98f);
+                    }
                 }
             }
 
@@ -550,19 +810,49 @@ namespace JJKGame.Player
             {
                 startButton.interactable = canStart;
             }
+
             if (startButtonImage != null)
             {
                 startButtonImage.color = canStart
-                    ? new Color(0.10f, 0.48f, 0.88f, 1f)
-                    : new Color(0.16f, 0.19f, 0.26f, 1f);
+                    ? new Color(0.08f, 0.50f, 0.92f, 1f)
+                    : new Color(0.14f, 0.17f, 0.24f, 1f);
+            }
+
+            if (teamCounterText != null)
+            {
+                teamCounterText.text = $"{selectedTeam.Count} / {MaxTeamSize} READY";
+                teamCounterText.color = canStart
+                    ? new Color(0.28f, 0.72f, 1f)
+                    : new Color(0.42f, 0.52f, 0.68f);
             }
 
             if (statusText != null && string.IsNullOrEmpty(statusText.text))
             {
                 statusText.text =
                     selectedTeam.Count <= 0
-                        ? "Select 1~3 fighters."
-                        : $"{selectedTeam.Count}/3 fighters ready.";
+                        ? "1~3명의 파이터를 선택하세요."
+                        : $"{selectedTeam.Count}명 편성 완료 · BATTLE 준비";
+            }
+        }
+
+        private void AnimateVisualShell()
+        {
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 1.6f);
+
+            if (backgroundGlow != null)
+            {
+                Color color = backgroundGlow.color;
+                color.a = Mathf.Lerp(0.10f, 0.19f, pulse);
+                backgroundGlow.color = color;
+            }
+
+            if (previewGlow != null)
+            {
+                CharacterPresentationProfile profile =
+                    CharacterPresentationProfiles.Get(previewCharacter);
+                Color color = profile.HudAccent;
+                color.a = Mathf.Lerp(0.07f, 0.14f, pulse);
+                previewGlow.color = color;
             }
         }
 
@@ -574,15 +864,27 @@ namespace JJKGame.Player
             }
         }
 
-        private string BuildRosterCardText(int index, CharacterPresentationProfile profile)
+        private static string GetSlotLabel(int slotIndex)
+        {
+            return slotIndex switch
+            {
+                0 => "MAIN",
+                1 => "R1",
+                2 => "R2",
+                _ => string.Empty,
+            };
+        }
+
+        private static string BuildRosterCardText(
+            int index,
+            CharacterPresentationProfile profile
+        )
         {
             return
-                $"{index + 1}   {profile.HudName}\n"
+                $"0{index + 1}\n"
+                + $"{profile.HudName}\n"
                 + $"{profile.CompactVariantLabel}\n\n"
-                + $"Q {profile.Skill1.Label}\n"
-                + $"E {profile.Skill2.Label}\n"
-                + $"R {profile.Ultimate.Label}\n"
-                + $"V {profile.Domain.Label}";
+                + $"{profile.Skill1.Label}  /  {profile.Ultimate.Label}";
         }
 
         private Button CreateButton(
@@ -610,15 +912,15 @@ namespace JJKGame.Player
             rect.offsetMax = Vector2.zero;
 
             Image image = buttonObject.GetComponent<Image>();
-            image.color = Color.Lerp(new Color(0.045f, 0.055f, 0.085f, 1f), accent, 0.14f);
+            image.color = Color.Lerp(new Color(0.035f, 0.045f, 0.072f, 1f), accent, 0.13f);
 
             Button button = buttonObject.GetComponent<Button>();
             ColorBlock colors = button.colors;
             colors.normalColor = Color.white;
-            colors.highlightedColor = Color.Lerp(Color.white, accent, 0.25f);
-            colors.pressedColor = Color.Lerp(Color.white, accent, 0.48f);
+            colors.highlightedColor = Color.Lerp(Color.white, accent, 0.22f);
+            colors.pressedColor = Color.Lerp(Color.white, accent, 0.42f);
             colors.selectedColor = colors.highlightedColor;
-            colors.disabledColor = new Color(0.45f, 0.45f, 0.50f, 0.55f);
+            colors.disabledColor = new Color(0.40f, 0.42f, 0.48f, 0.52f);
             colors.colorMultiplier = 1f;
             button.colors = colors;
 
@@ -657,6 +959,7 @@ namespace JJKGame.Player
                 typeof(Image)
             );
             panelObject.transform.SetParent(parent, false);
+
             RectTransform rect = panelObject.GetComponent<RectTransform>();
             rect.anchorMin = anchorMin;
             rect.anchorMax = anchorMax;
@@ -705,6 +1008,30 @@ namespace JJKGame.Player
             text.raycastTarget = false;
             text.supportRichText = true;
             return text;
+        }
+
+        private static void AddOutline(Text text, Color color, Vector2 distance)
+        {
+            Outline outline = text.gameObject.AddComponent<Outline>();
+            outline.effectColor = color;
+            outline.effectDistance = distance;
+            outline.useGraphicAlpha = true;
+        }
+
+        private static void AddPointerEnter(GameObject target, UnityEngine.Events.UnityAction action)
+        {
+            EventTrigger trigger = target.GetComponent<EventTrigger>();
+            if (trigger == null)
+            {
+                trigger = target.AddComponent<EventTrigger>();
+            }
+
+            EventTrigger.Entry entry = new EventTrigger.Entry
+            {
+                eventID = EventTriggerType.PointerEnter,
+            };
+            entry.callback.AddListener(_ => action());
+            trigger.triggers.Add(entry);
         }
 
         private static Font CreateRuntimeFont()
