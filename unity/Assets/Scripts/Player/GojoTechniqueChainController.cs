@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using JJKGame.Core;
 using UnityEngine;
@@ -26,6 +27,16 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float purpleHitStun = 1f;
         [SerializeField, Min(0.1f)] private float purpleVisualDuration = 0.85f;
         [SerializeField, Min(0f)] private float purpleEnergyCost = 45f;
+
+        [Header("Hollow Purple · Presentation / Damage Sync")]
+        [SerializeField, Min(0f)] private float purpleMergeDuration = 0.24f;
+        [SerializeField, Min(0.01f)] private float purpleLaunchDuration = 0.78f;
+
+        private sealed class PendingPurpleHit
+        {
+            public Health Target;
+            public float ImpactAt;
+        }
 
         private readonly Dictionary<Health, float> blueMarkedUntil =
             new Dictionary<Health, float>();
@@ -230,15 +241,17 @@ namespace JJKGame.Player
             nextPurpleAt = Time.time + purpleCooldown;
             purpleNoticeUntil = Time.time + 1.2f;
             ShowPurpleVisual();
-            ApplyPurpleDamage(direction);
+            QueuePurpleDamage(direction);
         }
 
-        private void ApplyPurpleDamage(Vector3 direction)
+        private void QueuePurpleDamage(Vector3 direction)
         {
             Vector3 start = transform.position + Vector3.up * 1.0f + direction * 0.8f;
             Vector3 end = start + direction * purpleRange;
             Collider[] hits = Physics.OverlapCapsule(start, end, purpleRadius);
             HashSet<Health> affected = new HashSet<Health>();
+            List<PendingPurpleHit> pendingHits = new List<PendingPurpleHit>();
+            float sequenceStartedAt = Time.unscaledTime;
 
             foreach (Collider hit in hits)
             {
@@ -253,20 +266,77 @@ namespace JJKGame.Player
                     continue;
                 }
 
-                DamageContext purpleContext = new DamageContext(
-                    purpleDamage,
-                    gameObject,
-                    DamageDeliveryType.CursedTechnique,
-                    DamageTraits.None,
-                    "HOLLOW PURPLE · 허식 「자」",
-                    target.transform.position + Vector3.up * 0.8f
+                Vector3 offset = target.transform.position - start;
+                float forwardDistance = Mathf.Clamp(
+                    Vector3.Dot(offset, direction),
+                    0f,
+                    purpleRange
                 );
-                if (target.ReceiveDamage(purpleContext) != DamageResolution.Applied)
+                float travelProgress = purpleRange > 0f
+                    ? forwardDistance / purpleRange
+                    : 0f;
+
+                pendingHits.Add(
+                    new PendingPurpleHit
+                    {
+                        Target = target,
+                        ImpactAt =
+                            sequenceStartedAt
+                            + purpleMergeDuration
+                            + purpleLaunchDuration * travelProgress,
+                    }
+                );
+            }
+
+            if (pendingHits.Count > 0)
+            {
+                StartCoroutine(ResolvePurpleHits(pendingHits, direction));
+            }
+        }
+
+        private IEnumerator ResolvePurpleHits(
+            List<PendingPurpleHit> pendingHits,
+            Vector3 direction
+        )
+        {
+            while (pendingHits.Count > 0)
+            {
+                float now = Time.unscaledTime;
+                for (int index = pendingHits.Count - 1; index >= 0; index--)
                 {
-                    continue;
+                    PendingPurpleHit pending = pendingHits[index];
+                    if (pending == null || now < pending.ImpactAt)
+                    {
+                        continue;
+                    }
+
+                    pendingHits.RemoveAt(index);
+                    Health target = pending.Target;
+                    if (target == null || target.IsDead)
+                    {
+                        continue;
+                    }
+
+                    DamageContext purpleContext = new DamageContext(
+                        purpleDamage,
+                        gameObject,
+                        DamageDeliveryType.CursedTechnique,
+                        DamageTraits.None,
+                        "HOLLOW PURPLE · 허식 「자」",
+                        target.transform.position + Vector3.up * 0.8f
+                    );
+                    if (target.ReceiveDamage(purpleContext) != DamageResolution.Applied)
+                    {
+                        continue;
+                    }
+
+                    ApplyHitReaction(target, direction, purplePushSpeed, purpleHitStun);
                 }
 
-                ApplyHitReaction(target, direction, purplePushSpeed, purpleHitStun);
+                if (pendingHits.Count > 0)
+                {
+                    yield return null;
+                }
             }
         }
 
