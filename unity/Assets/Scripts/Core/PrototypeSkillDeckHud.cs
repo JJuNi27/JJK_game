@@ -92,6 +92,11 @@ namespace JJKGame.Core
 
         private void OnGUI()
         {
+            if (CombatHudPresentationMode.ProductionCanvasActive)
+            {
+                return;
+            }
+
             if (
                 SceneManager.GetActiveScene().name != TargetSceneName
                 || hudDataSource == null
