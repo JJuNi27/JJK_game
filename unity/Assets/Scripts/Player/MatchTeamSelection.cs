@@ -83,25 +83,49 @@ namespace JJKGame.Player
     /// </summary>
     public static class MatchTeamSelectionStore
     {
-        private static MatchTeamSelection playerTeam = MatchTeamSelection.Duo(
-            PrototypeCharacterId.GojoModern,
-            PrototypeCharacterId.SukunaShibuyaYujiBody
-        );
+        private static MatchTeamSelection playerTeam = CreatePrototypeDefault();
+        private static MatchTeamSelection lastConfirmedPlayerTeam;
+        private static bool hasConfirmedPlayerTeam;
 
         public static MatchTeamSelection PlayerTeam => playerTeam;
+        public static bool HasConfirmedPlayerTeam => hasConfirmedPlayerTeam;
 
+        /// <summary>
+        /// Production-facing Character Select confirmation.
+        /// This becomes both the next battle roster and the selection restored when the
+        /// player returns from battle to CharacterSelect.
+        /// </summary>
         public static void SetPlayerTeam(MatchTeamSelection selection)
         {
-            playerTeam = selection
-                ?? MatchTeamSelection.Duo(
-                    PrototypeCharacterId.GojoModern,
-                    PrototypeCharacterId.SukunaShibuyaYujiBody
-                );
+            MatchTeamSelection resolved = selection ?? CreatePrototypeDefault();
+            playerTeam = resolved;
+            lastConfirmedPlayerTeam = resolved;
+            hasConfirmedPlayerTeam = selection != null;
+        }
+
+        /// <summary>
+        /// Developer harness override. It changes only the current runtime roster and does
+        /// not replace the player's last Character Select confirmation.
+        /// </summary>
+        public static void SetPrototypePlayerTeam(MatchTeamSelection selection)
+        {
+            playerTeam = selection ?? CreatePrototypeDefault();
+        }
+
+        public static bool TryGetLastConfirmedPlayerTeam(out MatchTeamSelection selection)
+        {
+            selection = lastConfirmedPlayerTeam;
+            return hasConfirmedPlayerTeam && selection != null;
         }
 
         public static void ResetPrototypeDefault()
         {
-            playerTeam = MatchTeamSelection.Duo(
+            playerTeam = CreatePrototypeDefault();
+        }
+
+        private static MatchTeamSelection CreatePrototypeDefault()
+        {
+            return MatchTeamSelection.Duo(
                 PrototypeCharacterId.GojoModern,
                 PrototypeCharacterId.SukunaShibuyaYujiBody
             );
