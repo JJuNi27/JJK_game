@@ -269,6 +269,11 @@ namespace JJKGame.Player
 
         private void OnGUI()
         {
+            if (CombatHudPresentationMode.ProductionCanvasActive)
+            {
+                return;
+            }
+
             EnsureStyles();
             DrawCharacterSwitchChip();
 

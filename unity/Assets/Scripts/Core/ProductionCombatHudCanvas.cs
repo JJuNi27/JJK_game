@@ -26,7 +26,11 @@ namespace JJKGame.Core
 
         private PlayerCombatHudDataSource playerSource;
         private OpponentCombatHudDataSource opponentSource;
+        private MatchController matchController;
+        private TargetLockController targetLock;
         private Font uiFont;
+        private Canvas combatCanvas;
+        private GameObject skillDeckRoot;
 
         private Text playerName;
         private Text playerVariant;
@@ -49,6 +53,11 @@ namespace JJKGame.Core
         private Text dodgeText;
         private Text comboText;
         private Text encounterText;
+        private Image targetLockPanel;
+        private Text targetLockText;
+        private Image attackWarningPanel;
+        private Image attackWarningFill;
+        private Text attackWarningText;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -100,6 +109,23 @@ namespace JJKGame.Core
         {
             RefreshSources();
 
+            bool matchFinished = matchController != null && matchController.MatchFinished;
+            if (combatCanvas != null)
+            {
+                combatCanvas.enabled = !matchFinished;
+            }
+            if (matchFinished)
+            {
+                return;
+            }
+
+            if (skillDeckRoot != null)
+            {
+                skillDeckRoot.SetActive(
+                    matchController == null || !matchController.ControlHelpVisible
+                );
+            }
+
             PlayerCombatHudSnapshot player = playerSource != null
                 ? playerSource.Snapshot
                 : default;
@@ -118,6 +144,9 @@ namespace JJKGame.Core
             {
                 RefreshOpponent(opponent);
             }
+
+            RefreshTargetLock(opponent);
+            RefreshAttackWarning(opponent);
         }
 
         private void RefreshSources()
@@ -130,6 +159,16 @@ namespace JJKGame.Core
             if (opponentSource == null)
             {
                 opponentSource = FindFirstObjectByType<OpponentCombatHudDataSource>();
+            }
+
+            if (matchController == null)
+            {
+                matchController = FindFirstObjectByType<MatchController>();
+            }
+
+            if (targetLock == null)
+            {
+                targetLock = FindFirstObjectByType<TargetLockController>();
             }
         }
 
@@ -144,9 +183,9 @@ namespace JJKGame.Core
             );
             canvasObject.transform.SetParent(transform, false);
 
-            Canvas canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 250;
+            combatCanvas = canvasObject.GetComponent<Canvas>();
+            combatCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            combatCanvas.sortingOrder = 250;
 
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -346,6 +385,7 @@ namespace JJKGame.Core
                 new Vector2(0.975f, 0.19f),
                 new Color(0.010f, 0.017f, 0.032f, 0.90f)
             );
+            skillDeckRoot = panel.gameObject;
 
             CreateText(
                 panel.rectTransform,
@@ -411,6 +451,60 @@ namespace JJKGame.Core
                 new Vector2(0.39f, 0.74f),
                 new Vector2(0.61f, 0.81f)
             );
+
+            targetLockPanel = CreatePanel(
+                root,
+                "TargetLockChip",
+                new Vector2(0.425f, 0.845f),
+                new Vector2(0.575f, 0.895f),
+                new Color(0.055f, 0.040f, 0.010f, 0.92f)
+            );
+            targetLockText = CreateText(
+                targetLockPanel.rectTransform,
+                "Text",
+                string.Empty,
+                14,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                new Color(1f, 0.86f, 0.36f),
+                Vector2.zero,
+                Vector2.one
+            );
+            targetLockPanel.gameObject.SetActive(false);
+
+            attackWarningPanel = CreatePanel(
+                root,
+                "AttackWarning",
+                new Vector2(0.405f, 0.625f),
+                new Vector2(0.595f, 0.705f),
+                new Color(0.090f, 0.010f, 0.012f, 0.92f)
+            );
+            attackWarningText = CreateText(
+                attackWarningPanel.rectTransform,
+                "Text",
+                string.Empty,
+                16,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                new Color(1f, 0.38f, 0.24f),
+                new Vector2(0.03f, 0.28f),
+                new Vector2(0.97f, 0.96f)
+            );
+            Image warningBar = CreatePanel(
+                attackWarningPanel.rectTransform,
+                "ProgressBackground",
+                new Vector2(0.06f, 0.10f),
+                new Vector2(0.94f, 0.24f),
+                new Color(0.16f, 0.035f, 0.035f, 0.98f)
+            );
+            attackWarningFill = CreatePanel(
+                warningBar.rectTransform,
+                "ProgressFill",
+                Vector2.zero,
+                Vector2.one,
+                new Color(1f, 0.22f, 0.12f, 0.92f)
+            );
+            attackWarningPanel.gameObject.SetActive(false);
         }
 
         private void RefreshPlayer(PlayerCombatHudSnapshot snapshot)
@@ -515,9 +609,15 @@ namespace JJKGame.Core
                 PlayerTeamMemberHudSnapshot member = members[index];
                 CharacterPresentationProfile profile = member.PresentationProfile;
                 string role = index == 0 ? "A" : $"R{index}";
-                string ko = member.KnockedOut ? " · KO" : string.Empty;
+                string state = index == 0
+                    ? "ACTIVE"
+                    : BuildTagStatus(
+                        index,
+                        index == 1 ? snapshot.Reserve1TagState : snapshot.Reserve2TagState,
+                        snapshot.TagCooldownRemaining
+                    );
                 teamSlotTexts[index].text =
-                    $"{role}  {profile.HudName}\nHP {member.Health:0}{ko}";
+                    $"{role}  {profile.HudName}\nHP {member.Health:0}\n{state}";
                 teamSlotTexts[index].color = member.KnockedOut
                     ? new Color(0.48f, 0.50f, 0.56f)
                     : profile.HudAccent;
@@ -552,11 +652,16 @@ namespace JJKGame.Core
 
             for (int index = 0; index < 4; index++)
             {
-                skillTexts[index].text = $"{keys[index]}\n{skills[index].Label}";
-                skillTexts[index].color = usable[index]
+                string state = BuildSkillState(snapshot, index, usable[index]);
+                bool emphasized = usable[index]
+                    || (index == 3
+                        && (snapshot.ActionState == CombatActionState.DomainInput
+                            || snapshot.ActionState == CombatActionState.DomainActive));
+                skillTexts[index].text = $"{keys[index]}\n{skills[index].Label}\n{state}";
+                skillTexts[index].color = emphasized
                     ? skills[index].Accent
                     : new Color(0.42f, 0.44f, 0.50f);
-                skillPanels[index].color = usable[index]
+                skillPanels[index].color = emphasized
                     ? Color.Lerp(
                         new Color(0.030f, 0.040f, 0.065f, 0.94f),
                         skills[index].Accent,
@@ -564,6 +669,85 @@ namespace JJKGame.Core
                     )
                     : new Color(0.030f, 0.032f, 0.040f, 0.88f);
             }
+        }
+
+        private void RefreshTargetLock(OpponentCombatHudSnapshot opponent)
+        {
+            Health currentTarget = targetLock != null ? targetLock.CurrentTarget : null;
+            bool visible = currentTarget != null;
+            targetLockPanel.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            string displayName = opponent.IsValid && opponent.ActiveMember.IsValid
+                ? opponent.ActiveMember.DisplayName
+                : currentTarget.gameObject.name.ToUpperInvariant();
+            targetLockText.text = $"TARGET LOCK  ·  {displayName}";
+        }
+
+        private void RefreshAttackWarning(OpponentCombatHudSnapshot snapshot)
+        {
+            bool visible = snapshot.IsValid && snapshot.AttackTelegraphCount > 0;
+            attackWarningPanel.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            attackWarningText.text = snapshot.AttackTelegraphCount > 1
+                ? $"DANGER  ·  ATTACK INCOMING × {snapshot.AttackTelegraphCount}"
+                : "DANGER  ·  ATTACK INCOMING";
+
+            float progress = Mathf.Clamp01(snapshot.AttackTelegraphProgress);
+            RectTransform fillRect = attackWarningFill.rectTransform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(progress, 1f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+        }
+
+        private static string BuildTagStatus(
+            int reserveIndex,
+            PlayerTagHudState state,
+            float cooldownRemaining
+        )
+        {
+            string key = $"[{reserveIndex}]";
+            return state switch
+            {
+                PlayerTagHudState.Ready => $"{key} READY",
+                PlayerTagHudState.Cooldown => $"{key} COOLDOWN {cooldownRemaining:0.0}s",
+                PlayerTagHudState.ActionLocked => $"{key} LOCKED",
+                PlayerTagHudState.ReserveKnockedOut => $"{key} KO",
+                _ => string.Empty,
+            };
+        }
+
+        private static string BuildSkillState(
+            PlayerCombatHudSnapshot snapshot,
+            int skillIndex,
+            bool usable
+        )
+        {
+            if (snapshot.TechniqueBurnedOut)
+            {
+                return "BURNOUT";
+            }
+            if (usable)
+            {
+                return "READY";
+            }
+            if (skillIndex == 3 && snapshot.ActionState == CombatActionState.DomainActive)
+            {
+                return "ACTIVE";
+            }
+            if (skillIndex == 3 && snapshot.ActionState == CombatActionState.DomainInput)
+            {
+                return "INPUT";
+            }
+            return "LOCKED";
         }
 
         private void BuildValueBar(

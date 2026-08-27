@@ -40,6 +40,9 @@ namespace JJKGame.Core
         private GUIStyle resultStyle;
         private int styledForHeight = -1;
 
+        public bool MatchFinished => matchFinished;
+        public bool ControlHelpVisible => showControlHelp && !matchFinished;
+
         public int LivingEnemyCount
         {
             get

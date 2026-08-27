@@ -343,6 +343,11 @@ namespace JJKGame.Player
 
         private void OnGUI()
         {
+            if (CombatHudPresentationMode.ProductionCanvasActive)
+            {
+                return;
+            }
+
             if (ownHealth == null || ownHealth.IsDead)
             {
                 return;
