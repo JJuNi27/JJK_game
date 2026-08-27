@@ -32,7 +32,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 2 Battle Runtime consumes MatchTeamSelection: USER VERIFIED
 - Pass 3A Functional Character / Team Select front-end: PARTIAL USER VERIFIED
 - Pass 3B Character Select visual identity shell: USER VERIFIED
-- Pass 3C Character Select return-state continuity: REMOTE IMPLEMENTED / USER TEST PENDING
+- Pass 3C Character Select return-state continuity: REMOTE FIXED / USER RETEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
