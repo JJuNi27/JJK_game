@@ -423,6 +423,11 @@ namespace JJKGame.Player
 
         private void OnGUI()
         {
+            if (CombatHudPresentationMode.ProductionCanvasActive)
+            {
+                return;
+            }
+
             hudDataSource ??= PlayerCombatHudDataSource.GetOrCreate(gameObject);
             PlayerCombatHudSnapshot snapshot = hudDataSource != null
                 ? hudDataSource.Snapshot
