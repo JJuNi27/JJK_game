@@ -590,10 +590,7 @@ namespace JJKGame.Core
                 Vector2.one,
                 Color.white
             );
-            fill.type = Image.Type.Filled;
-            fill.fillMethod = Image.FillMethod.Horizontal;
-            fill.fillOrigin = (int)Image.OriginHorizontal.Left;
-            fill.fillAmount = 1f;
+            fill.type = Image.Type.Simple;
             fill.raycastTarget = false;
 
             valueText = CreateText(
@@ -620,7 +617,13 @@ namespace JJKGame.Core
         {
             if (fill != null)
             {
-                fill.fillAmount = max > 0f ? Mathf.Clamp01(value / max) : 0f;
+                float ratio = max > 0f ? Mathf.Clamp01(value / max) : 0f;
+                RectTransform rect = fill.rectTransform;
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = new Vector2(ratio, 1f);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+
                 Color fillColor = color;
                 fillColor.a = 0.82f;
                 fill.color = fillColor;
