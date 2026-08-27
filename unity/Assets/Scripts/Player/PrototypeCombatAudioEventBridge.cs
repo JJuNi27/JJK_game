@@ -1,5 +1,6 @@
 using JJKGame.Core;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace JJKGame.Player
 {
@@ -20,6 +21,18 @@ namespace JJKGame.Player
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void BootstrapAfterSceneLoad()
+        {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+            InstallOnCurrentScene();
+        }
+
+        private static void HandleSceneLoaded(Scene _, LoadSceneMode __)
+        {
+            InstallOnCurrentScene();
+        }
+
+        private static void InstallOnCurrentScene()
         {
             BasicAttack[] attacks = FindObjectsByType<BasicAttack>(FindObjectsSortMode.None);
             foreach (BasicAttack attack in attacks)
