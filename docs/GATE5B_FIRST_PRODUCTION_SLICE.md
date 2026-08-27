@@ -10,6 +10,9 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 
 Pass 1 · Character / Team Select Data Boundary: USER VERIFIED
 Pass 2 · Battle Runtime consumes MatchTeamSelection:
+USER VERIFIED
+
+Pass 3A · Functional Character / Team Select front-end:
 REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
@@ -119,8 +122,19 @@ MatchTeamSelectionStore
 ## 구현 상태
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
+
+2026-08-27 사용자 회귀:
+- Duo / Trio / Solo 전환 정상
+- 1 / 2 Reserve slot 교대 정상
+- 3인 KO 연쇄 / 마지막 KO defeat 정상
+- F4 scene reload 후 전투 사운드 누락을 수정했고 재검증 정상
+
+추가 combat timing cleanup:
+- Hollow Purple lethal damage가 시전 즉시 승리를 띄우던 문제 수정
+- 현재 prototype orb merge / travel timing에 맞춰 hit/damage/death/victory가 발생하도록 동기화
+- 사용자 확인 정상
 
 이번 묶음은 Pass 1의 선택 데이터를 실제 Player Team Runtime이 소비하게 연결한다.
 
@@ -322,3 +336,58 @@ Gate 5B Pass 2: USER VERIFIED
 그 다음 구현은 정식 `Character / Team Select` Canvas/TMP front-end가 `MatchTeamSelectionStore`를 작성하고 Battle Scene으로 넘기는 흐름이다.
 
 3인 Runtime이 먼저 검증된 뒤 UI를 붙여 UI 문제와 Team Gameplay 문제를 섞지 않는다.
+
+
+---
+
+# Pass 3A — Functional Character / Team Select Front-End
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+현재 production asset과 dedicated select scene이 아직 없으므로 `SampleScene`을 임시 host로 사용한다.
+실제 Battle GameObject를 직접 조작하지 않고 다음 경계를 검증한다.
+
+```text
+Character Select UI
+→ MatchTeamSelection
+→ MatchTeamSelectionStore
+→ CombatMVP
+→ PrototypePlayerTeamController
+```
+
+현재 구현:
+
+```text
+Roster: GOJO / SUKUNA / MEGUMI
+1~3명 선택
+선택 순서 = MAIN / R1 / R2
+중복 선택 차단
+slot 클릭 제거
+UNDO / CLEAR
+BATTLE 확정
+키보드 1/2/3, Backspace, C, Enter
+캐릭터 variant + Q/E/R/V preview
+Canvas 기반 1920x1080 scale UI
+```
+
+주의:
+- 현재 typography는 Unity UI Text + runtime system font fallback이다.
+- Gate 5B final-style 단계에서 dedicated font asset과 TMP binding으로 교체한다.
+- 실제 portrait / 3D preview 자산 hook도 production asset 투입 시 연결한다.
+
+사용자 테스트:
+
+```text
+1. SampleScene Play
+2. GOJO만 선택 → BATTLE → CombatMVP Solo
+3. SampleScene 재시작 → GOJO + SUKUNA → Duo
+4. SampleScene 재시작 → GOJO + SUKUNA + MEGUMI → Trio
+5. 순서를 바꿔 MAIN이 선택 순서 첫 캐릭터인지 확인
+6. slot 제거 / Undo / Clear 확인
+7. Battle 진입 후 1/2 교대와 HP/CE 보존 확인
+8. Console red error 없음
+```
