@@ -298,6 +298,11 @@ namespace JJKGame.Enemy
 
         private void OnGUI()
         {
+            if (CombatHudPresentationMode.ProductionCanvasActive)
+            {
+                return;
+            }
+
             hudDataSource ??= OpponentCombatHudDataSource.GetOrCreate(gameObject);
             OpponentCombatHudSnapshot snapshot = hudDataSource != null ? hudDataSource.Snapshot : default;
             if (!snapshot.IsValid)
