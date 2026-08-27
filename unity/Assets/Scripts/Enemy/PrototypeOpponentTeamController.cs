@@ -66,20 +66,38 @@ namespace JJKGame.Enemy
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void BootstrapAfterSceneLoad()
         {
+            SceneManager.sceneLoaded -= HandleBootstrapSceneLoaded;
+            SceneManager.sceneLoaded += HandleBootstrapSceneLoaded;
+            InstallForCurrentScene();
+        }
+
+        private static void HandleBootstrapSceneLoaded(Scene _, LoadSceneMode __)
+        {
+            InstallForCurrentScene();
+        }
+
+        private static void InstallForCurrentScene()
+        {
             MatchController match = FindFirstObjectByType<MatchController>();
             if (match == null)
             {
                 return;
             }
 
-            PrototypeOpponentTeamController existing = FindFirstObjectByType<PrototypeOpponentTeamController>();
+            PrototypeOpponentTeamController existing =
+                FindFirstObjectByType<PrototypeOpponentTeamController>();
             if (existing != null)
             {
+                if (!existing.initialized)
+                {
+                    existing.InitializeFromScene();
+                }
                 return;
             }
 
             GameObject host = new GameObject("PrototypeOpponentTeamRuntime");
-            PrototypeOpponentTeamController controller = host.AddComponent<PrototypeOpponentTeamController>();
+            PrototypeOpponentTeamController controller =
+                host.AddComponent<PrototypeOpponentTeamController>();
             controller.InitializeFromScene();
         }
 
