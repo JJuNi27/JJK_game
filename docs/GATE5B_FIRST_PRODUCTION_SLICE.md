@@ -22,7 +22,7 @@ Pass 3C · Character Select return-state continuity:
 USER VERIFIED
 
 Pass 4A · Production-facing Combat HUD Canvas shell:
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -569,3 +569,10 @@ Production Canvas가 활성화된 동안:
 9. 승/패 Result overlay 정상
 10. Console red error 없음
 ```
+
+
+Pass 4A follow-up fixes verified:
+- HP/CE bar fill now shrinks visually with value instead of number-only update
+- Opponent HUD follows current TargetLock target instead of staying on Curse A
+- switching lock A → B updates displayed opponent HP/name
+- user regression: normal
