@@ -13,6 +13,9 @@ Pass 2 · Battle Runtime consumes MatchTeamSelection:
 USER VERIFIED
 
 Pass 3A · Functional Character / Team Select front-end:
+PARTIAL USER VERIFIED
+
+Pass 3B · Character Select visual identity shell:
 REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
@@ -402,3 +405,44 @@ Canvas 기반 1920x1080 scale UI
 현재 사용자 확인:
 - Character Select UI가 실제로 표시되는 것까지 확인
 - Solo/Duo/Trio handoff 전체 회귀는 다음 테스트에서 확정
+
+
+---
+
+# Pass 3B — Character Select Visual Identity Shell
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+Pass 3A에서 확인된 전용 CharacterSelect → Battle → ESC return 흐름 위에
+첫 production-facing visual hierarchy를 추가했다.
+
+추가:
+- dark arena-fighter visual shell
+- character accent glow / animated background pulse
+- roster hover preview
+- selected fighter MAIN / R1 / R2 badge
+- Fighter Profile hierarchy
+- variant / role / playstyle description
+- technique loadout
+- team ready counter
+- filled team slot accent
+- Korean interaction/status copy
+- production asset 전 단계용 monogram preview
+
+새 presentation-only data:
+```text
+CharacterSelectPresentationData
+CharacterSelectPresentationProfiles
+```
+
+이 데이터는 UI copy만 소유하고 combat balance / HP / CE / damage / cooldown을 소유하지 않는다.
+
+현재 제한:
+- 실제 portrait / 3D model preview asset 없음
+- dedicated production font asset 없음
+- TMP final binding은 해당 asset import 후 진행
+- 따라서 이번 pass는 final art가 아니라 visual identity / hierarchy proof다.
