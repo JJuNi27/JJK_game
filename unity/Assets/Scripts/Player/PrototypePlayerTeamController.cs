@@ -372,7 +372,7 @@ namespace JJKGame.Player
         private void ToggleMegumiStressRoster()
         {
             megumiStressRosterRequested = !megumiStressRosterRequested;
-            MatchTeamSelectionStore.SetPlayerTeam(
+            MatchTeamSelectionStore.SetPrototypePlayerTeam(
                 megumiStressRosterRequested
                     ? MatchTeamSelection.Duo(
                         PrototypeCharacterId.GojoModern,
@@ -394,7 +394,7 @@ namespace JJKGame.Player
 
             if (currentSize == 2)
             {
-                MatchTeamSelectionStore.SetPlayerTeam(
+                MatchTeamSelectionStore.SetPrototypePlayerTeam(
                     MatchTeamSelection.Trio(
                         PrototypeCharacterId.GojoModern,
                         PrototypeCharacterId.SukunaShibuyaYujiBody,
@@ -404,7 +404,7 @@ namespace JJKGame.Player
             }
             else if (currentSize == 3)
             {
-                MatchTeamSelectionStore.SetPlayerTeam(
+                MatchTeamSelectionStore.SetPrototypePlayerTeam(
                     MatchTeamSelection.Solo(PrototypeCharacterId.GojoModern)
                 );
             }
