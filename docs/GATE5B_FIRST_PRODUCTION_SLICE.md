@@ -348,7 +348,7 @@ Gate 5B Pass 2: USER VERIFIED
 REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
-현재 production asset과 dedicated select scene이 아직 없으므로 `SampleScene`을 임시 host로 사용한다.
+전용 `CharacterSelect` 씬을 추가했다. `SampleScene`은 developer compatibility host로만 남긴다.
 실제 Battle GameObject를 직접 조작하지 않고 다음 경계를 검증한다.
 
 ```text
@@ -382,12 +382,23 @@ Canvas 기반 1920x1080 scale UI
 사용자 테스트:
 
 ```text
-1. SampleScene Play
+1. CharacterSelect Play
 2. GOJO만 선택 → BATTLE → CombatMVP Solo
-3. SampleScene 재시작 → GOJO + SUKUNA → Duo
-4. SampleScene 재시작 → GOJO + SUKUNA + MEGUMI → Trio
+3. CharacterSelect 재시작 → GOJO + SUKUNA → Duo
+4. CharacterSelect 재시작 → GOJO + SUKUNA + MEGUMI → Trio
 5. 순서를 바꿔 MAIN이 선택 순서 첫 캐릭터인지 확인
 6. slot 제거 / Undo / Clear 확인
 7. Battle 진입 후 1/2 교대와 HP/CE 보존 확인
 8. Console red error 없음
 ```
+
+
+추가 flow cleanup:
+- `CharacterSelect.unity` 전용 pre-match 씬 추가
+- Build Settings 첫 씬을 CharacterSelect로 변경
+- CombatMVP 결과 화면에서 `ENTER = REMATCH`, `ESC = TEAM SELECT`
+- SampleScene은 기존 테스트 호환을 위해 selection host로도 계속 허용
+
+현재 사용자 확인:
+- Character Select UI가 실제로 표시되는 것까지 확인
+- Solo/Duo/Trio handoff 전체 회귀는 다음 테스트에서 확정
