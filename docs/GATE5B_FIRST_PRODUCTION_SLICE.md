@@ -23,6 +23,9 @@ USER VERIFIED
 
 Pass 4A · Production-facing Combat HUD Canvas shell:
 USER VERIFIED
+
+Pass 4B · Combat HUD Consolidation & State Readability:
+REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -576,3 +579,51 @@ Pass 4A follow-up fixes verified:
 - Opponent HUD follows current TargetLock target instead of staying on Curse A
 - switching lock A → B updates displayed opponent HP/name
 - user regression: normal
+
+
+---
+
+# Pass 4B — Combat HUD Consolidation & State Readability
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+구현:
+- production Canvas 활성 중 Gojo technique/chain/Infinity, Sukuna technique, burnout, character switch, Target Lock prototype IMGUI 중복 표시 차단
+- 기존 prototype IMGUI 구현은 삭제하지 않고 fallback/debug 경로로 보존
+- `TargetLockController.CurrentTarget` read-only 기반 Target Lock chip
+- R1/R2 slot에 `Reserve1TagState` / `Reserve2TagState` / `TagCooldownRemaining` 기반 READY / COOLDOWN / LOCKED / KO
+- Q/E/R/V 카드에 snapshot 범위의 READY / LOCKED / BURNOUT, Domain INPUT / ACTIVE
+- `OpponentCombatHudSnapshot.AttackTelegraphCount` / `AttackTelegraphProgress` 기반 DANGER warning + progress bar
+- F1 Help 활성 중 technique deck만 숨김
+- Victory / Defeat 시 production Canvas를 숨겨 기존 Match Result overlay 가독성 보존
+
+경계:
+- damage / HP / CE / cooldown / KO / tag / target handoff / AI gameplay logic 변경 없음
+- character-specific controller를 새 HUD 상태 계산용으로 직접 결합하지 않음
+- 기존 Gate 4 read-only HUD snapshot 경계 유지
+
+코드 리뷰:
+- Codex local implementation → dedicated branch → master rebase → GitHub diff review → PR merge 완료
+- C# 정적 build 결과는 Codex 보고 기준 warning 0 / error 0
+- 실제 Unity Play Mode는 아직 사용자 검증 전
+
+사용자 회귀:
+```text
+1. CharacterSelect → Solo/Duo/Trio Battle
+2. prototype combat HUD 중복 표시 없음
+3. Gojo/Sukuna/Megumi 기존 gameplay 정상
+4. 1/2 tag + HP/CE 보존
+5. R1/R2 READY / COOLDOWN / LOCKED / KO 표시
+6. TAB Target Lock / A↔B / unlock chip + opponent HP/name 동기화
+7. Q/E/R/V READY / LOCKED / BURNOUT, Domain INPUT / ACTIVE 표시
+8. 상대 attack windup 동안만 DANGER warning + progress
+9. F2 Team Battle / reserve entry / Target Lock handoff
+10. F1 Help 열기/닫기 시 technique deck 처리
+11. Victory/Defeat result overlay 가림 없음
+12. ENTER Rematch / ESC CharacterSelect
+13. Console red error 없음
+```
