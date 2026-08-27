@@ -31,7 +31,8 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 1 Character / Team Select Data Boundary: USER VERIFIED
 - Pass 2 Battle Runtime consumes MatchTeamSelection: USER VERIFIED
 - Pass 3A Functional Character / Team Select front-end: PARTIAL USER VERIFIED
-- Pass 3B Character Select visual identity shell: REMOTE IMPLEMENTED / USER TEST PENDING
+- Pass 3B Character Select visual identity shell: USER VERIFIED
+- Pass 3C Character Select return-state continuity: REMOTE IMPLEMENTED / USER TEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -234,7 +235,11 @@ Pass 3A:
 - Solo/Duo/Trio handoff 전체 회귀 대기
 - 결과 화면 ESC → CharacterSelect return flow 추가
 
-Pass 3B visual identity shell을 먼저 구현했다.
+Pass 3B visual identity shell은 사용자 검증 완료.
+
+Pass 3C에서는 전투 후 CharacterSelect 복귀 시 마지막으로 확정한 MAIN/R1/R2 편성을 복원하고,
+F3/F4 developer harness가 정식 선택 데이터를 덮어쓰지 않도록 selection/runtime 상태를 분리했다.
+
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 
 세부:
