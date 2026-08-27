@@ -30,8 +30,9 @@ Gate 5A Third Character Stress Test: USER VERIFIED / CLOSED
 Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 1 Character / Team Select Data Boundary: USER VERIFIED
 - Pass 2 Battle Runtime consumes MatchTeamSelection: USER VERIFIED
-- Pass 3A Functional Character / Team Select front-end: REMOTE IMPLEMENTED / USER TEST PENDING
-- Pass 3B TMP/final-style visual binding: PENDING
+- Pass 3A Functional Character / Team Select front-end: PARTIAL USER VERIFIED
+- Pass 3B Character Select visual identity shell: REMOTE IMPLEMENTED / USER TEST PENDING
+- TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
 
@@ -233,7 +234,8 @@ Pass 3A:
 - Solo/Duo/Trio handoff 전체 회귀 대기
 - 결과 화면 ESC → CharacterSelect return flow 추가
 
-Pass 3B에서 dedicated font asset + TMP/final-style visual binding을 연결한다.
+Pass 3B visual identity shell을 먼저 구현했다.
+전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 
 세부:
 
