@@ -16,6 +16,9 @@ Pass 3A · Functional Character / Team Select front-end:
 PARTIAL USER VERIFIED
 
 Pass 3B · Character Select visual identity shell:
+USER VERIFIED
+
+Pass 3C · Character Select return-state continuity:
 REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
@@ -414,8 +417,14 @@ Canvas 기반 1920x1080 scale UI
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
+
+사용자 확인:
+- CharacterSelect UI 정상 표시
+- clean UI-only CharacterSelect scene 전환 후 missing-script 경고 재발 없음
+- Battle 진입 / 결과 후 ESC → CharacterSelect 복귀 정상
+- Console 오류 없음
 
 Pass 3A에서 확인된 전용 CharacterSelect → Battle → ESC return 흐름 위에
 첫 production-facing visual hierarchy를 추가했다.
@@ -446,3 +455,34 @@ CharacterSelectPresentationProfiles
 - dedicated production font asset 없음
 - TMP final binding은 해당 asset import 후 진행
 - 따라서 이번 pass는 final art가 아니라 visual identity / hierarchy proof다.
+
+
+---
+
+# Pass 3C — Character Select Return-State Continuity
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+전투에서 `ESC → CharacterSelect`으로 돌아왔을 때 방금 확정했던 팀 편성을 다시 보여준다.
+
+구조:
+- `MatchTeamSelectionStore`가 current runtime roster와 last confirmed Character Select roster를 분리
+- UI의 `SetPlayerTeam`만 last confirmed selection을 갱신
+- F3/F4 developer harness는 `SetPrototypePlayerTeam`을 사용하여 사용자의 마지막 선택을 덮어쓰지 않음
+- CharacterSelect 진입 시 last confirmed team을 MAIN / R1 / R2 순서로 복원
+- 첫 실행처럼 아직 사용자가 팀을 확정한 적이 없으면 기존처럼 빈 선택 상태 유지
+
+테스트:
+```text
+1. CharacterSelect에서 메구미 → 스쿠나 → 고죠 선택
+2. BATTLE 진입
+3. 승/패 후 ESC
+4. CharacterSelect에 MAIN 메구미 / R1 스쿠나 / R2 고죠가 이미 채워져 있는지
+5. 슬롯 하나 제거 후 다른 캐릭터로 재편성 가능
+6. F3/F4 developer harness 사용 후 TEAM SELECT로 돌아가도 마지막 정식 선택이 유지되는지
+7. Console red error 없음
+```
