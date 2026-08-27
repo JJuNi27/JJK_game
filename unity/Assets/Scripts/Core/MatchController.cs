@@ -385,7 +385,11 @@ namespace JJKGame.Core
             }
 
             EnsureStyles();
-            DrawCompactCombatHud();
+
+            if (!CombatHudPresentationMode.ProductionCanvasActive)
+            {
+                DrawCompactCombatHud();
+            }
 
             if (showControlHelp && !matchFinished)
             {
