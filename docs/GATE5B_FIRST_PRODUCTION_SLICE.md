@@ -486,3 +486,10 @@ REMOTE IMPLEMENTED / USER TEST PENDING
 6. F3/F4 developer harness 사용 후 TEAM SELECT로 돌아가도 마지막 정식 선택이 유지되는지
 7. Console red error 없음
 ```
+
+
+Pass 3C return regression 발견 및 원격 수정:
+- 증상: Battle 결과 후 ESC로 CharacterSelect scene은 로드되지만 UI runner가 다시 생성되지 않아 빈 화면만 표시
+- 원인: CharacterTeamSelectFrontEnd bootstrap이 RuntimeInitializeOnLoadMethod(AfterSceneLoad)에만 의존하여 최초 플레이 진입에서만 설치되고 이후 scene reload/return에서는 다시 설치되지 않음
+- 수정: SceneManager.sceneLoaded를 idempotent 구독하고 CharacterSelect/SampleScene이 로드될 때 InstallForCurrentScene() 재실행
+- 현재 상태: REMOTE FIXED / USER RETEST PENDING
