@@ -19,6 +19,9 @@ Pass 3B · Character Select visual identity shell:
 USER VERIFIED
 
 Pass 3C · Character Select return-state continuity:
+USER VERIFIED
+
+Pass 4A · Production-facing Combat HUD Canvas shell:
 REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
@@ -464,8 +467,13 @@ CharacterSelectPresentationProfiles
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
+
+사용자 확인:
+- Battle 결과 후 ESC → CharacterSelect 재진입 정상
+- sceneLoaded bootstrap 수정 후 빈 CharacterSelect 화면 재발 없음
+- Console 오류 없음
 
 전투에서 `ESC → CharacterSelect`으로 돌아왔을 때 방금 확정했던 팀 편성을 다시 보여준다.
 
@@ -493,3 +501,71 @@ Pass 3C return regression 발견 및 원격 수정:
 - 원인: CharacterTeamSelectFrontEnd bootstrap이 RuntimeInitializeOnLoadMethod(AfterSceneLoad)에만 의존하여 최초 플레이 진입에서만 설치되고 이후 scene reload/return에서는 다시 설치되지 않음
 - 수정: SceneManager.sceneLoaded를 idempotent 구독하고 CharacterSelect/SampleScene이 로드될 때 InstallForCurrentScene() 재실행
 - 현재 상태: REMOTE FIXED / USER RETEST PENDING
+
+
+---
+
+# Pass 4A — Production-facing Combat HUD Canvas Shell
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+Gate 4에서 검증한 read-only HUD snapshot을 실제 Canvas HUD가 소비하도록 연결했다.
+
+추가 파일:
+```text
+unity/Assets/Scripts/Core/ProductionCombatHudCanvas.cs
+```
+
+표시:
+- 좌측 상단 Player 이름 / Variant / HP / CE / Dodge
+- 우측 상단 Active Opponent / HP / Encounter mode
+- 좌측 하단 Active / R1 / R2 Team slots
+- 우측 하단 Q / E / R / V Technique deck
+- 중앙 Combo / Chain state
+- 캐릭터별 HUD accent / skill accent
+- Team KO / reserve 상태 반영
+
+구조:
+```text
+PlayerCombatHudDataSource
+OpponentCombatHudDataSource
+        ↓ read-only snapshots
+ProductionCombatHudCanvas
+```
+
+HUD는 gameplay command / damage / CE / KO를 소유하지 않는다.
+
+기존 prototype IMGUI는 삭제하지 않고 regression fallback으로 보존한다.
+Production Canvas가 활성화된 동안:
+- MatchController compact HUD
+- PrototypePlayerTeamController team HUD
+- PrototypeOpponentTeamController opponent HUD
+- PrototypeSkillDeckHud
+
+는 중복 표시를 막기 위해 숨긴다.
+
+단:
+- F1 control help
+- Match result overlay
+
+는 현재 기존 MatchController IMGUI를 그대로 유지한다.
+
+현재 font는 runtime system font fallback이며 final TMP/font asset binding은 asset-dependent stage에서 교체한다.
+
+사용자 테스트:
+```text
+1. CharacterSelect → 3인 팀 → BATTLE
+2. 예전 IMGUI HUD가 겹쳐 보이지 않는지
+3. 좌상단 HP/CE가 공격/술식 사용에 따라 갱신
+4. 1/2 교대 시 이름/색/기술덱/팀 슬롯 갱신
+5. R1/R2 KO 시 팀 슬롯 KO 표시
+6. 상대 HP 감소 정상
+7. F2 Team Battle에서 상대 active/reserve 상태 HUD 반영
+8. F1 도움말 정상
+9. 승/패 Result overlay 정상
+10. Console red error 없음
+```
