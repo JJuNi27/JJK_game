@@ -8,6 +8,7 @@ namespace JJKGame.Core
 {
     public sealed class MatchController : MonoBehaviour
     {
+        private const string CharacterSelectSceneName = "CharacterSelect";
         [SerializeField] private Health playerHealth;
         [SerializeField] private Health enemyHealth;
         [SerializeField] private GojoDomainController gojoDomain;
@@ -147,9 +148,20 @@ namespace JJKGame.Core
                 showControlHelp = !showControlHelp;
             }
 
-            if (matchFinished && Input.GetKeyDown(KeyCode.Return))
+            if (!matchFinished)
+            {
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Return))
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                SceneManager.LoadScene(CharacterSelectSceneName);
             }
         }
 
@@ -719,7 +731,11 @@ namespace JJKGame.Core
             GUI.Label(new Rect(panel.x, panel.y + 18f, panel.width, 65f), resultText, resultStyle);
             centerStyle.normal.textColor = Color.white;
             GUI.Label(new Rect(panel.x + 12f, panel.y + 88f, panel.width - 24f, 24f), victory ? "모든 주령을 퇴치했습니다" : "전투에서 패배했습니다", centerStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 124f, panel.width - 24f, 24f), "ENTER · 다시 시작", centerStyle);
+            GUI.Label(
+                new Rect(panel.x + 12f, panel.y + 124f, panel.width - 24f, 24f),
+                "ENTER · REMATCH     ESC · TEAM SELECT",
+                centerStyle
+            );
         }
 
         private void DrawValueBar(Rect rect, float value, float max, Color fill, string text)
