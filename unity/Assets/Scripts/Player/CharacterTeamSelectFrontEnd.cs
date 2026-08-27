@@ -57,6 +57,18 @@ namespace JJKGame.Player
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
         {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+            InstallForCurrentScene();
+        }
+
+        private static void HandleSceneLoaded(Scene _, LoadSceneMode __)
+        {
+            InstallForCurrentScene();
+        }
+
+        private static void InstallForCurrentScene()
+        {
             if (
                 !IsSelectHostScene(SceneManager.GetActiveScene().name)
                 || FindFirstObjectByType<CharacterTeamSelectFrontEnd>() != null
