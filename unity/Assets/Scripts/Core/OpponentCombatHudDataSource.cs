@@ -1,4 +1,5 @@
 using JJKGame.Enemy;
+using JJKGame.Player;
 using UnityEngine;
 
 namespace JJKGame.Core
@@ -79,6 +80,7 @@ namespace JJKGame.Core
     public sealed class OpponentCombatHudDataSource : MonoBehaviour
     {
         private PrototypeOpponentTeamController teamController;
+        private TargetLockController targetLock;
 
         public static OpponentCombatHudDataSource GetOrCreate(GameObject owner)
         {
@@ -101,7 +103,7 @@ namespace JJKGame.Core
                     return default;
                 }
 
-                int activeIndex = teamController.ActiveMemberIndex;
+                int activeIndex = ResolveDisplayedMemberIndex();
                 int reserveIndex = 1 - activeIndex;
                 ResolveAttackTelegraph(out int telegraphCount, out float telegraphProgress);
 
@@ -117,6 +119,25 @@ namespace JJKGame.Core
                     telegraphProgress
                 );
             }
+        }
+
+        private int ResolveDisplayedMemberIndex()
+        {
+            targetLock ??= FindFirstObjectByType<TargetLockController>();
+            Health lockedTarget = targetLock != null ? targetLock.CurrentTarget : null;
+
+            if (lockedTarget != null)
+            {
+                for (int index = 0; index < teamController.TeamSize; index++)
+                {
+                    if (teamController.GetMember(index) == lockedTarget)
+                    {
+                        return index;
+                    }
+                }
+            }
+
+            return teamController.ActiveMemberIndex;
         }
 
         private OpponentTeamMemberHudSnapshot BuildMember(int index, bool isActive)
