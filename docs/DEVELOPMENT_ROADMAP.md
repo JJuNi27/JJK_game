@@ -221,14 +221,17 @@ F3/F4/T는 최종 사용자 입력이 아니다.
 Pass 2 Unity 회귀는 사용자 검증 완료.
 
 Pass 3A:
-- SampleScene 임시 host
+- CharacterSelect 전용 pre-match scene
+- SampleScene은 developer compatibility host
 - Canvas runtime front-end
 - Gojo / Sukuna / Megumi roster
 - 1~3명 선택
 - 선택 순서 = MAIN / R1 / R2
 - MatchTeamSelectionStore 작성 후 CombatMVP 진입
 - 현재 typography는 임시 Unity UI Text/runtime font
-- 사용자 테스트 대기
+- UI boot/visibility 사용자 확인
+- Solo/Duo/Trio handoff 전체 회귀 대기
+- 결과 화면 ESC → CharacterSelect return flow 추가
 
 Pass 3B에서 dedicated font asset + TMP/final-style visual binding을 연결한다.
 
