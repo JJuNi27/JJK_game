@@ -332,3 +332,35 @@ Character Select Grid = Gate 5B production front-end
 
 Gate 5A에서는 메구미/식신으로 전투 골격을 먼저 검증한다.
 Gate 5B에서는 이 검증된 roster data를 실제 캐릭터 선택 화면과 production-quality 전투로 연결한다.
+
+
+---
+
+# 2026-08-27 구현 체크포인트
+
+Gate 5B Pass 2의 1~3인 Battle Runtime은 사용자 검증 완료.
+
+첫 Character / Team Select 기능 shell을 구현했다.
+
+```text
+Host: SampleScene (temporary)
+Roster: Gojo / Sukuna / Megumi
+Selection: 1~3 fighters
+Order: MAIN → RESERVE 1 → RESERVE 2
+Confirm: MatchTeamSelectionStore → CombatMVP
+```
+
+현재는 selection flow와 battle handoff를 먼저 검증하기 위해 Canvas + Unity UI Text를 사용한다.
+이는 final typography 선택이 아니다.
+
+다음 시각 품질 pass에서:
+
+```text
+TMP
+dedicated Korean/Latin font asset
+portrait/model preview hook
+final spacing / hierarchy / motion
+gamepad navigation
+```
+
+을 production binding으로 교체한다.
