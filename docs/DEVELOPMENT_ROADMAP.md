@@ -34,6 +34,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 3B Character Select visual identity shell: USER VERIFIED
 - Pass 3C Character Select return-state continuity: USER VERIFIED
 - Pass 4A Production-facing Combat HUD Canvas shell: USER VERIFIED
+- Pass 4B Combat HUD Consolidation & State Readability: REMOTE IMPLEMENTED / USER TEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -243,6 +244,10 @@ Pass 3C CharacterSelect return-state continuity는 사용자 검증 완료.
 Pass 4A에서는 Gate 4 HUD snapshot 경계를 그대로 사용해 CombatMVP의 첫 Canvas 전투 HUD shell을 연결했고 사용자 검증 완료.
 HP/CE bar visual fill 및 current TargetLock 기반 opponent HUD도 정상 확인했다.
 기존 prototype IMGUI HUD는 fallback으로 보존하되 Canvas 활성 시 중복 표시만 숨긴다.
+
+Pass 4B에서는 남아 있던 캐릭터별 prototype 전투 HUD를 production Canvas 상태 표시와 통합했다.
+Target Lock chip / Reserve tag state / Q·E·R·V READY·LOCKED·BURNOUT / Domain INPUT·ACTIVE /
+Opponent attack telegraph를 Canvas로 표시하고, F1 Help와 Match Result overlay는 기존 경로를 유지한다.
 
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 
