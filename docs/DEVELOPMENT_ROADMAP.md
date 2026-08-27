@@ -29,8 +29,9 @@ Gate 4 Production Pipeline Extraction: USER VERIFIED / CLOSED
 Gate 5A Third Character Stress Test: USER VERIFIED / CLOSED
 Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 1 Character / Team Select Data Boundary: USER VERIFIED
-- Pass 2 Battle Runtime consumes MatchTeamSelection: REMOTE IMPLEMENTED / USER TEST PENDING
-- Character Select Canvas/TMP front-end: PENDING
+- Pass 2 Battle Runtime consumes MatchTeamSelection: USER VERIFIED
+- Pass 3A Functional Character / Team Select front-end: REMOTE IMPLEMENTED / USER TEST PENDING
+- Pass 3B TMP/final-style visual binding: PENDING
 Gate 6 Production: PENDING
 ```
 
@@ -194,7 +195,7 @@ MatchTeamSelectionStore
 - prototype default GOJO + SUKUNA
 ```
 
-Pass 2 · REMOTE IMPLEMENTED / USER TEST PENDING:
+Pass 2 · USER VERIFIED:
 
 ```text
 PrototypePlayerTeamController가 MatchTeamSelectionStore를 소비
@@ -217,7 +218,19 @@ T: R1 교대 compatibility
 
 F3/F4/T는 최종 사용자 입력이 아니다.
 
-Pass 2를 Unity 회귀로 검증한 뒤 Character Select Canvas/TMP front-end를 연결한다.
+Pass 2 Unity 회귀는 사용자 검증 완료.
+
+Pass 3A:
+- SampleScene 임시 host
+- Canvas runtime front-end
+- Gojo / Sukuna / Megumi roster
+- 1~3명 선택
+- 선택 순서 = MAIN / R1 / R2
+- MatchTeamSelectionStore 작성 후 CombatMVP 진입
+- 현재 typography는 임시 Unity UI Text/runtime font
+- 사용자 테스트 대기
+
+Pass 3B에서 dedicated font asset + TMP/final-style visual binding을 연결한다.
 
 세부:
 
