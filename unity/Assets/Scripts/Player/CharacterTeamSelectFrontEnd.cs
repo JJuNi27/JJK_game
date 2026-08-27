@@ -79,9 +79,21 @@ namespace JJKGame.Player
 
             uiFont = CreateRuntimeFont();
             EnsureEventSystem();
+            RestoreConfirmedSelection();
             BuildUi();
+
+            if (selectedTeam.Count > 0)
+            {
+                previewCharacter = selectedTeam[0];
+            }
+
             PreviewCharacter(previewCharacter);
             RefreshUi();
+
+            if (selectedTeam.Count > 0)
+            {
+                SetStatus("이전 팀 편성을 불러왔습니다 · 수정하거나 바로 BATTLE");
+            }
         }
 
         private void Update()
@@ -602,6 +614,35 @@ namespace JJKGame.Player
                 Vector2.zero,
                 Vector2.zero
             );
+        }
+
+        private void RestoreConfirmedSelection()
+        {
+            selectedTeam.Clear();
+
+            if (
+                !MatchTeamSelectionStore.TryGetLastConfirmedPlayerTeam(
+                    out MatchTeamSelection confirmed
+                )
+                || confirmed == null
+            )
+            {
+                return;
+            }
+
+            for (int slotIndex = 0; slotIndex < confirmed.TeamSize; slotIndex++)
+            {
+                PrototypeCharacterId characterId =
+                    confirmed.GetRequired((MatchTeamSlot)slotIndex);
+
+                if (
+                    !selectedTeam.Contains(characterId)
+                    && selectedTeam.Count < MaxTeamSize
+                )
+                {
+                    selectedTeam.Add(characterId);
+                }
+            }
         }
 
         private void SelectRosterCharacter(PrototypeCharacterId characterId)
