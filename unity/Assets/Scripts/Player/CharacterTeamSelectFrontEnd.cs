@@ -9,15 +9,16 @@ namespace JJKGame.Player
 {
     /// <summary>
     /// Gate 5B functional Character / Team Select front-end.
-    /// The current SampleScene is only a temporary host while production scene art/assets
-    /// are still missing. This UI writes MatchTeamSelectionStore and never touches battle
-    /// GameObjects directly.
+    /// CharacterSelect is the dedicated pre-match host scene. SampleScene remains accepted
+    /// only as a developer compatibility host. This UI writes MatchTeamSelectionStore and
+    /// never touches battle GameObjects directly.
     /// </summary>
     [DefaultExecutionOrder(-500)]
     [DisallowMultipleComponent]
     public sealed class CharacterTeamSelectFrontEnd : MonoBehaviour
     {
-        private const string HostSceneName = "SampleScene";
+        private const string HostSceneName = "CharacterSelect";
+        private const string LegacyHostSceneName = "SampleScene";
         private const string BattleSceneName = "CombatMVP";
         private const int MaxTeamSize = 3;
 
@@ -49,7 +50,7 @@ namespace JJKGame.Player
         private static void Bootstrap()
         {
             if (
-                SceneManager.GetActiveScene().name != HostSceneName
+                !IsSelectHostScene(SceneManager.GetActiveScene().name)
                 || FindFirstObjectByType<CharacterTeamSelectFrontEnd>() != null
             )
             {
@@ -62,7 +63,7 @@ namespace JJKGame.Player
 
         private void Awake()
         {
-            if (SceneManager.GetActiveScene().name != HostSceneName)
+            if (!IsSelectHostScene(SceneManager.GetActiveScene().name))
             {
                 enabled = false;
                 return;
@@ -734,6 +735,11 @@ namespace JJKGame.Player
                 typeof(StandaloneInputModule)
             );
             DontDestroyOnLoad(eventSystemObject);
+        }
+
+        private static bool IsSelectHostScene(string sceneName)
+        {
+            return sceneName == HostSceneName || sceneName == LegacyHostSceneName;
         }
 
         private static void StretchFull(RectTransform rect)
