@@ -29,6 +29,7 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float purpleEnergyCost = 45f;
 
         [Header("Hollow Purple · Presentation / Damage Sync")]
+        [SerializeField, Min(0f)] private float purplePresentationStartSlack = 0.08f;
         [SerializeField, Min(0f)] private float purpleMergeDuration = 0.24f;
         [SerializeField, Min(0.01f)] private float purpleLaunchDuration = 0.78f;
 
@@ -282,6 +283,7 @@ namespace JJKGame.Player
                         Target = target,
                         ImpactAt =
                             sequenceStartedAt
+                            + purplePresentationStartSlack
                             + purpleMergeDuration
                             + purpleLaunchDuration * travelProgress,
                     }
