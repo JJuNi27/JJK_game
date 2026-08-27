@@ -25,7 +25,7 @@ Pass 4A · Production-facing Combat HUD Canvas shell:
 USER VERIFIED
 
 Pass 4B · Combat HUD Consolidation & State Readability:
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -357,7 +357,7 @@ Gate 5B Pass 2: USER VERIFIED
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 전용 `CharacterSelect` 씬을 추가했다. `SampleScene`은 developer compatibility host로만 남긴다.
@@ -609,7 +609,7 @@ REMOTE IMPLEMENTED / USER TEST PENDING
 코드 리뷰:
 - Codex local implementation → dedicated branch → master rebase → GitHub diff review → PR merge 완료
 - C# 정적 build 결과는 Codex 보고 기준 warning 0 / error 0
-- 실제 Unity Play Mode는 아직 사용자 검증 전
+- 실제 Unity Play Mode 사용자 검증 완료
 
 사용자 회귀:
 ```text
