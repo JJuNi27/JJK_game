@@ -1,4 +1,3 @@
-using JJKGame.CameraSystem;
 using JJKGame.Core;
 using UnityEngine;
 
@@ -20,7 +19,6 @@ namespace JJKGame.Player
         private Health ownHealth;
         private AudioSource sfxSource;
         private AudioSource voiceSource;
-        private SimpleCameraFollow cameraFeedback;
         private AudioClip domainFallback;
         private AudioClip domainFugaFallback;
 
@@ -71,13 +69,11 @@ namespace JJKGame.Player
         {
             PlayVoice(domainVoice);
             PlaySfx(domainSound != null ? domainSound : domainFallback, 1f);
-            ShakeAndFlash(0.44f, 0.52f, new Color(0.82f, 0.035f, 0.02f), 0.24f, 0.46f);
         }
 
         public void PlayDomainFugaRuntime()
         {
             PlaySfx(domainFugaSound != null ? domainFugaSound : domainFugaFallback, 1f);
-            ShakeAndFlash(0.72f, 0.48f, new Color(1f, 0.16f, 0.015f), 0.30f, 0.38f);
         }
 
         private void Raise(CombatAudioEventId eventId, int variant = 0, bool amplified = false)
@@ -136,24 +132,6 @@ namespace JJKGame.Player
             voiceSource.clip = clip;
             voiceSource.volume = voiceVolume;
             voiceSource.Play();
-        }
-
-        private void ShakeAndFlash(
-            float shakeAmplitude,
-            float shakeDuration,
-            Color color,
-            float flashAlpha,
-            float flashDuration
-        )
-        {
-            cameraFeedback ??= FindFirstObjectByType<SimpleCameraFollow>();
-            if (cameraFeedback == null)
-            {
-                return;
-            }
-
-            cameraFeedback.AddShake(shakeAmplitude, shakeDuration);
-            cameraFeedback.Flash(color, flashAlpha, flashDuration);
         }
 
         private static AudioClip CreateSweepClip(
