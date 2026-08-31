@@ -37,7 +37,7 @@ Pass 6 · Arena Lighting & Post-Process Readability:
 USER VERIFIED
 
 Pass 7 · Combat Camera & Impact Feedback Polish:
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -828,8 +828,14 @@ lifecycle / cleanup:
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
+
+사용자 확인:
+- basic hit / technique camera feedback 변화 확인
+- 기존 gameplay와 HUD 정상
+- 현재 placeholder SFX / procedural avatar / line-circle VFX 한계 때문에 체감 타격감 상승 폭은 제한적
+- 추가 camera 과튜닝은 보류하고 production audio / VFX / animation 자산 단계에서 최종 조정
 
 ownership:
 - `TechniquePresentationRequest`는 technique id / phase / world point / direction만 전달하는 production-facing semantic contract로 유지
