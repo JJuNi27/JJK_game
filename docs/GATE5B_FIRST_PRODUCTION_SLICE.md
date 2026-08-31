@@ -513,7 +513,7 @@ Pass 3C return regression 발견 및 원격 수정:
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 Gate 4에서 검증한 read-only HUD snapshot을 실제 Canvas HUD가 소비하도록 연결했다.
@@ -588,7 +588,7 @@ Pass 4A follow-up fixes verified:
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 구현:
