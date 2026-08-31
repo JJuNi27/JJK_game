@@ -161,18 +161,23 @@ namespace JJKGame.Core
             ShakeAndFlash(0.30f, 0.24f, new Color(1f, 0.12f, 0.08f), 0.13f, 0.20f);
         }
 
+        // Audio-only path for events whose camera/flash feedback is already owned by
+        // ProductionCombatFeedbackDirector (for example Fuga impact).
+        public void PlayRedImpactAudioOnlyRuntime()
+        {
+            PlaySfx(redImpactFallback, 1f);
+        }
+
         public void PlayPurpleRuntime()
         {
             PlayVoice(purpleVoice);
             PlaySfx(purpleFallback, 1f);
-            ShakeAndFlash(0.58f, 0.42f, new Color(0.66f, 0.12f, 1f), 0.23f, 0.34f);
         }
 
         public void PlayDomainRuntime()
         {
             PlayVoice(domainVoice);
             PlaySfx(domainFallback, 1f);
-            ShakeAndFlash(0.36f, 0.48f, new Color(0.34f, 0.64f, 1f), 0.20f, 0.42f);
         }
 
         public void PlayBasicSwingRuntime(int chainStep)
@@ -191,19 +196,10 @@ namespace JJKGame.Core
                     basicFinisherSound != null ? basicFinisherSound : basicFinisherFallback,
                     1f
                 );
-                ShakeAndFlash(
-                    0.40f,
-                    0.22f,
-                    new Color(0.86f, 0.72f, 1f),
-                    0.19f,
-                    0.18f
-                );
                 return;
             }
 
             PlaySfx(regularHit, 0.72f + chainStep * 0.08f);
-            float amplitude = 0.09f + chainStep * 0.025f;
-            ShakeAndFlash(amplitude, 0.12f, Color.white, 0.045f, 0.10f);
         }
 
         public void PlayDodgeRuntime()
