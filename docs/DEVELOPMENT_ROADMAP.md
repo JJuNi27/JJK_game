@@ -35,6 +35,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 3C Character Select return-state continuity: USER VERIFIED
 - Pass 4A Production-facing Combat HUD Canvas shell: USER VERIFIED
 - Pass 4B Combat HUD Consolidation & State Readability: USER VERIFIED
+- Pass 4C Production Match Overlay & Domain Input Readability: REMOTE IMPLEMENTED / USER TEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -248,6 +249,12 @@ HP/CE bar visual fill 및 current TargetLock 기반 opponent HUD도 정상 확�
 Pass 4B에서는 남아 있던 캐릭터별 prototype 전투 HUD를 production Canvas 상태 표시와 통합했고 사용자 검증 완료.
 Target Lock chip / Reserve tag state / Q·E·R·V READY·LOCKED·BURNOUT / Domain INPUT·ACTIVE /
 Opponent attack telegraph를 Canvas로 표시하고, F1 Help와 Match Result overlay는 기존 경로를 유지한다.
+
+Pass 4C에서는 Gojo domain input/release timing, F1 Control Help, Victory/Defeat Result를 production Canvas overlay로 통합했다.
+domain timing은 `PlayerCombatHudSnapshot`에 추가한 최소 read-only presentation state만 소비하며,
+승패 및 rematch/character select 입력 소유권은 `MatchController`에 유지한다.
+Production Canvas 활성 중 production-facing 중복 IMGUI만 숨기고 비활성 시 기존 fallback을 보존한다.
+현재 상태는 REMOTE IMPLEMENTED / USER TEST PENDING이다.
 
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 
