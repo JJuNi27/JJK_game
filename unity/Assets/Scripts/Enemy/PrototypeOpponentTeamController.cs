@@ -180,6 +180,14 @@ namespace JJKGame.Enemy
 
         private void HandleSceneLoaded(Scene _, LoadSceneMode __)
         {
+            if (FindFirstObjectByType<MatchController>() == null)
+            {
+                DetachMemberEvents();
+                initialized = false;
+                switchingMode = false;
+                return;
+            }
+
             InitializeFromScene();
         }
 
