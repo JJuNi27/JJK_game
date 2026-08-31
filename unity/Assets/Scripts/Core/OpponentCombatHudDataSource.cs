@@ -123,7 +123,14 @@ namespace JJKGame.Core
 
         private int ResolveDisplayedMemberIndex()
         {
-            targetLock ??= FindFirstObjectByType<TargetLockController>();
+            // This data source lives on the persistent opponent runtime. After a scene
+            // reload Unity's destroyed-object null semantics require an explicit check;
+            // ??= would keep the stale managed wrapper and never acquire the new lock.
+            if (targetLock == null)
+            {
+                targetLock = FindFirstObjectByType<TargetLockController>();
+            }
+
             Health lockedTarget = targetLock != null ? targetLock.CurrentTarget : null;
 
             if (lockedTarget != null)
