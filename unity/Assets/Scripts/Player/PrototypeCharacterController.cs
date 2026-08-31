@@ -69,26 +69,26 @@ namespace JJKGame.Player
 
             if (!teamMode)
             {
-                if (Input.GetKeyDown(KeyCode.Alpha1))
+                if (PrototypeDeveloperInput.SelectGojoPressed)
                 {
                     SelectAndReload(PrototypeCharacterId.GojoModern);
                     return;
                 }
 
-                if (Input.GetKeyDown(KeyCode.Alpha2))
+                if (PrototypeDeveloperInput.SelectSukunaPressed)
                 {
                     SelectAndReload(PrototypeCharacterId.SukunaShibuyaYujiBody);
                     return;
                 }
 
-                if (Input.GetKeyDown(KeyCode.Alpha3))
+                if (PrototypeDeveloperInput.SelectMegumiPressed)
                 {
                     SelectAndReload(PrototypeCharacterId.MegumiStudent);
                     return;
                 }
             }
 
-            if (!teamMode && IsSukuna && Input.GetKeyDown(KeyCode.F1))
+            if (!teamMode && IsSukuna && ProductionMatchInput.ControlHelpPressed)
             {
                 showSukunaHelp = !showSukunaHelp;
             }
@@ -299,6 +299,11 @@ namespace JJKGame.Player
 
         private void DrawCharacterSwitchChip()
         {
+            if (!PrototypeDeveloperInput.BuildAllowsDeveloperHarness)
+            {
+                return;
+            }
+
             PrototypePlayerTeamController team = GetComponent<PrototypePlayerTeamController>();
             if (team != null && team.enabled)
             {

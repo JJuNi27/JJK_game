@@ -126,7 +126,7 @@ namespace JJKGame.Player
                 ResetHitCombo();
             }
 
-            if (!Input.GetMouseButtonDown(0) || Time.time < nextAttackAt)
+            if (!ProductionCombatInput.BasicAttackPressed || Time.time < nextAttackAt)
             {
                 return;
             }

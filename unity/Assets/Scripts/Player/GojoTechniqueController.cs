@@ -121,11 +121,11 @@ namespace JJKGame.Player
                 return;
             }
 
-            if (Input.GetKeyDown(CombatInputBindings.Skill1))
+            if (ProductionCombatInput.Skill1Pressed)
             {
                 TryBeginTechnique(CastState.Blue);
             }
-            else if (Input.GetKeyDown(CombatInputBindings.Skill2))
+            else if (ProductionCombatInput.Skill2Pressed)
             {
                 TryBeginTechnique(CastState.Red);
             }

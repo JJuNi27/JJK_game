@@ -178,13 +178,13 @@ namespace JJKGame.Player
 
         private void Update()
         {
-            if (enableDeveloperHarness && Input.GetKeyDown(KeyCode.F3))
+            if (enableDeveloperHarness && PrototypeDeveloperInput.StressRosterTogglePressed)
             {
                 ToggleMegumiStressRoster();
                 return;
             }
 
-            if (enableDeveloperHarness && Input.GetKeyDown(KeyCode.F4))
+            if (enableDeveloperHarness && PrototypeDeveloperInput.TeamSizeCyclePressed)
             {
                 CycleRuntimeTeamSizeHarness();
                 return;
@@ -195,10 +195,10 @@ namespace JJKGame.Player
                 return;
             }
 
-            bool reserve1Pressed = Input.GetKeyDown(CombatInputBindings.Reserve1Tag);
-            bool reserve2Pressed = Input.GetKeyDown(CombatInputBindings.Reserve2Tag);
+            bool reserve1Pressed = ProductionCombatInput.Reserve1TagPressed;
+            bool reserve2Pressed = ProductionCombatInput.Reserve2TagPressed;
             bool legacyTagPressed =
-                enableDeveloperHarness && Input.GetKeyDown(CombatInputBindings.Tag);
+                enableDeveloperHarness && PrototypeDeveloperInput.LegacyReserve1TagPressed;
 
             if (!reserve1Pressed && !reserve2Pressed && !legacyTagPressed)
             {

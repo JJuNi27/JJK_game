@@ -57,19 +57,19 @@ namespace JJKGame.Core
             }
 
             float pulseUntil = Time.unscaledTime + PressPulseDuration;
-            if (Input.GetKeyDown(CombatInputBindings.Skill1))
+            if (ProductionCombatInput.Skill1Pressed)
             {
                 qPulseUntil = pulseUntil;
             }
-            if (Input.GetKeyDown(CombatInputBindings.Skill2))
+            if (ProductionCombatInput.Skill2Pressed)
             {
                 ePulseUntil = pulseUntil;
             }
-            if (Input.GetKeyDown(CombatInputBindings.Ultimate))
+            if (ProductionCombatInput.UltimatePressed)
             {
                 rPulseUntil = pulseUntil;
             }
-            if (Input.GetKeyDown(CombatInputBindings.Domain))
+            if (ProductionCombatInput.DomainPressed)
             {
                 vPulseUntil = pulseUntil;
             }
