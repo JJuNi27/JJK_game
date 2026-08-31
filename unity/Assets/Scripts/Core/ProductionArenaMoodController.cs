@@ -17,10 +17,10 @@ namespace JJKGame.Core
         private const string TargetSceneName = "CombatMVP";
         private const string RuntimeProfileName = "CombatMVP_RuntimeMoodProfile";
 
-        private static readonly Color NightFog = new Color(0.018f, 0.032f, 0.060f, 1f);
-        private static readonly Color AmbientSky = new Color(0.080f, 0.120f, 0.205f, 1f);
-        private static readonly Color AmbientEquator = new Color(0.045f, 0.065f, 0.110f, 1f);
-        private static readonly Color AmbientGround = new Color(0.018f, 0.022f, 0.038f, 1f);
+        private static readonly Color NightFog = new Color(0.028f, 0.046f, 0.080f, 1f);
+        private static readonly Color AmbientSky = new Color(0.115f, 0.165f, 0.265f, 1f);
+        private static readonly Color AmbientEquator = new Color(0.070f, 0.095f, 0.155f, 1f);
+        private static readonly Color AmbientGround = new Color(0.032f, 0.040f, 0.068f, 1f);
 
         private Volume globalVolume;
         private VolumeProfile runtimeProfile;
@@ -198,8 +198,8 @@ namespace JJKGame.Core
             bloom.highQualityFiltering.Override(false);
 
             ColorAdjustments color = AddOverride<ColorAdjustments>();
-            color.postExposure.Override(-0.10f);
-            color.contrast.Override(11f);
+            color.postExposure.Override(0.12f);
+            color.contrast.Override(8f);
             color.colorFilter.Override(new Color(0.94f, 0.97f, 1f, 1f));
             color.hueShift.Override(0f);
             color.saturation.Override(-2f);
@@ -211,7 +211,7 @@ namespace JJKGame.Core
             Vignette vignette = AddOverride<Vignette>();
             vignette.color.Override(new Color(0.005f, 0.010f, 0.025f, 1f));
             vignette.center.Override(new Vector2(0.5f, 0.5f));
-            vignette.intensity.Override(0.13f);
+            vignette.intensity.Override(0.09f);
             vignette.smoothness.Override(0.55f);
             vignette.rounded.Override(false);
         }
@@ -232,15 +232,15 @@ namespace JJKGame.Core
                 "CoolArenaFill",
                 new Vector3(-7f, 6f, -4f),
                 new Color(0.24f, 0.52f, 1f),
-                1.45f,
-                19f
+                1.85f,
+                20f
             );
             CreatePointLight(
                 "WarmArenaRim",
                 new Vector3(8f, 5.2f, 5f),
                 new Color(1f, 0.30f, 0.13f),
-                1.15f,
-                16f
+                1.30f,
+                17f
             );
         }
 
@@ -275,7 +275,7 @@ namespace JJKGame.Core
             RenderSettings.ambientSkyColor = AmbientSky;
             RenderSettings.ambientEquatorColor = AmbientEquator;
             RenderSettings.ambientGroundColor = AmbientGround;
-            RenderSettings.ambientIntensity = 0.82f;
+            RenderSettings.ambientIntensity = 1.06f;
 
             if (mainCamera != null)
             {
@@ -290,9 +290,9 @@ namespace JJKGame.Core
             if (mainDirectional != null)
             {
                 mainDirectional.color = new Color(0.66f, 0.78f, 1f);
-                mainDirectional.intensity = 0.90f;
+                mainDirectional.intensity = 1.18f;
                 mainDirectional.shadows = LightShadows.Soft;
-                mainDirectional.shadowStrength = 0.55f;
+                mainDirectional.shadowStrength = 0.42f;
             }
             if (globalVolume != null)
             {
