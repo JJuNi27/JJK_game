@@ -910,8 +910,16 @@ lifecycle:
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VISUAL REVIEW FAILED / REWORK REQUIRED
 ```
+
+사용자 시각 검수:
+- 구조적 ParticleSystem 전환은 동작했지만 기술별 원작 시각 정체성이 충분히 재현되지 않음
+- Blue/Red의 핵심 orb가 사라져 원작 인상이 약해짐
+- Unlimited Void는 기존 line/ring 인상에서 크게 벗어나지 못함
+- Hollow Purple은 기존 대비 개선 폭이 작음
+- Sukuna slash 계열은 상대적으로 개선됐으나 전체 품질은 production 기준 미달
+- reference-first 방식으로 재작업 후 다시 사용자 검수 필요
 
 이 단계는 final anime-quality VFX가 아니다. 외부 texture / flipbook / mesh / VFX Graph /
 custom shader 없이 기존 line/ring prototype을 replaceable ParticleSystem runtime으로 전환하고,
