@@ -63,6 +63,12 @@ namespace JJKGame.Core
             bool canUseTechnique,
             bool canUseUltimate,
             bool canUseDomain,
+            bool domainInputActive,
+            string domainStatusLabel,
+            bool domainReleaseTimingActive,
+            float domainReleaseProgressNormalized,
+            float domainReleaseWindowStartNormalized,
+            float domainReleaseWindowEndNormalized,
             bool teamMode,
             int teamSize,
             PrototypeCharacterId reserveCharacter,
@@ -99,6 +105,12 @@ namespace JJKGame.Core
             CanUseTechnique = canUseTechnique;
             CanUseUltimate = canUseUltimate;
             CanUseDomain = canUseDomain;
+            DomainInputActive = domainInputActive;
+            DomainStatusLabel = domainStatusLabel;
+            DomainReleaseTimingActive = domainReleaseTimingActive;
+            DomainReleaseProgressNormalized = domainReleaseProgressNormalized;
+            DomainReleaseWindowStartNormalized = domainReleaseWindowStartNormalized;
+            DomainReleaseWindowEndNormalized = domainReleaseWindowEndNormalized;
             TeamMode = teamMode;
             TeamSize = teamSize;
             ReserveCharacter = reserveCharacter;
@@ -135,6 +147,12 @@ namespace JJKGame.Core
         public bool CanUseTechnique { get; }
         public bool CanUseUltimate { get; }
         public bool CanUseDomain { get; }
+        public bool DomainInputActive { get; }
+        public string DomainStatusLabel { get; }
+        public bool DomainReleaseTimingActive { get; }
+        public float DomainReleaseProgressNormalized { get; }
+        public float DomainReleaseWindowStartNormalized { get; }
+        public float DomainReleaseWindowEndNormalized { get; }
         public bool TeamMode { get; }
         public int TeamSize { get; }
         public PrototypeCharacterId ReserveCharacter { get; }
@@ -173,6 +191,7 @@ namespace JJKGame.Core
         private PrototypePlayerTeamController teamController;
         private ThirdPersonPlayerController movement;
         private BasicAttack basicAttack;
+        private GojoDomainController gojoDomain;
 
         public static PlayerCombatHudDataSource GetOrCreate(GameObject owner)
         {
@@ -216,6 +235,10 @@ namespace JJKGame.Core
                     ? actionGate.CurrentState
                     : CombatActionState.Normal;
                 bool burnedOut = actionGate != null && actionGate.TechniqueBurnedOut;
+                bool domainInputActive =
+                    gojoDomain != null && gojoDomain.enabled && gojoDomain.CapturesMouseInput;
+                bool domainReleaseTimingActive =
+                    domainInputActive && gojoDomain.IsReleaseTiming;
 
                 PlayerTeamMemberHudSnapshot activeMember = BuildMemberSnapshot(activeCharacter, true);
                 PlayerTeamMemberHudSnapshot reserveMember =
@@ -256,6 +279,12 @@ namespace JJKGame.Core
                     actionGate == null || actionGate.CanStartTechnique,
                     actionGate == null || actionGate.CanStartUltimate,
                     actionGate == null || actionGate.CanStartDomain,
+                    domainInputActive,
+                    domainInputActive ? gojoDomain.StatusText : string.Empty,
+                    domainReleaseTimingActive,
+                    domainReleaseTimingActive ? gojoDomain.ReleaseProgressNormalized : 0f,
+                    domainReleaseTimingActive ? gojoDomain.ReleaseWindowStartNormalized : 0f,
+                    domainReleaseTimingActive ? gojoDomain.ReleaseWindowEndNormalized : 0f,
                     teamMode,
                     teamSize,
                     reserveCharacter,
@@ -374,6 +403,7 @@ namespace JJKGame.Core
             teamController ??= GetComponent<PrototypePlayerTeamController>();
             movement ??= GetComponent<ThirdPersonPlayerController>();
             basicAttack ??= GetComponent<BasicAttack>();
+            gojoDomain ??= GetComponent<GojoDomainController>();
         }
     }
 }

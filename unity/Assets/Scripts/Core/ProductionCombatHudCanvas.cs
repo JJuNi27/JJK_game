@@ -30,7 +30,12 @@ namespace JJKGame.Core
         private TargetLockController targetLock;
         private Font uiFont;
         private Canvas combatCanvas;
+        private GameObject combatHudRoot;
         private GameObject skillDeckRoot;
+        private GameObject domainInputRoot;
+        private GameObject domainTimingRoot;
+        private GameObject controlHelpRoot;
+        private GameObject resultOverlayRoot;
 
         private Text playerName;
         private Text playerVariant;
@@ -58,6 +63,19 @@ namespace JJKGame.Core
         private Image attackWarningPanel;
         private Image attackWarningFill;
         private Text attackWarningText;
+
+        private Text domainStatusText;
+        private Text domainInstructionText;
+        private Image domainProgressFill;
+        private Image domainReleaseWindow;
+        private Image domainReleaseCursor;
+
+        private Text controlHelpTitle;
+        private Text controlHelpBody;
+
+        private Image resultPanel;
+        private Text resultTitle;
+        private Text resultDescription;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -100,6 +118,29 @@ namespace JJKGame.Core
             RefreshSources();
         }
 
+        private void OnEnable()
+        {
+            if (SceneManager.GetActiveScene().name != TargetSceneName)
+            {
+                return;
+            }
+
+            CombatHudPresentationMode.ProductionCanvasActive = true;
+            if (combatCanvas != null)
+            {
+                combatCanvas.enabled = true;
+            }
+        }
+
+        private void OnDisable()
+        {
+            CombatHudPresentationMode.ProductionCanvasActive = false;
+            if (combatCanvas != null)
+            {
+                combatCanvas.enabled = false;
+            }
+        }
+
         private void OnDestroy()
         {
             CombatHudPresentationMode.ProductionCanvasActive = false;
@@ -110,20 +151,20 @@ namespace JJKGame.Core
             RefreshSources();
 
             bool matchFinished = matchController != null && matchController.MatchFinished;
-            if (combatCanvas != null)
+            if (combatHudRoot != null)
             {
-                combatCanvas.enabled = !matchFinished;
+                combatHudRoot.SetActive(!matchFinished);
+            }
+            if (resultOverlayRoot != null)
+            {
+                resultOverlayRoot.SetActive(matchFinished);
             }
             if (matchFinished)
             {
+                SetOverlayActive(controlHelpRoot, false);
+                SetOverlayActive(domainInputRoot, false);
+                RefreshResultOverlay();
                 return;
-            }
-
-            if (skillDeckRoot != null)
-            {
-                skillDeckRoot.SetActive(
-                    matchController == null || !matchController.ControlHelpVisible
-                );
             }
 
             PlayerCombatHudSnapshot player = playerSource != null
@@ -138,6 +179,27 @@ namespace JJKGame.Core
                 RefreshPlayer(player);
                 RefreshTeam(player);
                 RefreshSkills(player);
+            }
+
+            bool controlHelpVisible =
+                player.IsValid
+                && matchController != null
+                && matchController.ControlHelpVisible;
+            SetOverlayActive(controlHelpRoot, controlHelpVisible);
+            if (skillDeckRoot != null)
+            {
+                skillDeckRoot.SetActive(!controlHelpVisible);
+            }
+            if (controlHelpVisible)
+            {
+                RefreshControlHelp(player);
+            }
+
+            bool domainInputVisible = player.IsValid && player.DomainInputActive;
+            SetOverlayActive(domainInputRoot, domainInputVisible);
+            if (domainInputVisible)
+            {
+                RefreshDomainInput(player);
             }
 
             if (opponent.IsValid)
@@ -196,11 +258,16 @@ namespace JJKGame.Core
             RectTransform root = canvasObject.GetComponent<RectTransform>();
             StretchFull(root);
 
-            BuildPlayerPlate(root);
-            BuildOpponentPlate(root);
-            BuildTeamPlate(root);
-            BuildSkillDeck(root);
-            BuildCenterState(root);
+            RectTransform hudRoot = CreateContainer(root, "CombatHudRoot");
+            combatHudRoot = hudRoot.gameObject;
+            BuildPlayerPlate(hudRoot);
+            BuildOpponentPlate(hudRoot);
+            BuildTeamPlate(hudRoot);
+            BuildSkillDeck(hudRoot);
+            BuildCenterState(hudRoot);
+            BuildDomainInputOverlay(root);
+            BuildControlHelpOverlay(root);
+            BuildResultOverlay(root);
         }
 
         private void BuildPlayerPlate(RectTransform root)
@@ -505,6 +572,267 @@ namespace JJKGame.Core
                 new Color(1f, 0.22f, 0.12f, 0.92f)
             );
             attackWarningPanel.gameObject.SetActive(false);
+        }
+
+        private void BuildDomainInputOverlay(RectTransform root)
+        {
+            Image panel = CreatePanel(
+                root,
+                "DomainInputOverlay",
+                new Vector2(0.23f, 0.205f),
+                new Vector2(0.77f, 0.345f),
+                new Color(0.012f, 0.022f, 0.055f, 0.96f)
+            );
+            domainInputRoot = panel.gameObject;
+
+            CreatePanel(
+                panel.rectTransform,
+                "Accent",
+                Vector2.zero,
+                new Vector2(0.012f, 1f),
+                new Color(0.24f, 0.62f, 1f, 1f)
+            );
+
+            domainStatusText = CreateText(
+                panel.rectTransform,
+                "Status",
+                string.Empty,
+                20,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                new Color(0.78f, 0.90f, 1f),
+                new Vector2(0.045f, 0.67f),
+                new Vector2(0.955f, 0.94f)
+            );
+            ConfigureBestFit(domainStatusText, 13, 20);
+
+            Image progressBackground = CreatePanel(
+                panel.rectTransform,
+                "ReleaseTiming",
+                new Vector2(0.055f, 0.34f),
+                new Vector2(0.945f, 0.59f),
+                new Color(0.055f, 0.070f, 0.115f, 1f)
+            );
+            domainTimingRoot = progressBackground.gameObject;
+
+            domainProgressFill = CreatePanel(
+                progressBackground.rectTransform,
+                "ProgressFill",
+                Vector2.zero,
+                Vector2.one,
+                new Color(0.20f, 0.52f, 1f, 0.42f)
+            );
+            domainReleaseWindow = CreatePanel(
+                progressBackground.rectTransform,
+                "ReleaseWindow",
+                new Vector2(0.45f, 0f),
+                new Vector2(0.65f, 1f),
+                new Color(0.12f, 0.88f, 0.38f, 0.90f)
+            );
+            domainReleaseCursor = CreatePanel(
+                progressBackground.rectTransform,
+                "ReleaseCursor",
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 1f),
+                Color.white
+            );
+            domainReleaseCursor.rectTransform.offsetMin = new Vector2(-2f, -3f);
+            domainReleaseCursor.rectTransform.offsetMax = new Vector2(2f, 3f);
+
+            domainInstructionText = CreateText(
+                panel.rectTransform,
+                "Instruction",
+                string.Empty,
+                15,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                new Color(0.68f, 0.76f, 0.90f),
+                new Vector2(0.045f, 0.07f),
+                new Vector2(0.955f, 0.29f)
+            );
+            ConfigureBestFit(domainInstructionText, 11, 15);
+            domainInputRoot.SetActive(false);
+        }
+
+        private void BuildControlHelpOverlay(RectTransform root)
+        {
+            Image panel = CreatePanel(
+                root,
+                "ControlHelpOverlay",
+                new Vector2(0.64f, 0.37f),
+                new Vector2(0.97f, 0.76f),
+                new Color(0.010f, 0.017f, 0.032f, 0.97f)
+            );
+            controlHelpRoot = panel.gameObject;
+
+            CreatePanel(
+                panel.rectTransform,
+                "Accent",
+                Vector2.zero,
+                new Vector2(0.012f, 1f),
+                new Color(0.30f, 0.72f, 1f, 1f)
+            );
+            controlHelpTitle = CreateText(
+                panel.rectTransform,
+                "Title",
+                "CONTROLS  ·  F1 CLOSE",
+                22,
+                FontStyle.Bold,
+                TextAnchor.MiddleLeft,
+                new Color(0.70f, 0.86f, 1f),
+                new Vector2(0.055f, 0.84f),
+                new Vector2(0.95f, 0.97f)
+            );
+            ConfigureBestFit(controlHelpTitle, 13, 22);
+
+            controlHelpBody = CreateText(
+                panel.rectTransform,
+                "Body",
+                string.Empty,
+                17,
+                FontStyle.Bold,
+                TextAnchor.UpperLeft,
+                Color.white,
+                new Vector2(0.055f, 0.08f),
+                new Vector2(0.95f, 0.82f)
+            );
+            controlHelpBody.lineSpacing = 1.15f;
+            ConfigureBestFit(controlHelpBody, 11, 17);
+            controlHelpRoot.SetActive(false);
+        }
+
+        private void BuildResultOverlay(RectTransform root)
+        {
+            Image dimmer = CreatePanel(
+                root,
+                "MatchResultOverlay",
+                Vector2.zero,
+                Vector2.one,
+                new Color(0f, 0f, 0f, 0.76f)
+            );
+            resultOverlayRoot = dimmer.gameObject;
+
+            resultPanel = CreatePanel(
+                dimmer.rectTransform,
+                "ResultPanel",
+                new Vector2(0.27f, 0.32f),
+                new Vector2(0.73f, 0.68f),
+                new Color(0.018f, 0.024f, 0.045f, 0.99f)
+            );
+            resultTitle = CreateText(
+                resultPanel.rectTransform,
+                "Result",
+                string.Empty,
+                58,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                Color.white,
+                new Vector2(0.06f, 0.54f),
+                new Vector2(0.94f, 0.90f)
+            );
+            ConfigureBestFit(resultTitle, 26, 58);
+
+            resultDescription = CreateText(
+                resultPanel.rectTransform,
+                "Description",
+                string.Empty,
+                22,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                Color.white,
+                new Vector2(0.06f, 0.35f),
+                new Vector2(0.94f, 0.55f)
+            );
+            ConfigureBestFit(resultDescription, 14, 22);
+
+            Text controls = CreateText(
+                resultPanel.rectTransform,
+                "Controls",
+                "ENTER  ·  REMATCH     ESC  ·  TEAM SELECT",
+                18,
+                FontStyle.Bold,
+                TextAnchor.MiddleCenter,
+                new Color(0.72f, 0.78f, 0.88f),
+                new Vector2(0.06f, 0.10f),
+                new Vector2(0.94f, 0.30f)
+            );
+            ConfigureBestFit(controls, 11, 18);
+            resultOverlayRoot.SetActive(false);
+        }
+
+        private void RefreshDomainInput(PlayerCombatHudSnapshot snapshot)
+        {
+            domainStatusText.text = string.IsNullOrEmpty(snapshot.DomainStatusLabel)
+                ? "영역 입력"
+                : snapshot.DomainStatusLabel;
+
+            bool timing = snapshot.DomainReleaseTimingActive;
+            SetOverlayActive(domainTimingRoot, timing);
+            domainInstructionText.text = timing
+                ? "초록 구간에서 RMB 해제  ·  X 입력 취소"
+                : "RMB 유지 → LMB 입력  ·  X 입력 취소";
+            if (!timing)
+            {
+                return;
+            }
+
+            float progress = Mathf.Clamp01(snapshot.DomainReleaseProgressNormalized);
+            SetHorizontalAnchors(domainProgressFill.rectTransform, 0f, progress);
+
+            float windowStart = Mathf.Clamp01(snapshot.DomainReleaseWindowStartNormalized);
+            float windowEnd = Mathf.Clamp(
+                snapshot.DomainReleaseWindowEndNormalized,
+                windowStart,
+                1f
+            );
+            SetHorizontalAnchors(domainReleaseWindow.rectTransform, windowStart, windowEnd);
+
+            RectTransform cursor = domainReleaseCursor.rectTransform;
+            cursor.anchorMin = new Vector2(progress, 0f);
+            cursor.anchorMax = new Vector2(progress, 1f);
+            cursor.offsetMin = new Vector2(-2f, -3f);
+            cursor.offsetMax = new Vector2(2f, 3f);
+        }
+
+        private void RefreshControlHelp(PlayerCombatHudSnapshot snapshot)
+        {
+            CharacterPresentationProfile profile = snapshot.PresentationProfile;
+            controlHelpTitle.color = profile.HudAccent;
+
+            string teamControls = snapshot.TeamMode
+                ? "\nTEAM   1 = R1 교대   2 = R2 교대"
+                : string.Empty;
+            controlHelpBody.text =
+                "WASD  이동     SPACE  회피\n"
+                + "TAB  Target Lock     LMB  기본 공격\n\n"
+                + $"Q  {profile.Skill1.Label}\n"
+                + $"E  {profile.Skill2.Label}\n"
+                + $"R  {profile.Ultimate.Label}\n"
+                + $"V  {profile.Domain.Label}\n"
+                + "X  영역 입력 취소"
+                + teamControls;
+        }
+
+        private void RefreshResultOverlay()
+        {
+            if (matchController == null)
+            {
+                return;
+            }
+
+            string result = matchController.ResultText;
+            bool victory = result == "VICTORY";
+            Color accent = victory
+                ? new Color(0.20f, 0.78f, 1f)
+                : new Color(0.95f, 0.18f, 0.22f);
+            resultTitle.text = result;
+            resultTitle.color = accent;
+            resultDescription.text = matchController.ResultDescription;
+            resultPanel.color = Color.Lerp(
+                new Color(0.018f, 0.024f, 0.045f, 0.99f),
+                accent,
+                0.10f
+            );
         }
 
         private void RefreshPlayer(PlayerCombatHudSnapshot snapshot)
@@ -817,6 +1145,50 @@ namespace JJKGame.Core
             {
                 text.text = label;
             }
+        }
+
+        private static void SetOverlayActive(GameObject overlay, bool active)
+        {
+            if (overlay != null && overlay.activeSelf != active)
+            {
+                overlay.SetActive(active);
+            }
+        }
+
+        private static void SetHorizontalAnchors(RectTransform rect, float min, float max)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            rect.anchorMin = new Vector2(Mathf.Clamp01(min), 0f);
+            rect.anchorMax = new Vector2(Mathf.Clamp01(max), 1f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        private static void ConfigureBestFit(Text text, int minimumSize, int maximumSize)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = minimumSize;
+            text.resizeTextMaxSize = maximumSize;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+        }
+
+        private static RectTransform CreateContainer(RectTransform parent, string objectName)
+        {
+            GameObject container = new GameObject(objectName, typeof(RectTransform));
+            container.transform.SetParent(parent, false);
+            RectTransform rect = container.GetComponent<RectTransform>();
+            StretchFull(rect);
+            return rect;
         }
 
         private Image CreatePanel(

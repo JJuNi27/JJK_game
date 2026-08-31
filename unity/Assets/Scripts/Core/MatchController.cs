@@ -42,6 +42,12 @@ namespace JJKGame.Core
 
         public bool MatchFinished => matchFinished;
         public bool ControlHelpVisible => showControlHelp && !matchFinished;
+        public string ResultText => resultText;
+        public string ResultDescription => resultText == "VICTORY"
+            ? "모든 주령을 퇴치했습니다"
+            : resultText == "DEFEAT"
+                ? "전투에서 패배했습니다"
+                : string.Empty;
 
         public int LivingEnemyCount
         {
@@ -394,11 +400,15 @@ namespace JJKGame.Core
                 DrawCompactCombatHud();
             }
 
-            if (showControlHelp && !matchFinished)
+            if (
+                !CombatHudPresentationMode.ProductionCanvasActive
+                && showControlHelp
+                && !matchFinished
+            )
             {
                 DrawControlHelp();
             }
-            if (matchFinished)
+            if (matchFinished && !CombatHudPresentationMode.ProductionCanvasActive)
             {
                 DrawResultOverlay();
             }

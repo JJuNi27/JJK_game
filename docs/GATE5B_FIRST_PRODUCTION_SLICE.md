@@ -26,6 +26,9 @@ USER VERIFIED
 
 Pass 4B · Combat HUD Consolidation & State Readability:
 USER VERIFIED
+
+Pass 4C · Production Match Overlay & Domain Input Readability:
+REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -626,4 +629,45 @@ USER VERIFIED
 11. Victory/Defeat result overlay 가림 없음
 12. ENTER Rematch / ESC CharacterSelect
 13. Console red error 없음
+```
+
+---
+
+# Pass 4C — Production Match Overlay & Domain Input Readability
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+구현:
+- Gojo 영역 입력 중에만 Canvas domain panel 표시
+- controller가 계산한 release progress / green window / cursor를 `PlayerCombatHudSnapshot`으로 read-only 전달
+- F1 Control Help를 Canvas overlay로 이동하고 실제 production 입력(WASD / SPACE / TAB / LMB / Q·E·R·V / X / 1·2)에 맞춰 정리
+- Solo에서는 교대 도움말을 숨기고 Duo/Trio에서만 R1/R2 교대 표시
+- 캐릭터별 기술명은 `CharacterPresentationProfile` 기반으로 표시
+- Victory / Defeat 및 결과 설명, ENTER Rematch, ESC Team Select 안내를 Canvas result overlay로 이동
+- 결과 중 combat HUD / Target Lock / warning / technique deck을 숨겨 결과 계층 우선
+- Production Canvas 활성 중 F1 / Result / Domain IMGUI 중복만 숨기고, Canvas 비활성 시 기존 fallback 유지
+
+경계:
+- domain release 성공/실패 판정과 입력 처리는 기존 `GojoDomainController`가 계속 소유
+- 승패 판정과 ENTER / ESC 입력 처리는 기존 `MatchController`가 계속 소유
+- damage / HP / CE / cooldown / KO / tag / target / AI gameplay 변경 없음
+- 외부 image / font / TMP asset 추가 없음
+
+사용자 테스트 대기:
+
+```text
+1. Gojo V → RMB 유지 → LMB → 초록 구간 RMB 해제
+2. 영역 입력 전/후 Canvas domain panel 숨김 확인
+3. F1 Help Solo에서 교대 안내 없음
+4. F1 Help Duo/Trio에서 1=R1, 2=R2 표시
+5. Gojo/Sukuna/Megumi 기술명이 현재 캐릭터에 맞게 표시
+6. Victory/Defeat 시 combat HUD가 사라지고 Canvas result overlay만 표시
+7. ENTER Rematch / ESC CharacterSelect
+8. Canvas component 비활성 시 기존 IMGUI fallback 표시
+9. 작은 Game View에서 help/result/domain text 잘림·겹침 확인
+10. 기존 전투/팀/Target Lock/F2 회귀 및 Console red error 없음
 ```
