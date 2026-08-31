@@ -225,7 +225,7 @@ namespace JJKGame.Enemy
             sceneInitializationRoutine = null;
             if (FindFirstObjectByType<MatchController>() == null)
             {
-                return;
+                yield break;
             }
 
             InitializeFromScene();
