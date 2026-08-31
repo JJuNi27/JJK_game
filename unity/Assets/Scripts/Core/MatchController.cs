@@ -152,7 +152,7 @@ namespace JJKGame.Core
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F1))
+            if (ProductionMatchInput.ControlHelpPressed)
             {
                 showControlHelp = !showControlHelp;
             }
@@ -162,13 +162,13 @@ namespace JJKGame.Core
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Return))
+            if (ProductionMatchInput.RematchPressed)
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (ProductionMatchInput.CharacterSelectPressed)
             {
                 SceneManager.LoadScene(CharacterSelectSceneName);
             }
@@ -709,7 +709,9 @@ namespace JJKGame.Core
                 : new Color(0.012f, 0.018f, 0.032f, 0.95f));
             DrawBorder(rect, accent, 2f);
 
-            string teamLine = hud.TeamMode ? "T 팀 교대 · 현재 2인 팀 프로토타입\n" : string.Empty;
+            string teamLine = hud.TeamMode && PrototypeDeveloperInput.BuildAllowsDeveloperHarness
+                ? "T 팀 교대 · 현재 2인 팀 프로토타입\n"
+                : string.Empty;
             string text;
             if (sukuna)
             {

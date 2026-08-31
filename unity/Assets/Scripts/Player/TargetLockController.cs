@@ -45,7 +45,7 @@ namespace JJKGame.Player
                 ClearTarget();
             }
 
-            if (Input.GetKeyDown(CombatInputBindings.TargetLock))
+            if (ProductionCombatInput.TargetLockPressed)
             {
                 SelectNextTargetOrUnlock();
             }

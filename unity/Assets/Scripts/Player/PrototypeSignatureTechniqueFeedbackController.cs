@@ -124,7 +124,7 @@ namespace JJKGame.Player
 
             characterController ??= GetComponent<PrototypeCharacterController>();
             if (
-                !Input.GetKeyDown(CombatInputBindings.Ultimate)
+                !ProductionCombatInput.UltimatePressed
                 || characterController == null
                 || !characterController.IsSukuna
             )

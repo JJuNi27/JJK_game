@@ -198,7 +198,7 @@ namespace JJKGame.Enemy
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.F2))
+            if (PrototypeDeveloperInput.OpponentModeTogglePressed)
             {
                 requestedMode = IsTeamBattle
                     ? PrototypeEncounterMode.TrainingMultiCurse
@@ -355,7 +355,10 @@ namespace JJKGame.Enemy
             DrawRect(rect, new Color(0.006f, 0.010f, 0.018f, 0.86f));
             DrawRect(new Rect(rect.x, rect.yMax - 2f, rect.width, 2f), new Color(accent.r, accent.g, accent.b, 0.62f));
             chipStyle.normal.textColor = new Color(0.82f, 0.86f, 0.94f);
-            GUI.Label(rect, $"F2   {snapshot.ModeLabel}", chipStyle);
+            string developerKey = PrototypeDeveloperInput.BuildAllowsDeveloperHarness
+                ? "F2   "
+                : string.Empty;
+            GUI.Label(rect, $"{developerKey}{snapshot.ModeLabel}", chipStyle);
         }
 
         private void DrawOpponentTeamPanel(OpponentCombatHudSnapshot snapshot)

@@ -82,17 +82,14 @@ namespace JJKGame.Player
 
         private void Update()
         {
-            Vector2 rawInput = new Vector2(
-                Input.GetAxisRaw("Horizontal"),
-                Input.GetAxisRaw("Vertical")
-            );
+            Vector2 rawInput = ProductionCombatInput.Move;
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 moveDirection = BuildCameraRelativeDirection(rawInput);
 
             actionGate ??= CombatActionGate.GetOrCreate(gameObject);
             if (
                 !IsDodging
-                && Input.GetKeyDown(CombatInputBindings.Dodge)
+                && ProductionCombatInput.DodgePressed
                 && DodgeReady
                 && (actionGate == null || actionGate.CanStartDodge)
             )

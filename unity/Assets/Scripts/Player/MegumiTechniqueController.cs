@@ -72,7 +72,7 @@ namespace JJKGame.Player
             }
 
             wasMegumi = true;
-            if (Input.GetKeyDown(CombatInputBindings.Skill1))
+            if (ProductionCombatInput.Skill1Pressed)
             {
                 TrySummonDivineDog();
             }

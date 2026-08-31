@@ -29,6 +29,9 @@ USER VERIFIED
 
 Pass 4C · Production Match Overlay & Domain Input Readability:
 USER VERIFIED
+
+Pass 5 · Production Input Boundary & Developer Harness Isolation:
+REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -678,4 +681,60 @@ USER VERIFIED
 8. Canvas component 비활성 시 기존 IMGUI fallback 표시
 9. 작은 Game View에서 help/result/domain text 잘림·겹침 확인
 10. 기존 전투/팀/Target Lock/F2 회귀 및 Console red error 없음
+```
+
+---
+
+# Pass 5 — Production Input Boundary & Developer Harness Isolation
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+입력 조사 결과:
+- production gameplay: WASD / LMB / SPACE / TAB / Q / E / R / V / X / 1 / 2
+- production match/UI: F1 / ENTER / ESC
+- developer harness: F2 opponent mode, F3 stress roster, F4 team-size cycle, T legacy R1 tag
+- CharacterSelect의 1 / 2 / 3 / Backspace / C / Enter는 전투 입력과 별개의 front-end UI 입력으로 유지
+- 비활성 team controller에서 사용하던 구형 1 / 2 / 3 직접 캐릭터 reload도 prototype-only로 분류
+
+구조:
+- `CombatInputBindings`: 현재 keyboard label과 KeyCode 정의 유지
+- `ProductionCombatInput`: Move / BasicAttack / Dodge / TargetLock / Skill1·2 / Ultimate / Domain / Cancel / Reserve1·2 및 Gojo domain modifier gesture 제공
+- `ProductionMatchInput`: Control Help / Rematch / Character Select command 제공
+- `PrototypeDeveloperInput`: Editor 또는 Development Build에서만 developer shortcut을 활성화
+- gameplay component는 command 의미를 읽으며 실제 keyboard/mouse polling은 입력 경계에 집중
+
+developer harness 격리:
+- F2 / F3 / F4 / T는 `UNITY_EDITOR || DEVELOPMENT_BUILD`에서 기존과 동일하게 동작
+- 일반 production build에서는 해당 command read가 항상 inactive
+- 기존 component별 `enableDeveloperHarness`는 Editor/Development Build 내부의 추가 opt-out으로 유지
+- production Canvas F1 Help에는 F2 / F3 / F4 / T를 표시하지 않음
+- fallback IMGUI의 developer key 문구도 developer harness가 허용된 build에서만 표시
+
+보존:
+- 기존 Legacy Input Manager axis와 keyboard/mouse key semantics 유지
+- Gojo RMB hold → LMB press → RMB release sequence 및 timing 판정 변경 없음
+- F2/F3/F4의 mode/roster/team-size 동작과 T legacy R1 tag 동작 변경 없음
+- combat rule / HP / CE / cooldown / KO / tag state / victory 판정 변경 없음
+- Input Actions asset, final gamepad mapping, HUD 디자인, asset/font 변경 없음
+
+사용자 테스트 대기:
+
+```text
+1. CharacterSelect → Solo/Duo/Trio Battle
+2. WASD / LMB / SPACE / TAB / Q / E / R / V / X
+3. Gojo V → RMB 유지 → LMB → 초록 구간 RMB 해제
+4. 1 / 2 tag 및 HP/CE 보존
+5. Editor에서 F2 opponent mode 전환
+6. Editor에서 F3 stress roster 전환
+7. Editor에서 F4 Duo → Trio → Solo → Duo cycle
+8. Editor에서 T legacy R1 tag
+9. F1 Help에 F2/F3/F4/T가 없는지 확인
+10. Victory/Defeat → ENTER Rematch / ESC CharacterSelect
+11. Development Build에서 harness 사용 가능 여부 확인
+12. non-Development production build에서 F2/F3/F4/T 비활성 확인
+13. Console red error 없음
 ```

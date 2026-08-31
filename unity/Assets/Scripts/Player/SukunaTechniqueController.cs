@@ -98,15 +98,15 @@ namespace JJKGame.Player
                 return;
             }
 
-            if (Input.GetKeyDown(CombatInputBindings.Skill1))
+            if (ProductionCombatInput.Skill1Pressed)
             {
                 TryUseDismantle();
             }
-            else if (Input.GetKeyDown(CombatInputBindings.Skill2))
+            else if (ProductionCombatInput.Skill2Pressed)
             {
                 TryUseCleave();
             }
-            else if (Input.GetKeyDown(CombatInputBindings.Ultimate))
+            else if (ProductionCombatInput.UltimatePressed)
             {
                 TryUseFuga();
             }

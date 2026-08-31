@@ -75,12 +75,12 @@ namespace JJKGame.Player
 
         private void Update()
         {
-            if (Input.GetKeyDown(CombatInputBindings.Domain))
+            if (ProductionCombatInput.DomainPressed)
             {
                 RequestDomain();
             }
 
-            if (Input.GetKeyDown(CombatInputBindings.CancelCommand))
+            if (ProductionCombatInput.CancelPressed)
             {
                 ResetCommand();
             }
@@ -134,7 +134,7 @@ namespace JJKGame.Player
 
         private void HandleSealInput()
         {
-            if (State == DomainState.DomainReady && Input.GetMouseButtonDown(1))
+            if (State == DomainState.DomainReady && ProductionCombatInput.DomainModifierPressed)
             {
                 rightPressedAt = Time.time;
                 ChangeState(
@@ -146,15 +146,15 @@ namespace JJKGame.Player
 
             if (State == DomainState.WaitLeftClick)
             {
-                if (Input.GetMouseButtonUp(1))
+                if (ProductionCombatInput.DomainModifierReleased)
                 {
                     Fail("실패: 왼쪽 클릭 전에 오른쪽 버튼을 놓았습니다");
                     return;
                 }
 
-                if (Input.GetMouseButtonDown(0))
+                if (ProductionCombatInput.BasicAttackPressed)
                 {
-                    if (!Input.GetMouseButton(1))
+                    if (!ProductionCombatInput.DomainModifierHeld)
                     {
                         Fail("실패: 오른쪽 버튼을 유지하지 않았습니다");
                         return;
@@ -176,7 +176,7 @@ namespace JJKGame.Player
                 return;
             }
 
-            if (State == DomainState.ReleaseTiming && Input.GetMouseButtonUp(1))
+            if (State == DomainState.ReleaseTiming && ProductionCombatInput.DomainModifierReleased)
             {
                 float releaseTime = Time.time - leftClickedAt;
                 float error = Mathf.Abs(releaseTime - targetReleaseTime);

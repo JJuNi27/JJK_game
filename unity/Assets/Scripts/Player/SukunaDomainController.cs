@@ -122,7 +122,7 @@ namespace JJKGame.Player
 
             if (State == DomainState.Normal)
             {
-                if (Input.GetKeyDown(CombatInputBindings.Domain))
+                if (ProductionCombatInput.DomainPressed)
                 {
                     TryBeginDomain();
                 }
@@ -140,7 +140,7 @@ namespace JJKGame.Player
 
             if (State == DomainState.Active)
             {
-                if (Input.GetKeyDown(CombatInputBindings.Ultimate))
+                if (ProductionCombatInput.UltimatePressed)
                 {
                     sukunaTechnique ??= GetComponent<SukunaTechniqueController>();
                     sukunaTechnique?.TryUseFugaInsideDomain(domainCenter, domainRadius);

@@ -133,7 +133,7 @@ namespace JJKGame.Player
             DetectTechniqueUses();
             UpdatePurpleVisual();
 
-            if (!Input.GetKeyDown(CombatInputBindings.Ultimate))
+            if (!ProductionCombatInput.UltimatePressed)
             {
                 return;
             }
