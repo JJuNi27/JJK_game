@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace JJKGame.Core
 {
@@ -56,6 +57,8 @@ namespace JJKGame.Core
 
             instance = this;
             DontDestroyOnLoad(gameObject);
+            SceneManager.sceneUnloaded -= HandleSceneUnloaded;
+            SceneManager.sceneUnloaded += HandleSceneUnloaded;
         }
 
         private void Update()
@@ -75,8 +78,27 @@ namespace JJKGame.Core
                 return;
             }
 
+            SceneManager.sceneUnloaded -= HandleSceneUnloaded;
             RestoreTimeScale();
             instance = null;
+        }
+
+        private void OnDisable()
+        {
+            if (instance == this)
+            {
+                RestoreTimeScale();
+            }
+        }
+
+        private void OnApplicationQuit()
+        {
+            RestoreTimeScale();
+        }
+
+        private void HandleSceneUnloaded(Scene _)
+        {
+            RestoreTimeScale();
         }
 
         private void ApplyRequest(float realTimeDuration, float relativeTimeScale)

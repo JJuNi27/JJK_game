@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using JJKGame.CameraSystem;
 using JJKGame.Core;
 using UnityEngine;
 
@@ -32,30 +31,9 @@ namespace JJKGame.Player
         [SerializeField, Min(0f)] private float secondHitStun = 0.17f;
         [SerializeField, Min(0f)] private float thirdHitStun = 0.38f;
 
-        [Header("Beauty Corner · Basic Hit Camera Feedback")]
-        [SerializeField, Min(0f)] private float firstHitShake = 0.075f;
-        [SerializeField, Min(0f)] private float secondHitShake = 0.11f;
-        [SerializeField, Min(0f)] private float thirdHitShake = 0.22f;
-        [SerializeField, Min(0.01f)] private float firstHitShakeDuration = 0.07f;
-        [SerializeField, Min(0.01f)] private float secondHitShakeDuration = 0.085f;
-        [SerializeField, Min(0.01f)] private float thirdHitShakeDuration = 0.13f;
-
-        [Header("Beauty Corner · Basic Hit Stop / Flash")]
-        [SerializeField, Min(0f)] private float firstHitStopDuration = 0.022f;
-        [SerializeField, Min(0f)] private float secondHitStopDuration = 0.030f;
-        [SerializeField, Min(0f)] private float thirdHitStopDuration = 0.055f;
-        [SerializeField, Range(0.01f, 1f)] private float hitStopRelativeTimeScale = 0.08f;
-        [SerializeField, Range(0f, 0.25f)] private float firstHitFlashAlpha = 0.025f;
-        [SerializeField, Range(0f, 0.25f)] private float secondHitFlashAlpha = 0.040f;
-        [SerializeField, Range(0f, 0.25f)] private float thirdHitFlashAlpha = 0.075f;
-        [SerializeField, Min(0.01f)] private float firstHitFlashDuration = 0.055f;
-        [SerializeField, Min(0.01f)] private float secondHitFlashDuration = 0.070f;
-        [SerializeField, Min(0.01f)] private float thirdHitFlashDuration = 0.095f;
-
         private Health ownHealth;
         private TargetLockController targetLock;
         private CombatActionGate actionGate;
-        private SimpleCameraFollow combatCamera;
         private float nextAttackAt;
         private float chainExpiresAt;
         private float chainDisplayUntil;
@@ -101,7 +79,6 @@ namespace JJKGame.Player
             ownHealth = GetComponent<Health>();
             targetLock = GetComponent<TargetLockController>();
             actionGate = CombatActionGate.GetOrCreate(gameObject);
-            combatCamera = FindFirstObjectByType<SimpleCameraFollow>();
 
             if (attackOrigin == null)
             {
@@ -180,7 +157,9 @@ namespace JJKGame.Player
                         lastPerformedStep
                     )
                 );
-                PlayBasicHitFeedback(chainIndex);
+                BasicHitPresentationRequests.Raise(
+                    new BasicHitPresentationRequest(ownHealth, lastPerformedStep)
+                );
             }
             else
             {
@@ -237,52 +216,6 @@ namespace JJKGame.Player
             }
 
             return hitAnyTarget;
-        }
-
-        private void PlayBasicHitFeedback(int chainIndex)
-        {
-            combatCamera ??= FindFirstObjectByType<SimpleCameraFollow>();
-            if (combatCamera != null)
-            {
-                float shakeAmplitude = GetChainValue(
-                    chainIndex,
-                    firstHitShake,
-                    secondHitShake,
-                    thirdHitShake
-                );
-                float shakeDuration = GetChainValue(
-                    chainIndex,
-                    firstHitShakeDuration,
-                    secondHitShakeDuration,
-                    thirdHitShakeDuration
-                );
-                combatCamera.AddShake(shakeAmplitude, shakeDuration);
-
-                float flashAlpha = GetChainValue(
-                    chainIndex,
-                    firstHitFlashAlpha,
-                    secondHitFlashAlpha,
-                    thirdHitFlashAlpha
-                );
-                float flashDuration = GetChainValue(
-                    chainIndex,
-                    firstHitFlashDuration,
-                    secondHitFlashDuration,
-                    thirdHitFlashDuration
-                );
-                Color flashColor = chainIndex >= 2
-                    ? new Color(1f, 0.82f, 0.52f)
-                    : Color.white;
-                combatCamera.Flash(flashColor, flashAlpha, flashDuration);
-            }
-
-            float hitStopDuration = GetChainValue(
-                chainIndex,
-                firstHitStopDuration,
-                secondHitStopDuration,
-                thirdHitStopDuration
-            );
-            PrototypeHitStopController.Request(hitStopDuration, hitStopRelativeTimeScale);
         }
 
         private void RegisterSuccessfulHit()
