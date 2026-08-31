@@ -31,7 +31,7 @@ Pass 4C · Production Match Overlay & Domain Input Readability:
 USER VERIFIED
 
 Pass 5 · Production Input Boundary & Developer Harness Isolation:
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -690,8 +690,16 @@ USER VERIFIED
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
+
+사용자 확인:
+- CombatMVP에서 production 입력 회귀 정상
+- F2/F3/F4/T developer harness 정상
+- F1 / ENTER / ESC 정상
+- Gojo domain 입력 sequence 정상
+- opponent HUD scene-reload 재바인딩 수정 후 정상
+- Console red error 없음
 
 입력 조사 결과:
 - production gameplay: WASD / LMB / SPACE / TAB / Q / E / R / V / X / 1 / 2
