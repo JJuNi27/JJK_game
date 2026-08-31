@@ -38,7 +38,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 4C Production Match Overlay & Domain Input Readability: USER VERIFIED
 - Pass 5 Production Input Boundary & Developer Harness Isolation: USER VERIFIED
 - Pass 6 Arena Lighting & Post-Process Readability: USER VERIFIED
-- Pass 7 Combat Camera & Impact Feedback Polish: REMOTE IMPLEMENTED / USER TEST PENDING
+- Pass 7 Combat Camera & Impact Feedback Polish: USER VERIFIED
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
