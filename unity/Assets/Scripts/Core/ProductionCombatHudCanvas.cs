@@ -206,6 +206,10 @@ namespace JJKGame.Core
             {
                 RefreshOpponent(opponent);
             }
+            else
+            {
+                RefreshOpponentUnavailable();
+            }
 
             RefreshTargetLock(opponent);
             RefreshAttackWarning(opponent);
@@ -392,6 +396,17 @@ namespace JJKGame.Core
                 new Vector2(0.955f, 0.50f),
                 out opponentHpFill,
                 out opponentHpText
+            );
+
+            // Avoid the default white Image fill while the persistent opponent runtime
+            // is rebinding after a scene reload.
+            SetBar(
+                opponentHpFill,
+                opponentHpText,
+                0f,
+                1f,
+                new Color(0.96f, 0.22f, 0.14f),
+                "HP  —"
             );
         }
 
@@ -914,6 +929,21 @@ namespace JJKGame.Core
             encounterText.text = snapshot.IsTeamBattle
                 ? $"TEAM BATTLE · {snapshot.LivingMemberCount}/{snapshot.TeamSize}"
                 : snapshot.ModeLabel;
+        }
+
+        private void RefreshOpponentUnavailable()
+        {
+            opponentName.text = "OPPONENT";
+            opponentMeta.text = "SYNCING";
+            encounterText.text = "OPPONENT SYNC";
+            SetBar(
+                opponentHpFill,
+                opponentHpText,
+                0f,
+                1f,
+                new Color(0.96f, 0.22f, 0.14f),
+                "HP  —"
+            );
         }
 
         private void RefreshTeam(PlayerCombatHudSnapshot snapshot)
