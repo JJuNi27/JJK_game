@@ -40,7 +40,7 @@ Pass 7 · Combat Camera & Impact Feedback Polish:
 USER VERIFIED
 
 Pass 8 · JJK-Referenced Production Particle VFX Runtime:
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VISUAL REVIEW FAILED / REWORK REQUIRED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -677,7 +677,15 @@ USER VERIFIED
 - damage / HP / CE / cooldown / KO / tag / target / AI gameplay 변경 없음
 - 외부 image / font / TMP asset 추가 없음
 
-사용자 테스트 대기:
+사용자 시각 검수 결과:
+- 구조적 ParticleSystem 전환은 동작했지만 기술별 원작 시각 정체성이 충분히 재현되지 않음
+- Blue/Red의 핵심 orb가 사라져 원작 인상이 약해짐
+- Unlimited Void는 기존 line/ring 인상에서 크게 벗어나지 못함
+- Hollow Purple은 기존 대비 개선 폭이 작음
+- Sukuna slash 계열은 상대적으로 개선됐으나 전체 품질은 production 기준 미달
+- 현재 Pass 8은 USER VERIFIED가 아니며 reference-first 재작업 필요
+
+재작업 전 기준:
 
 ```text
 1. Gojo V → RMB 유지 → LMB → 초록 구간 RMB 해제
