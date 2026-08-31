@@ -38,6 +38,9 @@ USER VERIFIED
 
 Pass 7 · Combat Camera & Impact Feedback Polish:
 USER VERIFIED
+
+Pass 8 · JJK-Referenced Production Particle VFX Runtime:
+REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -890,4 +893,82 @@ lifecycle:
 12. 다시 CombatMVP 진입 후 feedback 정상 복원
 13. 기존 Target Lock / Dodge / Tag / Domain / Victory / Defeat 회귀 확인
 14. Console red error 없음
+```
+
+---
+
+# Pass 8 — JJK-Referenced Production Particle VFX Runtime
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+이 단계는 final anime-quality VFX가 아니다. 외부 texture / flipbook / mesh / VFX Graph /
+custom shader 없이 기존 line/ring prototype을 replaceable ParticleSystem runtime으로 전환하고,
+공식 애니와 공식 게임에서 확인되는 기술별 motion / color / timing hierarchy를 우리 arena에 맞게
+재해석한 JJK visual identity proof다. 타 작품의 asset이나 디자인을 복제하지 않는다.
+
+contract / ownership:
+- Gate 4 `TechniquePresentationRequest → presentation consumer → PresentationVfxSpawnRequest → PresentationVfxRuntime` 경계 유지
+- `PresentationVfxStyleId`는 renderer-facing metadata만 가지며 damage / cooldown / hit timing 규칙 없음
+- `Generic` default로 기존 `AtWorld` / `Follow` 호출 호환 유지
+- `ProductionParticleVfxRuntime`과 모든 effect는 CombatMVP scene-owned
+- `PrototypePresentationVfxRuntime` 자동 bootstrap / persistent registration 제거, manual fallback/reference로만 유지
+- `ProductionSignatureVfxDirector`가 semantic technique phase를 style spawn request로 변환
+- Pass 7 `ProductionCombatFeedbackDirector`의 shake / FOV / focus / flash / hit stop 소유권 변경 없음
+
+production Particle runtime:
+- style당 Core / Streak / Mote 또는 Burst / Residual 등 2~3개의 작은 ParticleSystem 조합
+- collision off, shadow casting/receive off, bounded maxParticles, 짧은 lifetime
+- particle Light module과 particle별 Point Light 미사용
+- URP `Particles/Unlit` 우선, Standard Particle/Sprite safe fallback
+- runtime material은 effect instance `OnDestroy`에서 명시적으로 파기
+- Natural lifetime / FadeOut / Immediate semantics 유지
+- follow target 파기 시 마지막 world position에서 자연 종료하며 target access exception 방지
+
+visual language:
+- Gojo Blue: deep-blue dense core + cyan inward streak/mote, outward explosion보다 compression 우선
+- Gojo Red: crimson compact core + 빠른 outward repulsion streak + warm red edge
+- Hollow Purple: blue/red merge mote + purple ignition + violet forward fragment/residual, 기존 orb 이동과 병행
+- Dismantle/Cleave: thin short stretched cut와 제한된 white/red highlight, beam/fire 형태 금지
+- Fuga: inward ember charge → directional projectile → red/orange radial burst + dark residual ember
+- Unlimited Void: 느린 ordered anticipation mote와 서로 다른 크기/속도의 blue/cyan/pale-violet depth points
+- Malevolent Shrine: deep-crimson anticipation rise와 arena를 가리지 않는 다방향 thin field slash
+- Divine Dog: low dark shadow rise + teal accent, impact는 3방향 claw/bite streak
+- Nue: 짧은 blue-white diagonal electric streak/flicker style 준비, gameplay 추가 없음
+- Basic hit: 1타 6 spark / 2타 9 spark / finisher 14 spark + warm secondary burst
+
+Hollow Purple timing:
+- canonical orb의 `MergeDuration 0.24s`, `LaunchDuration 0.78s`, `TravelDistance 18m` 변경 없음
+- legacy gameplay-owned root 활성 감지를 그대로 사용
+- Release particle lifetime을 merge+launch 합계 1.02s에 맞추고 orb transform movement는 수정하지 않음
+- Culmination은 기존 +0.09s semantic request 위치에 짧은 purple formation ignition만 추가
+
+lifecycle / cleanup:
+- CharacterSelect에는 production runtime registration / active particle / runtime material이 남지 않음
+- F2/F3/F4/ENTER reload마다 scene root와 child effect가 함께 파기되고 runtime 단일 재등록
+- prototype과 production runtime 동시 자동 registration 없음
+- Blue/Red/Fuga follow effect는 gameplay object `OnDestroy`에서 Immediate cleanup
+- canonical Purple sequence runner도 CombatMVP scene-owned로 변경
+
+사용자 테스트 대기:
+
+```text
+1. CharacterSelect → CombatMVP에서 ProductionParticleVfxRuntime 1개 확인
+2. Gojo Blue가 바깥에서 중심으로 압축되고 Red는 바깥으로 밀려나는지 비교
+3. Hollow Purple blue/red merge → ignition → 18m travel 동안 particle가 orb timing과 맞는지 확인
+4. Sukuna Dismantle/Cleave가 얇은 절단으로 읽히며 laser/fire처럼 보이지 않는지 확인
+5. Fuga anticipation → projectile → impact, 일반/Domain amplified 밀도와 dark residual 차이 확인
+6. Unlimited Void가 폭발보다 depth/space 변화로 보이고 기존 Domain root와 경쟁하지 않는지 확인
+7. Malevolent Shrine이 화염이 아니라 다방향 절단으로 보이며 바닥/전투원을 가리지 않는지 확인
+8. Divine Dog shadow summon과 bite/claw impact 확인, Nue는 기존 request 경로만 회귀 확인
+9. 기본 공격 1타 < 2타 < 3타 contact spark 계층과 기존 hit timing 확인
+10. Bloom에서 Blue/Red/Purple/Teal 색이 white blob으로 소실되지 않는지 확인
+11. F2/F3/F4/ENTER 반복 후 runtime/effect/material 중복 또는 MissingReference 없음
+12. effect 재생 중 ESC CharacterSelect 후 particle/runtime 잔류 없음
+13. 다시 CombatMVP 진입 후 Natural/FadeOut/Immediate 및 follow target cleanup 확인
+14. damage / CE / cooldown / range / hitbox / knockback / hit stun / camera / HUD 회귀 확인
+15. Console red error 없음
 ```

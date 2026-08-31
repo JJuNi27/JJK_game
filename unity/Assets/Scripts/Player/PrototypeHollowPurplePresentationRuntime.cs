@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace JJKGame.Player
 {
@@ -8,6 +9,7 @@ namespace JJKGame.Player
     public sealed class PrototypeHollowPurplePresentationRuntime : MonoBehaviour
     {
         private const string LegacyRootName = "HollowPurplePrototypeVisual";
+        private const string TargetSceneName = "CombatMVP";
         private const float ScanInterval = 0.08f;
 
         private readonly Dictionary<int, TrackedSource> trackedSources =
@@ -20,13 +22,27 @@ namespace JJKGame.Player
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
         {
-            if (FindFirstObjectByType<PrototypeHollowPurplePresentationRuntime>() != null)
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+            InstallForCurrentScene();
+        }
+
+        private static void HandleSceneLoaded(Scene _, LoadSceneMode __)
+        {
+            InstallForCurrentScene();
+        }
+
+        private static void InstallForCurrentScene()
+        {
+            if (
+                SceneManager.GetActiveScene().name != TargetSceneName
+                || FindFirstObjectByType<PrototypeHollowPurplePresentationRuntime>() != null
+            )
             {
                 return;
             }
 
             GameObject runner = new GameObject("PrototypeHollowPurplePresentationRuntime");
-            DontDestroyOnLoad(runner);
             runner.AddComponent<PrototypeHollowPurplePresentationRuntime>();
         }
 

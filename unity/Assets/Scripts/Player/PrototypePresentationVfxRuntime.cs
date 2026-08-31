@@ -4,57 +4,22 @@ using UnityEngine;
 namespace JJKGame.Player
 {
     /// <summary>
-    /// Gate 4D adapter from the renderer-agnostic PresentationVfxRuntime contract
-    /// to the current procedural PrototypeSignatureSpatialVfx implementation.
-    /// A prefab/Particle/VFX Graph runtime can replace this adapter later without
-    /// changing technique request producers or presentation consumers.
+    /// Manual fallback/reference adapter for the old procedural ring implementation.
+    /// It is no longer runtime-bootstrapped; CombatMVP registers the scene-owned
+    /// ProductionParticleVfxRuntime instead.
     /// </summary>
     [DefaultExecutionOrder(1450)]
     [DisallowMultipleComponent]
     public sealed class PrototypePresentationVfxRuntime : MonoBehaviour, IPresentationVfxRuntime
     {
-        private static PrototypePresentationVfxRuntime instance;
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void BootstrapAfterSceneLoad()
-        {
-            if (instance != null)
-            {
-                return;
-            }
-
-            PrototypePresentationVfxRuntime existing = FindFirstObjectByType<PrototypePresentationVfxRuntime>();
-            if (existing != null)
-            {
-                instance = existing;
-                PresentationVfxRuntime.Register(existing);
-                return;
-            }
-
-            GameObject host = new GameObject("PrototypePresentationVfxRuntime");
-            DontDestroyOnLoad(host);
-            instance = host.AddComponent<PrototypePresentationVfxRuntime>();
-        }
-
         private void Awake()
         {
-            if (instance != null && instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            instance = this;
-            DontDestroyOnLoad(gameObject);
             PresentationVfxRuntime.Register(this);
         }
 
         private void OnEnable()
         {
-            if (instance == this)
-            {
-                PresentationVfxRuntime.Register(this);
-            }
+            PresentationVfxRuntime.Register(this);
         }
 
         private void OnDisable()
@@ -65,10 +30,6 @@ namespace JJKGame.Player
         private void OnDestroy()
         {
             PresentationVfxRuntime.Unregister(this);
-            if (instance == this)
-            {
-                instance = null;
-            }
         }
 
         public PresentationVfxHandle Spawn(PresentationVfxSpawnRequest request)

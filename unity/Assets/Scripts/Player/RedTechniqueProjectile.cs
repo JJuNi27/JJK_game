@@ -9,8 +9,6 @@ namespace JJKGame.Player
     {
         private readonly HashSet<Health> damagedTargets = new HashSet<Health>();
         private readonly HashSet<Health> frameTargets = new HashSet<Health>();
-        private readonly List<LineRenderer> rings = new List<LineRenderer>();
-        private readonly List<Color> ringColors = new List<Color>();
 
         private Health owner;
         private Vector3 direction;
@@ -21,11 +19,10 @@ namespace JJKGame.Player
         private float pushSpeed;
         private float hitStun;
         private float travelled;
-        private float startedAt;
         private Action<Health> onTargetHit;
         private Action onFirstImpact;
         private bool impactPlayed;
-        private Light projectileLight;
+        private PresentationVfxHandle presentationHandle;
 
         public void Configure(
             Health newOwner,
@@ -54,8 +51,6 @@ namespace JJKGame.Player
             hitStun = Mathf.Max(0f, newHitStun);
             onTargetHit = newOnTargetHit;
             onFirstImpact = newOnFirstImpact;
-            startedAt = Time.time;
-
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
             BuildVisual();
         }
@@ -69,12 +64,15 @@ namespace JJKGame.Player
             ApplyHitsBetween(previous, next);
             transform.position = next;
             travelled += step;
-            UpdateVisual();
-
             if (travelled >= maxRange)
             {
                 Destroy(gameObject);
             }
+        }
+
+        private void OnDestroy()
+        {
+            presentationHandle.Stop(PresentationVfxStopMode.Immediate);
         }
 
         private void ApplyHitsBetween(Vector3 previous, Vector3 next)
@@ -116,6 +114,20 @@ namespace JJKGame.Player
                 {
                     impactPlayed = true;
                     onFirstImpact?.Invoke();
+                    PresentationVfxRuntime.Spawn(
+                        PresentationVfxSpawnRequest.AtWorld(
+                            context.HitPoint,
+                            new Color(0.88f, 0.015f, 0.025f, 0.92f),
+                            new Color(1f, 0.30f, 0.04f, 0.74f),
+                            radius * 0.20f,
+                            radius * 2.4f,
+                            0.26f,
+                            0f,
+                            PresentationVfxTimePolicy.Unscaled,
+                            PresentationVfxStyleId.GojoRed,
+                            direction
+                        )
+                    );
                 }
             }
         }
@@ -135,120 +147,21 @@ namespace JJKGame.Player
 
         private void BuildVisual()
         {
-            CreateRing(
-                "RedOuterProjectile",
-                radius,
-                0.15f,
-                new Color(1f, 0.10f, 0.14f, 0.98f)
+            presentationHandle = PresentationVfxRuntime.Spawn(
+                PresentationVfxSpawnRequest.Follow(
+                    transform,
+                    Vector3.zero,
+                    new Color(0.84f, 0.015f, 0.025f, 0.94f),
+                    new Color(1f, 0.26f, 0.04f, 0.76f),
+                    radius * 0.28f,
+                    radius * 1.8f,
+                    maxRange / speed + 0.15f,
+                    0f,
+                    PresentationVfxTimePolicy.Scaled,
+                    PresentationVfxStyleId.GojoRed,
+                    direction
+                )
             );
-            CreateRing(
-                "RedInnerProjectile",
-                radius * 0.43f,
-                0.10f,
-                new Color(1f, 0.60f, 0.14f, 0.96f)
-            );
-
-            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            core.name = "RedProjectileCore";
-            core.transform.SetParent(transform, false);
-            core.transform.localScale = Vector3.one * radius * 0.34f;
-            Collider coreCollider = core.GetComponent<Collider>();
-            if (coreCollider != null)
-            {
-                Destroy(coreCollider);
-            }
-
-            Renderer coreRenderer = core.GetComponent<Renderer>();
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Standard");
-            }
-
-            if (coreRenderer != null && shader != null)
-            {
-                coreRenderer.material = new Material(shader)
-                {
-                    color = new Color(1f, 0.22f, 0.08f, 1f),
-                };
-            }
-
-            GameObject lightObject = new GameObject("RedProjectileLight");
-            lightObject.transform.SetParent(transform, false);
-            projectileLight = lightObject.AddComponent<Light>();
-            projectileLight.type = LightType.Point;
-            projectileLight.color = new Color(1f, 0.08f, 0.04f);
-            projectileLight.range = radius * 4f;
-            projectileLight.intensity = 5f;
-            projectileLight.shadows = LightShadows.None;
-        }
-
-        private void CreateRing(string objectName, float ringRadius, float width, Color color)
-        {
-            GameObject ringObject = new GameObject(objectName);
-            ringObject.transform.SetParent(transform, false);
-
-            LineRenderer line = ringObject.AddComponent<LineRenderer>();
-            line.loop = true;
-            line.useWorldSpace = false;
-            line.positionCount = 72;
-            line.startWidth = width;
-            line.endWidth = width;
-            line.startColor = color;
-            line.endColor = color;
-            line.numCornerVertices = 4;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Sprites/Default");
-            }
-
-            if (shader != null)
-            {
-                line.material = new Material(shader) { color = color };
-            }
-
-            for (int index = 0; index < line.positionCount; index++)
-            {
-                float angle = (float)index / line.positionCount * Mathf.PI * 2f;
-                line.SetPosition(
-                    index,
-                    new Vector3(
-                        Mathf.Cos(angle) * ringRadius,
-                        Mathf.Sin(angle) * ringRadius,
-                        0f
-                    )
-                );
-            }
-
-            rings.Add(line);
-            ringColors.Add(color);
-        }
-
-        private void UpdateVisual()
-        {
-            float elapsed = Time.time - startedAt;
-            float pulse = 1f + Mathf.Sin(elapsed * 32f) * 0.08f;
-            transform.localScale = Vector3.one * pulse;
-            transform.Rotate(Vector3.forward, -260f * Time.deltaTime, Space.Self);
-
-            float remaining = Mathf.Clamp01(1f - travelled / maxRange);
-            float fade = Mathf.Clamp01(remaining * 4f);
-            for (int index = 0; index < rings.Count; index++)
-            {
-                Color color = ringColors[index];
-                color.a *= fade;
-                rings[index].startColor = color;
-                rings[index].endColor = color;
-            }
-
-            if (projectileLight != null)
-            {
-                projectileLight.intensity = 3.5f + Mathf.Sin(elapsed * 28f) * 1.2f;
-            }
         }
     }
 }
