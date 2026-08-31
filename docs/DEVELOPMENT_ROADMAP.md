@@ -37,6 +37,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 4B Combat HUD Consolidation & State Readability: USER VERIFIED
 - Pass 4C Production Match Overlay & Domain Input Readability: USER VERIFIED
 - Pass 5 Production Input Boundary & Developer Harness Isolation: USER VERIFIED
+- Pass 6 Arena Lighting & Post-Process Readability: REMOTE IMPLEMENTED / USER TEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -262,6 +263,13 @@ Pass 5에서는 gameplay component의 직접 keyboard/mouse polling을 `Producti
 Editor / Development Build의 regression harness 동작은 유지하며 일반 production build에서는
 developer command가 inactive가 된다. Input Actions asset이나 최종 gamepad mapping은 확정하지 않았다.
 사용자 Unity Editor 회귀까지 정상 확인했다.
+
+Pass 6에서는 `PrototypeBeautyArenaPresentation`을 procedural geometry 책임으로 좁히고,
+scene-owned `ProductionArenaMoodController`가 RenderSettings / URP runtime Global Volume /
+main key + cool fill + warm rim lighting을 소유하도록 분리했다. ACES, 제한된 Bloom,
+Color Adjustments, White Balance, 약한 Vignette와 linear fog로 야간 전투 가독성 기준을 만든다.
+이는 final environment art 완료가 아닌 production-facing lighting/post-process readability proof이며,
+현재 상태는 REMOTE IMPLEMENTED / USER TEST PENDING이다.
 
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 
