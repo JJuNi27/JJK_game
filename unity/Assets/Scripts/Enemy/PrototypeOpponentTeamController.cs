@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using JJKGame.Core;
 using JJKGame.Player;
@@ -25,6 +26,7 @@ namespace JJKGame.Enemy
         private int activeIndex;
         private bool initialized;
         private bool switchingMode;
+        private Coroutine sceneInitializationRoutine;
         private float entryNoticeUntil;
         private OpponentCombatHudDataSource hudDataSource;
         private GUIStyle titleStyle;
@@ -88,17 +90,14 @@ namespace JJKGame.Enemy
                 FindFirstObjectByType<PrototypeOpponentTeamController>();
             if (existing != null)
             {
-                if (!existing.initialized)
-                {
-                    existing.InitializeFromScene();
-                }
+                existing.ScheduleSceneInitialization();
                 return;
             }
 
             GameObject host = new GameObject("PrototypeOpponentTeamRuntime");
             PrototypeOpponentTeamController controller =
                 host.AddComponent<PrototypeOpponentTeamController>();
-            controller.InitializeFromScene();
+            controller.ScheduleSceneInitialization();
         }
 
         private void Awake()
@@ -163,6 +162,11 @@ namespace JJKGame.Enemy
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded;
+            if (sceneInitializationRoutine != null)
+            {
+                StopCoroutine(sceneInitializationRoutine);
+                sceneInitializationRoutine = null;
+            }
             DetachMemberEvents();
         }
 
@@ -182,9 +186,45 @@ namespace JJKGame.Enemy
         {
             if (FindFirstObjectByType<MatchController>() == null)
             {
+                if (sceneInitializationRoutine != null)
+                {
+                    StopCoroutine(sceneInitializationRoutine);
+                    sceneInitializationRoutine = null;
+                }
+
                 DetachMemberEvents();
                 initialized = false;
                 switchingMode = false;
+                return;
+            }
+
+            ScheduleSceneInitialization();
+        }
+
+        private void ScheduleSceneInitialization()
+        {
+            if (!isActiveAndEnabled)
+            {
+                return;
+            }
+
+            if (sceneInitializationRoutine != null)
+            {
+                StopCoroutine(sceneInitializationRoutine);
+            }
+
+            sceneInitializationRoutine = StartCoroutine(InitializeAfterSceneReady());
+        }
+
+        private IEnumerator InitializeAfterSceneReady()
+        {
+            // MatchController creates the prototype enemy clone during scene startup.
+            // sceneLoaded callbacks can race that setup on reload, so bind on the next frame.
+            yield return null;
+
+            sceneInitializationRoutine = null;
+            if (FindFirstObjectByType<MatchController>() == null)
+            {
                 return;
             }
 
