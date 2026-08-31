@@ -36,7 +36,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 4A Production-facing Combat HUD Canvas shell: USER VERIFIED
 - Pass 4B Combat HUD Consolidation & State Readability: USER VERIFIED
 - Pass 4C Production Match Overlay & Domain Input Readability: USER VERIFIED
-- Pass 5 Production Input Boundary & Developer Harness Isolation: REMOTE IMPLEMENTED / USER TEST PENDING
+- Pass 5 Production Input Boundary & Developer Harness Isolation: USER VERIFIED
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -261,7 +261,7 @@ Pass 5에서는 gameplay component의 직접 keyboard/mouse polling을 `Producti
 `ProductionMatchInput` command 경계로 모으고, F2/F3/F4/T를 `PrototypeDeveloperInput`으로 격리했다.
 Editor / Development Build의 regression harness 동작은 유지하며 일반 production build에서는
 developer command가 inactive가 된다. Input Actions asset이나 최종 gamepad mapping은 확정하지 않았다.
-현재 상태는 REMOTE IMPLEMENTED / USER TEST PENDING이다.
+사용자 Unity Editor 회귀까지 정상 확인했다.
 
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 
