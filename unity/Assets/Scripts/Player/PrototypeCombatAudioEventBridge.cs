@@ -161,7 +161,7 @@ namespace JJKGame.Player
             }
             else
             {
-                prototypeAudio.PlayRedImpactRuntime();
+                prototypeAudio.PlayRedImpactAudioOnlyRuntime();
             }
         }
 
