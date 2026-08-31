@@ -28,7 +28,7 @@ Pass 4B · Combat HUD Consolidation & State Readability:
 USER VERIFIED
 
 Pass 4C · Production Match Overlay & Domain Input Readability:
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -638,8 +638,16 @@ USER VERIFIED
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
+
+사용자 확인:
+- Gojo domain input/release Canvas 정상
+- F1 production help 정상
+- Victory/Defeat Canvas result overlay 정상
+- ENTER Rematch / ESC CharacterSelect 정상
+- 기존 전투 HUD/Target Lock/Team flow 정상
+- Console red error 없음
 
 구현:
 - Gojo 영역 입력 중에만 Canvas domain panel 표시
