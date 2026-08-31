@@ -1,42 +1,121 @@
 using JJKGame.CameraSystem;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace JJKGame.Core
 {
     /// <summary>
-    /// Gate 4C prototype consumer that translates semantic technique presentation
-    /// requests into the existing camera and hit-stop implementation.
-    /// Gameplay-adjacent producers provide event identity/origin only; this director
-    /// owns camera-specific offsets and tuning.
+    /// CombatMVP-only production-facing consumer for semantic technique and confirmed
+    /// basic-hit presentation requests. Gameplay producers provide identity/origin only;
+    /// this scene-owned director owns camera, flash, and hit-stop tuning.
     /// </summary>
     [DefaultExecutionOrder(1550)]
     [DisallowMultipleComponent]
-    public sealed class PrototypeTechniquePresentationDirector : MonoBehaviour
+    public sealed class ProductionCombatFeedbackDirector : MonoBehaviour
     {
+        private const string TargetSceneName = "CombatMVP";
+
+        private static ProductionCombatFeedbackDirector activeInstance;
         private SimpleCameraFollow combatCamera;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void BootstrapAfterSceneLoad()
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
         {
-            if (FindFirstObjectByType<PrototypeTechniquePresentationDirector>() != null)
+            activeInstance = null;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Bootstrap()
+        {
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+            InstallForCurrentScene();
+        }
+
+        private static void HandleSceneLoaded(Scene _, LoadSceneMode __)
+        {
+            InstallForCurrentScene();
+        }
+
+        private static void InstallForCurrentScene()
+        {
+            if (
+                SceneManager.GetActiveScene().name != TargetSceneName
+                || FindFirstObjectByType<ProductionCombatFeedbackDirector>() != null
+            )
             {
                 return;
             }
 
-            GameObject host = new GameObject("PrototypeTechniquePresentationDirector");
-            DontDestroyOnLoad(host);
-            host.AddComponent<PrototypeTechniquePresentationDirector>();
+            GameObject host = new GameObject("ProductionCombatFeedbackDirector");
+            host.AddComponent<ProductionCombatFeedbackDirector>();
+        }
+
+        private void Awake()
+        {
+            if (
+                SceneManager.GetActiveScene().name != TargetSceneName
+                || (activeInstance != null && activeInstance != this)
+            )
+            {
+                enabled = false;
+                Destroy(gameObject);
+                return;
+            }
+
+            activeInstance = this;
         }
 
         private void OnEnable()
         {
+            if (SceneManager.GetActiveScene().name != TargetSceneName)
+            {
+                return;
+            }
+
             TechniquePresentationRequests.Requested -= HandleRequest;
             TechniquePresentationRequests.Requested += HandleRequest;
+            BasicHitPresentationRequests.Requested -= HandleBasicHit;
+            BasicHitPresentationRequests.Requested += HandleBasicHit;
         }
 
         private void OnDisable()
         {
             TechniquePresentationRequests.Requested -= HandleRequest;
+            BasicHitPresentationRequests.Requested -= HandleBasicHit;
+            combatCamera = null;
+        }
+
+        private void OnDestroy()
+        {
+            if (activeInstance == this)
+            {
+                activeInstance = null;
+            }
+        }
+
+        private void HandleBasicHit(BasicHitPresentationRequest request)
+        {
+            switch (request.ChainStep)
+            {
+                case 1:
+                    PlayFeedback(Color.white, 0.025f, 0.055f, 0.075f, 0.070f, 0.022f, 0.08f);
+                    break;
+                case 2:
+                    PlayFeedback(Color.white, 0.040f, 0.070f, 0.110f, 0.085f, 0.030f, 0.08f);
+                    break;
+                default:
+                    PlayFeedback(
+                        new Color(1f, 0.82f, 0.52f),
+                        0.075f,
+                        0.095f,
+                        0.220f,
+                        0.130f,
+                        0.055f,
+                        0.08f
+                    );
+                    break;
+            }
         }
 
         private void HandleRequest(TechniquePresentationRequest request)
@@ -69,12 +148,12 @@ namespace JJKGame.Core
                     new Color(0.72f, 0.28f, 1f),
                     0.18f,
                     0.18f,
-                    0.48f,
-                    0.22f,
+                    0.42f,
+                    0.20f,
                     0.065f,
                     0.10f
                 );
-                PlayFovKick(7f, 0.26f);
+                PlayFovKick(6.5f, 0.26f);
                 PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.34f, 0.42f);
                 return;
             }
@@ -103,7 +182,7 @@ namespace JJKGame.Core
                     amplified ? new Color(0.84f, 0.035f, 0.015f) : new Color(0.78f, 0.14f, 0.02f),
                     amplified ? 0.13f : 0.10f,
                     0.16f,
-                    amplified ? 0.16f : 0.13f,
+                    amplified ? 0.15f : 0.12f,
                     0.13f,
                     0f,
                     1f
@@ -124,12 +203,12 @@ namespace JJKGame.Core
                     amplified ? new Color(1f, 0.18f, 0.04f) : new Color(1f, 0.42f, 0.08f),
                     amplified ? 0.17f : 0.13f,
                     amplified ? 0.18f : 0.15f,
-                    amplified ? 0.42f : 0.32f,
+                    amplified ? 0.38f : 0.30f,
                     amplified ? 0.20f : 0.16f,
                     amplified ? 0.050f : 0.035f,
                     0.10f
                 );
-                PlayFovKick(amplified ? 6f : 5f, 0.20f);
+                PlayFovKick(amplified ? 5.5f : 4.5f, 0.20f);
                 PlayWorldFocus(
                     request,
                     ResolveCameraFocusPoint(request),
@@ -145,12 +224,12 @@ namespace JJKGame.Core
                     amplified ? new Color(1f, 0.12f, 0.015f) : new Color(1f, 0.48f, 0.06f),
                     amplified ? 0.28f : 0.23f,
                     amplified ? 0.27f : 0.23f,
-                    amplified ? 0.68f : 0.56f,
-                    amplified ? 0.29f : 0.25f,
+                    amplified ? 0.58f : 0.48f,
+                    amplified ? 0.27f : 0.23f,
                     amplified ? 0.075f : 0.060f,
                     0.08f
                 );
-                PlayFovKick(amplified ? 11f : 9f, amplified ? 0.32f : 0.28f);
+                PlayFovKick(amplified ? 9.5f : 8f, amplified ? 0.32f : 0.28f);
                 PlayWorldFocus(
                     request,
                     ResolveCameraFocusPoint(request),
@@ -182,15 +261,15 @@ namespace JJKGame.Core
             {
                 PlayFeedback(
                     new Color(0.42f, 0.62f, 1f),
-                    0.17f,
-                    0.24f,
+                    0.21f,
                     0.26f,
-                    0.20f,
-                    0.045f,
-                    0.12f
+                    0.62f,
+                    0.28f,
+                    0.065f,
+                    0.10f
                 );
-                PlayFovKick(6f, 0.24f);
-                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.30f, 0.38f);
+                PlayFovKick(9f, 0.30f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.40f, 0.44f);
             }
         }
 
@@ -216,15 +295,15 @@ namespace JJKGame.Core
             {
                 PlayFeedback(
                     new Color(0.92f, 0.08f, 0.035f),
-                    0.20f,
-                    0.26f,
-                    0.42f,
-                    0.24f,
-                    0.055f,
-                    0.10f
+                    0.23f,
+                    0.28f,
+                    0.64f,
+                    0.29f,
+                    0.070f,
+                    0.09f
                 );
-                PlayFovKick(8f, 0.28f);
-                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.36f, 0.42f);
+                PlayFovKick(9.5f, 0.31f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.44f, 0.46f);
             }
         }
 
@@ -252,13 +331,13 @@ namespace JJKGame.Core
                     new Color(0.42f, 0.86f, 0.82f),
                     0.055f,
                     0.09f,
-                    0.14f,
-                    0.10f,
+                    0.26f,
+                    0.13f,
                     0.025f,
                     0.12f
                 );
-                PlayFovKick(1.5f, 0.12f);
-                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.14f, 0.16f);
+                PlayFovKick(2f, 0.14f);
+                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.16f, 0.18f);
             }
         }
 

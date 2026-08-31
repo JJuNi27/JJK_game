@@ -38,6 +38,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 4C Production Match Overlay & Domain Input Readability: USER VERIFIED
 - Pass 5 Production Input Boundary & Developer Harness Isolation: USER VERIFIED
 - Pass 6 Arena Lighting & Post-Process Readability: USER VERIFIED
+- Pass 7 Combat Camera & Impact Feedback Polish: REMOTE IMPLEMENTED / USER TEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -270,6 +271,13 @@ main key + cool fill + warm rim lighting을 소유하도록 분리했다. ACES, 
 Color Adjustments, White Balance, 약한 Vignette와 linear fog로 야간 전투 가독성 기준을 만든다.
 이는 final environment art 완료가 아닌 production-facing lighting/post-process readability proof이며,
 사용자 시각 확인에서 초기 버전보다 가독성이 개선됨을 확인했고, final map art/lighting 재튜닝은 실제 맵 자산 단계로 이관한다.
+
+Pass 7에서는 기존 `TechniquePresentationRequest`와 기본 공격 판정 timing을 유지하면서,
+CombatMVP scene-owned `ProductionCombatFeedbackDirector`가 camera / flash / hit-stop tuning을 소유한다.
+`SimpleCameraFollow`는 연속 noise 기반 damped shake, 중첩 가능한 bounded FOV impulse,
+거리 제한과 smooth recovery를 갖는 world focus를 제공한다. Flash는 production HUD보다 낮은
+Canvas sorting order에서 표시되며, scene unload 중 hit stop은 캡처한 time scale로 즉시 복원된다.
+Gameplay damage / cooldown / knockback / hit stun / target lock / input은 변경하지 않는다.
 
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 

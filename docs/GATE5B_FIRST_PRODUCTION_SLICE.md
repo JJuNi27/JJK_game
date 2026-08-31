@@ -35,6 +35,9 @@ USER VERIFIED
 
 Pass 6 · Arena Lighting & Post-Process Readability:
 USER VERIFIED
+
+Pass 7 · Combat Camera & Impact Feedback Polish:
+REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -816,4 +819,69 @@ lifecycle / cleanup:
 11. ESC CharacterSelect에서 CombatMVP fog/post-process 잔존 없음
 12. 다시 CombatMVP 진입 시 mood 정상 복원
 13. 기존 gameplay/HUD 회귀 및 Console red error 없음
+```
+
+---
+
+# Pass 7 — Combat Camera & Impact Feedback Polish
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+ownership:
+- `TechniquePresentationRequest`는 technique id / phase / world point / direction만 전달하는 production-facing semantic contract로 유지
+- `BasicHitPresentationRequest`는 적중한 basic chain step만 전달하며 damage나 판정을 소유하지 않음
+- `ProductionCombatFeedbackDirector`가 CombatMVP에서 basic/technique camera, flash, hit-stop tuning을 단독 소유
+- 기존 `PrototypeTechniquePresentationDirector` runtime consumer는 production director로 교체되어 동시 request 소비 경로 제거
+- `FighterAnimationContract`와 animation cue 소비 경로는 변경하지 않음
+
+camera shake:
+- 프레임별 `Random.insideUnitCircle` 대신 unscaled time 기반 연속 Perlin noise 사용
+- 각 shake request에 빠른 attack과 제곱 감쇠 envelope 적용
+- 겹친 request는 에너지를 합산하되 기존 maximum amplitude 0.75 safety cap 유지
+- basic 1타 0.075 < 2타 0.110 < 3타 0.220 < Divine Dog impact 0.260 < signature/domain 계층 유지
+- Hollow Purple / Fuga / Domain은 signature 체감을 유지하면서 과도한 amplitude와 duration을 제한
+
+FOV / world focus:
+- 각 FOV request를 독립 impulse로 유지해 빠른 phase 연속 입력이 이전 kick을 덮어쓰지 않음
+- sine envelope 합산 후 inward -5.5 / outward +10 범위에서 제한하고 각 impulse 종료 시 base FOV로 자연 복귀
+- anticipation pull-in, release outward punch, impact/signature punch 방향 유지
+- world focus point의 NaN/Infinity를 거부하고 player look point 기준 22m로 제한
+- focus request 전환 시 point를 보간하고 unscaled smooth recovery로 player 중심에 복귀
+- 기본 follow offset / target과 `TargetLockController` gameplay는 변경하지 않음
+
+basic hit / flash:
+- 기본 공격의 damage / cooldown / attack range / knockback / hit stun / impact VFX 호출 위치를 변경하지 않음
+- 기존 적중 직후 timing과 shake / flash / hit-stop 수치를 production director로 그대로 이전
+- 3타 finisher의 warm flash와 상대적 강도는 유지하되 camera safety cap 적용
+- IMGUI full-screen flash를 sorting order 200의 scene-owned Canvas overlay로 교체
+- sorting order 250의 `ProductionCombatHudCanvas`가 flash 위에 렌더되어 강한 technique 중 HUD 가독성 유지
+
+lifecycle:
+- feedback director는 CombatMVP scene-owned이며 `DontDestroyOnLoad` 미사용
+- bootstrap과 active-instance guard로 F2/F3/F4/ENTER reload 시 단일 request consumer 유지
+- camera disable/destroy 시 shake/FOV/focus/flash 상태와 base FOV 복원
+- persistent hit-stop controller는 scene unload 즉시 캡처한 time scale을 복원
+- ESC CharacterSelect 및 reload가 hit stop 도중 발생해도 낮은 time scale이 다음 scene에 남지 않음
+
+사용자 테스트 대기:
+
+```text
+1. CharacterSelect → CombatMVP에서 기본 follow offset과 이동 조작감이 기존과 같은지 확인
+2. 기본 공격 1타 < 2타 < 3타 finisher의 shake / flash / hit stop 계층 확인
+3. 3타 finisher 중 공격 판정 / damage / knockback / hit stun timing 회귀 확인
+4. Hollow Purple release/culmination의 shake, FOV, focus와 player 중심 복귀 확인
+5. Fuga anticipation → release → impact의 pull-in / outward kick stacking과 focus 확인
+6. Unlimited Void / Malevolent Shrine activation이 화면을 잃지 않으면서 가장 강하게 느껴지는지 확인
+7. Divine Dog release/impact focus와 basic finisher보다 강한 impact 확인
+8. 강한 flash 중 HP/CE/skill/Target Lock HUD가 위에서 읽히는지 확인
+9. F2/F3/F4 reload 반복 후 feedback director / flash Canvas 중복 없음
+10. hit stop 순간 F2/F3/F4 또는 ENTER Rematch 후 Time.timeScale과 FOV 정상 확인
+11. hit stop 순간 ESC CharacterSelect 후 정상 속도, flash/focus/shake 잔류 없음
+12. 다시 CombatMVP 진입 후 feedback 정상 복원
+13. 기존 Target Lock / Dodge / Tag / Domain / Victory / Defeat 회귀 확인
+14. Console red error 없음
 ```
