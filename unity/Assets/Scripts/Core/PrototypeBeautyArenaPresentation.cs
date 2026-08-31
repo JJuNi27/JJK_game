@@ -20,16 +20,6 @@ namespace JJKGame.Core
         private readonly List<Material> runtimeMaterials = new List<Material>();
 
         private GameObject arenaRoot;
-        private bool renderSettingsCaptured;
-        private bool originalFog;
-        private FogMode originalFogMode;
-        private Color originalFogColor;
-        private float originalFogStart;
-        private float originalFogEnd;
-        private Color originalAmbientSky;
-        private Color originalAmbientEquator;
-        private Color originalAmbientGround;
-        private float originalAmbientIntensity;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
@@ -48,7 +38,6 @@ namespace JJKGame.Core
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             SceneManager.sceneLoaded += HandleSceneLoaded;
-            CaptureRenderSettings();
         }
 
         private void Start()
@@ -59,7 +48,6 @@ namespace JJKGame.Core
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded;
-            RestoreRenderSettings();
             DestroyArenaRoot();
             DestroyRuntimeMaterials();
         }
@@ -76,68 +64,13 @@ namespace JJKGame.Core
 
             if (!scene.IsValid() || scene.name != TargetSceneName)
             {
-                RestoreRenderSettings();
                 return;
             }
-
-            CaptureRenderSettings();
-            ApplyNightMood();
 
             arenaRoot = new GameObject(ArenaRootName);
             BuildFloorLanguage();
             BuildUrbanSilhouette();
             BuildNeonAccents();
-            BuildMoodLights();
-        }
-
-        private void CaptureRenderSettings()
-        {
-            if (renderSettingsCaptured)
-            {
-                return;
-            }
-
-            renderSettingsCaptured = true;
-            originalFog = RenderSettings.fog;
-            originalFogMode = RenderSettings.fogMode;
-            originalFogColor = RenderSettings.fogColor;
-            originalFogStart = RenderSettings.fogStartDistance;
-            originalFogEnd = RenderSettings.fogEndDistance;
-            originalAmbientSky = RenderSettings.ambientSkyColor;
-            originalAmbientEquator = RenderSettings.ambientEquatorColor;
-            originalAmbientGround = RenderSettings.ambientGroundColor;
-            originalAmbientIntensity = RenderSettings.ambientIntensity;
-        }
-
-        private void ApplyNightMood()
-        {
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = new Color(0.028f, 0.045f, 0.085f, 1f);
-            RenderSettings.fogStartDistance = 24f;
-            RenderSettings.fogEndDistance = 72f;
-            RenderSettings.ambientSkyColor = new Color(0.075f, 0.105f, 0.17f, 1f);
-            RenderSettings.ambientEquatorColor = new Color(0.055f, 0.065f, 0.095f, 1f);
-            RenderSettings.ambientGroundColor = new Color(0.025f, 0.028f, 0.04f, 1f);
-            RenderSettings.ambientIntensity = 0.72f;
-        }
-
-        private void RestoreRenderSettings()
-        {
-            if (!renderSettingsCaptured)
-            {
-                return;
-            }
-
-            RenderSettings.fog = originalFog;
-            RenderSettings.fogMode = originalFogMode;
-            RenderSettings.fogColor = originalFogColor;
-            RenderSettings.fogStartDistance = originalFogStart;
-            RenderSettings.fogEndDistance = originalFogEnd;
-            RenderSettings.ambientSkyColor = originalAmbientSky;
-            RenderSettings.ambientEquatorColor = originalAmbientEquator;
-            RenderSettings.ambientGroundColor = originalAmbientGround;
-            RenderSettings.ambientIntensity = originalAmbientIntensity;
         }
 
         private void BuildFloorLanguage()
@@ -235,24 +168,6 @@ namespace JJKGame.Core
             );
         }
 
-        private void BuildMoodLights()
-        {
-            CreatePointLight(
-                "CoolStreetLight",
-                new Vector3(-8f, 5.5f, -2f),
-                new Color(0.22f, 0.52f, 1f),
-                2.1f,
-                15f
-            );
-            CreatePointLight(
-                "WarmStreetLight",
-                new Vector3(8f, 5.2f, 4f),
-                new Color(1f, 0.28f, 0.12f),
-                1.7f,
-                13f
-            );
-        }
-
         private void CreateRing(string objectName, float radius, float width, Material material)
         {
             GameObject ringObject = new GameObject(objectName);
@@ -302,27 +217,8 @@ namespace JJKGame.Core
             if (renderer != null)
             {
                 renderer.sharedMaterial = material;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             }
-        }
-
-        private void CreatePointLight(
-            string objectName,
-            Vector3 position,
-            Color color,
-            float intensity,
-            float range
-        )
-        {
-            GameObject lightObject = new GameObject(objectName);
-            lightObject.transform.SetParent(arenaRoot.transform, false);
-            lightObject.transform.position = position;
-
-            Light light = lightObject.AddComponent<Light>();
-            light.type = LightType.Point;
-            light.color = color;
-            light.intensity = intensity;
-            light.range = range;
-            light.shadows = LightShadows.None;
         }
 
         private Material CreateLitMaterial(Color color)

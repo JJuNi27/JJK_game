@@ -32,6 +32,9 @@ USER VERIFIED
 
 Pass 5 · Production Input Boundary & Developer Harness Isolation:
 USER VERIFIED
+
+Pass 6 · Arena Lighting & Post-Process Readability:
+REMOTE IMPLEMENTED / USER TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -745,4 +748,66 @@ developer harness 격리:
 11. Development Build에서 harness 사용 가능 여부 확인
 12. non-Development production build에서 F2/F3/F4/T 비활성 확인
 13. Console red error 없음
+```
+
+---
+
+# Pass 6 — Arena Lighting & Post-Process Readability
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+이 pass는 final environment art 완료가 아니라, 실제 environment asset을 넣기 전의
+production-facing lighting / post-process readability proof다.
+
+ownership:
+- `PrototypeBeautyArenaPresentation`: floor rings / lanes / skyline / neon procedural geometry와 runtime material cleanup
+- `ProductionArenaMoodController`: CombatMVP RenderSettings, URP Global Volume, Main Camera post-process, main directional/key light, cool fill, warm rim
+- prototype skyline geometry는 directional shadow를 투사하지 않아 fight area shadow cost와 시각 혼잡을 제한
+- gameplay VFX가 소유한 일시적 Light와 timing은 변경하지 않음
+
+URP runtime Global Volume:
+- scene-owned `Volume`과 runtime-only `VolumeProfile`을 사용해 외부 profile asset 의존성 없음
+- ACES Tonemapping
+- restrained Bloom: threshold 0.95 / intensity 0.24 / scatter 0.52 / clamp 6
+- Color Adjustments: post exposure -0.10 / contrast +11 / saturation -2 / mild cool filter
+- White Balance: temperature -4 / tint +1
+- subtle Vignette: intensity 0.13 / smoothness 0.55
+- Depth of Field / Motion Blur / Film Grain / Chromatic Aberration 미사용
+
+lighting / fog:
+- 기존 scene Directional Light를 cool key로 조정하고 단일 soft shadow source로 제한
+- non-shadow cool fill 1개와 warm rim 1개만 생성
+- linear fog 26–80m로 arena 바깥 silhouette를 정리하면서 30m Target Lock 범위의 과도한 감쇠 방지
+- Trilight ambient로 cool night sky / equator / ground 분리
+- Main Camera는 dark solid background와 post-processing을 사용
+- Screen Space Overlay production HUD는 post-process 대상이 아님
+
+lifecycle / cleanup:
+- controller, Global Volume, mood lights는 CombatMVP scene-owned이며 `DontDestroyOnLoad` 미사용
+- F2/F3/F4/ENTER reload마다 기존 scene object가 파기되고 새 scene에서 idempotent bootstrap
+- runtime VolumeProfile 및 각 VolumeComponent를 `OnDestroy`에서 명시적으로 파기
+- controller disable/destroy 시 RenderSettings, camera, directional light 원래 값 복원
+- CharacterSelect에는 CombatMVP Volume / fog / mood light가 유지되지 않음
+- 외부 asset / font / TMP / texture / Volume Profile asset 추가 없음
+
+사용자 테스트 대기:
+
+```text
+1. CharacterSelect → CombatMVP에서 cool urban-night mood 확인
+2. Player / Opponent가 배경과 분리되어 보이는지 확인
+3. Gojo Blue / Red / Hollow Purple / Unlimited Void 색 분리
+4. Sukuna Dismantle / Cleave / Fuga / Malevolent Shrine 색 분리
+5. Megumi Divine Dog silhouette 가독성
+6. normal / Domain Amplification attack telegraph 가독성
+7. Bloom이 네온/VFX를 살리되 화면을 뿌옇게 만들지 않는지 확인
+8. 30m Target Lock과 arena 외곽 fog 가독성 확인
+9. F1 Help / Domain timing / Result overlay 색과 밝기 정상
+10. F2/F3/F4 reload 및 ENTER Rematch 반복 후 Volume/Light 중복 없음
+11. ESC CharacterSelect에서 CombatMVP fog/post-process 잔존 없음
+12. 다시 CombatMVP 진입 시 mood 정상 복원
+13. 기존 gameplay/HUD 회귀 및 Console red error 없음
 ```
