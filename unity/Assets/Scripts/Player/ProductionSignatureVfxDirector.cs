@@ -6,7 +6,7 @@ namespace JJKGame.Player
     [DefaultExecutionOrder(1650)]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(BasicAttack))]
-    public sealed class PrototypeSignatureSpatialVfxController : MonoBehaviour
+    public sealed class ProductionSignatureVfxDirector : MonoBehaviour
     {
         private Health ownHealth;
 
@@ -18,13 +18,13 @@ namespace JJKGame.Player
             {
                 if (
                     attack == null
-                    || attack.GetComponent<PrototypeSignatureSpatialVfxController>() != null
+                    || attack.GetComponent<ProductionSignatureVfxDirector>() != null
                 )
                 {
                     continue;
                 }
 
-                attack.gameObject.AddComponent<PrototypeSignatureSpatialVfxController>();
+                attack.gameObject.AddComponent<ProductionSignatureVfxDirector>();
             }
         }
 
@@ -76,57 +76,58 @@ namespace JJKGame.Player
 
         private void HandleHollowPurple(TechniquePresentationRequest request)
         {
-            if (request.Phase != TechniquePresentationPhase.Release)
+            if (
+                request.Phase != TechniquePresentationPhase.Release
+                && request.Phase != TechniquePresentationPhase.Culmination
+            )
             {
                 return;
             }
 
+            bool release = request.Phase == TechniquePresentationPhase.Release;
+            Vector3 origin = ResolveOrigin(request);
+            Vector3 direction = request.HasDirection && request.Direction.sqrMagnitude > 0.0001f
+                ? request.Direction.normalized
+                : request.Owner != null
+                    ? request.Owner.transform.forward
+                    : Vector3.forward;
+            if (!release && request.Owner != null)
+            {
+                origin = request.Owner.transform.position + Vector3.up * 1.05f + direction * 1.10f;
+            }
+
             SpawnWorldBurst(
-                ResolveOrigin(request),
+                origin,
                 new Color(0.62f, 0.08f, 1f, 0.98f),
                 new Color(0.96f, 0.78f, 1f, 0.92f),
                 0.30f,
-                4.1f,
-                0.42f,
-                230f
+                release ? 4.1f : 2.4f,
+                release ? 1.02f : 0.28f,
+                230f,
+                release
+                    ? PresentationVfxStyleId.HollowPurpleRelease
+                    : PresentationVfxStyleId.HollowPurpleFormation,
+                direction
             );
         }
 
         private void HandleFuga(TechniquePresentationRequest request)
         {
             bool domainAmplified = request.Amplified;
-            if (request.Phase == TechniquePresentationPhase.Release)
+            if (request.Phase == TechniquePresentationPhase.Anticipation)
             {
-                SpawnWorldBurst(
-                    ResolveOrigin(request),
+                SpawnFollowAura(
+                    ownHealth.transform,
+                    new Vector3(0f, 1.0f, 0.55f),
+                    new Color(0.58f, 0.01f, 0.005f, 0.92f),
+                    new Color(1f, 0.18f, 0.015f, 0.82f),
+                    0.18f,
+                    domainAmplified ? 2.8f : 2.2f,
+                    0.56f,
+                    90f,
+                    PresentationVfxStyleId.FugaCharge,
+                    request.Direction,
                     domainAmplified
-                        ? new Color(1f, 0.07f, 0.01f, 0.98f)
-                        : new Color(1f, 0.25f, 0.015f, 0.98f),
-                    domainAmplified
-                        ? new Color(1f, 0.48f, 0.05f, 0.92f)
-                        : new Color(1f, 0.72f, 0.10f, 0.90f),
-                    0.28f,
-                    domainAmplified ? 3.6f : 3.0f,
-                    domainAmplified ? 0.38f : 0.34f,
-                    domainAmplified ? 260f : 220f
-                );
-                return;
-            }
-
-            if (request.Phase == TechniquePresentationPhase.Impact)
-            {
-                SpawnWorldBurst(
-                    ResolveOrigin(request),
-                    domainAmplified
-                        ? new Color(1f, 0.025f, 0.01f, 1f)
-                        : new Color(1f, 0.18f, 0.01f, 0.99f),
-                    domainAmplified
-                        ? new Color(1f, 0.58f, 0.08f, 0.96f)
-                        : new Color(1f, 0.86f, 0.22f, 0.94f),
-                    0.65f,
-                    domainAmplified ? 7.2f : 5.8f,
-                    domainAmplified ? 0.60f : 0.52f,
-                    domainAmplified ? 320f : 275f
                 );
             }
         }
@@ -143,7 +144,9 @@ namespace JJKGame.Player
                     0.45f,
                     2.9f,
                     0.58f,
-                    125f
+                    125f,
+                    PresentationVfxStyleId.UnlimitedVoidAnticipation,
+                    request.Direction
                 );
                 return;
             }
@@ -157,7 +160,9 @@ namespace JJKGame.Player
                     0.8f,
                     8.5f,
                     0.62f,
-                    175f
+                    175f,
+                    PresentationVfxStyleId.UnlimitedVoidActive,
+                    request.Direction
                 );
             }
         }
@@ -174,7 +179,9 @@ namespace JJKGame.Player
                     0.55f,
                     3.4f,
                     0.62f,
-                    185f
+                    185f,
+                    PresentationVfxStyleId.MalevolentShrineAnticipation,
+                    request.Direction
                 );
                 return;
             }
@@ -188,7 +195,9 @@ namespace JJKGame.Player
                     0.9f,
                     9.4f,
                     0.68f,
-                    240f
+                    240f,
+                    PresentationVfxStyleId.MalevolentShrineActive,
+                    request.Direction
                 );
             }
         }
@@ -204,7 +213,9 @@ namespace JJKGame.Player
                     0.20f,
                     2.2f,
                     0.30f,
-                    180f
+                    180f,
+                    PresentationVfxStyleId.DivineDogRelease,
+                    request.Direction
                 );
                 return;
             }
@@ -218,7 +229,9 @@ namespace JJKGame.Player
                     0.14f,
                     1.5f,
                     0.20f,
-                    220f
+                    220f,
+                    PresentationVfxStyleId.DivineDogImpact,
+                    request.Direction
                 );
             }
         }
@@ -234,7 +247,9 @@ namespace JJKGame.Player
                     0.24f,
                     2.8f,
                     0.34f,
-                    250f
+                    250f,
+                    PresentationVfxStyleId.NueRelease,
+                    request.Direction
                 );
                 return;
             }
@@ -248,7 +263,9 @@ namespace JJKGame.Player
                     0.18f,
                     2.6f,
                     0.26f,
-                    340f
+                    340f,
+                    PresentationVfxStyleId.NueImpact,
+                    request.Direction
                 );
             }
         }
@@ -260,7 +277,10 @@ namespace JJKGame.Player
             float startRadius,
             float endRadius,
             float duration,
-            float spinSpeed
+            float spinSpeed,
+            PresentationVfxStyleId styleId,
+            Vector3 direction,
+            bool amplified = false
         )
         {
             PresentationVfxRuntime.Spawn(
@@ -272,7 +292,10 @@ namespace JJKGame.Player
                     endRadius,
                     duration,
                     spinSpeed,
-                    PresentationVfxTimePolicy.Unscaled
+                    PresentationVfxTimePolicy.Unscaled,
+                    styleId,
+                    direction,
+                    amplified
                 )
             );
         }
@@ -285,7 +308,10 @@ namespace JJKGame.Player
             float startRadius,
             float endRadius,
             float duration,
-            float spinSpeed
+            float spinSpeed,
+            PresentationVfxStyleId styleId,
+            Vector3 direction,
+            bool amplified = false
         )
         {
             PresentationVfxRuntime.Spawn(
@@ -298,7 +324,10 @@ namespace JJKGame.Player
                     endRadius,
                     duration,
                     spinSpeed,
-                    PresentationVfxTimePolicy.Unscaled
+                    PresentationVfxTimePolicy.Unscaled,
+                    styleId,
+                    direction,
+                    amplified
                 )
             );
         }

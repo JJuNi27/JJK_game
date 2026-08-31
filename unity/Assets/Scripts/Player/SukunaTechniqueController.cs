@@ -153,7 +153,7 @@ namespace JJKGame.Player
                     damagePerHit,
                     dismantleHitInterval,
                     multiTargetMode ? "해 · 다중 참격" : "해 · 집중 참격",
-                    new Color(0.90f, 0.18f, 0.16f),
+                    PresentationVfxStyleId.SukunaDismantle,
                     0f,
                     0f,
                     dismantleRange
@@ -199,7 +199,7 @@ namespace JJKGame.Player
                     cleaveDamagePerHit,
                     cleaveHitInterval,
                     "팔",
-                    new Color(1f, 0.48f, 0.10f),
+                    PresentationVfxStyleId.SukunaCleave,
                     cleaveFinisherKnockback,
                     cleaveFinisherStun,
                     cleaveRange
@@ -323,7 +323,7 @@ namespace JJKGame.Player
             float damagePerHit,
             float interval,
             string actionName,
-            Color visualColor,
+            PresentationVfxStyleId visualStyle,
             float finalKnockback,
             float finalStun,
             float visualLength
@@ -340,7 +340,7 @@ namespace JJKGame.Player
                     combatAudio?.PlayBasicSwing(finalHit ? 3 : 1);
                 }
 
-                SpawnSlashVisual(transform.forward, visualLength, visualColor, hitIndex);
+                SpawnSlashVisual(transform.forward, visualLength, visualStyle, hitIndex);
 
                 foreach (Health target in targets)
                 {
@@ -657,7 +657,12 @@ namespace JJKGame.Player
             }
         }
 
-        private void SpawnSlashVisual(Vector3 direction, float length, Color color, int hitIndex)
+        private void SpawnSlashVisual(
+            Vector3 direction,
+            float length,
+            PresentationVfxStyleId style,
+            int hitIndex
+        )
         {
             direction.y = 0f;
             if (direction.sqrMagnitude <= 0.001f)
@@ -670,32 +675,25 @@ namespace JJKGame.Player
             float alternatingOffset = (hitIndex % 2 == 0 ? -1f : 1f) * 0.45f;
             Vector3 center = transform.position + Vector3.up * (0.8f + hitIndex * 0.03f);
             Vector3 start = center + side * alternatingOffset;
-            Vector3 end = center + direction * Mathf.Max(2f, length) - side * alternatingOffset;
+            Vector3 slashDirection =
+                center + direction * Mathf.Max(2f, length) - side * alternatingOffset - start;
 
-            GameObject visual = new GameObject("SukunaSlashPrototype");
-            LineRenderer line = visual.AddComponent<LineRenderer>();
-            line.useWorldSpace = true;
-            line.positionCount = 2;
-            line.SetPosition(0, start);
-            line.SetPosition(1, end);
-            line.startWidth = 0.11f;
-            line.endWidth = 0.025f;
-            line.startColor = color;
-            line.endColor = new Color(color.r, color.g, color.b, 0.12f);
-            line.numCapVertices = 4;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Sprites/Default");
-            }
-            if (shader != null)
-            {
-                line.material = new Material(shader) { color = color };
-            }
-            Destroy(visual, 0.16f);
+            PresentationVfxRuntime.Spawn(
+                PresentationVfxSpawnRequest.AtWorld(
+                    start,
+                    style == PresentationVfxStyleId.SukunaCleave
+                        ? new Color(1f, 0.28f, 0.06f, 0.84f)
+                        : new Color(0.88f, 0.06f, 0.055f, 0.78f),
+                    new Color(1f, 0.82f, 0.70f, 0.58f),
+                    0.04f,
+                    Mathf.Max(2f, length),
+                    0.16f,
+                    0f,
+                    PresentationVfxTimePolicy.Unscaled,
+                    style,
+                    slashDirection
+                )
+            );
         }
 
         private string BuildDismantleStatus()

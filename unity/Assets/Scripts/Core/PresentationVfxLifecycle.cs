@@ -15,6 +15,35 @@ namespace JJKGame.Core
     }
 
     /// <summary>
+    /// Renderer-facing visual language only. These identifiers carry no damage,
+    /// cooldown, hit timing, or other gameplay rules.
+    /// </summary>
+    public enum PresentationVfxStyleId
+    {
+        Generic,
+        GojoBlue,
+        GojoRed,
+        HollowPurpleRelease,
+        HollowPurpleFormation,
+        FugaCharge,
+        FugaRelease,
+        FugaImpact,
+        SukunaDismantle,
+        SukunaCleave,
+        UnlimitedVoidAnticipation,
+        UnlimitedVoidActive,
+        MalevolentShrineAnticipation,
+        MalevolentShrineActive,
+        DivineDogRelease,
+        DivineDogImpact,
+        NueRelease,
+        NueImpact,
+        BasicHit1,
+        BasicHit2,
+        BasicHitFinisher,
+    }
+
+    /// <summary>
     /// Renderer-agnostic spawn description for short-lived combat presentation VFX.
     /// The request describes anchor/lifetime/tuning data, but not whether the concrete
     /// implementation is a procedural prototype, prefab, particle system, or VFX Graph.
@@ -31,7 +60,11 @@ namespace JJKGame.Core
             float endRadius,
             float duration,
             float spinSpeed,
-            PresentationVfxTimePolicy timePolicy
+            PresentationVfxTimePolicy timePolicy,
+            PresentationVfxStyleId styleId,
+            Vector3 direction,
+            bool hasDirection,
+            bool amplified
         )
         {
             WorldPosition = worldPosition;
@@ -44,6 +77,10 @@ namespace JJKGame.Core
             Duration = duration;
             SpinSpeed = spinSpeed;
             TimePolicy = timePolicy;
+            StyleId = styleId;
+            Direction = direction;
+            HasDirection = hasDirection;
+            Amplified = amplified;
         }
 
         public Vector3 WorldPosition { get; }
@@ -57,6 +94,10 @@ namespace JJKGame.Core
         public float Duration { get; }
         public float SpinSpeed { get; }
         public PresentationVfxTimePolicy TimePolicy { get; }
+        public PresentationVfxStyleId StyleId { get; }
+        public Vector3 Direction { get; }
+        public bool HasDirection { get; }
+        public bool Amplified { get; }
 
         public static PresentationVfxSpawnRequest AtWorld(
             Vector3 worldPosition,
@@ -66,7 +107,10 @@ namespace JJKGame.Core
             float endRadius,
             float duration,
             float spinSpeed,
-            PresentationVfxTimePolicy timePolicy = PresentationVfxTimePolicy.Unscaled
+            PresentationVfxTimePolicy timePolicy = PresentationVfxTimePolicy.Unscaled,
+            PresentationVfxStyleId styleId = PresentationVfxStyleId.Generic,
+            Vector3 direction = default,
+            bool amplified = false
         )
         {
             return new PresentationVfxSpawnRequest(
@@ -79,7 +123,11 @@ namespace JJKGame.Core
                 endRadius,
                 duration,
                 spinSpeed,
-                timePolicy
+                timePolicy,
+                styleId,
+                direction,
+                direction.sqrMagnitude > 0.0001f,
+                amplified
             );
         }
 
@@ -92,7 +140,10 @@ namespace JJKGame.Core
             float endRadius,
             float duration,
             float spinSpeed,
-            PresentationVfxTimePolicy timePolicy = PresentationVfxTimePolicy.Unscaled
+            PresentationVfxTimePolicy timePolicy = PresentationVfxTimePolicy.Unscaled,
+            PresentationVfxStyleId styleId = PresentationVfxStyleId.Generic,
+            Vector3 direction = default,
+            bool amplified = false
         )
         {
             return new PresentationVfxSpawnRequest(
@@ -105,7 +156,11 @@ namespace JJKGame.Core
                 endRadius,
                 duration,
                 spinSpeed,
-                timePolicy
+                timePolicy,
+                styleId,
+                direction,
+                direction.sqrMagnitude > 0.0001f,
+                amplified
             );
         }
     }

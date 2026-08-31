@@ -39,6 +39,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 5 Production Input Boundary & Developer Harness Isolation: USER VERIFIED
 - Pass 6 Arena Lighting & Post-Process Readability: USER VERIFIED
 - Pass 7 Combat Camera & Impact Feedback Polish: USER VERIFIED
+- Pass 8 JJK-Referenced Production Particle VFX Runtime: REMOTE IMPLEMENTED / USER TEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -278,6 +279,14 @@ CombatMVP scene-owned `ProductionCombatFeedbackDirector`가 camera / flash / hit
 거리 제한과 smooth recovery를 갖는 world focus를 제공한다. Flash는 production HUD보다 낮은
 Canvas sorting order에서 표시되며, scene unload 중 hit stop은 캡처한 time scale로 즉시 복원된다.
 Gameplay damage / cooldown / knockback / hit stun / target lock / input은 변경하지 않는다.
+
+Pass 8에서는 Gate 4 `PresentationVfxRuntime` 경계에 renderer-facing style metadata를 추가하고,
+CombatMVP scene-owned `ProductionParticleVfxRuntime`이 ParticleSystem / URP runtime material /
+effect lifetime을 소유한다. Blue의 inward compression, Red의 outward repulsion, Purple merge/travel,
+Fuga charge/projectile/fire burst, Shrine의 field slash, Void의 depth mote, Divine Dog의 shadow rise,
+Nue electric streak, basic contact spark를 서로 다른 motion language로 구성한다.
+이는 final anime-quality VFX가 아니라 line/ring prototype을 replaceable ParticleSystem runtime으로
+전환하고 JJK 기술 정체성의 가독성을 검증하는 단계다.
 
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 
