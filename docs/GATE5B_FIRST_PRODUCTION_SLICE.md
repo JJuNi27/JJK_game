@@ -34,7 +34,7 @@ Pass 5 · Production Input Boundary & Developer Harness Isolation:
 USER VERIFIED
 
 Pass 6 · Arena Lighting & Post-Process Readability:
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -757,8 +757,14 @@ developer harness 격리:
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER TEST PENDING
+USER VERIFIED
 ```
+
+사용자 확인:
+- 초기 lighting pass보다 fighter / arena 가독성 개선 확인
+- 야간 cool mood 방향 수용
+- HUD 가독성 정상
+- final map art / lighting의 큰 재튜닝은 실제 맵 자산 단계로 이관
 
 이 pass는 final environment art 완료가 아니라, 실제 environment asset을 넣기 전의
 production-facing lighting / post-process readability proof다.
