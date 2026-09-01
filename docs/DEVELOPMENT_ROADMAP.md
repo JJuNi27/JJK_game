@@ -40,6 +40,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 6 Arena Lighting & Post-Process Readability: USER VERIFIED
 - Pass 7 Combat Camera & Impact Feedback Polish: USER VERIFIED
 - Pass 8 JJK-Referenced Production Particle VFX Runtime: USER VISUAL REVIEW FAILED / REWORK REQUIRED
+- Pass 8R-1 Gojo Signature VFX Reference-First Rework: REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -287,6 +288,15 @@ Fuga charge/projectile/fire burst, Shrine의 field slash, Void의 depth mote, Di
 Nue electric streak, basic contact spark를 서로 다른 motion language로 구성한다.
 이는 final anime-quality VFX가 아니라 line/ring prototype을 replaceable ParticleSystem runtime으로
 전환하고 JJK 기술 정체성의 가독성을 검증하는 단계다.
+
+Pass 8R-1에서는 Pass 8의 사용자 시각 검수 실패를 기준으로 Gojo signature 4종만 전용
+presentation으로 분리했다. Blue/Red는 동일 generic particle switch 대신 orb/core가 항상 남는
+전용 instance를 사용하며 각각 outer-to-core convergence와 core-to-outer repulsion을 갖는다.
+Hollow Purple은 기존 long beam을 제거하고 실제 Blue/Red orb merge → dense Purple body → 짧은
+residual을 가진 18m travel로 재구성한다. Unlimited Void는 active particle burst와 3-ring prototype이
+아니라 near-black enclosure, floor suppression, 3-depth star field, distant focal body를 소유하는
+domain environment로 전환한다. Pass 7 combat feedback 소유권과 모든 gameplay timing/rule은 유지한다.
+현재 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 Pass 8 실패 상태는 유지한다.
 
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 

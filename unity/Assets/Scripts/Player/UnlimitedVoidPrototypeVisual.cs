@@ -1,54 +1,136 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace JJKGame.Player
 {
-    public sealed class UnlimitedVoidPrototypeVisual : MonoBehaviour
+    /// <summary>
+    /// Presentation-only Unlimited Void environment. The domain controller owns only
+    /// active/inactive state; this component owns its enclosure, floor suppression,
+    /// depth field, focal body, runtime materials, and transition.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public class UnlimitedVoidProductionVisual : MonoBehaviour
     {
-        [SerializeField, Min(0.1f)] private float expansionDuration = 0.35f;
-        [SerializeField, Min(0.1f)] private float pulseSpeed = 2.4f;
-        [SerializeField, Min(0f)] private float rotationSpeed = 22f;
+        [SerializeField, Min(0.1f)] private float transitionDuration = 0.34f;
+        [SerializeField, Min(0.1f)] private float focalDriftSpeed = 2.8f;
 
-        private Transform ringRoot;
+        private readonly List<Material> runtimeMaterials = new List<Material>(12);
+        private readonly List<Color> materialColors = new List<Color>(12);
+        private readonly List<Material> starMaterials = new List<Material>(4);
+        private readonly List<Color> starColors = new List<Color>(4);
+        private readonly List<ParticleSystem> starFields = new List<ParticleSystem>(3);
+
+        private Transform starRoot;
+        private Transform focalRoot;
+        private Transform celestialArc;
         private Light domainLight;
+        private Vector3 anchorPosition;
+        private Quaternion anchorRotation;
         private float activatedAt;
+        private float visualRadius = 30f;
         private bool built;
-        private float visualRadius = 10f;
 
         public void Configure(float domainRadius)
         {
-            visualRadius = Mathf.Clamp(domainRadius * 0.35f, 6f, 12f);
+            visualRadius = Mathf.Clamp(domainRadius, 24f, 38f);
             BuildVisual();
         }
 
-        private void Awake()
+        protected virtual void Awake()
         {
-            BuildVisual();
-        }
-
-        private void OnEnable()
-        {
-            BuildVisual();
-            activatedAt = Time.time;
-            transform.localScale = Vector3.one * 0.05f;
-        }
-
-        private void Update()
-        {
-            float elapsed = Time.time - activatedAt;
-            float normalized = Mathf.Clamp01(elapsed / expansionDuration);
-            float eased = 1f - Mathf.Pow(1f - normalized, 3f);
-            float pulse = 1f + Mathf.Sin(elapsed * pulseSpeed * Mathf.PI * 2f) * 0.035f;
-            transform.localScale = Vector3.one * Mathf.Max(0.05f, eased * pulse);
-
-            if (ringRoot != null)
+            if (gameObject.activeInHierarchy)
             {
-                ringRoot.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.Self);
+                BuildVisual();
             }
+        }
 
+        protected virtual void OnEnable()
+        {
+            BuildVisual();
+            activatedAt = Time.unscaledTime;
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = Vector3.one;
+            anchorPosition = transform.position;
+            anchorRotation = transform.rotation;
+            if (focalRoot != null)
+            {
+                focalRoot.localScale = Vector3.one * 0.55f;
+            }
+            foreach (ParticleSystem field in starFields)
+            {
+                if (field == null)
+                {
+                    continue;
+                }
+                field.Clear(true);
+                field.Play(true);
+            }
+            ApplyStarFade(0f);
+        }
+
+        protected virtual void Update()
+        {
+            transform.SetPositionAndRotation(anchorPosition, anchorRotation);
+            float elapsed = Time.unscaledTime - activatedAt;
+            float normalized = Mathf.Clamp01(elapsed / transitionDuration);
+            float eased = 1f - Mathf.Pow(1f - normalized, 3f);
+            ApplyStarFade(eased);
+
+            if (focalRoot != null)
+            {
+                float arrival = Mathf.Lerp(0.55f, 1f, eased);
+                float pulse = 1f + Mathf.Sin(elapsed * 1.8f) * 0.018f;
+                focalRoot.localScale = Vector3.one * arrival * pulse;
+            }
+            if (celestialArc != null)
+            {
+                celestialArc.Rotate(
+                    Vector3.forward,
+                    focalDriftSpeed * Time.unscaledDeltaTime,
+                    Space.Self
+                );
+            }
+            if (starRoot != null)
+            {
+                starRoot.Rotate(
+                    Vector3.up,
+                    0.45f * Time.unscaledDeltaTime,
+                    Space.Self
+                );
+            }
             if (domainLight != null)
             {
-                domainLight.intensity = 2.4f + Mathf.Sin(elapsed * pulseSpeed * 2f) * 0.6f;
+                domainLight.intensity = eased * (1.15f + Mathf.Sin(elapsed * 1.4f) * 0.10f);
             }
+        }
+
+        protected virtual void OnDisable()
+        {
+            foreach (ParticleSystem field in starFields)
+            {
+                if (field == null)
+                {
+                    continue;
+                }
+                field.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+            if (transform.parent != null)
+            {
+                transform.localPosition = Vector3.zero;
+                transform.localRotation = Quaternion.identity;
+                transform.localScale = Vector3.one;
+            }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            DestroyMaterials(runtimeMaterials);
+            DestroyMaterials(starMaterials);
+            materialColors.Clear();
+            starColors.Clear();
+            starFields.Clear();
         }
 
         private void BuildVisual()
@@ -57,113 +139,175 @@ namespace JJKGame.Player
             {
                 return;
             }
-
             built = true;
-            ringRoot = new GameObject("VoidRings").transform;
-            ringRoot.SetParent(transform, false);
+            BuildBackdrop();
+            BuildFloorSuppression();
+            BuildDepthField();
+            BuildFocalElement();
+            BuildVisibilityLight();
+        }
 
-            CreateRing(
-                "GroundRing",
-                visualRadius,
-                0.14f,
-                new Color(0.18f, 0.72f, 1f, 0.95f),
-                Vector3.zero,
-                Quaternion.identity,
-                RingPlane.XZ
+        private void BuildBackdrop()
+        {
+            ProductionSignatureVfxFactory.CreateSphere(
+                transform, "VoidBackdropEnclosure", Vector3.up * 4f,
+                visualRadius * 2.25f, new Color(0.002f, 0.004f, 0.018f, 1f),
+                runtimeMaterials, materialColors, 0.15f, CullMode.Front, false
             );
-            CreateRing(
-                "OrbitRingA",
-                visualRadius * 0.48f,
-                0.09f,
-                new Color(0.55f, 0.32f, 1f, 0.9f),
-                Vector3.up * 1.3f,
-                Quaternion.Euler(18f, 0f, 12f),
-                RingPlane.XY
-            );
-            CreateRing(
-                "OrbitRingB",
-                visualRadius * 0.38f,
-                0.075f,
-                new Color(0.12f, 0.95f, 0.92f, 0.85f),
-                Vector3.up * 1.3f,
-                Quaternion.Euler(-12f, 28f, 0f),
-                RingPlane.YZ
-            );
+        }
 
-            GameObject lightObject = new GameObject("VoidLight");
+        private void BuildFloorSuppression()
+        {
+            GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            floor.name = "VoidFloorSuppression";
+            floor.transform.SetParent(transform, false);
+            floor.transform.localPosition = Vector3.up * 0.025f;
+            float planeScale = visualRadius * 2.05f / 10f;
+            floor.transform.localScale = new Vector3(planeScale, 1f, planeScale);
+
+            Collider collider = floor.GetComponent<Collider>();
+            if (collider != null)
+            {
+                Destroy(collider);
+            }
+            Renderer renderer = floor.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                Material material = ProductionSignatureVfxFactory.CreateMaterial(
+                    new Color(0.006f, 0.010f, 0.030f, 1f), runtimeMaterials,
+                    materialColors, false, false, 0.20f, CullMode.Back
+                );
+                if (material != null)
+                {
+                    renderer.sharedMaterial = material;
+                }
+            }
+        }
+
+        private void BuildDepthField()
+        {
+            starRoot = new GameObject("InfiniteInformationField").transform;
+            starRoot.SetParent(transform, false);
+            CreateStarLayer(
+                "NearStars", new Color(0.40f, 0.82f, 1f, 0.78f), 108,
+                visualRadius * 0.46f, 0.032f, 0.085f, 0.010f, 0.035f, 0.48f
+            );
+            CreateStarLayer(
+                "FarStars", new Color(0.48f, 0.40f, 1f, 0.58f), 145,
+                visualRadius * 0.88f, 0.018f, 0.050f, 0.003f, 0.012f, 0.64f
+            );
+            CreateStarLayer(
+                "DustPoints", new Color(0.78f, 0.92f, 1f, 0.35f), 92,
+                visualRadius * 0.68f, 0.012f, 0.032f, 0.004f, 0.018f, 0.78f
+            );
+        }
+
+        private void CreateStarLayer(
+            string name,
+            Color color,
+            int count,
+            float radius,
+            float minSize,
+            float maxSize,
+            float minSpeed,
+            float maxSpeed,
+            float radiusThickness
+        )
+        {
+            ParticleSystem field = ProductionSignatureVfxFactory.CreateParticleSystem(
+                starRoot, name, color, starMaterials, starColors, false, 6f, 5.5f, 6f,
+                minSpeed, maxSpeed, minSize, maxSize, ParticleSystemShapeType.Sphere,
+                radius, false, ParticleSystemSimulationSpace.Local, count, 0f
+            );
+            ParticleSystem.ShapeModule shape = field.shape;
+            shape.radiusThickness = radiusThickness;
+            ParticleSystem.NoiseModule noise = field.noise;
+            noise.enabled = true;
+            noise.strength = 0.035f;
+            noise.frequency = 0.08f;
+            ParticleSystemRenderer renderer = field.GetComponent<ParticleSystemRenderer>();
+            renderer.sortingOrder = 2;
+            starFields.Add(field);
+        }
+
+        private void BuildFocalElement()
+        {
+            focalRoot = new GameObject("InfiniteSpaceFocalElement").transform;
+            focalRoot.SetParent(transform, false);
+            focalRoot.localPosition = Vector3.forward * (visualRadius * 0.72f)
+                + Vector3.up * 7.5f;
+
+            ProductionSignatureVfxFactory.CreateSphere(
+                focalRoot, "DarkCentralBody", Vector3.zero, 6.4f,
+                new Color(0.001f, 0.002f, 0.012f, 1f), runtimeMaterials,
+                materialColors, 0.05f, CullMode.Back, false
+            );
+            ProductionSignatureVfxFactory.CreateSphere(
+                focalRoot, "DistantVioletHalo", Vector3.zero, 8.2f,
+                new Color(0.24f, 0.08f, 0.58f, 0.24f), runtimeMaterials,
+                materialColors, 1.25f
+            );
+            ProductionSignatureVfxFactory.CreateSphere(
+                focalRoot, "PaleBlueOuterGlow", Vector3.zero, 10.8f,
+                new Color(0.20f, 0.58f, 1f, 0.095f), runtimeMaterials,
+                materialColors, 1.15f
+            );
+            LineRenderer arc = ProductionSignatureVfxFactory.CreateArc(
+                focalRoot, "SubtleCelestialArc", 6.2f, 205f, 155f, 0.035f,
+                new Color(0.48f, 0.72f, 1f, 0.24f), true, runtimeMaterials,
+                materialColors
+            );
+            celestialArc = arc.transform;
+        }
+
+        private void BuildVisibilityLight()
+        {
+            GameObject lightObject = new GameObject("VoidSilhouetteLight");
             lightObject.transform.SetParent(transform, false);
-            lightObject.transform.localPosition = Vector3.up * 2f;
+            lightObject.transform.localPosition = Vector3.up * 5f;
             domainLight = lightObject.AddComponent<Light>();
             domainLight.type = LightType.Point;
-            domainLight.color = new Color(0.25f, 0.48f, 1f);
-            domainLight.range = visualRadius * 1.8f;
-            domainLight.intensity = 2.5f;
+            domainLight.color = new Color(0.30f, 0.46f, 0.92f);
+            domainLight.range = visualRadius * 0.92f;
+            domainLight.intensity = 0f;
             domainLight.shadows = LightShadows.None;
         }
 
-        private void CreateRing(
-            string objectName,
-            float radius,
-            float width,
-            Color color,
-            Vector3 localPosition,
-            Quaternion localRotation,
-            RingPlane plane
-        )
+        private void ApplyStarFade(float fade)
         {
-            GameObject ringObject = new GameObject(objectName);
-            ringObject.transform.SetParent(ringRoot, false);
-            ringObject.transform.localPosition = localPosition;
-            ringObject.transform.localRotation = localRotation;
-
-            LineRenderer line = ringObject.AddComponent<LineRenderer>();
-            line.loop = true;
-            line.useWorldSpace = false;
-            line.positionCount = 96;
-            line.startWidth = width;
-            line.endWidth = width;
-            line.startColor = color;
-            line.endColor = color;
-            line.numCornerVertices = 4;
-            line.numCapVertices = 4;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
+            for (int index = 0; index < starMaterials.Count; index++)
             {
-                shader = Shader.Find("Sprites/Default");
-            }
-
-            if (shader != null)
-            {
-                Material material = new Material(shader)
+                Material material = starMaterials[index];
+                if (material == null)
                 {
-                    color = color,
-                };
-                line.material = material;
-            }
-
-            for (int index = 0; index < line.positionCount; index++)
-            {
-                float angle = (float)index / line.positionCount * Mathf.PI * 2f;
-                float cosine = Mathf.Cos(angle) * radius;
-                float sine = Mathf.Sin(angle) * radius;
-                Vector3 point = plane switch
-                {
-                    RingPlane.XY => new Vector3(cosine, sine, 0f),
-                    RingPlane.YZ => new Vector3(0f, cosine, sine),
-                    _ => new Vector3(cosine, 0f, sine),
-                };
-                line.SetPosition(index, point);
+                    continue;
+                }
+                Color color = starColors[index];
+                color.a *= fade;
+                ProductionSignatureVfxFactory.SetMaterialColor(material, color);
             }
         }
 
-        private enum RingPlane
+        private static void DestroyMaterials(List<Material> materials)
         {
-            XZ,
-            XY,
-            YZ,
+            foreach (Material material in materials)
+            {
+                if (material != null)
+                {
+                    Destroy(material);
+                }
+            }
+            materials.Clear();
         }
+    }
+
+    /// <summary>
+    /// Serialized-scene compatibility shim. Runtime creation now uses the production
+    /// environment above rather than the former three-ring prototype.
+    /// </summary>
+    public sealed class UnlimitedVoidPrototypeVisual : UnlimitedVoidProductionVisual
+    {
     }
 }

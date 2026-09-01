@@ -57,9 +57,6 @@ namespace JJKGame.Player
         private float purpleNoticeUntil;
 
         private GameObject purpleVisualRoot;
-        private LineRenderer purpleOuterBeam;
-        private LineRenderer purpleCoreBeam;
-        private Light purpleLight;
         private float purpleVisualStartedAt;
 
         private GUIStyle skillStyle;
@@ -447,76 +444,12 @@ namespace JJKGame.Player
             purpleVisualRoot.transform.SetParent(transform, false);
             purpleVisualRoot.transform.localPosition =
                 Vector3.up * 1.05f + Vector3.forward * 0.8f;
-            purpleOuterBeam = CreateBeam(
-                "PurpleOuterBeam",
-                0.95f,
-                1.65f,
-                new Color(0.62f, 0.10f, 1f, 0.95f)
-            );
-            purpleCoreBeam = CreateBeam(
-                "PurpleCoreBeam",
-                0.28f,
-                0.55f,
-                new Color(0.96f, 0.82f, 1f, 0.98f)
-            );
-
-            GameObject lightObject = new GameObject("PurpleLight");
-            lightObject.transform.SetParent(purpleVisualRoot.transform, false);
-            lightObject.transform.localPosition = Vector3.forward * (purpleRange * 0.45f);
-            purpleLight = lightObject.AddComponent<Light>();
-            purpleLight.type = LightType.Point;
-            purpleLight.color = new Color(0.55f, 0.10f, 1f);
-            purpleLight.range = 10f;
-            purpleLight.intensity = 6f;
-            purpleLight.shadows = LightShadows.None;
             purpleVisualRoot.SetActive(false);
-        }
-
-        private LineRenderer CreateBeam(
-            string objectName,
-            float startWidth,
-            float endWidth,
-            Color color
-        )
-        {
-            GameObject beamObject = new GameObject(objectName);
-            beamObject.transform.SetParent(purpleVisualRoot.transform, false);
-            LineRenderer line = beamObject.AddComponent<LineRenderer>();
-            line.useWorldSpace = false;
-            line.positionCount = 2;
-            line.SetPosition(0, Vector3.zero);
-            line.SetPosition(1, Vector3.forward * purpleRange);
-            line.startWidth = startWidth;
-            line.endWidth = endWidth;
-            line.startColor = color;
-            line.endColor = color;
-            line.numCapVertices = 8;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-            {
-                shader = Shader.Find("Sprites/Default");
-            }
-            if (shader != null)
-            {
-                line.material = new Material(shader) { color = color };
-            }
-
-            return line;
         }
 
         private void ShowPurpleVisual()
         {
             purpleVisualStartedAt = Time.time;
-            SetBeamColor(purpleOuterBeam, new Color(0.62f, 0.10f, 1f, 0.95f));
-            SetBeamColor(purpleCoreBeam, new Color(0.96f, 0.82f, 1f, 0.98f));
-            purpleOuterBeam.startWidth = 0.95f;
-            purpleOuterBeam.endWidth = 1.65f;
-            purpleCoreBeam.startWidth = 0.28f;
-            purpleCoreBeam.endWidth = 0.55f;
-            purpleLight.intensity = 6f;
             purpleVisualRoot.SetActive(true);
         }
 
@@ -528,37 +461,10 @@ namespace JJKGame.Player
             }
 
             float elapsed = Time.time - purpleVisualStartedAt;
-            float normalized = Mathf.Clamp01(elapsed / purpleVisualDuration);
-            float pulse = 1f + Mathf.Sin(elapsed * 28f) * 0.12f;
-            float alpha = 1f - normalized;
-            purpleOuterBeam.startWidth = Mathf.Lerp(0.95f, 1.7f, normalized) * pulse;
-            purpleOuterBeam.endWidth = Mathf.Lerp(1.65f, 2.6f, normalized) * pulse;
-            purpleCoreBeam.startWidth = Mathf.Lerp(0.28f, 0.08f, normalized);
-            purpleCoreBeam.endWidth = Mathf.Lerp(0.55f, 0.14f, normalized);
-            SetBeamColor(
-                purpleOuterBeam,
-                new Color(0.62f, 0.10f, 1f, 0.95f * alpha)
-            );
-            SetBeamColor(
-                purpleCoreBeam,
-                new Color(0.96f, 0.82f, 1f, 0.98f * alpha)
-            );
-            purpleLight.intensity = Mathf.Lerp(6f, 0f, normalized);
             if (elapsed >= purpleVisualDuration)
             {
                 purpleVisualRoot.SetActive(false);
             }
-        }
-
-        private static void SetBeamColor(LineRenderer line, Color color)
-        {
-            if (line == null)
-            {
-                return;
-            }
-
-            line.startColor = color;
-            line.endColor = color;
         }
 
         private void OnGUI()

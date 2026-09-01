@@ -53,14 +53,8 @@ namespace JJKGame.Player
 
             switch (request.TechniqueId)
             {
-                case TechniquePresentationId.HollowPurple:
-                    HandleHollowPurple(request);
-                    break;
                 case TechniquePresentationId.Fuga:
                     HandleFuga(request);
-                    break;
-                case TechniquePresentationId.UnlimitedVoid:
-                    HandleUnlimitedVoid(request);
                     break;
                 case TechniquePresentationId.MalevolentShrine:
                     HandleMalevolentShrine(request);
@@ -72,43 +66,6 @@ namespace JJKGame.Player
                     HandleNue(request);
                     break;
             }
-        }
-
-        private void HandleHollowPurple(TechniquePresentationRequest request)
-        {
-            if (
-                request.Phase != TechniquePresentationPhase.Release
-                && request.Phase != TechniquePresentationPhase.Culmination
-            )
-            {
-                return;
-            }
-
-            bool release = request.Phase == TechniquePresentationPhase.Release;
-            Vector3 origin = ResolveOrigin(request);
-            Vector3 direction = request.HasDirection && request.Direction.sqrMagnitude > 0.0001f
-                ? request.Direction.normalized
-                : request.Owner != null
-                    ? request.Owner.transform.forward
-                    : Vector3.forward;
-            if (!release && request.Owner != null)
-            {
-                origin = request.Owner.transform.position + Vector3.up * 1.05f + direction * 1.10f;
-            }
-
-            SpawnWorldBurst(
-                origin,
-                new Color(0.62f, 0.08f, 1f, 0.98f),
-                new Color(0.96f, 0.78f, 1f, 0.92f),
-                0.30f,
-                release ? 4.1f : 2.4f,
-                release ? 1.02f : 0.28f,
-                230f,
-                release
-                    ? PresentationVfxStyleId.HollowPurpleRelease
-                    : PresentationVfxStyleId.HollowPurpleFormation,
-                direction
-            );
         }
 
         private void HandleFuga(TechniquePresentationRequest request)
@@ -128,41 +85,6 @@ namespace JJKGame.Player
                     PresentationVfxStyleId.FugaCharge,
                     request.Direction,
                     domainAmplified
-                );
-            }
-        }
-
-        private void HandleUnlimitedVoid(TechniquePresentationRequest request)
-        {
-            if (request.Phase == TechniquePresentationPhase.Anticipation)
-            {
-                SpawnFollowAura(
-                    ownHealth.transform,
-                    new Vector3(0f, 0.20f, 0f),
-                    new Color(0.20f, 0.55f, 1f, 0.95f),
-                    new Color(0.68f, 0.88f, 1f, 0.88f),
-                    0.45f,
-                    2.9f,
-                    0.58f,
-                    125f,
-                    PresentationVfxStyleId.UnlimitedVoidAnticipation,
-                    request.Direction
-                );
-                return;
-            }
-
-            if (request.Phase == TechniquePresentationPhase.Active)
-            {
-                SpawnWorldBurst(
-                    ResolveOrigin(request) + Vector3.up * 0.15f,
-                    new Color(0.16f, 0.42f, 1f, 0.96f),
-                    new Color(0.72f, 0.82f, 1f, 0.90f),
-                    0.8f,
-                    8.5f,
-                    0.62f,
-                    175f,
-                    PresentationVfxStyleId.UnlimitedVoidActive,
-                    request.Direction
                 );
             }
         }
