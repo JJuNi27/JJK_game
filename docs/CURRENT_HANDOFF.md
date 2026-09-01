@@ -12,6 +12,8 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   USER VISUAL REVIEW FAILED / REWORK REQUIRED
 - Pass 8R-1 Gojo Signature VFX Reference-First Rework:
   USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
+- Pass 8R-2A Gojo Blue Production VFX Benchmark:
+  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
 
@@ -95,6 +97,24 @@ Gojo VFX Production Pipeline Upgrade
 4. Unlimited Void Production Environment / Transition
 
 Blue 하나에서 먼저 production-quality 기준을 만든 뒤 다음 기술에 같은 파이프라인을 재사용한다.
+
+## Pass 8R-2A 구현 handoff
+
+Blue에만 다음 production benchmark를 원격 구현했다.
+
+- Resources에 포함되는 custom URP procedural energy shader
+- deep body / Fresnel shell / distortion-like outer shell 3-layer core
+- scene-owned shared material template + renderer별 MaterialPropertyBlock
+- fast clockwise inward streak + slow counter spiral mote
+- 서로 다른 길이/폭/alpha/timing을 가진 outer/mid broken arc 8개
+- outward burst가 아닌 impact collapse
+- renderer feature와 분리된 future `GojoBlueDistortionSource` hook
+
+VFX Graph, Full Screen Pass, PC Renderer YAML, external texture는 추가하지 않았다.
+Red/Purple/Unlimited Void/Sukuna/Megumi와 gameplay 값도 변경하지 않았다.
+
+현재 다음 단계는 Unity에서 shader compile error가 없는지 확인하고 Blue wide/close/impact 장면을
+시각 검수하는 것이다. Blue가 사용자 합격하기 전에는 Red production pass로 넘어가지 않는다.
 
 ## 변경 금지
 
