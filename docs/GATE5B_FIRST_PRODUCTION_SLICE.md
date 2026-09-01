@@ -999,8 +999,14 @@ lifecycle / cleanup:
 상태:
 
 ```text
-REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
 ```
+
+사용자 시각 검수:
+- Pass 8 대비 Blue/Red/Purple/Unlimited Void의 방향성은 확실히 개선됨
+- 그러나 세부 레이어, 재질감, 형태 디테일, 애니메이션다운 밀도가 여전히 부족함
+- 현재 구현은 reference-first 구조 전환의 개선된 baseline이며 final-quality VFX로 승인되지 않음
+- 다음 rework에서 detail layer / material treatment / silhouette richness를 집중 보강할 것
 
 Pass 8의 `USER VISUAL REVIEW FAILED / REWORK REQUIRED` 상태는 유지한다. 이번 rework는
 `docs/JJK_VFX_REFERENCE_GOJO.md`를 시각 기준으로 사용하며, 스쿠나 계열은 변경하지 않았다.
