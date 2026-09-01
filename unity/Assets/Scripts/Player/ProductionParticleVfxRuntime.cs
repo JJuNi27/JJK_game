@@ -801,8 +801,11 @@ namespace JJKGame.Player
                 fastSpiral.velocityOverLifetime;
             fastVelocity.enabled = true;
             fastVelocity.space = ParticleSystemSimulationSpace.Local;
-            fastVelocity.orbitalY = new ParticleSystem.MinMaxCurve(4.2f, 6.4f);
+            // Unity requires all orbital velocity axes to use the same
+            // MinMaxCurve mode. Keep X/Y/Z in TwoConstants mode even when an axis is zero.
             fastVelocity.orbitalX = new ParticleSystem.MinMaxCurve(-0.35f, 0.35f);
+            fastVelocity.orbitalY = new ParticleSystem.MinMaxCurve(4.2f, 6.4f);
+            fastVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f, 0f);
             ParticleSystem.NoiseModule fastNoise = fastSpiral.noise;
             fastNoise.enabled = true;
             fastNoise.strength = 0.10f;
@@ -838,6 +841,8 @@ namespace JJKGame.Player
                 slowSpiral.velocityOverLifetime;
             slowVelocity.enabled = true;
             slowVelocity.space = ParticleSystemSimulationSpace.Local;
+            // Match the orbital curve mode on every axis (TwoConstants).
+            slowVelocity.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
             slowVelocity.orbitalY = new ParticleSystem.MinMaxCurve(-3.8f, -2.2f);
             slowVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(-0.22f, 0.22f);
             ParticleSystem.NoiseModule slowNoise = slowSpiral.noise;
@@ -1247,6 +1252,10 @@ namespace JJKGame.Player
             GameObject child = new GameObject(name, typeof(ParticleSystem));
             child.transform.SetParent(parent, false);
             ParticleSystem system = child.GetComponent<ParticleSystem>();
+            // A ParticleSystem component can begin playing as soon as it is created on
+            // an active GameObject. Stop and clear it before mutating duration/module
+            // settings; Unity rejects duration changes while a system is already playing.
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
             ParticleSystem.MainModule main = system.main;
             main.loop = loop;
