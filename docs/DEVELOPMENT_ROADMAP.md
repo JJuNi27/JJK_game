@@ -40,7 +40,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 6 Arena Lighting & Post-Process Readability: USER VERIFIED
 - Pass 7 Combat Camera & Impact Feedback Polish: USER VERIFIED
 - Pass 8 JJK-Referenced Production Particle VFX Runtime: USER VISUAL REVIEW FAILED / REWORK REQUIRED
-- Pass 8R-1 Gojo Signature VFX Reference-First Rework: REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+- Pass 8R-1 Gojo Signature VFX Reference-First Rework: USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
