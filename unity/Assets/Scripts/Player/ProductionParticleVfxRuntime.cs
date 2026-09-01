@@ -194,7 +194,7 @@ namespace JJKGame.Player
             float stopFade = stopping
                 ? 1f - Mathf.Clamp01((now - stopStartedAt) / 0.14f)
                 : 1f;
-            ApplyMaterialFade(Mathf.Min(naturalFade, stopFade));
+            ApplyVisualFade(Mathf.Min(naturalFade, stopFade));
 
             if (elapsed >= duration || (stopping && stopFade <= 0f))
             {
@@ -217,7 +217,7 @@ namespace JJKGame.Player
             }
         }
 
-        private void ApplyMaterialFade(float fade)
+        protected virtual void ApplyVisualFade(float fade)
         {
             for (int index = 0; index < RuntimeMaterials.Count; index++)
             {
@@ -265,11 +265,307 @@ namespace JJKGame.Player
         }
     }
 
+    [DisallowMultipleComponent]
+    internal sealed class GojoBlueMaterialLibrary : MonoBehaviour
+    {
+        private const string ResourcePath = "VFX/GojoBlueEnergy";
+        private const string ShaderName = "JJKGame/VFX/Gojo Blue Energy";
+
+        private Material energyMaterial;
+
+        public Material EnergyMaterial
+        {
+            get
+            {
+                EnsureMaterial();
+                return energyMaterial;
+            }
+        }
+
+        public bool UsesCustomShader { get; private set; }
+
+        public static GojoBlueMaterialLibrary GetOrCreate(Transform runtimeRoot)
+        {
+            GojoBlueMaterialLibrary library =
+                runtimeRoot.GetComponent<GojoBlueMaterialLibrary>();
+            if (library == null)
+            {
+                library = runtimeRoot.gameObject.AddComponent<GojoBlueMaterialLibrary>();
+            }
+            library.EnsureMaterial();
+            return library;
+        }
+
+        private void EnsureMaterial()
+        {
+            if (energyMaterial != null)
+            {
+                return;
+            }
+
+            Shader shader = Resources.Load<Shader>(ResourcePath);
+            if (shader == null)
+            {
+                shader = Shader.Find(ShaderName);
+            }
+            UsesCustomShader = shader != null;
+            if (shader == null)
+            {
+                shader = Shader.Find("Universal Render Pipeline/Unlit");
+            }
+            if (shader == null)
+            {
+                shader = Shader.Find("Sprites/Default");
+            }
+            if (shader == null)
+            {
+                return;
+            }
+
+            energyMaterial = new Material(shader)
+            {
+                name = "GojoBlueEnergy_RuntimeTemplate",
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+            if (energyMaterial.HasProperty("_Surface"))
+            {
+                energyMaterial.SetFloat("_Surface", 1f);
+            }
+            if (energyMaterial.HasProperty("_SrcBlend"))
+            {
+                energyMaterial.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            }
+            if (energyMaterial.HasProperty("_DstBlend"))
+            {
+                energyMaterial.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            }
+            if (energyMaterial.HasProperty("_ZWrite"))
+            {
+                energyMaterial.SetFloat("_ZWrite", 0f);
+            }
+            energyMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            energyMaterial.DisableKeyword("_SURFACE_TYPE_OPAQUE");
+            energyMaterial.renderQueue = (int)RenderQueue.Transparent;
+        }
+
+        private void OnDestroy()
+        {
+            if (energyMaterial != null)
+            {
+                Destroy(energyMaterial);
+                energyMaterial = null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Future full-screen distortion integrations can consume this presentation-only
+    /// anchor without changing Blue gameplay or the current renderer asset.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class GojoBlueDistortionSource : MonoBehaviour
+    {
+        public float WorldRadius { get; private set; }
+        public float NormalizedStrength { get; private set; }
+        public bool IsImpactCue { get; private set; }
+
+        internal void Configure(float worldRadius, float strength, bool impactCue)
+        {
+            WorldRadius = Mathf.Max(0f, worldRadius);
+            NormalizedStrength = Mathf.Clamp01(strength);
+            IsImpactCue = impactCue;
+        }
+
+        internal void SetStrength(float strength)
+        {
+            NormalizedStrength = Mathf.Clamp01(strength);
+        }
+    }
+
     internal sealed class GojoBlueVfxInstance : GojoSignatureVfxInstance
     {
-        private readonly List<Transform> convergenceSegments = new List<Transform>(4);
+        private sealed class EnergyLayerBinding
+        {
+            private readonly Renderer renderer;
+            private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            private readonly Color bodyColor;
+            private readonly Color midColor;
+            private readonly Color edgeColor;
+            private readonly float baseOpacity;
+            private readonly float layerMode;
+            private readonly float noiseScale;
+            private readonly float noiseSpeed;
+            private readonly float detailScale;
+            private readonly float detailSpeed;
+            private readonly float fresnelPower;
+            private readonly float breakup;
+            private readonly float emission;
+            private readonly float pulseSpeed;
+            private readonly float pulseAmount;
+            private readonly float phaseOffset;
+
+            public EnergyLayerBinding(
+                Renderer targetRenderer,
+                Color newBodyColor,
+                Color newMidColor,
+                Color newEdgeColor,
+                float newBaseOpacity,
+                float newLayerMode,
+                float newNoiseScale,
+                float newNoiseSpeed,
+                float newDetailScale,
+                float newDetailSpeed,
+                float newFresnelPower,
+                float newBreakup,
+                float newEmission,
+                float newPulseSpeed,
+                float newPulseAmount,
+                float newPhaseOffset
+            )
+            {
+                renderer = targetRenderer;
+                bodyColor = newBodyColor;
+                midColor = newMidColor;
+                edgeColor = newEdgeColor;
+                baseOpacity = newBaseOpacity;
+                layerMode = newLayerMode;
+                noiseScale = newNoiseScale;
+                noiseSpeed = newNoiseSpeed;
+                detailScale = newDetailScale;
+                detailSpeed = newDetailSpeed;
+                fresnelPower = newFresnelPower;
+                breakup = newBreakup;
+                emission = newEmission;
+                pulseSpeed = newPulseSpeed;
+                pulseAmount = newPulseAmount;
+                phaseOffset = newPhaseOffset;
+            }
+
+            public void Apply(float fade, float compression)
+            {
+                if (renderer == null)
+                {
+                    return;
+                }
+
+                Color fallback = midColor;
+                fallback.a = baseOpacity * fade;
+                properties.SetColor("_BaseColor", fallback);
+                properties.SetColor("_Color", fallback);
+                properties.SetColor("_BodyColor", bodyColor);
+                properties.SetColor("_MidColor", midColor);
+                properties.SetColor("_EdgeColor", edgeColor);
+                properties.SetFloat("_Opacity", baseOpacity * fade);
+                properties.SetFloat("_LayerMode", layerMode);
+                properties.SetFloat("_NoiseScale", noiseScale);
+                properties.SetFloat("_NoiseSpeed", noiseSpeed);
+                properties.SetFloat("_DetailScale", detailScale);
+                properties.SetFloat("_DetailSpeed", detailSpeed);
+                properties.SetFloat("_FresnelPower", fresnelPower);
+                properties.SetFloat("_Breakup", breakup);
+                properties.SetFloat("_Emission", emission);
+                properties.SetFloat("_PulseSpeed", pulseSpeed);
+                properties.SetFloat("_PulseAmount", pulseAmount);
+                properties.SetFloat("_PhaseOffset", phaseOffset);
+                properties.SetFloat("_Compression", compression);
+                renderer.SetPropertyBlock(properties);
+            }
+        }
+
+        private sealed class ConvergenceArcBinding
+        {
+            private readonly Transform arcTransform;
+            private readonly LineRenderer line;
+            private readonly Color color;
+            private readonly float baseAlpha;
+            private readonly float phase;
+            private readonly float shrinkSpeed;
+            private readonly float rotationSpeed;
+            private readonly float minimumScale;
+            private readonly float verticalAmplitude;
+            private readonly Vector3 baseLocalPosition;
+            private float animatedAlpha;
+
+            public ConvergenceArcBinding(
+                LineRenderer arcLine,
+                Color arcColor,
+                float newBaseAlpha,
+                float newPhase,
+                float newShrinkSpeed,
+                float newRotationSpeed,
+                float newMinimumScale,
+                float newVerticalAmplitude
+            )
+            {
+                line = arcLine;
+                arcTransform = arcLine != null ? arcLine.transform : null;
+                color = arcColor;
+                baseAlpha = newBaseAlpha;
+                phase = newPhase;
+                shrinkSpeed = newShrinkSpeed;
+                rotationSpeed = newRotationSpeed;
+                minimumScale = newMinimumScale;
+                verticalAmplitude = newVerticalAmplitude;
+                baseLocalPosition = arcTransform != null
+                    ? arcTransform.localPosition
+                    : Vector3.zero;
+            }
+
+            public void Tick(float elapsed, float deltaTime, bool impactCue)
+            {
+                if (arcTransform == null || line == null)
+                {
+                    return;
+                }
+
+                float speed = shrinkSpeed * (impactCue ? 2.15f : 1f);
+                float cycle = Mathf.Repeat(elapsed * speed + phase, 1f);
+                float eased = Mathf.SmoothStep(0f, 1f, cycle);
+                float scale = Mathf.Lerp(1f, minimumScale, eased);
+                arcTransform.localScale = Vector3.one * scale;
+                arcTransform.localPosition = baseLocalPosition
+                    + Vector3.up * (Mathf.Sin(elapsed * 3.7f + phase * 11f) * verticalAmplitude);
+                arcTransform.Rotate(
+                    Vector3.up,
+                    rotationSpeed * (impactCue ? 1.8f : 1f) * deltaTime,
+                    Space.Self
+                );
+
+                float appear = Mathf.Pow(Mathf.Sin(cycle * Mathf.PI), 0.72f);
+                float irregular = 0.45f
+                    + 0.55f * Mathf.Clamp01(
+                        Mathf.Sin(elapsed * (2.1f + phase) + phase * 19f) * 0.5f + 0.5f
+                    );
+                animatedAlpha = baseAlpha * appear * irregular;
+            }
+
+            public void ApplyFade(float fade)
+            {
+                if (line == null)
+                {
+                    return;
+                }
+                Color faded = color;
+                faded.a = animatedAlpha * fade;
+                line.startColor = faded;
+                faded.a *= 0.55f;
+                line.endColor = faded;
+            }
+        }
+
+        private readonly List<EnergyLayerBinding> energyLayers =
+            new List<EnergyLayerBinding>(3);
+        private readonly List<ConvergenceArcBinding> convergenceArcs =
+            new List<ConvergenceArcBinding>(8);
+
         private Transform coreRoot;
+        private Light compressionLight;
+        private GojoBlueDistortionSource distortionSource;
         private bool impactCue;
+        private float shaderCompression;
+        private float lightPulse;
+        private float baseLightIntensity;
+        private float baseDistortionStrength;
 
         public static GojoBlueVfxInstance Spawn(
             PresentationVfxSpawnRequest request,
@@ -291,108 +587,398 @@ namespace JJKGame.Player
             impactCue = !request.FollowsTarget;
             float inner = Mathf.Max(0.08f, request.StartRadius);
             float outer = Mathf.Max(inner * 2f, request.EndRadius);
-            float orbDiameter = Mathf.Clamp(inner * 1.35f, 0.68f, 1.15f);
+            float orbDiameter = Mathf.Clamp(inner * 1.42f, 0.72f, 1.22f);
             float boundaryRadius = Mathf.Max(1.2f, outer * 0.94f);
+            GojoBlueMaterialLibrary materialLibrary =
+                GojoBlueMaterialLibrary.GetOrCreate(transform.parent);
 
             coreRoot = new GameObject("BlueCoreRoot").transform;
             coreRoot.SetParent(transform, false);
-            ProductionSignatureVfxFactory.CreateSphere(
-                coreRoot, "DenseCoreSphere", Vector3.zero, orbDiameter * 0.72f,
-                new Color(0.015f, 0.055f, 0.62f, 0.98f), RuntimeMaterials,
-                MaterialColors, 1.45f
+            CreateEnergySphere(
+                coreRoot,
+                "DenseEnergyBody",
+                orbDiameter * 0.74f,
+                40,
+                materialLibrary.EnergyMaterial,
+                new Color(0.003f, 0.018f, 0.24f, 1f),
+                new Color(0.015f, 0.10f, 0.78f, 1f),
+                new Color(0.08f, 0.48f, 1f, 1f),
+                0.97f,
+                0f,
+                3.8f,
+                0.22f,
+                11.5f,
+                -0.48f,
+                3.4f,
+                0.16f,
+                1.28f,
+                7.2f,
+                0.08f,
+                0.17f
             );
-            ProductionSignatureVfxFactory.CreateSphere(
-                coreRoot, "ElectricBlueRim", Vector3.zero, orbDiameter,
-                new Color(0.025f, 0.32f, 1f, 0.62f), RuntimeMaterials,
-                MaterialColors, 1.70f
+            CreateEnergySphere(
+                coreRoot,
+                "FresnelEnergyShell",
+                orbDiameter * 1.04f,
+                41,
+                materialLibrary.EnergyMaterial,
+                new Color(0.004f, 0.045f, 0.42f, 1f),
+                new Color(0.025f, 0.26f, 1f, 1f),
+                new Color(0.24f, 0.90f, 1f, 1f),
+                0.56f,
+                1f,
+                4.9f,
+                -0.31f,
+                15.0f,
+                0.62f,
+                2.25f,
+                0.42f,
+                1.34f,
+                5.2f,
+                0.12f,
+                0.49f
             );
-            ProductionSignatureVfxFactory.CreateSphere(
-                coreRoot, "CyanCompressionShell", Vector3.zero, orbDiameter * 1.34f,
-                new Color(0.08f, 0.78f, 1f, 0.18f), RuntimeMaterials,
-                MaterialColors, 1.25f
+            CreateEnergySphere(
+                coreRoot,
+                "ThinOuterDistortionShell",
+                orbDiameter * 1.42f,
+                42,
+                materialLibrary.EnergyMaterial,
+                new Color(0.002f, 0.028f, 0.18f, 1f),
+                new Color(0.02f, 0.30f, 0.82f, 1f),
+                new Color(0.28f, 0.94f, 1f, 1f),
+                0.19f,
+                2f,
+                6.2f,
+                0.17f,
+                19.0f,
+                -0.78f,
+                1.55f,
+                0.63f,
+                0.82f,
+                3.8f,
+                0.14f,
+                0.83f
             );
 
-            Track(ProductionSignatureVfxFactory.CreateParticleSystem(
-                coreRoot, "BlueCorona", new Color(0.10f, 0.72f, 1f, 0.72f),
-                RuntimeMaterials, MaterialColors, true, Duration, 0.10f, 0.20f,
-                -0.28f, -0.08f, 0.025f, 0.055f, ParticleSystemShapeType.Sphere,
-                orbDiameter * 0.68f, false, ParticleSystemSimulationSpace.Local, 10, 24f
-            ));
+            BuildCorona(orbDiameter);
+            BuildSpiralFlow(boundaryRadius);
+            BuildConvergenceField(outer, boundaryRadius);
+            BuildCompressionLight(orbDiameter);
 
-            Transform boundary = new GameObject("ConvergenceBoundary").transform;
-            boundary.SetParent(transform, false);
-            boundary.localPosition = Vector3.down * 0.28f;
-            for (int index = 0; index < 4; index++)
+            distortionSource = gameObject.AddComponent<GojoBlueDistortionSource>();
+            baseDistortionStrength = impactCue ? 0.24f : 0.15f;
+            distortionSource.Configure(
+                orbDiameter * (impactCue ? 1.75f : 1.45f),
+                baseDistortionStrength,
+                impactCue
+            );
+            ApplyEnergyLayers(1f);
+        }
+
+        private void CreateEnergySphere(
+            Transform parent,
+            string name,
+            float diameter,
+            int sortingOrder,
+            Material sharedMaterial,
+            Color bodyColor,
+            Color midColor,
+            Color edgeColor,
+            float opacity,
+            float layerMode,
+            float noiseScale,
+            float noiseSpeed,
+            float detailScale,
+            float detailSpeed,
+            float fresnelPower,
+            float breakup,
+            float emission,
+            float pulseSpeed,
+            float pulseAmount,
+            float phaseOffset
+        )
+        {
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.name = name;
+            sphere.transform.SetParent(parent, false);
+            sphere.transform.localScale = Vector3.one * diameter;
+            Collider collider = sphere.GetComponent<Collider>();
+            if (collider != null)
             {
-                LineRenderer arc = ProductionSignatureVfxFactory.CreateArc(
-                    boundary, $"InwardArc_{index + 1}", boundaryRadius,
-                    index * 88f + 12f, index % 2 == 0 ? 76f : 52f,
-                    Mathf.Clamp(outer * 0.012f, 0.035f, 0.065f),
-                    new Color(0.04f, 0.54f, 1f, index % 2 == 0 ? 0.62f : 0.38f),
-                    false, RuntimeMaterials, MaterialColors
-                );
-                convergenceSegments.Add(arc.transform);
+                Destroy(collider);
             }
 
-            ParticleSystem inward = ProductionSignatureVfxFactory.CreateParticleSystem(
-                transform, "InwardParticles", new Color(0.04f, 0.48f, 1f, 0.78f),
-                RuntimeMaterials, MaterialColors, true, Duration,
-                impactCue ? 0.20f : 0.38f, impactCue ? 0.38f : 0.68f,
-                impactCue ? -11f : -7.5f, impactCue ? -7f : -4.2f,
-                0.035f, 0.075f, ParticleSystemShapeType.Sphere, boundaryRadius,
-                true, ParticleSystemSimulationSpace.Local, impactCue ? 34 : 18,
-                impactCue ? 20f : 58f
-            );
-            ParticleSystem.ShapeModule inwardShape = inward.shape;
-            inwardShape.radiusThickness = 0.08f;
-            ParticleSystem.SizeOverLifetimeModule inwardSize = inward.sizeOverLifetime;
-            inwardSize.enabled = true;
-            inwardSize.size = new ParticleSystem.MinMaxCurve(
-                1f,
-                new AnimationCurve(
-                    new Keyframe(0f, 1f),
-                    new Keyframe(0.72f, 0.72f),
-                    new Keyframe(1f, 0.05f)
+            Renderer renderer = sphere.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                return;
+            }
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.sortingOrder = sortingOrder;
+            if (sharedMaterial != null)
+            {
+                renderer.sharedMaterial = sharedMaterial;
+            }
+            energyLayers.Add(
+                new EnergyLayerBinding(
+                    renderer,
+                    bodyColor,
+                    midColor,
+                    edgeColor,
+                    opacity,
+                    layerMode,
+                    noiseScale,
+                    noiseSpeed,
+                    detailScale,
+                    detailSpeed,
+                    fresnelPower,
+                    breakup,
+                    emission,
+                    pulseSpeed,
+                    pulseAmount,
+                    phaseOffset
                 )
             );
-            Track(inward);
+        }
 
-            ParticleSystem compression = ProductionSignatureVfxFactory.CreateParticleSystem(
-                transform, "CompressionMotes", new Color(0.10f, 0.82f, 1f, 0.56f),
-                RuntimeMaterials, MaterialColors, true, Duration, 0.32f, 0.55f,
-                -4.2f, -2.2f, 0.025f, 0.050f, ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.60f, false, ParticleSystemSimulationSpace.Local, 12, 30f
+        private void BuildCorona(float orbDiameter)
+        {
+            ParticleSystem corona = ProductionSignatureVfxFactory.CreateParticleSystem(
+                coreRoot,
+                "BlueCorona",
+                new Color(0.08f, 0.58f, 1f, 0.58f),
+                RuntimeMaterials,
+                MaterialColors,
+                true,
+                Duration,
+                0.09f,
+                0.18f,
+                -0.32f,
+                -0.10f,
+                0.018f,
+                0.048f,
+                ParticleSystemShapeType.Sphere,
+                orbDiameter * 0.72f,
+                false,
+                ParticleSystemSimulationSpace.Local,
+                10,
+                20f
             );
-            ParticleSystem.ShapeModule compressionShape = compression.shape;
-            compressionShape.radiusThickness = 0.12f;
-            Track(compression);
+            ParticleSystem.ShapeModule shape = corona.shape;
+            shape.radiusThickness = 0.18f;
+            Track(corona);
+        }
+
+        private void BuildSpiralFlow(float boundaryRadius)
+        {
+            ParticleSystem fastSpiral = ProductionSignatureVfxFactory.CreateParticleSystem(
+                transform,
+                "FastClockwiseInwardStreaks",
+                new Color(0.025f, 0.38f, 1f, 0.72f),
+                RuntimeMaterials,
+                MaterialColors,
+                true,
+                Duration,
+                impactCue ? 0.20f : 0.42f,
+                impactCue ? 0.34f : 0.66f,
+                impactCue ? -10.5f : -7.2f,
+                impactCue ? -7.4f : -4.4f,
+                0.022f,
+                0.060f,
+                ParticleSystemShapeType.Sphere,
+                boundaryRadius,
+                true,
+                ParticleSystemSimulationSpace.Local,
+                impactCue ? 30 : 16,
+                impactCue ? 18f : 48f
+            );
+            fastSpiral.transform.localPosition = Vector3.up * 0.13f;
+            ParticleSystem.ShapeModule fastShape = fastSpiral.shape;
+            fastShape.radiusThickness = 0.06f;
+            ParticleSystem.VelocityOverLifetimeModule fastVelocity =
+                fastSpiral.velocityOverLifetime;
+            fastVelocity.enabled = true;
+            fastVelocity.space = ParticleSystemSimulationSpace.Local;
+            fastVelocity.orbitalY = new ParticleSystem.MinMaxCurve(4.2f, 6.4f);
+            fastVelocity.orbitalX = new ParticleSystem.MinMaxCurve(-0.35f, 0.35f);
+            ParticleSystem.NoiseModule fastNoise = fastSpiral.noise;
+            fastNoise.enabled = true;
+            fastNoise.strength = 0.10f;
+            fastNoise.frequency = 0.28f;
+            ConfigureInwardSize(fastSpiral, 0.04f);
+            Track(fastSpiral);
+
+            ParticleSystem slowSpiral = ProductionSignatureVfxFactory.CreateParticleSystem(
+                transform,
+                "SlowCounterSpiralMotes",
+                new Color(0.10f, 0.72f, 1f, 0.48f),
+                RuntimeMaterials,
+                MaterialColors,
+                true,
+                Duration,
+                impactCue ? 0.22f : 0.48f,
+                impactCue ? 0.38f : 0.76f,
+                impactCue ? -7.2f : -4.4f,
+                impactCue ? -4.8f : -2.2f,
+                0.018f,
+                0.044f,
+                ParticleSystemShapeType.Sphere,
+                boundaryRadius * 0.68f,
+                false,
+                ParticleSystemSimulationSpace.Local,
+                impactCue ? 24 : 12,
+                impactCue ? 14f : 32f
+            );
+            slowSpiral.transform.localPosition = Vector3.down * 0.11f;
+            ParticleSystem.ShapeModule slowShape = slowSpiral.shape;
+            slowShape.radiusThickness = 0.14f;
+            ParticleSystem.VelocityOverLifetimeModule slowVelocity =
+                slowSpiral.velocityOverLifetime;
+            slowVelocity.enabled = true;
+            slowVelocity.space = ParticleSystemSimulationSpace.Local;
+            slowVelocity.orbitalY = new ParticleSystem.MinMaxCurve(-3.8f, -2.2f);
+            slowVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(-0.22f, 0.22f);
+            ParticleSystem.NoiseModule slowNoise = slowSpiral.noise;
+            slowNoise.enabled = true;
+            slowNoise.strength = 0.055f;
+            slowNoise.frequency = 0.20f;
+            ConfigureInwardSize(slowSpiral, 0.08f);
+            Track(slowSpiral);
+        }
+
+        private static void ConfigureInwardSize(ParticleSystem system, float finalSize)
+        {
+            ParticleSystem.SizeOverLifetimeModule size = system.sizeOverLifetime;
+            size.enabled = true;
+            size.size = new ParticleSystem.MinMaxCurve(
+                1f,
+                new AnimationCurve(
+                    new Keyframe(0f, 0.55f),
+                    new Keyframe(0.18f, 1f),
+                    new Keyframe(0.76f, 0.64f),
+                    new Keyframe(1f, finalSize)
+                )
+            );
+        }
+
+        private void BuildConvergenceField(float outer, float boundaryRadius)
+        {
+            Transform boundary = new GameObject("ConvergenceBoundaryManager").transform;
+            boundary.SetParent(transform, false);
+            boundary.localPosition = Vector3.down * 0.28f;
+
+            for (int index = 0; index < 8; index++)
+            {
+                bool intermediate = index >= 5;
+                float radiusFactor = intermediate
+                    ? 0.46f + (index - 5) * 0.105f
+                    : 0.80f + index * 0.047f;
+                float arcRadius = boundaryRadius * radiusFactor;
+                float arcLength = 40f + (index * 29) % 69;
+                float width = Mathf.Clamp(
+                    outer * (0.0065f + (index % 3) * 0.0022f),
+                    0.022f,
+                    intermediate ? 0.042f : 0.058f
+                );
+                float alpha = intermediate
+                    ? 0.24f + (index - 5) * 0.055f
+                    : 0.34f + (index % 3) * 0.09f;
+                Color color = intermediate
+                    ? new Color(0.08f, 0.64f, 1f, alpha)
+                    : new Color(0.025f, 0.38f + index * 0.045f, 1f, alpha);
+                LineRenderer arc = ProductionSignatureVfxFactory.CreateArc(
+                    boundary,
+                    intermediate ? $"MidCompressionArc_{index - 4}" : $"OuterBrokenArc_{index + 1}",
+                    arcRadius,
+                    13f + index * 61f,
+                    arcLength,
+                    width,
+                    color,
+                    false,
+                    RuntimeMaterials,
+                    MaterialColors
+                );
+                arc.transform.localPosition = Vector3.up * ((index % 3 - 1) * 0.055f);
+                convergenceArcs.Add(
+                    new ConvergenceArcBinding(
+                        arc,
+                        color,
+                        alpha,
+                        Mathf.Repeat(0.11f + index * 0.137f, 1f),
+                        1.35f + (index % 4) * 0.31f,
+                        (index % 2 == 0 ? 1f : -1f) * (12f + index * 3.8f),
+                        intermediate ? 0.10f : 0.18f + (index % 2) * 0.07f,
+                        intermediate ? 0.025f : 0.045f
+                    )
+                );
+            }
+        }
+
+        private void BuildCompressionLight(float orbDiameter)
+        {
+            GameObject lightObject = new GameObject("BlueCompressionLight");
+            lightObject.transform.SetParent(coreRoot, false);
+            compressionLight = lightObject.AddComponent<Light>();
+            compressionLight.type = LightType.Point;
+            compressionLight.color = new Color(0.025f, 0.22f, 1f);
+            compressionLight.range = Mathf.Clamp(orbDiameter * 4.4f, 3.0f, 5.2f);
+            baseLightIntensity = impactCue ? 0.52f : 0.66f;
+            compressionLight.intensity = baseLightIntensity;
+            compressionLight.shadows = LightShadows.None;
         }
 
         protected override void Tick(float elapsed, float normalized, float deltaTime)
         {
+            shaderCompression = impactCue
+                ? Mathf.SmoothStep(0.25f, 1f, normalized)
+                : 0.34f + Mathf.Sin(elapsed * 8.6f) * 0.08f;
+            lightPulse = 0.88f + Mathf.Sin(elapsed * 10.2f) * 0.12f;
+
             if (coreRoot != null)
             {
-                coreRoot.localScale = Vector3.one * (1f + Mathf.Sin(elapsed * 18f) * 0.045f);
-                coreRoot.Rotate(Vector3.up, 55f * deltaTime, Space.Self);
+                float scale = impactCue
+                    ? Mathf.Lerp(1.24f, 0.58f, Mathf.SmoothStep(0f, 1f, normalized))
+                    : 1f + Mathf.Sin(elapsed * 8.6f) * 0.035f;
+                coreRoot.localScale = Vector3.one * scale;
+                coreRoot.Rotate(Vector3.up, (impactCue ? 95f : 42f) * deltaTime, Space.Self);
             }
-            for (int index = 0; index < convergenceSegments.Count; index++)
+
+            foreach (ConvergenceArcBinding arc in convergenceArcs)
             {
-                Transform segment = convergenceSegments[index];
-                if (segment == null)
-                {
-                    continue;
-                }
-                float cycle = Mathf.Repeat(
-                    elapsed * (impactCue ? 4.8f : 2.2f) + index * 0.23f,
-                    1f
+                arc?.Tick(elapsed, deltaTime, impactCue);
+            }
+        }
+
+        protected override void ApplyVisualFade(float fade)
+        {
+            base.ApplyVisualFade(fade);
+            ApplyEnergyLayers(fade);
+            foreach (ConvergenceArcBinding arc in convergenceArcs)
+            {
+                arc?.ApplyFade(fade);
+            }
+            if (compressionLight != null)
+            {
+                compressionLight.intensity = baseLightIntensity * lightPulse * fade;
+            }
+            if (distortionSource != null)
+            {
+                float compressionBoost = impactCue
+                    ? Mathf.Lerp(1.35f, 0.35f, shaderCompression)
+                    : 0.90f + shaderCompression * 0.20f;
+                distortionSource.SetStrength(
+                    baseDistortionStrength * compressionBoost * fade
                 );
-                float scale = Mathf.Lerp(1f, 0.22f, Mathf.SmoothStep(0f, 1f, cycle));
-                segment.localScale = Vector3.one * scale;
-                segment.Rotate(
-                    Vector3.up,
-                    (index % 2 == 0 ? 34f : -26f) * deltaTime,
-                    Space.Self
-                );
+            }
+        }
+
+        private void ApplyEnergyLayers(float fade)
+        {
+            foreach (EnergyLayerBinding layer in energyLayers)
+            {
+                layer?.Apply(fade, shaderCompression);
             }
         }
     }

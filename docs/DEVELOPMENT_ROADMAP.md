@@ -41,6 +41,7 @@ Gate 5B First Production-Quality Vertical Slice: STARTED
 - Pass 7 Combat Camera & Impact Feedback Polish: USER VERIFIED
 - Pass 8 JJK-Referenced Production Particle VFX Runtime: USER VISUAL REVIEW FAILED / REWORK REQUIRED
 - Pass 8R-1 Gojo Signature VFX Reference-First Rework: USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
+- Pass 8R-2A Gojo Blue Production VFX Benchmark: REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - TMP/final asset binding: ASSET-DEPENDENT / PENDING
 Gate 6 Production: PENDING
 ```
@@ -297,6 +298,14 @@ residual을 가진 18m travel로 재구성한다. Unlimited Void는 active parti
 아니라 near-black enclosure, floor suppression, 3-depth star field, distant focal body를 소유하는
 domain environment로 전환한다. Pass 7 combat feedback 소유권과 모든 gameplay timing/rule은 유지한다.
 현재 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 Pass 8 실패 상태는 유지한다.
+
+Pass 8R-2A는 Gojo Blue 하나를 후속 signature VFX의 production benchmark로 제한한다.
+VFX Graph나 Full Screen Pass를 추가하지 않고 custom URP procedural shader, shared scene-owned
+material template, MaterialPropertyBlock 기반 body/Fresnel/distortion-like shell, clockwise/counter
+spiral ParticleSystem, 비동기 broken arc field로 outer → mid → core 깊이를 만든다. renderer asset,
+ProductionArenaMoodController, gameplay, Red/Purple/Void/Sukuna/Megumi 값은 변경하지 않는다.
+현재 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 Unity shader compile과 시각 검수 후에만
+다음 Red production benchmark로 확장한다.
 
 전용 font / portrait / model asset이 들어오면 TMP + final asset binding으로 교체한다.
 

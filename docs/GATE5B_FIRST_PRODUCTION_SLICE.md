@@ -43,6 +43,9 @@ Pass 8 · JJK-Referenced Production Particle VFX Runtime:
 USER VISUAL REVIEW FAILED / REWORK REQUIRED
 
 Pass 8R-1 · Gojo Signature VFX Reference-First Rework:
+USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
+
+Pass 8R-2A · Gojo Blue Production VFX Benchmark:
 REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 ```
 
@@ -1052,4 +1055,81 @@ Unity 사용자 시각 검수 필수:
 11. Bloom에서 Blue/Red/Purple 중심색이 white blob으로 소실되지 않는지
 12. 기존 damage/CE/cooldown/pull/push/stun/Purple damage sync/Domain duration 회귀가 없는지
 13. Console red error와 MissingReference가 없는지
+```
+
+---
+
+# Pass 8R-2A — Gojo Blue Production VFX Benchmark
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+이 pass는 Pass 8R-1의 전체 Gojo rework를 다시 넓히지 않고 술식순전 「창」 하나만
+production-quality benchmark로 올린다. Pass 8의 실패 상태와 Pass 8R-1의
+`USER VISUAL PARTIAL / DETAIL REWORK REQUIRED` 상태는 유지한다.
+
+현재 renderer 제약:
+- Unity 6 / URP 17.3
+- VFX Graph package 미설치 상태 유지
+- PC Renderer의 SSAO 외 Renderer Feature 추가 없음
+- Full Screen Pass 및 renderer asset YAML 변경 없음
+
+Blue shader benchmark:
+- `JJKGame/VFX/Gojo Blue Energy` 전용 URP transparent shader 추가
+- shader math 기반 3D value noise + 4-octave fractal noise 사용, 외부 texture 없음
+- primary/detail noise를 서로 다른 scale과 방향으로 scroll
+- deep-blue body → saturated electric-blue mid → cyan Fresnel edge 계층
+- body/shell/outer mode별 opacity와 noise breakup을 분리해 완벽한 flat sphere 외곽을 억제
+- emission은 ProductionArenaMoodController Bloom 아래에서 색 계층을 보존하도록 제한
+
+core / field layering:
+- `DenseEnergyBody`: 가장 불투명한 animated deep-blue core
+- `FresnelEnergyShell`: cyan edge와 noise breakup이 중심인 두 번째 layer
+- `ThinOuterDistortionShell`: 실제 screen sampling 없이 공간 압축처럼 흔들리는 soft shell
+- `BlueCorona`: core 표면의 제한된 보조 particle
+- `FastClockwiseInwardStreaks`: outer radius에서 중심으로 감기는 빠른 layer
+- `SlowCounterSpiralMotes`: 중간 반경에서 반대 방향으로 감기는 느린 depth layer
+- `ConvergenceBoundaryManager`: 길이/폭/alpha/속도/높이/축소율이 다른 불완전 arc 8개를 단일 instance가 갱신
+- outer arc 5개와 mid compression arc 3개로 outer → mid → core 공간을 채움
+
+impact / distortion:
+- first impact도 동일 gameplay hit point를 사용하며 core scale과 spiral/arc가 빠르게 안쪽으로 collapse
+- outward radial explosion을 추가하지 않음
+- 현재 renderer feature에 결합하지 않는 `GojoBlueDistortionSource` read-only anchor 추가
+- future screen distortion consumer가 world radius/strength/impact metadata를 소비할 수 있으나 이번 pass에서는 renderer YAML을 변경하지 않음
+
+resource / ownership:
+- shader는 Resources asset으로 명시적으로 포함하고 첫 Blue spawn에서 한 번 load
+- `GojoBlueMaterialLibrary`가 CombatMVP production runtime root에 shared material template 1개를 생성
+- 세 core layer는 shared material + per-renderer `MaterialPropertyBlock`을 사용
+- per-frame material/texture 생성과 per-frame FindObjects 없음
+- scene/runtime root 파기 시 shared material template 파기
+- particle/arc runtime material은 기존 VFX instance lifecycle로 파기
+- primitive sphere collider 제거, 모든 renderer shadow/receive shadow 비활성
+- temporary Point Light는 Blue root당 1개, shadows off, 제한된 range/intensity
+- Pass 7 camera/FOV/focus/flash/hit-stop ownership 변경 없음
+
+변경하지 않은 항목:
+- `GojoTechniqueController`와 `BlueConvergenceField` gameplay 코드 및 값
+- cast/distance/radius/duration/pulse/damage/pull/stun/cooldown/CE/target/damage timing
+- Red, Hollow Purple, Unlimited Void, Sukuna, Megumi visual 값
+- ProductionArenaMoodController Bloom/lighting 값
+
+Unity 사용자 시각 검수 필수:
+
+```text
+1. Blue field wide shot에서 core / mid flow / broken outer boundary가 3단 depth로 읽히는지
+2. core close-up에서 flat Unity sphere가 아니라 움직이는 deep-blue/electric-blue 표면이 보이는지
+3. Fresnel shell과 outer breakup이 cyan edge를 만들되 white Bloom blob이 되지 않는지
+4. 빠른 upper/clockwise streak와 느린 counter spiral mote가 둘 다 outer → core로 이동하는지
+5. 8개 arc가 동일한 debug circle처럼 동기화되지 않고 불완전하게 나타나고 줄어드는지
+6. first impact가 outward explosion이 아니라 0.28초 안쪽 collapse로 읽히는지
+7. 실제 target pull 방향과 spiral/convergence 방향이 일치하는지
+8. 한 화면에서 기존 Pass 8R-1 Blue 대비 shader/material/detail 차이가 분명한지
+9. F2/F3/F4, ENTER rematch, ESC CharacterSelect 반복 후 material/light/particle 잔류가 없는지
+10. Red/Purple/Void/Sukuna/Megumi와 gameplay/HUD/Target Lock 회귀가 없는지
+11. Console shader compile error, red error, MissingReference가 없는지
 ```
