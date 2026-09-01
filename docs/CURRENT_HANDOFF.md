@@ -67,6 +67,16 @@ Unlimited Void:
 - screen-space transition
 - lighting
 
+## 현재 렌더링/패키지 제약
+
+- Unity 6 / URP 17.3
+- VFX Graph 패키지는 현재 `Packages/manifest.json`에 설치되어 있지 않음
+- PC Renderer에는 현재 Screen Space Ambient Occlusion만 Renderer Feature로 등록되어 있음
+- Full Screen Pass / distortion Renderer Feature는 아직 구성되어 있지 않음
+- 따라서 다음 pass에서 VFX Graph나 Full Screen Pass를 전제로 코드를 쓰지 말고,
+  기존 ParticleSystem + custom URP shader를 먼저 production benchmark로 만든 뒤
+  distortion pipeline은 별도 검증 가능한 단계로 추가할 것
+
 ## 다음 작업
 
 Pass 8R-2를 단순 detail tuning이 아니라:
