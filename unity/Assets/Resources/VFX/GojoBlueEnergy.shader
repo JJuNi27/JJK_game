@@ -93,17 +93,17 @@ Shader "JJKGame/VFX/Gojo Blue Energy"
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
-            float Hash31(float3 point)
+            float Hash31(float3 samplePos)
             {
-                point = frac(point * 0.1031);
-                point += dot(point, point.yzx + 33.33);
-                return frac((point.x + point.y) * point.z);
+                samplePos = frac(samplePos * 0.1031);
+                samplePos += dot(samplePos, samplePos.yzx + 33.33);
+                return frac((samplePos.x + samplePos.y) * samplePos.z);
             }
 
-            float ValueNoise(float3 point)
+            float ValueNoise(float3 samplePos)
             {
-                float3 cell = floor(point);
-                float3 fraction = frac(point);
+                float3 cell = floor(samplePos);
+                float3 fraction = frac(samplePos);
                 float3 blend = fraction * fraction * (3.0 - 2.0 * fraction);
 
                 float n000 = Hash31(cell + float3(0, 0, 0));
@@ -128,15 +128,15 @@ Shader "JJKGame/VFX/Gojo Blue Energy"
                 return lerp(nearZ, farZ, blend.z);
             }
 
-            float FractalNoise(float3 point)
+            float FractalNoise(float3 samplePos)
             {
                 float total = 0.0;
                 float amplitude = 0.56;
                 [unroll]
                 for (int octave = 0; octave < 4; octave++)
                 {
-                    total += ValueNoise(point) * amplitude;
-                    point = point * 2.03 + float3(7.1, 3.7, 5.9);
+                    total += ValueNoise(samplePos) * amplitude;
+                    samplePos = samplePos * 2.03 + float3(7.1, 3.7, 5.9);
                     amplitude *= 0.48;
                 }
                 return saturate(total);
