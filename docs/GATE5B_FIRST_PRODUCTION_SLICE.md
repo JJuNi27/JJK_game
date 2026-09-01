@@ -41,6 +41,9 @@ USER VERIFIED
 
 Pass 8 · JJK-Referenced Production Particle VFX Runtime:
 USER VISUAL REVIEW FAILED / REWORK REQUIRED
+
+Pass 8R-1 · Gojo Signature VFX Reference-First Rework:
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -987,4 +990,60 @@ lifecycle / cleanup:
 13. 다시 CombatMVP 진입 후 Natural/FadeOut/Immediate 및 follow target cleanup 확인
 14. damage / CE / cooldown / range / hitbox / knockback / hit stun / camera / HUD 회귀 확인
 15. Console red error 없음
+```
+
+---
+
+# Pass 8R-1 — Gojo Signature VFX Reference-First Rework
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+Pass 8의 `USER VISUAL REVIEW FAILED / REWORK REQUIRED` 상태는 유지한다. 이번 rework는
+`docs/JJK_VFX_REFERENCE_GOJO.md`를 시각 기준으로 사용하며, 스쿠나 계열은 변경하지 않았다.
+
+signature presentation 경계:
+- `PresentationVfxRuntime` 등록은 기존 CombatMVP scene-owned runtime 하나만 유지
+- `ProductionParticleVfxRuntime.Spawn`이 Gojo Blue/Red를 전용 orb-first instance로 dispatch
+- generic/basic hit/Fuga/Sukuna/Megumi particle path는 기존 `ProductionParticleVfxInstance` 유지
+- Hollow Purple은 gameplay-owned marker root의 activation을 소비하는 canonical sequence가 전용 구체와 travel을 소유
+- Unlimited Void는 `PresentationVfxStyleId.UnlimitedVoidActive` particle burst를 production path에서 사용하지 않고 domain visual root 내부 environment가 소유
+
+visual rework:
+- Blue: deep-blue dense sphere + electric-blue shell + 부분 circular boundary + outer-to-core particle motion
+- Red: 이동 중 유지되는 crimson sphere + 짧은 residual trail + 반복을 제한한 outward shell/shock front + impact repulsion
+- Hollow Purple: 독립 Blue/Red core/rim orb가 0.24초 동안 접근한 뒤 dense violet body로 점화되어 0.78초/18m 이동
+- 기존 Hollow Purple long beam 생성 제거; gameplay damage sync와 marker lifetime은 유지
+- Unlimited Void: inward-visible near-black enclosure, collider 없는 dark floor overlay, Near/Far/Dust depth stars, dark central body와 제한된 celestial arc로 환경 전환
+- 기존 GroundRing/OrbitRingA/OrbitRingB 중심 prototype은 production component에서 제거
+
+lifecycle / ownership:
+- runtime 생성 sphere의 collider 제거, renderer shadow/receive shadow 비활성
+- Blue/Red handle의 Immediate/FadeOut와 follow target 유실 시 마지막 위치 유지
+- Purple sequence root는 CombatMVP runner child이며 완료/scene unload 때 runtime material과 함께 파기
+- Void environment는 domain root 비활성화 시 star field를 stop-and-clear하고 재활성화 시 fresh play
+- Void runtime material은 domain visual 파기 시 명시적으로 파기
+- `ProductionArenaMoodController`/`RenderSettings`를 수정하지 않음
+- `ProductionCombatFeedbackDirector`의 shake/FOV/focus/flash/hit-stop 소유권 변경 없음
+- damage, CE, cooldown, hitbox, pull/push, stun, Purple timing/damage sync, Domain state/duration/radius/rule/input 변경 없음
+
+Unity 사용자 시각 검수 필수:
+
+```text
+1. Blue field에서 파란 orb, 원형 범위, outer → core 수렴이 한 화면에 읽히는지
+2. Blue impact cue가 outward electric/ice burst로 보이지 않는지
+3. Red release/flight에서 crimson orb가 소실되지 않고 core → outer shock front가 읽히는지
+4. Red impact가 fire explosion보다 공간을 미는 shell/ring으로 보이는지
+5. Blue와 Red를 연속 사용해 색 없이도 motion 방향이 반대로 읽히는지
+6. Purple 발동에서 실제 Blue/Red orb → 중앙 merge → dense Purple body가 순서대로 보이는지
+7. Purple이 18m travel 동안 짧은 trail만 남기고 long beam처럼 보이지 않는지
+8. Unlimited Void에서 arena가 near-black enclosure/depth stars/focal body 내부 공간으로 바뀌는지
+9. Void floor가 기존 floor를 억제하되 fighter/Target Lock/HUD를 가리지 않는지
+10. Void 종료, F2/F3/F4, ENTER rematch, ESC CharacterSelect 후 backdrop/floor/stars/light 잔류가 없는지
+11. Bloom에서 Blue/Red/Purple 중심색이 white blob으로 소실되지 않는지
+12. 기존 damage/CE/cooldown/pull/push/stun/Purple damage sync/Domain duration 회귀가 없는지
+13. Console red error와 MissingReference가 없는지
 ```

@@ -300,8 +300,8 @@ namespace JJKGame.Player
             runtimeVisual.transform.SetParent(transform, false);
             runtimeVisual.SetActive(false);
 
-            UnlimitedVoidPrototypeVisual visual =
-                runtimeVisual.AddComponent<UnlimitedVoidPrototypeVisual>();
+            UnlimitedVoidProductionVisual visual =
+                runtimeVisual.AddComponent<UnlimitedVoidProductionVisual>();
             visual.Configure(domainRadius);
             domainVisualRoot = runtimeVisual;
         }
