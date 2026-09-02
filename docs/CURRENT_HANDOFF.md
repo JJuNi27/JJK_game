@@ -27,6 +27,7 @@ Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승
 ## 기준 문서
 
 - docs/JJK_VFX_REFERENCE_GOJO.md
+- docs/JJK_VFX_EXTERNAL_IMPLEMENTATION_RESEARCH.md
 - docs/GATE5B_FIRST_PRODUCTION_SLICE.md
 - docs/DEVELOPMENT_ROADMAP.md
 - 사용자 조사 요약: Unity 고죠 VFX 구현 조사 요약
@@ -114,8 +115,38 @@ Blue에만 다음 production benchmark를 원격 구현했다.
 VFX Graph, Full Screen Pass, PC Renderer YAML, external texture는 추가하지 않았다.
 Red/Purple/Unlimited Void/Sukuna/Megumi와 gameplay 값도 변경하지 않았다.
 
-현재 다음 단계는 Unity에서 shader compile error가 없는지 확인하고 Blue wide/close/impact 장면을
-시각 검수하는 것이다. Blue가 사용자 합격하기 전에는 Red production pass로 넘어가지 않는다.
+Blue benchmark를 Unity에서 처음 실행하면서 실제 runtime/shader 문제 2종을 발견했고 master에서 수정했다.
+
+- `6487acd`: Particle orbital X/Y/Z MinMaxCurve mode 불일치 + 생성 직후 playing 상태에서 duration 변경 오류 수정
+- `8247db9`: HLSL/D3D11에서 예약어와 충돌한 shader 함수 인자 `point`를 `samplePos`로 변경
+
+이후 사용자는 실제 Blue effect를 확인할 수 있는 상태까지 도달했다.
+다만 Blue를 USER VERIFIED로 승인한 것은 아니다. 현재는 외부 고퀄 Unity/Unreal 구현과 비교하면서
+detail ceiling과 다음 polish 방향을 정하는 단계다.
+
+추가 외부 구현 조사 결과는:
+`docs/JJK_VFX_EXTERNAL_IMPLEMENTATION_RESEARCH.md`
+
+에 기록했다.
+
+현재 reference 역할:
+- starkim1999: lore/readability + inward/outward motion + distortion + Domain tunnel/environment
+- Zepwlert "The Strongest Sorcerer": 236 ParticleSystem, screen-space/distortion/sound를 겹친 layer-rich benchmark
+- Floppiii: particle texture / anime particle shader / screen-space cinematic set-piece benchmark
+- Swammy JJK Fan Game (UE5.4+): 실제 action-game scale/readability/integration benchmark
+- Deadlyxrebel Hollow Purple: debris suction / material cracking / impact decal / stage transition detail 아이디어
+
+현재 다음 단계는 Blue를 바로 완료 처리하는 것이 아니라
+`Blue Production VFX Benchmark 2차 polish`를 검토하는 것이다.
+
+권장 우선순위:
+1. actual screen distortion proof
+2. custom particle texture/mask
+3. visual-only debris/dust suction
+4. presentation layer onset stagger
+5. 사용자 영상/스크린샷 기반 final art tuning
+
+Blue가 사용자 합격하기 전에는 Red production pass로 넘어가지 않는다.
 
 
 ## Pass 8R-2A Unity test / hotfix 상태
