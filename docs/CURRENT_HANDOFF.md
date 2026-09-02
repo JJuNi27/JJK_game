@@ -28,6 +28,7 @@ Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승
 
 - docs/JJK_VFX_REFERENCE_GOJO.md
 - docs/JJK_VFX_EXTERNAL_IMPLEMENTATION_RESEARCH.md
+- docs/NEW_CHAT_BOOTSTRAP.md
 - docs/GATE5B_FIRST_PRODUCTION_SLICE.md
 - docs/DEVELOPMENT_ROADMAP.md
 - 사용자 조사 요약: Unity 고죠 VFX 구현 조사 요약
@@ -259,3 +260,9 @@ docs/GATE5B_FIRST_PRODUCTION_SLICE.md를 읽고 현재 Gate/Pass 상태와 마�
 Blue가 사용자 시각 합격하기 전에는 Red로 넘어가면 안 돼.
 내가 마지막으로 본 Blue의 시각 평가부터 물어보고 그 결과에 따라 다음 작업을 정해줘.
 큰 작업은 Codex용 프롬프트를 만들어주고, feature branch → commit/push → GitHub diff review → merge → Unity user test 순서를 유지해줘." 
+
+
+## 새 채팅 인수인계
+
+새 채팅 시작용 복붙 지시문은 `docs/NEW_CHAT_BOOTSTRAP.md`에 저장되어 있다.
+새 채팅은 해당 문서와 CURRENT_HANDOFF를 GitHub에서 직접 읽은 뒤 현재 master를 확인하고 이어간다.
