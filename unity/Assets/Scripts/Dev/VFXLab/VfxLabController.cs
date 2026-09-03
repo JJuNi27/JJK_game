@@ -38,6 +38,7 @@ namespace JJKGame.Dev.VFXLab
         private GUIStyle titleStyle;
         private GUIStyle lineStyle;
         private int styledForHeight = -1;
+        private bool expandedHelp;
 
         private void Awake()
         {
@@ -86,6 +87,14 @@ namespace JJKGame.Dev.VFXLab
             previewCharacter.Configure(previewCamera.transform);
             orbitCamera.Configure(previewCharacterRoot, previewPoint);
             sequence.Configure(previewPoint, previewCharacter);
+        }
+
+        private void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.F1))
+            {
+                expandedHelp = !expandedHelp;
+            }
         }
 
         private void CaptureRenderSettings()
@@ -358,30 +367,41 @@ namespace JJKGame.Dev.VFXLab
             }
             EnsureStyles();
             const float margin = 14f;
-            float width = Mathf.Min(540f, Screen.width - margin * 2f);
-            Rect panel = new Rect(margin, margin, width, 234f);
+            float requestedWidth = expandedHelp ? 520f : 410f;
+            float width = Mathf.Min(requestedWidth, Screen.width - margin * 2f);
+            float height = expandedHelp ? 292f : 128f;
+            Rect panel = new Rect(margin, margin, width, height);
             Color previous = GUI.color;
             GUI.color = new Color(0.008f, 0.015f, 0.035f, 0.92f);
             GUI.DrawTexture(panel, Texture2D.whiteTexture);
             GUI.color = previous;
             GUI.Box(panel, GUIContent.none);
 
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, 24f), "VFX LAB · GOJO", titleStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 36f, panel.width - 24f, 20f), "Character  GOJO", lineStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 57f, panel.width - 24f, 20f), $"Action     {sequence.SelectedActionLabel}", lineStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 78f, panel.width - 24f, 20f), $"Phase      {sequence.CurrentPhaseLabel}", lineStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 99f, panel.width - 24f, 20f), $"Loop       {(sequence.LoopEnabled ? "ON" : "OFF")}    Speed  {sequence.PlaybackSpeed:0.###}x    {(sequence.Paused ? "PAUSED" : "PLAYING")}", lineStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 120f, panel.width - 24f, 20f), $"Motion     {previewCharacter.AnimationSourceLabel}", lineStyle);
+            float contentX = panel.x + 12f;
+            float contentWidth = panel.width - 24f;
+            GUI.Label(new Rect(contentX, panel.y + 7f, contentWidth, 23f), "VFX LAB · GOJO", titleStyle);
+            GUI.Label(new Rect(contentX, panel.y + 31f, contentWidth, 20f), $"Action  {sequence.SelectedActionLabel}", lineStyle);
+            GUI.Label(new Rect(contentX, panel.y + 52f, contentWidth, 20f), $"Phase   {sequence.CurrentPhaseLabel}", lineStyle);
+
+            if (!expandedHelp)
+            {
+                GUI.Label(new Rect(contentX, panel.y + 75f, contentWidth, 20f), "Q Blue · E Red · R Purple · V Domain", lineStyle);
+                GUI.Label(new Rect(contentX, panel.y + 98f, contentWidth, 20f), "F1 Help", lineStyle);
+                return;
+            }
+
+            GUI.Label(new Rect(contentX, panel.y + 75f, contentWidth, 20f), $"Loop {(sequence.LoopEnabled ? "ON" : "OFF")} · Speed {sequence.PlaybackSpeed:0.###}x · {(sequence.Paused ? "PAUSED" : "PLAYING")}", lineStyle);
+            GUI.Label(new Rect(contentX, panel.y + 96f, contentWidth, 20f), $"Motion {previewCharacter.AnimationSourceLabel}", lineStyle);
             if (!sequence.RuntimeReady)
             {
                 Color oldColor = lineStyle.normal.textColor;
                 lineStyle.normal.textColor = new Color(1f, 0.28f, 0.22f);
-                GUI.Label(new Rect(panel.x + 12f, panel.y + 141f, panel.width - 24f, 20f), "Production VFX runtime is not registered", lineStyle);
+                GUI.Label(new Rect(contentX, panel.y + 117f, contentWidth, 20f), "Production VFX runtime is not registered", lineStyle);
                 lineStyle.normal.textColor = oldColor;
             }
             GUI.Label(
-                new Rect(panel.x + 12f, panel.y + 162f, panel.width - 24f, 66f),
-                "WASD Move · LMB Basic · Space Dodge · Q Blue · E Red · R Purple · V Domain · X Cancel\nShift+2 Blue Field · Shift+3 Blue Impact · Shift+V Direct Domain\nShift+R Replay · L Loop · P Pause · [ / ] Speed · Backspace Hard Clear · MMB Orbit · Wheel Zoom · Home Camera",
+                new Rect(contentX, panel.y + 141f, contentWidth, 126f),
+                "WASD Move · LMB Basic · Space Dodge\nQ Blue · E Red · R Purple · V Domain · X Cancel\nShift+2 Blue Field · Shift+3 Blue Impact · Shift+R Replay\nL Loop · P Pause · [ / ] Speed · Backspace Clear\nMMB Orbit · Wheel Zoom · Home Reset\nF1 Close Help",
                 lineStyle
             );
         }

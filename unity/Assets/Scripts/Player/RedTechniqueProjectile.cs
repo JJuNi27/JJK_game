@@ -115,16 +115,9 @@ namespace JJKGame.Player
                     impactPlayed = true;
                     onFirstImpact?.Invoke();
                     PresentationVfxRuntime.Spawn(
-                        PresentationVfxSpawnRequest.AtWorld(
+                        GojoRedPresentationPreset.CreateImpactRequest(
                             context.HitPoint,
-                            new Color(0.88f, 0.015f, 0.025f, 0.92f),
-                            new Color(1f, 0.30f, 0.04f, 0.74f),
-                            radius * 0.20f,
-                            radius * 2.4f,
-                            0.26f,
-                            0f,
-                            PresentationVfxTimePolicy.Unscaled,
-                            PresentationVfxStyleId.GojoRed,
+                            radius,
                             direction
                         )
                     );
@@ -148,19 +141,71 @@ namespace JJKGame.Player
         private void BuildVisual()
         {
             presentationHandle = PresentationVfxRuntime.Spawn(
-                PresentationVfxSpawnRequest.Follow(
+                GojoRedPresentationPreset.CreateReleaseRequest(
                     transform,
-                    Vector3.zero,
-                    new Color(0.84f, 0.015f, 0.025f, 0.94f),
-                    new Color(1f, 0.26f, 0.04f, 0.76f),
-                    radius * 0.28f,
-                    radius * 1.8f,
+                    radius,
                     maxRange / speed + 0.15f,
-                    0f,
-                    PresentationVfxTimePolicy.Scaled,
-                    PresentationVfxStyleId.GojoRed,
                     direction
                 )
+            );
+        }
+    }
+
+    /// <summary>
+    /// Presentation-only Red request factory shared by the gameplay projectile and
+    /// developer preview hosts. Gameplay owns radius and lifetime inputs; this type
+    /// owns only the renderer-facing production tuning.
+    /// </summary>
+    public static class GojoRedPresentationPreset
+    {
+        private static readonly Color ReleasePrimary =
+            new Color(0.84f, 0.015f, 0.025f, 0.94f);
+        private static readonly Color ReleaseSecondary =
+            new Color(1f, 0.26f, 0.04f, 0.76f);
+        private static readonly Color ImpactPrimary =
+            new Color(0.88f, 0.015f, 0.025f, 0.92f);
+        private static readonly Color ImpactSecondary =
+            new Color(1f, 0.30f, 0.04f, 0.74f);
+
+        public static PresentationVfxSpawnRequest CreateReleaseRequest(
+            Transform anchor,
+            float radius,
+            float duration,
+            Vector3 direction
+        )
+        {
+            return PresentationVfxSpawnRequest.Follow(
+                anchor,
+                Vector3.zero,
+                ReleasePrimary,
+                ReleaseSecondary,
+                radius * 0.28f,
+                radius * 1.8f,
+                duration,
+                0f,
+                PresentationVfxTimePolicy.Scaled,
+                PresentationVfxStyleId.GojoRed,
+                direction
+            );
+        }
+
+        public static PresentationVfxSpawnRequest CreateImpactRequest(
+            Vector3 worldPosition,
+            float radius,
+            Vector3 direction
+        )
+        {
+            return PresentationVfxSpawnRequest.AtWorld(
+                worldPosition,
+                ImpactPrimary,
+                ImpactSecondary,
+                radius * 0.20f,
+                radius * 2.4f,
+                0.26f,
+                0f,
+                PresentationVfxTimePolicy.Unscaled,
+                PresentationVfxStyleId.GojoRed,
+                direction
             );
         }
     }

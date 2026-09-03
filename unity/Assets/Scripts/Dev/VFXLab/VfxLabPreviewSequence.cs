@@ -21,20 +21,15 @@ namespace JJKGame.Dev.VFXLab
     [DisallowMultipleComponent]
     public sealed class VfxLabPreviewSequence : MonoBehaviour
     {
-        private enum DomainGestureStep
-        {
-            None,
-            AwaitRightPress,
-            AwaitLeftClick,
-            AwaitRightRelease,
-            Active,
-        }
-
         private const float BlueRadius = 4.5f;
         private const float BlueFieldDuration = 0.95f;
+        private const float BasicComboResetDelay = 0.9f;
+        private const float RedVisualRadius = 1.7f;
+        private const float RedVisualLifetime = 0.65f;
         private const float PreviewAnchorForwardDistance = 4.2f;
         private const float PreviewAnchorHeight = 1f;
         private const float LoopDelay = 0.34f;
+        private const float DomainAnticipationDuration = 0.34f;
         private const float DomainPreviewDuration = 3.2f;
 
         private readonly List<PresentationVfxHandle> activeHandles =
@@ -44,13 +39,15 @@ namespace JJKGame.Dev.VFXLab
         private VfxLabPreviewCharacter previewCharacter;
         private VfxLabPreviewAction selectedAction = VfxLabPreviewAction.Blue;
         private VfxLabPreviewAction activeAction;
-        private DomainGestureStep domainGestureStep;
+        private PrototypeHollowPurplePresentationRuntime.OrbSequence hollowPurpleSequence;
         private Transform travelAnchor;
         private Vector3 travelStart;
         private Vector3 travelEnd;
         private GameObject domainPreviewRoot;
         private UnlimitedVoidProductionVisual domainVisual;
         private float sequenceElapsed;
+        private float hollowPurpleClock;
+        private float basicComboExpiresAt;
         private float loopWaitElapsed;
         private float playbackSpeed = 1f;
         private float originalTimeScale = 1f;
@@ -61,11 +58,13 @@ namespace JJKGame.Dev.VFXLab
         private bool loopWaiting;
         private bool loopEnabled;
         private int sequenceStep;
+        private int basicAttackStep = 1;
+        private int nextBasicAttackStep = 1;
         private string phaseBeforePause = "IDLE";
 
         public string SelectedActionLabel => selectedAction switch
         {
-            VfxLabPreviewAction.BasicAttack => "BASIC ATTACK COMBO",
+            VfxLabPreviewAction.BasicAttack => $"BASIC ATTACK · NEXT {nextBasicAttackStep}",
             VfxLabPreviewAction.Dodge => "DODGE",
             VfxLabPreviewAction.Red => "CURSED TECHNIQUE REVERSAL: RED",
             VfxLabPreviewAction.HollowPurple => "HOLLOW PURPLE",
@@ -98,20 +97,11 @@ namespace JJKGame.Dev.VFXLab
 
         private void Update()
         {
+            ResetExpiredBasicCombo();
             HandleInput();
 
             if (paused)
             {
-                return;
-            }
-
-            if (IsWaitingForDomainGesture())
-            {
-                if (domainGestureStep == DomainGestureStep.AwaitRightRelease)
-                {
-                    CurrentPhaseLabel = $"DOMAIN SEAL · RELEASE RMB · {sequenceElapsed:0.00}s";
-                    sequenceElapsed += Time.deltaTime;
-                }
                 return;
             }
 
@@ -127,7 +117,7 @@ namespace JJKGame.Dev.VFXLab
                 CurrentPhaseLabel = "LOOP WAIT";
                 if (loopWaitElapsed >= LoopDelay)
                 {
-                    Begin(selectedAction, selectedAction == VfxLabPreviewAction.UnlimitedVoid);
+                    Begin(selectedAction);
                 }
                 return;
             }
@@ -208,7 +198,7 @@ namespace JJKGame.Dev.VFXLab
 
             if (shift && Input.GetKeyDown(CombatInputBindings.Ultimate))
             {
-                Begin(selectedAction, selectedAction == VfxLabPreviewAction.UnlimitedVoid);
+                Begin(selectedAction);
                 return;
             }
             if (shift && Input.GetKeyDown(KeyCode.Alpha2))
@@ -221,21 +211,9 @@ namespace JJKGame.Dev.VFXLab
                 Begin(VfxLabPreviewAction.BlueImpactDebug);
                 return;
             }
-            if (shift && ProductionCombatInput.DomainPressed)
-            {
-                Begin(VfxLabPreviewAction.UnlimitedVoid, true);
-                return;
-            }
-
-            if (IsWaitingForDomainGesture())
-            {
-                HandleDomainGestureInput();
-                return;
-            }
-
             if (ProductionCombatInput.BasicAttackPressed)
             {
-                Begin(VfxLabPreviewAction.BasicAttack);
+                BeginBasicAttackStep();
             }
             else if (ProductionCombatInput.DodgePressed)
             {
@@ -259,7 +237,34 @@ namespace JJKGame.Dev.VFXLab
             }
         }
 
-        private void Begin(VfxLabPreviewAction action, bool directDomain = false)
+        private void BeginBasicAttackStep()
+        {
+            ResetExpiredBasicCombo();
+            basicAttackStep = nextBasicAttackStep;
+            nextBasicAttackStep = basicAttackStep >= 3 ? 1 : basicAttackStep + 1;
+            basicComboExpiresAt = Time.time + BasicComboResetDelay;
+            Begin(VfxLabPreviewAction.BasicAttack);
+        }
+
+        private void ResetExpiredBasicCombo()
+        {
+            if (nextBasicAttackStep != 1 && Time.time > basicComboExpiresAt)
+            {
+                nextBasicAttackStep = 1;
+            }
+        }
+
+        private static VfxLabPreviewMotion GetBasicAttackMotion(int step)
+        {
+            return step switch
+            {
+                2 => VfxLabPreviewMotion.BasicAttack2,
+                3 => VfxLabPreviewMotion.BasicAttackFinisher,
+                _ => VfxLabPreviewMotion.BasicAttack1,
+            };
+        }
+
+        private void Begin(VfxLabPreviewAction action)
         {
             StopPreviewContent();
             previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.Idle);
@@ -270,13 +275,12 @@ namespace JJKGame.Dev.VFXLab
             sequenceStep = 0;
             running = true;
             loopWaiting = false;
-            domainGestureStep = DomainGestureStep.None;
 
             switch (action)
             {
                 case VfxLabPreviewAction.BasicAttack:
-                    CurrentPhaseLabel = "BASIC ATTACK 1";
-                    previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.BasicAttack1);
+                    CurrentPhaseLabel = $"BASIC ATTACK {basicAttackStep}";
+                    previewCharacter?.SetPreviewMotion(GetBasicAttackMotion(basicAttackStep));
                     break;
                 case VfxLabPreviewAction.Dodge:
                     CurrentPhaseLabel = "DODGE";
@@ -302,14 +306,12 @@ namespace JJKGame.Dev.VFXLab
                     break;
                 case VfxLabPreviewAction.HollowPurple:
                     PositionPreviewAnchorFromCharacter(7f);
-                    CaptureTravelPath(1.05f);
                     CurrentPhaseLabel = "ANTICIPATION";
                     previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueAnticipation);
-                    SpawnPurpleFormation(travelStart);
                     break;
                 case VfxLabPreviewAction.UnlimitedVoid:
                     PositionPreviewAnchorFromCharacter(PreviewAnchorForwardDistance);
-                    BeginUnlimitedVoid(directDomain);
+                    BeginUnlimitedVoid();
                     break;
                 default:
                     PositionPreviewAnchorFromCharacter(PreviewAnchorForwardDistance);
@@ -329,38 +331,18 @@ namespace JJKGame.Dev.VFXLab
         {
             if (sequenceStep == 0 && sequenceElapsed >= 0.10f)
             {
-                SpawnBasicHit(1);
+                SpawnBasicHit(basicAttackStep);
                 sequenceStep = 1;
             }
-            if (sequenceStep == 1 && sequenceElapsed >= 0.38f)
-            {
-                CurrentPhaseLabel = "BASIC ATTACK 2";
-                previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.BasicAttack2);
-                sequenceStep = 2;
-            }
-            if (sequenceStep == 2 && sequenceElapsed >= 0.48f)
-            {
-                SpawnBasicHit(2);
-                sequenceStep = 3;
-            }
-            if (sequenceStep == 3 && sequenceElapsed >= 0.78f)
-            {
-                CurrentPhaseLabel = "BASIC ATTACK FINISHER";
-                previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.BasicAttackFinisher);
-                sequenceStep = 4;
-            }
-            if (sequenceStep == 4 && sequenceElapsed >= 0.90f)
-            {
-                SpawnBasicHit(3);
-                sequenceStep = 5;
-            }
-            if (sequenceStep == 5 && sequenceElapsed >= 1.16f)
+            float recoverAt = basicAttackStep >= 3 ? 0.34f : 0.24f;
+            float completeAt = basicAttackStep >= 3 ? 0.52f : 0.38f;
+            if (sequenceStep == 1 && sequenceElapsed >= recoverAt)
             {
                 CurrentPhaseLabel = "RECOVER";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.Idle);
-                sequenceStep = 6;
+                sequenceStep = 2;
             }
-            if (sequenceElapsed >= 1.42f)
+            if (sequenceElapsed >= completeAt)
             {
                 CompletePreview();
             }
@@ -454,34 +436,31 @@ namespace JJKGame.Dev.VFXLab
         {
             if (sequenceStep == 0 && sequenceElapsed >= 0.38f)
             {
-                CurrentPhaseLabel = "CAST · FORMATION";
+                CurrentPhaseLabel = "CAST · BLUE / RED FORMATION";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueCast);
                 sequenceStep = 1;
             }
             if (sequenceStep == 1 && sequenceElapsed >= 0.62f)
             {
-                CurrentPhaseLabel = "HOLLOW PURPLE · RELEASE";
+                CurrentPhaseLabel = "HOLLOW PURPLE · MERGE";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRelease);
-                SpawnPurpleRelease();
-                sequenceStep = 2;
+                SpawnCanonicalHollowPurple();
+                sequenceStep = hollowPurpleSequence != null ? 2 : 3;
             }
-            if (sequenceStep >= 2 && sequenceStep < 4)
+            if (sequenceStep == 2 && hollowPurpleSequence != null)
             {
-                UpdateTravelAnchor(0.62f, 0.68f);
+                float deltaTime = Time.deltaTime;
+                hollowPurpleClock += deltaTime;
+                if (!hollowPurpleSequence.Update(hollowPurpleClock, deltaTime))
+                {
+                    hollowPurpleSequence.Dispose();
+                    hollowPurpleSequence = null;
+                    CurrentPhaseLabel = "RECOVER";
+                    previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRecover);
+                    sequenceStep = 3;
+                }
             }
-            if (sequenceStep == 2 && sequenceElapsed >= 1.30f)
-            {
-                CurrentPhaseLabel = "CULMINATION";
-                SpawnPurpleFormation(travelEnd);
-                sequenceStep = 3;
-            }
-            if (sequenceStep == 3 && sequenceElapsed >= 1.48f)
-            {
-                CurrentPhaseLabel = "RECOVER";
-                previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRecover);
-                sequenceStep = 4;
-            }
-            if (sequenceElapsed >= 1.80f)
+            if (sequenceStep == 3 && sequenceElapsed >= 1.92f)
             {
                 CompletePreview();
             }
@@ -489,77 +468,28 @@ namespace JJKGame.Dev.VFXLab
 
         private void TickUnlimitedVoid()
         {
-            if (domainGestureStep == DomainGestureStep.Active
-                && sequenceElapsed >= DomainPreviewDuration)
+            if (sequenceStep == 0 && sequenceElapsed >= DomainAnticipationDuration)
+            {
+                ActivateUnlimitedVoid();
+                sequenceStep = 1;
+            }
+            if (sequenceStep == 1
+                && sequenceElapsed >= DomainAnticipationDuration + DomainPreviewDuration)
             {
                 CompletePreview();
             }
         }
 
-        private void BeginUnlimitedVoid(bool direct)
+        private void BeginUnlimitedVoid()
         {
+            CurrentPhaseLabel = "DOMAIN ANTICIPATION";
             previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.DomainAnticipation);
             SpawnDomainAnticipation();
-            if (direct)
-            {
-                ActivateUnlimitedVoid();
-                return;
-            }
-
-            running = false;
-            domainGestureStep = DomainGestureStep.AwaitRightPress;
-            CurrentPhaseLabel = "DOMAIN READY · PRESS / HOLD RMB";
-        }
-
-        private void HandleDomainGestureInput()
-        {
-            if (domainGestureStep == DomainGestureStep.AwaitRightPress
-                && ProductionCombatInput.DomainModifierPressed)
-            {
-                domainGestureStep = DomainGestureStep.AwaitLeftClick;
-                CurrentPhaseLabel = "DOMAIN SEAL · HOLD RMB + CLICK LMB";
-                return;
-            }
-
-            if (domainGestureStep == DomainGestureStep.AwaitLeftClick)
-            {
-                if (ProductionCombatInput.DomainModifierReleased)
-                {
-                    domainGestureStep = DomainGestureStep.AwaitRightPress;
-                    CurrentPhaseLabel = "DOMAIN INPUT RESET · HOLD RMB";
-                    return;
-                }
-                if (ProductionCombatInput.BasicAttackPressed
-                    && ProductionCombatInput.DomainModifierHeld)
-                {
-                    domainGestureStep = DomainGestureStep.AwaitRightRelease;
-                    sequenceElapsed = 0f;
-                    previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.DomainRelease);
-                    CurrentPhaseLabel = "DOMAIN SEAL · RELEASE RMB";
-                }
-                return;
-            }
-
-            if (domainGestureStep == DomainGestureStep.AwaitRightRelease
-                && ProductionCombatInput.DomainModifierReleased)
-            {
-                ActivateUnlimitedVoid();
-            }
-        }
-
-        private bool IsWaitingForDomainGesture()
-        {
-            return activeAction == VfxLabPreviewAction.UnlimitedVoid
-                && domainGestureStep != DomainGestureStep.None
-                && domainGestureStep != DomainGestureStep.Active;
         }
 
         private void ActivateUnlimitedVoid()
         {
             StopHandles();
-            sequenceElapsed = 0f;
-            running = true;
-            domainGestureStep = DomainGestureStep.Active;
             CurrentPhaseLabel = "DOMAIN ACTIVE · UNLIMITED VOID";
             previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.DomainRelease);
 
@@ -719,13 +649,10 @@ namespace JJKGame.Dev.VFXLab
         {
             Transform anchor = CreateTravelAnchor();
             Track(PresentationVfxRuntime.Spawn(
-                PresentationVfxSpawnRequest.Follow(
-                    anchor, Vector3.zero,
-                    new Color(0.84f, 0.015f, 0.025f, 0.94f),
-                    new Color(1f, 0.26f, 0.04f, 0.76f),
-                    0.48f, 3.06f, 0.58f, 0f,
-                    PresentationVfxTimePolicy.Scaled,
-                    PresentationVfxStyleId.GojoRed,
+                GojoRedPresentationPreset.CreateReleaseRequest(
+                    anchor,
+                    RedVisualRadius,
+                    RedVisualLifetime,
                     ResolveCharacterForward()
                 )
             ));
@@ -734,47 +661,28 @@ namespace JJKGame.Dev.VFXLab
         private void SpawnRedImpact()
         {
             Track(PresentationVfxRuntime.Spawn(
-                PresentationVfxSpawnRequest.AtWorld(
+                GojoRedPresentationPreset.CreateImpactRequest(
                     travelEnd,
-                    new Color(0.88f, 0.015f, 0.025f, 0.92f),
-                    new Color(1f, 0.30f, 0.04f, 0.74f),
-                    0.34f, 4.08f, 0.26f, 0f,
-                    PresentationVfxTimePolicy.Scaled,
-                    PresentationVfxStyleId.GojoRed,
+                    RedVisualRadius,
                     ResolveCharacterForward()
                 )
             ));
         }
 
-        private void SpawnPurpleFormation(Vector3 position)
+        private void SpawnCanonicalHollowPurple()
         {
-            Track(PresentationVfxRuntime.Spawn(
-                PresentationVfxSpawnRequest.AtWorld(
-                    position,
-                    new Color(0.58f, 0.025f, 1f, 0.96f),
-                    new Color(0.95f, 0.32f, 1f, 0.82f),
-                    0.18f, 1.6f, 0.48f, 0f,
-                    PresentationVfxTimePolicy.Scaled,
-                    PresentationVfxStyleId.HollowPurpleFormation,
-                    ResolveCharacterForward()
-                )
-            ));
-        }
-
-        private void SpawnPurpleRelease()
-        {
-            Transform anchor = CreateTravelAnchor();
-            Track(PresentationVfxRuntime.Spawn(
-                PresentationVfxSpawnRequest.Follow(
-                    anchor, Vector3.zero,
-                    new Color(0.72f, 0.08f, 1f, 0.92f),
-                    new Color(1f, 0.18f, 0.72f, 0.82f),
-                    0.40f, 2.2f, 0.86f, 0f,
-                    PresentationVfxTimePolicy.Scaled,
-                    PresentationVfxStyleId.HollowPurpleRelease,
-                    ResolveCharacterForward()
-                )
-            ));
+            if (previewCharacter == null)
+            {
+                CurrentPhaseLabel = "MISSING PREVIEW CHARACTER";
+                return;
+            }
+            hollowPurpleClock = 0f;
+            hollowPurpleSequence =
+                PrototypeHollowPurplePresentationRuntime.CreateCanonicalOrbSequence(
+                    transform,
+                    previewCharacter.transform,
+                    hollowPurpleClock
+                );
         }
 
         private void SpawnDomainAnticipation()
@@ -825,7 +733,6 @@ namespace JJKGame.Dev.VFXLab
             running = false;
             loopWaiting = false;
             activeAction = VfxLabPreviewAction.None;
-            domainGestureStep = DomainGestureStep.None;
             sequenceElapsed = 0f;
             loopWaitElapsed = 0f;
             phaseBeforePause = phase;
@@ -836,7 +743,12 @@ namespace JJKGame.Dev.VFXLab
         private void StopPreviewContent()
         {
             StopHandles();
-            domainGestureStep = DomainGestureStep.None;
+            if (hollowPurpleSequence != null)
+            {
+                hollowPurpleSequence.Dispose();
+                hollowPurpleSequence = null;
+            }
+            hollowPurpleClock = 0f;
             if (travelAnchor != null)
             {
                 travelAnchor.gameObject.SetActive(false);

@@ -158,9 +158,26 @@ namespace JJKGame.Player
 
         private void StartOrbSequence(Transform fighter)
         {
-            if (fighter == null)
+            OrbSequence sequence = CreateCanonicalOrbSequence(
+                transform,
+                fighter,
+                Time.unscaledTime
+            );
+            if (sequence != null)
             {
-                return;
+                sequences.Add(sequence);
+            }
+        }
+
+        public static OrbSequence CreateCanonicalOrbSequence(
+            Transform runtimeRoot,
+            Transform fighter,
+            float startTime
+        )
+        {
+            if (runtimeRoot == null || fighter == null)
+            {
+                return null;
             }
 
             Vector3 direction = fighter.forward;
@@ -173,9 +190,7 @@ namespace JJKGame.Player
 
             Vector3 right = Vector3.Cross(Vector3.up, direction).normalized;
             Vector3 start = fighter.position + Vector3.up * 1.05f + direction * 1.10f;
-            sequences.Add(
-                new OrbSequence(transform, start, direction, right, Time.unscaledTime)
-            );
+            return new OrbSequence(runtimeRoot, start, direction, right, startTime);
         }
 
         private void UpdateSequences()
@@ -211,7 +226,7 @@ namespace JJKGame.Player
             }
         }
 
-        private sealed class OrbSequence
+        public sealed class OrbSequence
         {
             private const float MergeDuration = 0.24f;
             private const float LaunchDuration = 0.78f;

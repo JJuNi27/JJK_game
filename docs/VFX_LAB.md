@@ -50,25 +50,15 @@ VFXLab
 | 입력 | Preview action |
 |---|---|
 | `WASD` | Movement |
-| `LMB` | Basic Attack 1 → 2 → Finisher presentation |
+| `LMB` | 클릭마다 Basic Attack 1 → 2 → Finisher presentation |
 | `Space` | Dodge presentation |
 | `Q` | Cursed Technique Lapse: Blue |
 | `E` | Cursed Technique Reversal: Red |
 | `R` | Hollow Purple |
-| `V` | Unlimited Void gesture 진입 |
+| `V` | Unlimited Void direct presentation |
 | `X` | 현재 action/domain presentation cancel |
 
-`V`의 presentation-only gesture는 production input identity를 따른다.
-
-```text
-V
-→ RMB press / hold
-→ LMB
-→ RMB release
-→ Unlimited Void visual
-```
-
-VFXLab은 이 gesture의 animation/input presentation만 제공하며 CE, domain gameplay state, release 성공 판정, stun 또는 physics overlap은 실행하지 않는다. `Shift+V`는 environment visual을 바로 반복 검수하는 direct shortcut이다.
+`V`를 한 번 누르면 짧은 `DomainAnticipation` motion 뒤 production `UnlimitedVoidProductionVisual`이 바로 실행된다. VFXLab에서는 RMB/LMB artisan timing을 요구하지 않으며 CE, domain gameplay state, radius query, release 성공 판정, stun 또는 physics overlap을 실행하지 않는다.
 
 ### Developer controls
 
@@ -81,18 +71,18 @@ VFXLab은 이 gesture의 animation/input presentation만 제공하며 CE, domain
 | `Backspace` | 즉시 hard clear |
 | `Shift+2` | Blue field-only debug |
 | `Shift+3` | Blue impact-only debug |
-| `Shift+V` | Unlimited Void direct visual preview |
 | `MMB drag` | Camera orbit |
 | `Mouse wheel` | Zoom |
 | `Home` | Camera framing reset |
+| `F1` | Compact HUD / expanded help 전환 |
 
-`R`은 Purple 전용이며 replay가 점유하지 않는다. `RMB`는 Domain gesture용으로 비워 두고 camera orbit은 `MMB`가 소유한다.
+`R`은 Purple 전용이며 replay가 점유하지 않는다. `RMB`는 예약 입력으로 비워 두고 camera orbit은 `MMB`가 소유한다. 기본 overlay는 Action/Phase와 핵심 기술 키만 보이는 compact HUD이며 `F1`로 전체 조작 도움말을 열고 닫는다.
 
 ## Supported Gojo preview actions
 
 ### Basic Attack
 
-한 번의 `LMB` preview가 `BasicAttack1 → BasicAttack2 → BasicAttackFinisher → Recover`를 순서대로 보여 준다. Contact point에는 production `BasicHit1`, `BasicHit2`, `BasicHitFinisher` style renderer가 실행된다.
+`LMB` 한 번은 한 step만 실행한다. 첫 클릭은 `BasicAttack1`, 다음 클릭은 `BasicAttack2`, 세 번째 클릭은 `BasicAttackFinisher` motion과 해당 production BasicHit renderer를 보여 준다. 다음 입력 없이 0.9초가 지나면 다시 step 1로 reset한다. 한 클릭으로 다음 step을 자동 실행하지 않는다.
 
 실제 `BasicAttack` gameplay component는 실행하지 않으므로 Physics overlap, damage, knockback, hit stun 또는 gameplay combo state가 없다.
 
@@ -112,19 +102,19 @@ Anticipation → Cast → production Blue field → impact collapse → Recover
 
 ### Red
 
-`E`는 VFXLab-local anticipation/cast/travel/impact/recover 순서에서 production `PresentationVfxStyleId.GojoRed` renderer를 실행한다. Preview travel anchor만 VFXLab이 이동시키며 `RedTechniqueProjectile` gameplay actor는 생성하지 않는다.
+`E`는 VFXLab-local anticipation/cast/travel/impact/recover 순서에서 production `GojoRedPresentationPreset` request와 `GojoRedVfxInstance` renderer를 실행한다. CombatMVP의 `RedTechniqueProjectile`도 같은 preset을 사용한다. Preview travel anchor만 VFXLab이 이동시키며 projectile gameplay actor는 생성하지 않는다.
 
 ### Hollow Purple
 
-`R`은 readiness, CE, cooldown 없이 production `HollowPurpleFormation`과 `HollowPurpleRelease` renderer를 직접 검수한다. VFXLab-local sequence는 gameplay의 damage capsule, 18m range 및 0.24/0.78 timing을 사용하거나 변경하지 않는다.
+`R`은 readiness, CE, cooldown 없이 `PrototypeHollowPurplePresentationRuntime.OrbSequence`의 canonical presentation을 직접 실행한다. CombatMVP와 VFXLab 모두 동일한 factory/type을 사용하므로 Blue orb + Red orb merge 뒤 동일한 Purple orb가 launch된다. canonical `MergeDuration=0.24`, `LaunchDuration=0.78`, `TravelDistance=18`은 한 구현에만 존재하며 VFXLab이 복제하지 않는다. Damage capsule은 실행하지 않는다.
 
 ### Unlimited Void
 
-`V` gesture 또는 `Shift+V` direct shortcut은 production `UnlimitedVoidProductionVisual`을 preview-owned host에서 실행한다. Host는 cancel/replay/complete 시 제거된다. Domain gameplay component, radius query, stun, duration state, burnout은 실행하지 않는다.
+`V` 한 번은 짧은 anticipation 뒤 production `UnlimitedVoidProductionVisual`을 preview-owned host에서 실행한다. Host는 cancel/replay/complete 시 제거된다. Domain gameplay component, artisan input, radius query, stun, duration state, burnout은 실행하지 않는다.
 
 ## Production presentation 재사용
 
-VFXLab 전용 Blue/Red/Purple renderer는 없다.
+VFXLab 전용 Blue/Red/Purple renderer 또는 Purple recreation은 없다.
 
 ```text
 VfxLabPreviewSequence
@@ -134,16 +124,20 @@ PresentationVfxRuntime
        ↓
 ProductionParticleVfxRuntime
        ├─ GojoBlueVfxInstance
-       ├─ GojoRedVfxInstance
+       ├─ GojoRedPresentationPreset → GojoRedVfxInstance
        └─ ProductionParticleVfxInstance
-            ├─ BasicHit styles
-            └─ HollowPurple styles
+            └─ BasicHit styles
+
+Canonical Hollow Purple
+  └─ PrototypeHollowPurplePresentationRuntime.OrbSequence
+       ├─ CombatMVP
+       └─ VFXLab
 
 Unlimited Void
   └─ UnlimitedVoidProductionVisual
 ```
 
-Blue는 `GojoBluePresentationPreset`을 그대로 사용한다. 모든 short-lived preview는 `PresentationVfxHandle`을 보관하고 cancel/replay/loop 전 `Immediate`로 정리한다. Red/Purple 이동용 임시 anchor와 Domain host도 VFXLab이 별도로 제거한다.
+Blue는 `GojoBluePresentationPreset`을 그대로 사용하고 Red는 CombatMVP와 `GojoRedPresentationPreset`을 공유한다. 모든 short-lived preview는 `PresentationVfxHandle`을 보관하고 cancel/replay/loop 전 `Immediate`로 정리한다. Canonical Purple sequence, Red 이동용 임시 anchor와 Domain host도 VFXLab이 명시적으로 제거한다.
 
 `TechniquePresentationRequest`는 production gameplay owner(`Health`)를 기준으로 camera/animation consumer에 전달된다. VFXLab에는 gameplay owner를 만들지 않으므로 해당 event를 위조하지 않고 renderer-facing production runtime을 직접 호출한다.
 
@@ -189,14 +183,14 @@ Stage/lighting 값은 VFXLab scene-owned이며 `ProductionArenaMoodController`�
 
 1. `VFXLab.unity`를 열고 Play한다. Console red error/MissingReference가 없는지 확인한다.
 2. `WASD` 이동 후 procedural idle/locomotion과 camera follow를 확인한다.
-3. `LMB`, `Space`로 basic combo와 directional dodge를 확인한다.
+3. `LMB`를 세 번 나눠 눌러 각 클릭이 step 1, 2, finisher 하나만 실행하는지 확인한다. 0.9초 이상 기다린 뒤 다음 클릭이 step 1인지 확인하고 `Space` dodge도 확인한다.
 4. 이동/회전 후 `Q`, `E`, `R`을 각각 실행하고 캐릭터 motion, anchor, production renderer를 확인한다.
-5. `V → RMB hold → LMB → RMB release`와 `Shift+V`를 각각 확인한다.
-6. Domain gesture 중 RMB가 camera orbit을 일으키지 않고 `MMB drag`가 orbit하는지 확인한다.
+5. `R`에서 Blue/Red orb merge 후 canonical Purple orb가 18m launch되는지 확인한다.
+6. `V`를 한 번 눌러 짧은 anticipation 뒤 Unlimited Void가 바로 활성화되고 추가 RMB/LMB 입력을 요구하지 않는지 확인한다.
 7. `Shift+2`, `Shift+3`으로 Blue field/impact debug를 확인한다.
 8. 각 action에서 `Shift+R`, `L`, `P`, `[`, `]`, `X`, `Backspace`를 확인한다.
 9. replay/loop/cancel 후 effect, Light, travel anchor, Domain host가 누적되지 않는지 Hierarchy에서 확인한다.
-10. `AuthoredModelRoot` hook과 overlay의 Character/Action/Phase/Motion 표시를 확인한다.
+10. 기본 compact overlay가 시야를 가리지 않는지, `F1`로 expanded help를 열고 닫는지, `AuthoredModelRoot` hook이 유지되는지 확인한다.
 
 ## 검증 상태
 
