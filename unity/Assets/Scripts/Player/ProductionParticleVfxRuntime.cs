@@ -418,7 +418,7 @@ namespace JJKGame.Player
         private static readonly int WorldRadiusId = Shader.PropertyToID("_WorldRadius");
         private static readonly int ImpactId = Shader.PropertyToID("_Impact");
 
-        private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
+        private MaterialPropertyBlock properties;
         private Renderer distortionRenderer;
 
         public float WorldRadius { get; private set; }
@@ -452,6 +452,7 @@ namespace JJKGame.Player
                 return;
             }
 
+            properties ??= new MaterialPropertyBlock();
             properties.SetFloat(StrengthId, NormalizedStrength);
             properties.SetFloat(WorldRadiusId, WorldRadius);
             properties.SetFloat(ImpactId, IsImpactCue ? 1f : 0f);
