@@ -1515,17 +1515,20 @@ namespace JJKGame.Player
 
         private void ApplyEnvironmentEmissionRates()
         {
-            SetEmissionRate(
+            SetEmissionRateMultiplier(
                 groundDustSuction,
-                impactCue ? 0f : 18f * groundDustWeight
+                impactCue ? 0f : groundDustWeight
             );
-            SetEmissionRate(
+            SetEmissionRateMultiplier(
                 darkDebrisFragments,
-                impactCue ? 0f : 10f * darkDebrisWeight
+                impactCue ? 0f : darkDebrisWeight
             );
         }
 
-        private static void SetEmissionRate(ParticleSystem system, float rate)
+        private static void SetEmissionRateMultiplier(
+            ParticleSystem system,
+            float multiplier
+        )
         {
             if (system == null)
             {
@@ -1533,7 +1536,7 @@ namespace JJKGame.Player
             }
 
             ParticleSystem.EmissionModule emission = system.emission;
-            emission.rateOverTimeMultiplier = Mathf.Max(0f, rate);
+            emission.rateOverTimeMultiplier = Mathf.Clamp01(multiplier);
         }
 
         private void UpdatePresentationTiming(float normalized)
