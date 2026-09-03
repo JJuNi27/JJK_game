@@ -400,6 +400,10 @@ namespace JJKGame.Player
             GameObject child = new GameObject(name, typeof(ParticleSystem));
             child.transform.SetParent(transform, false);
             ParticleSystem system = child.GetComponent<ParticleSystem>();
+            system.Stop(
+                true,
+                ParticleSystemStopBehavior.StopEmittingAndClear
+            );
 
             ParticleSystem.MainModule main = system.main;
             main.loop = false;
