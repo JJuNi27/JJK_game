@@ -22,7 +22,7 @@ namespace JJKGame.Dev.VFXLab
     public sealed class VfxLabPreviewSequence : MonoBehaviour
     {
         private const float BlueRadius = 4.5f;
-        private const float BlueFieldDuration = 0.95f;
+        private const float BlueFieldDuration = 2.20f;
         private const float BasicComboResetDelay = 0.9f;
         private const float PreviewAnchorForwardDistance = 4.2f;
         private const float PreviewAnchorHeight = 1f;
@@ -364,32 +364,39 @@ namespace JJKGame.Dev.VFXLab
 
         private void TickBlue()
         {
-            if (sequenceStep == 0 && sequenceElapsed >= 0.34f)
+            const float castAt = 0.34f;
+            const float releaseAt = 0.58f;
+            const float recoverDelayAfterImpact = 0.28f;
+            const float completeDelayAfterImpact = 0.62f;
+            float impactAt = releaseAt + BlueFieldDuration;
+
+            if (sequenceStep == 0 && sequenceElapsed >= castAt)
             {
                 CurrentPhaseLabel = "CAST";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueCast);
                 sequenceStep = 1;
             }
-            if (sequenceStep == 1 && sequenceElapsed >= 0.58f)
+            if (sequenceStep == 1 && sequenceElapsed >= releaseAt)
             {
                 CurrentPhaseLabel = "FIELD · RELEASE";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRelease);
                 SpawnBlueField();
                 sequenceStep = 2;
             }
-            if (sequenceStep == 2 && sequenceElapsed >= 1.30f)
+            if (sequenceStep == 2 && sequenceElapsed >= impactAt)
             {
                 CurrentPhaseLabel = "IMPACT COLLAPSE";
                 SpawnBlueImpact();
                 sequenceStep = 3;
             }
-            if (sequenceStep == 3 && sequenceElapsed >= 1.58f)
+            if (sequenceStep == 3
+                && sequenceElapsed >= impactAt + recoverDelayAfterImpact)
             {
                 CurrentPhaseLabel = "RECOVER";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRecover);
                 sequenceStep = 4;
             }
-            if (sequenceElapsed >= 1.92f)
+            if (sequenceElapsed >= impactAt + completeDelayAfterImpact)
             {
                 CompletePreview();
             }
