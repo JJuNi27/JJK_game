@@ -245,13 +245,13 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 - clockwise / counter spiral
 - broken convergence arcs
 - impact collapse
-- future GojoBlueDistortionSource hook
-- actual screen distortion renderer는 아직 없음
+- GojoBlueDistortionSource-driven localized distortion shell
+- URP `_CameraOpaqueTexture` actual screen sampling (user visual test pending)
 - external / authored particle texture 없음
 
 현재 가장 큰 차이:
 
-## A. Actual screen distortion가 없음
+## A. Actual screen distortion proof 구현, 사용자 시각 검수 대기
 
 외부 고퀄 사례의 공통점:
 - ScreenSpace Ubershader
@@ -259,11 +259,14 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 - distortion wave
 
 우리:
-- distortion-like shell
-- metadata source hook만 존재
+- distortion-like energy shell과 별도의 transparent localized sampling shell
+- world radius/strength/impact metadata를 실제 shader property에 연결
+- field subtle inward / impact stronger inward warp
+- 기존 PC opaque texture를 사용해 Renderer Feature/YAML 변경 없음
 
 결론:
-Blue 다음 polish에서 가장 우선도가 높은 항목.
+구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 Unity에서 강도와 shader compile을
+확인한 뒤 승인 여부를 결정한다.
 
 ## B. Texture-driven particle shape가 부족
 
@@ -320,7 +323,7 @@ Blue를 아직 USER VERIFIED로 닫지 않는다.
 
 다음 Blue 작업 우선순위:
 
-## 1순위 — Real Screen Distortion Proof
+## 1순위 — Real Screen Distortion Proof 사용자 검수
 
 목표:
 - Blue screen position 중심으로 주변 background UV가 안쪽으로 휘어짐
@@ -329,10 +332,11 @@ Blue를 아직 USER VERIFIED로 닫지 않는다.
 - impact 시 0.1~0.2초 더 강하게 compression
 - HUD는 왜곡하지 않음
 
-권장:
-- URP Full Screen Pass / custom Renderer Feature 중 Unity 6 URP 17.3에 맞는 안전한 구조 조사
-- renderer asset YAML을 직접 문자열로 깨뜨리는 방식 금지
-- scene lifecycle / rematch / CharacterSelect cleanup 명확히
+현재 구현:
+- Blue instance-local transparent sphere가 `_CameraOpaqueTexture`를 sample
+- 기존 VFX instance lifecycle/fade에 따라 생성/파기
+- Screen Space Overlay HUD는 sampling 대상 밖
+- renderer asset YAML 변경 없음
 
 ## 2순위 — Custom particle texture/mask
 

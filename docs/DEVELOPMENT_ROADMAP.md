@@ -304,6 +304,9 @@ VFX Graph나 Full Screen Pass를 추가하지 않고 custom URP procedural shade
 material template, MaterialPropertyBlock 기반 body/Fresnel/distortion-like shell, clockwise/counter
 spiral ParticleSystem, 비동기 broken arc field로 outer → mid → core 깊이를 만든다. renderer asset,
 ProductionArenaMoodController, gameplay, Red/Purple/Void/Sukuna/Megumi 값은 변경하지 않는다.
+후속 localized distortion proof는 PC RP asset의 기존 `_CameraOpaqueTexture`를 sample하는 투명
+`BlueScreenDistortionShell`을 동일 Blue instance lifetime/fade에 연결했다. field는 subtle inward,
+impact는 더 강한 inward warp이며 Renderer Feature, camera, HUD, gameplay 값은 변경하지 않았다.
 현재 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 Unity shader compile과 시각 검수 후에만
 다음 Red production benchmark로 확장한다.
 

@@ -1,6 +1,6 @@
 # Current Project Handoff
 
-작성 기준: 2026-09-02
+작성 기준: 2026-09-04
 
 ## 현재 단계
 
@@ -13,6 +13,8 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
 - Pass 8R-1 Gojo Signature VFX Reference-First Rework:
   USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
 - Pass 8R-2A Gojo Blue Production VFX Benchmark:
+  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+- Gojo Blue Localized Screen Distortion:
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
@@ -111,7 +113,7 @@ Blue에만 다음 production benchmark를 원격 구현했다.
 - fast clockwise inward streak + slow counter spiral mote
 - 서로 다른 길이/폭/alpha/timing을 가진 outer/mid broken arc 8개
 - outward burst가 아닌 impact collapse
-- renderer feature와 분리된 future `GojoBlueDistortionSource` hook
+- renderer feature와 분리된 `GojoBlueDistortionSource` 기반 localized screen distortion shell
 
 VFX Graph, Full Screen Pass, PC Renderer YAML, external texture는 추가하지 않았다.
 Red/Purple/Unlimited Void/Sukuna/Megumi와 gameplay 값도 변경하지 않았다.
@@ -141,13 +143,30 @@ detail ceiling과 다음 polish 방향을 정하는 단계다.
 `Blue Production VFX Benchmark 2차 polish`를 검토하는 것이다.
 
 권장 우선순위:
-1. actual screen distortion proof
+1. localized screen distortion Unity 시각 검수
 2. custom particle texture/mask
 3. visual-only debris/dust suction
 4. presentation layer onset stagger
 5. 사용자 영상/스크린샷 기반 final art tuning
 
 Blue가 사용자 합격하기 전에는 Red production pass로 넘어가지 않는다.
+
+## Gojo Blue Localized Screen Distortion
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+- `GojoBlueDistortion.shader`가 URP `_CameraOpaqueTexture`를 실제 sample한다.
+- Blue instance마다 `BlueScreenDistortionShell`을 만들고 world radius/strength/impact metadata를
+  `MaterialPropertyBlock`으로 shader에 연결한다.
+- field Blue는 미세한 inward pinch, impact cue는 더 강한 국소 inward warp를 사용한다.
+- distortion shell은 Blue energy/particle보다 먼저 그려지고 Screen Space Overlay HUD에는 영향을 주지 않는다.
+- PC RP asset의 기존 opaque texture 설정을 사용하며 Renderer Feature/YAML은 변경하지 않았다.
+- shell과 binding은 기존 `GojoBlueVfxInstance` lifetime/fade를 그대로 따른다.
+- Unity shader compile과 실제 시각 결과는 아직 사용자 검수 전이다.
 
 ## Gate 5B VFXLab developer tool
 
@@ -206,18 +225,9 @@ Pass 8R-2A merge 이후 실제 Unity Editor에서 다음 오류가 발견되어 
 
 ## 다음 권장 작업
 
-Blue R-2A가 사용자 시각 합격을 받는 경우:
-
-Pass 8R-2B · Reusable Gojo Distortion Pipeline + Blue Final Polish
-
-목표:
-- 현재 GojoBlueDistortionSource hook을 실제 reusable screen/local distortion pipeline에 연결
-- Blue는 inward pinch/lens distortion
-- 향후 Red는 outward bulge, Purple은 stronger localized warp로 재사용
-- raw Renderer YAML 직접 수정 금지
-- Unity 6 / URP 17.3 공식 API/Context7 확인 후 Editor-safe Renderer Feature 또는 Full Screen Pass 방식 검토
-- HUD는 distortion 영향 밖
-- Pass 7 camera/flash/hit-stop ownership 유지
+먼저 CombatMVP와 VFXLab에서 localized inward distortion의 shader compile, field subtlety,
+impact strength, HUD 비영향을 사용자 시각 검수한다. 그 결과가 승인된 뒤에만 Blue final polish와
+Red/Purple 재사용 경계를 결정한다.
 
 Blue가 아직 시각적으로 부족하다고 판정되면:
 - R-2B로 넘어가기 전에 Blue shader/noise/core/spiral/arc art tuning을 먼저 수행한다.

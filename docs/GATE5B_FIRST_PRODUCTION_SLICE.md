@@ -1098,12 +1098,14 @@ core / field layering:
 impact / distortion:
 - first impact도 동일 gameplay hit point를 사용하며 core scale과 spiral/arc가 빠르게 안쪽으로 collapse
 - outward radial explosion을 추가하지 않음
-- 현재 renderer feature에 결합하지 않는 `GojoBlueDistortionSource` read-only anchor 추가
-- future screen distortion consumer가 world radius/strength/impact metadata를 소비할 수 있으나 이번 pass에서는 renderer YAML을 변경하지 않음
+- `GojoBlueDistortion.shader`가 기존 URP `_CameraOpaqueTexture`를 sample하는 actual localized distortion 추가
+- `GojoBlueDistortionSource`의 world radius/strength/impact metadata를 instance-local
+  `BlueScreenDistortionShell`의 `MaterialPropertyBlock`에 연결
+- field는 subtle inward pinch, impact cue는 더 강한 inward warp이며 renderer YAML은 변경하지 않음
 
 resource / ownership:
 - shader는 Resources asset으로 명시적으로 포함하고 첫 Blue spawn에서 한 번 load
-- `GojoBlueMaterialLibrary`가 CombatMVP production runtime root에 shared material template 1개를 생성
+- `GojoBlueMaterialLibrary`가 production runtime root에 energy/distortion shared material template을 각각 생성
 - 세 core layer는 shared material + per-renderer `MaterialPropertyBlock`을 사용
 - per-frame material/texture 생성과 per-frame FindObjects 없음
 - scene/runtime root 파기 시 shared material template 파기
@@ -1111,6 +1113,14 @@ resource / ownership:
 - primitive sphere collider 제거, 모든 renderer shadow/receive shadow 비활성
 - temporary Point Light는 Blue root당 1개, shadows off, 제한된 range/intensity
 - Pass 7 camera/FOV/focus/flash/hit-stop ownership 변경 없음
+
+Gojo Blue Localized Screen Distortion 상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+Unity shader compile과 CombatMVP/VFXLab 실제 시각 결과는 사용자 검수 전이다.
 
 변경하지 않은 항목:
 - `GojoTechniqueController`와 `BlueConvergenceField` gameplay 코드 및 값

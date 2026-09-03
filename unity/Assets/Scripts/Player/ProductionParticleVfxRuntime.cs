@@ -275,17 +275,29 @@ namespace JJKGame.Player
     [DisallowMultipleComponent]
     internal sealed class GojoBlueMaterialLibrary : MonoBehaviour
     {
-        private const string ResourcePath = "VFX/GojoBlueEnergy";
-        private const string ShaderName = "JJKGame/VFX/Gojo Blue Energy";
+        private const string EnergyResourcePath = "VFX/GojoBlueEnergy";
+        private const string EnergyShaderName = "JJKGame/VFX/Gojo Blue Energy";
+        private const string DistortionResourcePath = "VFX/GojoBlueDistortion";
+        private const string DistortionShaderName = "JJKGame/VFX/Gojo Blue Distortion";
 
         private Material energyMaterial;
+        private Material distortionMaterial;
 
         public Material EnergyMaterial
         {
             get
             {
-                EnsureMaterial();
+                EnsureEnergyMaterial();
                 return energyMaterial;
+            }
+        }
+
+        public Material DistortionMaterial
+        {
+            get
+            {
+                EnsureDistortionMaterial();
+                return distortionMaterial;
             }
         }
 
@@ -299,21 +311,21 @@ namespace JJKGame.Player
             {
                 library = runtimeRoot.gameObject.AddComponent<GojoBlueMaterialLibrary>();
             }
-            library.EnsureMaterial();
+            library.EnsureEnergyMaterial();
             return library;
         }
 
-        private void EnsureMaterial()
+        private void EnsureEnergyMaterial()
         {
             if (energyMaterial != null)
             {
                 return;
             }
 
-            Shader shader = Resources.Load<Shader>(ResourcePath);
+            Shader shader = Resources.Load<Shader>(EnergyResourcePath);
             if (shader == null)
             {
-                shader = Shader.Find(ShaderName);
+                shader = Shader.Find(EnergyShaderName);
             }
             UsesCustomShader = shader != null;
             if (shader == null)
@@ -355,6 +367,31 @@ namespace JJKGame.Player
             energyMaterial.renderQueue = (int)RenderQueue.Transparent;
         }
 
+        private void EnsureDistortionMaterial()
+        {
+            if (distortionMaterial != null)
+            {
+                return;
+            }
+
+            Shader shader = Resources.Load<Shader>(DistortionResourcePath);
+            if (shader == null)
+            {
+                shader = Shader.Find(DistortionShaderName);
+            }
+            if (shader == null)
+            {
+                return;
+            }
+
+            distortionMaterial = new Material(shader)
+            {
+                name = "GojoBlueDistortion_RuntimeTemplate",
+                hideFlags = HideFlags.HideAndDontSave,
+                renderQueue = (int)RenderQueue.Transparent - 20,
+            };
+        }
+
         private void OnDestroy()
         {
             if (energyMaterial != null)
@@ -362,30 +399,63 @@ namespace JJKGame.Player
                 Destroy(energyMaterial);
                 energyMaterial = null;
             }
+            if (distortionMaterial != null)
+            {
+                Destroy(distortionMaterial);
+                distortionMaterial = null;
+            }
         }
     }
 
     /// <summary>
-    /// Future full-screen distortion integrations can consume this presentation-only
-    /// anchor without changing Blue gameplay or the current renderer asset.
+    /// Presentation-only Blue distortion metadata and renderer binding. The localized
+    /// shell samples the camera opaque texture without changing gameplay or renderer assets.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class GojoBlueDistortionSource : MonoBehaviour
     {
+        private static readonly int StrengthId = Shader.PropertyToID("_Strength");
+        private static readonly int WorldRadiusId = Shader.PropertyToID("_WorldRadius");
+        private static readonly int ImpactId = Shader.PropertyToID("_Impact");
+
+        private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
+        private Renderer distortionRenderer;
+
         public float WorldRadius { get; private set; }
         public float NormalizedStrength { get; private set; }
         public bool IsImpactCue { get; private set; }
 
-        internal void Configure(float worldRadius, float strength, bool impactCue)
+        internal void Configure(
+            float worldRadius,
+            float strength,
+            bool impactCue,
+            Renderer renderer
+        )
         {
             WorldRadius = Mathf.Max(0f, worldRadius);
             NormalizedStrength = Mathf.Clamp01(strength);
             IsImpactCue = impactCue;
+            distortionRenderer = renderer;
+            ApplyRendererState();
         }
 
         internal void SetStrength(float strength)
         {
             NormalizedStrength = Mathf.Clamp01(strength);
+            ApplyRendererState();
+        }
+
+        private void ApplyRendererState()
+        {
+            if (distortionRenderer == null)
+            {
+                return;
+            }
+
+            properties.SetFloat(StrengthId, NormalizedStrength);
+            properties.SetFloat(WorldRadiusId, WorldRadius);
+            properties.SetFloat(ImpactId, IsImpactCue ? 1f : 0f);
+            distortionRenderer.SetPropertyBlock(properties);
         }
     }
 
@@ -599,6 +669,14 @@ namespace JJKGame.Player
             GojoBlueMaterialLibrary materialLibrary =
                 GojoBlueMaterialLibrary.GetOrCreate(transform.parent);
 
+            baseDistortionStrength = impactCue ? 0.24f : 0.15f;
+            float distortionWorldRadius =
+                orbDiameter * (impactCue ? 1.75f : 1.45f);
+            Renderer distortionRenderer = CreateDistortionShell(
+                materialLibrary.DistortionMaterial,
+                distortionWorldRadius
+            );
+
             coreRoot = new GameObject("BlueCoreRoot").transform;
             coreRoot.SetParent(transform, false);
             CreateEnergySphere(
@@ -674,13 +752,48 @@ namespace JJKGame.Player
             BuildCompressionLight(orbDiameter);
 
             distortionSource = gameObject.AddComponent<GojoBlueDistortionSource>();
-            baseDistortionStrength = impactCue ? 0.24f : 0.15f;
             distortionSource.Configure(
-                orbDiameter * (impactCue ? 1.75f : 1.45f),
+                distortionWorldRadius,
                 baseDistortionStrength,
-                impactCue
+                impactCue,
+                distortionRenderer
             );
             ApplyEnergyLayers(1f);
+        }
+
+        private Renderer CreateDistortionShell(
+            Material sharedMaterial,
+            float worldRadius
+        )
+        {
+            if (sharedMaterial == null || worldRadius <= 0f)
+            {
+                return null;
+            }
+
+            GameObject shell = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            shell.name = "BlueScreenDistortionShell";
+            shell.transform.SetParent(transform, false);
+            shell.transform.localScale = Vector3.one * (worldRadius * 2f);
+            Collider collider = shell.GetComponent<Collider>();
+            if (collider != null)
+            {
+                collider.enabled = false;
+                Destroy(collider);
+            }
+
+            Renderer renderer = shell.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                Destroy(shell);
+                return null;
+            }
+
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.sortingOrder = 30;
+            renderer.sharedMaterial = sharedMaterial;
+            return renderer;
         }
 
         private void CreateEnergySphere(
