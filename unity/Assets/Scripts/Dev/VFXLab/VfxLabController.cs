@@ -109,10 +109,10 @@ namespace JJKGame.Dev.VFXLab
                 return;
             }
 
-            Material floorMaterial = CreateLitMaterial(new Color(0.028f, 0.040f, 0.065f, 1f), 0.22f, 0.62f);
-            Material backdropMaterial = CreateLitMaterial(new Color(0.012f, 0.018f, 0.035f, 1f), 0.05f, 0.88f);
-            Material accentMaterial = CreateUnlitMaterial(new Color(0.035f, 0.28f, 0.62f, 0.52f), 1.7f);
-            Material markerMaterial = CreateUnlitMaterial(new Color(0.08f, 0.72f, 1f, 0.74f), 2.0f);
+            Material floorMaterial = CreateLitMaterial(new Color(0.060f, 0.078f, 0.115f, 1f), 0.12f, 0.48f);
+            Material backdropMaterial = CreateLitMaterial(new Color(0.032f, 0.047f, 0.078f, 1f), 0.02f, 0.55f);
+            Material accentMaterial = CreateUnlitMaterial(new Color(0.030f, 0.20f, 0.46f, 0.30f), 1.2f);
+            Material markerMaterial = CreateUnlitMaterial(new Color(0.06f, 0.48f, 0.76f, 0.46f), 1.45f);
 
             CreateBox(
                 previewStage,
@@ -161,35 +161,35 @@ namespace JJKGame.Dev.VFXLab
         {
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = new Color(0.012f, 0.020f, 0.040f, 1f);
+            RenderSettings.fogColor = new Color(0.024f, 0.036f, 0.065f, 1f);
             RenderSettings.fogStartDistance = 24f;
             RenderSettings.fogEndDistance = 58f;
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.075f, 0.105f, 0.18f, 1f);
-            RenderSettings.ambientEquatorColor = new Color(0.035f, 0.055f, 0.10f, 1f);
-            RenderSettings.ambientGroundColor = new Color(0.010f, 0.016f, 0.030f, 1f);
-            RenderSettings.ambientIntensity = 0.92f;
+            RenderSettings.ambientSkyColor = new Color(0.115f, 0.155f, 0.245f, 1f);
+            RenderSettings.ambientEquatorColor = new Color(0.064f, 0.088f, 0.142f, 1f);
+            RenderSettings.ambientGroundColor = new Color(0.028f, 0.036f, 0.060f, 1f);
+            RenderSettings.ambientIntensity = 1.05f;
 
             CreateDirectionalLight(
                 "CoolKey",
                 Quaternion.Euler(46f, -34f, 0f),
-                new Color(0.72f, 0.84f, 1f),
-                1.08f,
+                new Color(0.78f, 0.88f, 1f),
+                1.22f,
                 LightShadows.Soft
             );
             CreatePointLight(
                 "CoolFill",
                 new Vector3(-4.2f, 3.4f, 1.8f),
-                new Color(0.10f, 0.34f, 1f),
-                3.4f,
-                11f
+                new Color(0.20f, 0.44f, 1f),
+                4.1f,
+                13f
             );
             CreatePointLight(
                 "WarmRim",
                 new Vector3(4.5f, 2.8f, 5.5f),
-                new Color(1f, 0.26f, 0.12f),
-                2.1f,
-                10f
+                new Color(1f, 0.32f, 0.16f),
+                2.8f,
+                12f
             );
 
             Volume volume = lightingRoot.GetComponent<Volume>();
@@ -210,17 +210,17 @@ namespace JJKGame.Dev.VFXLab
             tonemapping.mode.Override(TonemappingMode.ACES);
 
             Bloom bloom = runtimeVolumeProfile.Add<Bloom>(true);
-            bloom.threshold.Override(0.95f);
-            bloom.intensity.Override(0.24f);
-            bloom.scatter.Override(0.52f);
-            bloom.clamp.Override(6f);
+            bloom.threshold.Override(1.0f);
+            bloom.intensity.Override(0.20f);
+            bloom.scatter.Override(0.48f);
+            bloom.clamp.Override(5f);
             bloom.tint.Override(new Color(0.92f, 0.97f, 1f, 1f));
             bloom.highQualityFiltering.Override(false);
 
             ColorAdjustments color = runtimeVolumeProfile.Add<ColorAdjustments>(true);
-            color.postExposure.Override(0.02f);
-            color.contrast.Override(9f);
-            color.colorFilter.Override(new Color(0.94f, 0.97f, 1f, 1f));
+            color.postExposure.Override(0.12f);
+            color.contrast.Override(7f);
+            color.colorFilter.Override(new Color(0.97f, 0.985f, 1f, 1f));
             color.saturation.Override(-2f);
 
             WhiteBalance whiteBalance = runtimeVolumeProfile.Add<WhiteBalance>(true);
@@ -229,11 +229,11 @@ namespace JJKGame.Dev.VFXLab
 
             Vignette vignette = runtimeVolumeProfile.Add<Vignette>(true);
             vignette.color.Override(new Color(0.004f, 0.008f, 0.020f, 1f));
-            vignette.intensity.Override(0.10f);
+            vignette.intensity.Override(0.07f);
             vignette.smoothness.Override(0.55f);
 
             previewCamera.clearFlags = CameraClearFlags.SolidColor;
-            previewCamera.backgroundColor = new Color(0.008f, 0.014f, 0.030f, 1f);
+            previewCamera.backgroundColor = new Color(0.022f, 0.034f, 0.062f, 1f);
             previewCamera.fieldOfView = 55f;
             previewCamera.nearClipPlane = 0.1f;
             previewCamera.farClipPlane = 120f;
