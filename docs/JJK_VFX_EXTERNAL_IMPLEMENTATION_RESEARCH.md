@@ -247,7 +247,7 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 - impact collapse
 - GojoBlueDistortionSource-driven localized distortion shell
 - URP `_CameraOpaqueTexture` actual screen sampling (user visual test pending)
-- external / authored particle texture 없음
+- external texture 없이 procedural soft mote / tapered streak / broken wisp particle mask 구현
 
 현재 가장 큰 차이:
 
@@ -268,7 +268,7 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 Unity에서 강도와 shader compile을
 확인한 뒤 승인 여부를 결정한다.
 
-## B. Texture-driven particle shape가 부족
+## B. Procedural particle mask 1차 구현, 사용자 시각 검수 대기
 
 외부 사례:
 - particle textures
@@ -277,14 +277,13 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 - custom particle material
 
 우리:
-- procedural shader + 기본 particle shape 위주
+- 하나의 Blue 전용 procedural particle shader에서 3개 mask mode 제공
+- shared template + renderer별 MaterialPropertyBlock으로 mode/fade/emission/breakup 구동
+- fast streak stretch/lifetime 축소, slow mote와 corona silhouette 분리
 
 결론:
-짝대기/구체/점 느낌을 없애기 위해
-soft wisps / tapered streak / energy fragment용 자체 texture/mask layer가 필요.
-
-타인의 texture는 복사하지 않고
-우리 프로젝트용 procedural/custom texture를 직접 만든다.
+구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이다. Unity에서 긴 laser bar가 실제로
+줄었는지, soft edge와 inward readability가 유지되는지 확인한 뒤 추가 texture 필요성을 결정한다.
 
 ## C. Environment reaction이 부족
 
@@ -338,13 +337,12 @@ Blue를 아직 USER VERIFIED로 닫지 않는다.
 - Screen Space Overlay HUD는 sampling 대상 밖
 - renderer asset YAML 변경 없음
 
-## 2순위 — Custom particle texture/mask
+## 2순위 — Custom particle texture/mask 사용자 검수
 
-직접 제작:
+현재 직접 구현:
 - soft radial mote
 - tapered streak
-- crescent/wisp
-- broken energy shard
+- broken energy wisp
 
 목표:
 기본 billboard / 선 모양을 줄임.

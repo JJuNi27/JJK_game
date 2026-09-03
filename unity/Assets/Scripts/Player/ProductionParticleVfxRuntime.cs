@@ -279,9 +279,12 @@ namespace JJKGame.Player
         private const string EnergyShaderName = "JJKGame/VFX/Gojo Blue Energy";
         private const string DistortionResourcePath = "VFX/GojoBlueDistortion";
         private const string DistortionShaderName = "JJKGame/VFX/Gojo Blue Distortion";
+        private const string ParticleResourcePath = "VFX/GojoBlueParticle";
+        private const string ParticleShaderName = "JJKGame/VFX/Gojo Blue Particle";
 
         private Material energyMaterial;
         private Material distortionMaterial;
+        private Material particleMaterial;
 
         public Material EnergyMaterial
         {
@@ -298,6 +301,15 @@ namespace JJKGame.Player
             {
                 EnsureDistortionMaterial();
                 return distortionMaterial;
+            }
+        }
+
+        public Material ParticleMaterial
+        {
+            get
+            {
+                EnsureParticleMaterial();
+                return particleMaterial;
             }
         }
 
@@ -392,6 +404,31 @@ namespace JJKGame.Player
             };
         }
 
+        private void EnsureParticleMaterial()
+        {
+            if (particleMaterial != null)
+            {
+                return;
+            }
+
+            Shader shader = Resources.Load<Shader>(ParticleResourcePath);
+            if (shader == null)
+            {
+                shader = Shader.Find(ParticleShaderName);
+            }
+            if (shader == null)
+            {
+                return;
+            }
+
+            particleMaterial = new Material(shader)
+            {
+                name = "GojoBlueParticle_RuntimeTemplate",
+                hideFlags = HideFlags.HideAndDontSave,
+                renderQueue = (int)RenderQueue.Transparent,
+            };
+        }
+
         private void OnDestroy()
         {
             if (energyMaterial != null)
@@ -403,6 +440,11 @@ namespace JJKGame.Player
             {
                 Destroy(distortionMaterial);
                 distortionMaterial = null;
+            }
+            if (particleMaterial != null)
+            {
+                Destroy(particleMaterial);
+                particleMaterial = null;
             }
         }
     }
@@ -462,6 +504,54 @@ namespace JJKGame.Player
 
     internal sealed class GojoBlueVfxInstance : GojoSignatureVfxInstance
     {
+        private enum BlueParticleMaskMode
+        {
+            SoftMote = 0,
+            TaperedStreak = 1,
+            BrokenWisp = 2,
+        }
+
+        private sealed class ParticleLayerBinding
+        {
+            private static readonly int ModeId = Shader.PropertyToID("_Mode");
+            private static readonly int FadeId = Shader.PropertyToID("_Fade");
+            private static readonly int EmissionId = Shader.PropertyToID("_Emission");
+            private static readonly int BreakupId = Shader.PropertyToID("_Breakup");
+
+            private readonly ParticleSystemRenderer renderer;
+            private readonly MaterialPropertyBlock properties = new MaterialPropertyBlock();
+            private readonly float mode;
+            private readonly float emission;
+            private readonly float breakup;
+
+            public ParticleLayerBinding(
+                ParticleSystemRenderer targetRenderer,
+                BlueParticleMaskMode maskMode,
+                float emissionMultiplier,
+                float breakupAmount
+            )
+            {
+                renderer = targetRenderer;
+                mode = (float)maskMode;
+                emission = emissionMultiplier;
+                breakup = breakupAmount;
+            }
+
+            public void Apply(float fade)
+            {
+                if (renderer == null)
+                {
+                    return;
+                }
+
+                properties.SetFloat(ModeId, mode);
+                properties.SetFloat(FadeId, Mathf.Clamp01(fade));
+                properties.SetFloat(EmissionId, emission);
+                properties.SetFloat(BreakupId, breakup);
+                renderer.SetPropertyBlock(properties);
+            }
+        }
+
         private sealed class EnergyLayerBinding
         {
             private readonly Renderer renderer;
@@ -635,6 +725,8 @@ namespace JJKGame.Player
             new List<EnergyLayerBinding>(3);
         private readonly List<ConvergenceArcBinding> convergenceArcs =
             new List<ConvergenceArcBinding>(8);
+        private readonly List<ParticleLayerBinding> particleLayers =
+            new List<ParticleLayerBinding>(3);
 
         private Transform coreRoot;
         private Light compressionLight;
@@ -670,7 +762,7 @@ namespace JJKGame.Player
             GojoBlueMaterialLibrary materialLibrary =
                 GojoBlueMaterialLibrary.GetOrCreate(transform.parent);
 
-            baseDistortionStrength = impactCue ? 0.24f : 0.15f;
+            baseDistortionStrength = impactCue ? 0.24f : 0.19f;
             float distortionWorldRadius =
                 orbDiameter * (impactCue ? 1.75f : 1.45f);
             Renderer distortionRenderer = CreateDistortionShell(
@@ -747,8 +839,8 @@ namespace JJKGame.Player
                 0.83f
             );
 
-            BuildCorona(orbDiameter);
-            BuildSpiralFlow(boundaryRadius);
+            BuildCorona(orbDiameter, materialLibrary.ParticleMaterial);
+            BuildSpiralFlow(boundaryRadius, materialLibrary.ParticleMaterial);
             BuildConvergenceField(outer, boundaryRadius);
             BuildCompressionLight(orbDiameter);
 
@@ -864,7 +956,7 @@ namespace JJKGame.Player
             );
         }
 
-        private void BuildCorona(float orbDiameter)
+        private void BuildCorona(float orbDiameter, Material particleMaterial)
         {
             ParticleSystem corona = ProductionSignatureVfxFactory.CreateParticleSystem(
                 coreRoot,
@@ -885,14 +977,24 @@ namespace JJKGame.Player
                 false,
                 ParticleSystemSimulationSpace.Local,
                 10,
-                20f
+                20f,
+                particleMaterial
             );
+            ParticleSystem.MainModule main = corona.main;
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
             ParticleSystem.ShapeModule shape = corona.shape;
             shape.radiusThickness = 0.18f;
+            BindParticleLayer(
+                corona,
+                particleMaterial,
+                BlueParticleMaskMode.BrokenWisp,
+                1.30f,
+                0.24f
+            );
             Track(corona);
         }
 
-        private void BuildSpiralFlow(float boundaryRadius)
+        private void BuildSpiralFlow(float boundaryRadius, Material particleMaterial)
         {
             ParticleSystem fastSpiral = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
@@ -902,8 +1004,8 @@ namespace JJKGame.Player
                 MaterialColors,
                 true,
                 Duration,
-                impactCue ? 0.20f : 0.42f,
-                impactCue ? 0.34f : 0.66f,
+                impactCue ? 0.16f : 0.30f,
+                impactCue ? 0.26f : 0.48f,
                 impactCue ? -10.5f : -7.2f,
                 impactCue ? -7.4f : -4.4f,
                 0.022f,
@@ -912,8 +1014,9 @@ namespace JJKGame.Player
                 boundaryRadius,
                 true,
                 ParticleSystemSimulationSpace.Local,
-                impactCue ? 30 : 16,
-                impactCue ? 18f : 48f
+                impactCue ? 32 : 20,
+                impactCue ? 22f : 56f,
+                particleMaterial
             );
             fastSpiral.transform.localPosition = Vector3.up * 0.13f;
             ParticleSystem.ShapeModule fastShape = fastSpiral.shape;
@@ -932,6 +1035,20 @@ namespace JJKGame.Player
             fastNoise.strength = 0.10f;
             fastNoise.frequency = 0.28f;
             ConfigureInwardSize(fastSpiral, 0.04f);
+            ParticleSystemRenderer fastRenderer =
+                fastSpiral.GetComponent<ParticleSystemRenderer>();
+            if (fastRenderer != null)
+            {
+                fastRenderer.velocityScale = 0.035f;
+                fastRenderer.lengthScale = 0.52f;
+            }
+            BindParticleLayer(
+                fastSpiral,
+                particleMaterial,
+                BlueParticleMaskMode.TaperedStreak,
+                1.36f,
+                0.16f
+            );
             Track(fastSpiral);
 
             ParticleSystem slowSpiral = ProductionSignatureVfxFactory.CreateParticleSystem(
@@ -953,7 +1070,8 @@ namespace JJKGame.Player
                 false,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 24 : 12,
-                impactCue ? 14f : 32f
+                impactCue ? 14f : 32f,
+                particleMaterial
             );
             slowSpiral.transform.localPosition = Vector3.down * 0.11f;
             ParticleSystem.ShapeModule slowShape = slowSpiral.shape;
@@ -971,7 +1089,45 @@ namespace JJKGame.Player
             slowNoise.strength = 0.055f;
             slowNoise.frequency = 0.20f;
             ConfigureInwardSize(slowSpiral, 0.08f);
+            BindParticleLayer(
+                slowSpiral,
+                particleMaterial,
+                BlueParticleMaskMode.SoftMote,
+                1.16f,
+                0.10f
+            );
             Track(slowSpiral);
+        }
+
+        private void BindParticleLayer(
+            ParticleSystem system,
+            Material sharedMaterial,
+            BlueParticleMaskMode maskMode,
+            float emission,
+            float breakup
+        )
+        {
+            if (system == null || sharedMaterial == null)
+            {
+                return;
+            }
+
+            ParticleSystemRenderer renderer =
+                system.GetComponent<ParticleSystemRenderer>();
+            if (renderer == null)
+            {
+                return;
+            }
+
+            renderer.sharedMaterial = sharedMaterial;
+            ParticleLayerBinding binding = new ParticleLayerBinding(
+                renderer,
+                maskMode,
+                emission,
+                breakup
+            );
+            binding.Apply(1f);
+            particleLayers.Add(binding);
         }
 
         private static void ConfigureInwardSize(ParticleSystem system, float finalSize)
@@ -1097,6 +1253,10 @@ namespace JJKGame.Player
                 distortionSource.SetStrength(
                     baseDistortionStrength * compressionBoost * fade
                 );
+            }
+            foreach (ParticleLayerBinding layer in particleLayers)
+            {
+                layer?.Apply(fade);
             }
         }
 
@@ -1367,7 +1527,8 @@ namespace JJKGame.Player
             bool stretched,
             ParticleSystemSimulationSpace simulationSpace,
             int burstCount,
-            float rateOverTime
+            float rateOverTime,
+            Material materialOverride = null
         )
         {
             GameObject child = new GameObject(name, typeof(ParticleSystem));
@@ -1435,9 +1596,13 @@ namespace JJKGame.Player
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
             renderer.sortingOrder = 36;
-            Material material = CreateMaterial(
-                color, materials, colors, true, true, 1.55f, CullMode.Off
-            );
+            Material material = materialOverride;
+            if (material == null)
+            {
+                material = CreateMaterial(
+                    color, materials, colors, true, true, 1.55f, CullMode.Off
+                );
+            }
             if (material != null)
             {
                 renderer.sharedMaterial = material;

@@ -25,6 +25,8 @@ Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승
 - primitive sphere / flat material / simple particle / line 느낌이 아직 강함
 - 저퀄리티 “뿅뿅 발사” 인상을 벗어나려면 shader / distortion / layered timing이 필요
 - Sukuna slash 계열은 상대적으로 개선되었으므로 현재 rework 대상에서 제외
+- localized distortion은 오류 없이 동작하지만 field 강도가 흐림처럼 보일 정도로 약했음
+- `FastClockwiseInwardStreaks`의 긴 stretched billboard가 laser bar처럼 보여 우선 rework 대상이 됨
 
 ## 기준 문서
 
@@ -114,6 +116,7 @@ Blue에만 다음 production benchmark를 원격 구현했다.
 - 서로 다른 길이/폭/alpha/timing을 가진 outer/mid broken arc 8개
 - outward burst가 아닌 impact collapse
 - renderer feature와 분리된 `GojoBlueDistortionSource` 기반 localized screen distortion shell
+- procedural mask 기반 Blue 전용 particle shader와 shared material template
 
 VFX Graph, Full Screen Pass, PC Renderer YAML, external texture는 추가하지 않았다.
 Red/Purple/Unlimited Void/Sukuna/Megumi와 gameplay 값도 변경하지 않았다.
@@ -143,8 +146,8 @@ detail ceiling과 다음 polish 방향을 정하는 단계다.
 `Blue Production VFX Benchmark 2차 polish`를 검토하는 것이다.
 
 권장 우선순위:
-1. localized screen distortion Unity 시각 검수
-2. custom particle texture/mask
+1. field distortion strength와 custom particle mask Unity 시각 검수
+2. short tapered streak / soft mote / broken wisp 최종 튜닝
 3. visual-only debris/dust suction
 4. presentation layer onset stagger
 5. 사용자 영상/스크린샷 기반 final art tuning
@@ -162,11 +165,28 @@ REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - `GojoBlueDistortion.shader`가 URP `_CameraOpaqueTexture`를 실제 sample한다.
 - Blue instance마다 `BlueScreenDistortionShell`을 만들고 world radius/strength/impact metadata를
   `MaterialPropertyBlock`으로 shader에 연결한다.
-- field Blue는 미세한 inward pinch, impact cue는 더 강한 국소 inward warp를 사용한다.
+- field Blue base strength는 사용자 피드백에 따라 `0.15 → 0.19`로 조정했고,
+  impact base strength `0.24`는 유지한다.
 - distortion shell은 Blue energy/particle보다 먼저 그려지고 Screen Space Overlay HUD에는 영향을 주지 않는다.
 - PC RP asset의 기존 opaque texture 설정을 사용하며 Renderer Feature/YAML은 변경하지 않았다.
 - shell과 binding은 기존 `GojoBlueVfxInstance` lifetime/fade를 그대로 따른다.
 - Unity shader compile과 실제 시각 결과는 아직 사용자 검수 전이다.
+
+## Gojo Blue Procedural Particle Mask 1차
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+- 외부 texture 없이 `GojoBlueParticle.shader`의 procedural UV mask를 사용한다.
+- 하나의 shared material template에서 soft mote / tapered streak / broken wisp를 renderer별
+  `MaterialPropertyBlock` mode로 선택한다.
+- Fast streak의 inward speed는 유지하면서 lifetime, velocity stretch, length scale을 줄였다.
+- SlowCounterSpiralMotes는 soft mote, BlueCorona는 random-rotation broken wisp를 사용한다.
+- generic particle factory의 기본 material/stretch 값과 다른 technique VFX는 변경하지 않았다.
+- 실제 particle silhouette, warning, replay/cleanup 결과는 Unity 사용자 검수 전이다.
 
 ## Gate 5B VFXLab developer tool
 
@@ -225,9 +245,9 @@ Pass 8R-2A merge 이후 실제 Unity Editor에서 다음 오류가 발견되어 
 
 ## 다음 권장 작업
 
-먼저 CombatMVP와 VFXLab에서 localized inward distortion의 shader compile, field subtlety,
-impact strength, HUD 비영향을 사용자 시각 검수한다. 그 결과가 승인된 뒤에만 Blue final polish와
-Red/Purple 재사용 경계를 결정한다.
+먼저 CombatMVP와 VFXLab에서 강화된 field distortion과 procedural particle mask의 shader compile,
+streak 길이, mote/wisp silhouette, impact 유지, replay/cleanup을 사용자 시각 검수한다. 그 결과가
+승인된 뒤에만 Blue final polish와 Red/Purple 재사용 경계를 결정한다.
 
 Blue가 아직 시각적으로 부족하다고 판정되면:
 - R-2B로 넘어가기 전에 Blue shader/noise/core/spiral/arc art tuning을 먼저 수행한다.
