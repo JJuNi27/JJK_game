@@ -18,7 +18,7 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - Gojo Blue Visual-Only Environment Suction:
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
-- Gojo Blue Presentation Timing Stagger:
+- Gojo Blue Final Timing / Readability Tuning:
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
@@ -213,7 +213,7 @@ REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - 두 system은 기존 Blue instance particle/material lifecycle과 cleanup을 그대로 따른다.
 - 실제 밀도, 바닥 착시, fighter readability와 cleanup 결과는 Unity 사용자 검수 전이다.
 
-## Gojo Blue Presentation Timing Stagger
+## Gojo Blue Final Timing / Readability Tuning
 
 상태:
 
@@ -222,14 +222,17 @@ REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 ```
 
 - gameplay duration이나 spawn request를 바꾸지 않고 `GojoBlueVfxInstance` 내부 normalized time만 사용한다.
-- field는 dense core ignition → Fresnel/outer field와 distortion/corona → slow spiral과 dust/debris 반응
-  → fast spiral이 합류하는 full convergence 순서로 renderer fade와 emission rate를 연속 보간한다.
+- field는 dense core 0~10% → Fresnel/distortion 8~22% → outer/corona 12~28% → dust 18~34%
+  → debris 22~38% → slow spiral 24~42% → arc 30~50% → fast spiral 42~58% 순서다.
 - field distortion base `0.19`와 impact base `0.24`는 유지하며 field distortion만 거의 0에서 시작한다.
-- field convergence arc 최종 alpha는 13% 낮췄고 impact arc alpha는 유지했다.
+- field convergence arc는 core/environment 뒤에 등장하며 alpha scale을 `0.80`으로 낮췄다.
+- dust의 alpha/size/lift와 debris의 size/blue-gray 대비/lift를 높였고 particle 수와 inward 속도는
+  크게 늘리지 않았다.
 - impact는 0~20% hold, 20~75% collapse 가속, lifecycle의 기존 종료 fade로 이어진다.
 - layer별 `MaterialPropertyBlock` 갱신과 기존 ParticleSystem module을 재사용하며 per-frame Play/Stop이나
   새 managed allocation은 추가하지 않았다.
-- 실제 onset 순서, 먼 거리 dust/debris 가독성, impact handoff와 replay/cleanup은 Unity 사용자 검수 전이다.
+- Blue 전체는 아직 USER VERIFIED가 아니며 실제 onset 순서, dust/debris 가독성, impact handoff와
+  replay/cleanup은 Unity 사용자 검수 전이다.
 
 ## Gate 5B VFXLab developer tool
 

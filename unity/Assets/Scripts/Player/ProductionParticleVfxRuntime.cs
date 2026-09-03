@@ -1192,7 +1192,7 @@ namespace JJKGame.Player
             groundDustSuction = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "GroundDustSuction",
-                new Color(0.16f, 0.18f, 0.21f, 0.35f),
+                new Color(0.16f, 0.18f, 0.21f, 0.40f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
@@ -1201,8 +1201,8 @@ namespace JJKGame.Player
                 impactCue ? 0.30f : 1.05f,
                 0f,
                 0f,
-                0.035f,
-                0.088f,
+                0.039f,
+                0.099f,
                 ParticleSystemShapeType.Sphere,
                 boundaryRadius * 0.85f,
                 false,
@@ -1227,8 +1227,8 @@ namespace JJKGame.Player
             // Keep the unused axes in TwoConstants mode to match Y.
             dustVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
             dustVelocity.y = new ParticleSystem.MinMaxCurve(
-                impactCue ? 0.55f : 0.30f,
-                impactCue ? 1.00f : 0.68f
+                impactCue ? 0.55f : 0.34f,
+                impactCue ? 1.00f : 0.76f
             );
             dustVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             dustVelocity.radial = CreateAcceleratingInwardCurve(
@@ -1259,7 +1259,7 @@ namespace JJKGame.Player
             darkDebrisFragments = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "DarkDebrisFragments",
-                new Color(0.10f, 0.13f, 0.18f, 0.72f),
+                new Color(0.13f, 0.18f, 0.27f, 0.78f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
@@ -1268,8 +1268,8 @@ namespace JJKGame.Player
                 impactCue ? 0.30f : 0.90f,
                 0f,
                 0f,
-                0.058f,
-                0.150f,
+                0.065f,
+                0.165f,
                 ParticleSystemShapeType.Sphere,
                 boundaryRadius * 0.86f,
                 false,
@@ -1293,8 +1293,8 @@ namespace JJKGame.Player
             // Match the linear velocity curve mode on every axis (TwoConstants).
             debrisVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
             debrisVelocity.y = new ParticleSystem.MinMaxCurve(
-                impactCue ? 0.25f : 0.12f,
-                impactCue ? 0.62f : 0.38f
+                impactCue ? 0.25f : 0.16f,
+                impactCue ? 0.62f : 0.48f
             );
             debrisVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             debrisVelocity.radial = CreateAcceleratingInwardCurve(
@@ -1506,7 +1506,7 @@ namespace JJKGame.Player
 
         private void ApplyConvergenceArcFade(float fade)
         {
-            float fieldAlphaScale = impactCue ? 1f : 0.87f;
+            float fieldAlphaScale = impactCue ? 1f : 0.80f;
             foreach (ConvergenceArcBinding arc in convergenceArcs)
             {
                 arc?.ApplyFade(fade * convergenceArcWeight * fieldAlphaScale);
@@ -1563,17 +1563,17 @@ namespace JJKGame.Player
             }
 
             impactCollapse = 0f;
-            denseEnergyWeight = SmoothRamp(0f, 0.12f, normalized);
-            fresnelEnergyWeight = SmoothRamp(0.10f, 0.30f, normalized);
-            outerEnergyWeight = SmoothRamp(0.14f, 0.34f, normalized);
-            coronaWeight = SmoothRamp(0.10f, 0.30f, normalized);
-            slowSpiralWeight = SmoothRamp(0.20f, 0.50f, normalized);
-            groundDustWeight = SmoothRamp(0.20f, 0.50f, normalized);
-            darkDebrisWeight = SmoothRamp(0.28f, 0.56f, normalized);
-            fastSpiralWeight = SmoothRamp(0.45f, 0.68f, normalized);
-            convergenceArcWeight = SmoothRamp(0.16f, 0.48f, normalized);
-            distortionWeight = SmoothRamp(0.10f, 0.32f, normalized);
-            lightWeight = SmoothRamp(0.02f, 0.48f, normalized);
+            denseEnergyWeight = SmoothRamp(0f, 0.10f, normalized);
+            fresnelEnergyWeight = SmoothRamp(0.08f, 0.22f, normalized);
+            outerEnergyWeight = SmoothRamp(0.12f, 0.28f, normalized);
+            coronaWeight = SmoothRamp(0.12f, 0.28f, normalized);
+            groundDustWeight = SmoothRamp(0.18f, 0.34f, normalized);
+            darkDebrisWeight = SmoothRamp(0.22f, 0.38f, normalized);
+            slowSpiralWeight = SmoothRamp(0.24f, 0.42f, normalized);
+            convergenceArcWeight = SmoothRamp(0.30f, 0.50f, normalized);
+            fastSpiralWeight = SmoothRamp(0.42f, 0.58f, normalized);
+            distortionWeight = SmoothRamp(0.08f, 0.22f, normalized);
+            lightWeight = SmoothRamp(0.05f, 0.30f, normalized);
         }
 
         private float ResolveEnergyLayerWeight(BlueEnergyLayerKind layerKind)

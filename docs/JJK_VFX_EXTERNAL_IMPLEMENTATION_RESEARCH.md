@@ -299,12 +299,14 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 - 실제 environment object/physics 없이 낮은 spawn illusion 사용
 - negative radial speed > weak orbit > restrained noise 순서로 중심 수렴
 - impact는 짧은 lifetime과 normalized compression 기반 simulation 가속 사용
+- final tuning에서 dust alpha/size/lift와 debris fragment size/blue-gray 대비/lift를 높이되
+  particle 수와 inward 속도는 크게 늘리지 않음
 
 결론:
 구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이다. Unity에서 바닥 착시, sparse density,
 fighter/enemy readability와 inward identity가 유지되는지 확인한다.
 
-## D. Stage timing layer 구현, 사용자 시각 검수 대기
+## D. Final timing / readability tuning 구현, 사용자 시각 검수 대기
 
 고퀄 reference는:
 charge → establish core → environment reaction → compression → release/impact
@@ -312,16 +314,17 @@ charge → establish core → environment reaction → compression → release/i
 처럼 작은 단계가 분리됨.
 
 우리:
-- field normalized time으로 dense core를 먼저 점화
-- Fresnel/outer shell, distortion, corona를 뒤이어 확립
-- slow spiral과 ground dust/dark debris 환경 반응을 중간에 도입
-- fast spiral은 후반 convergence에서 최종 강도에 도달
+- dense core 0~10%, Fresnel/distortion 8~22%, outer/corona 12~28% 순서로 점화
+- ground dust 18~34%, dark debris 22~38%, slow spiral 24~42%에 환경 반응 확립
+- arc는 30~50%로 늦추고 field alpha scale을 0.80으로 낮춤
+- fast spiral은 42~58%에 최종 강도에 도달
 - impact는 짧은 hold 뒤 collapse를 가속하고 기존 lifecycle fade로 종료
 
 결론:
 gameplay timing을 바꾸지 않고 presentation 내부 normalized time으로 layer onset을 stagger했다.
-구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 실제 단계 구분과 impact handoff는
-Unity 사용자 검수 후 확정한다.
+`Gojo Blue Final Timing / Readability Tuning` 상태는
+`REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 실제 단계 구분과 impact handoff는 Unity 사용자
+검수 후 확정한다.
 
 ---
 
@@ -368,10 +371,11 @@ Blue를 아직 USER VERIFIED로 닫지 않는다.
 ## 4순위 — Internal timing stagger 사용자 검수
 
 현재 구현:
-- 0~15%: dense core ignition
-- 10~35%: Fresnel/outer field, corona, distortion establishment
-- 20~55%: slow spiral과 dust/debris environment reaction
-- 45~85%: fast spiral을 포함한 full convergence
+- 0~10%: dense core ignition
+- 8~28%: Fresnel/distortion 뒤 outer field/corona establishment
+- 18~42%: dust/debris 뒤 slow spiral environment reaction
+- 30~58%: arc 뒤 fast spiral convergence
+- 58% 이후: full convergence, 85% 이후 pre-collapse 가속
 - impact: 0~20% hold 뒤 20~75% collapse 가속
 
 실제 Blue gameplay duration 변경 없음.
