@@ -1173,10 +1173,14 @@ namespace JJKGame.Player
                 groundDustSuction.velocityOverLifetime;
             dustVelocity.enabled = true;
             dustVelocity.space = ParticleSystemSimulationSpace.Local;
+            // Unity requires the X/Y/Z velocity curves to use the same MinMaxCurve mode.
+            // Keep the unused axes in TwoConstants mode to match Y.
+            dustVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
             dustVelocity.y = new ParticleSystem.MinMaxCurve(
                 impactCue ? 0.48f : 0.20f,
                 impactCue ? 0.92f : 0.52f
             );
+            dustVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             dustVelocity.radial = CreateAcceleratingInwardCurve(
                 impactCue ? 5.2f : 1.6f,
                 impactCue ? 7.4f : 3.0f
@@ -1235,10 +1239,13 @@ namespace JJKGame.Player
                 darkDebrisFragments.velocityOverLifetime;
             debrisVelocity.enabled = true;
             debrisVelocity.space = ParticleSystemSimulationSpace.Local;
+            // Match the linear velocity curve mode on every axis (TwoConstants).
+            debrisVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
             debrisVelocity.y = new ParticleSystem.MinMaxCurve(
                 impactCue ? 0.18f : 0.06f,
                 impactCue ? 0.52f : 0.24f
             );
+            debrisVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             debrisVelocity.radial = CreateAcceleratingInwardCurve(
                 impactCue ? 6.2f : 1.9f,
                 impactCue ? 9.2f : 3.2f
