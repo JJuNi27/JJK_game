@@ -7,15 +7,17 @@ using UnityEngine.SceneManagement;
 namespace JJKGame.Player
 {
     /// <summary>
-    /// CombatMVP-only ParticleSystem implementation of the Gate 4 VFX runtime boundary.
+    /// Production ParticleSystem implementation of the Gate 4 VFX runtime boundary.
     /// The host and every spawned effect are scene-owned so reloads cannot retain
-    /// registrations, particles, or runtime materials.
+    /// registrations, particles, or runtime materials. CombatMVP installs it
+    /// automatically; VFXLab opts in with an explicit scene-owned component.
     /// </summary>
     [DefaultExecutionOrder(1450)]
     [DisallowMultipleComponent]
     public sealed class ProductionParticleVfxRuntime : MonoBehaviour, IPresentationVfxRuntime
     {
         private const string TargetSceneName = "CombatMVP";
+        private const string DeveloperPreviewSceneName = "VFXLab";
         private static ProductionParticleVfxRuntime activeInstance;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -54,7 +56,7 @@ namespace JJKGame.Player
         private void Awake()
         {
             if (
-                SceneManager.GetActiveScene().name != TargetSceneName
+                !SupportsScene(SceneManager.GetActiveScene().name)
                 || (activeInstance != null && activeInstance != this)
             )
             {
@@ -100,6 +102,11 @@ namespace JJKGame.Player
                 _ => ProductionParticleVfxInstance.Spawn(request, transform),
             };
             return instance != null ? new PresentationVfxHandle(instance) : default;
+        }
+
+        private static bool SupportsScene(string sceneName)
+        {
+            return sceneName == TargetSceneName || sceneName == DeveloperPreviewSceneName;
         }
     }
 

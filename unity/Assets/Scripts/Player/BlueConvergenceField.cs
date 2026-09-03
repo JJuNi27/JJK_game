@@ -115,16 +115,9 @@ namespace JJKGame.Player
                         impactPlayed = true;
                         onFirstImpact?.Invoke();
                         PresentationVfxRuntime.Spawn(
-                            PresentationVfxSpawnRequest.AtWorld(
+                            GojoBluePresentationPreset.CreateImpactRequest(
                                 context.HitPoint,
-                                new Color(0.02f, 0.20f, 0.94f, 0.90f),
-                                new Color(0.14f, 0.88f, 1f, 0.72f),
-                                0.10f,
-                                radius * 0.72f,
-                                0.28f,
-                                0f,
-                                PresentationVfxTimePolicy.Unscaled,
-                                PresentationVfxStyleId.GojoBlue
+                                radius
                             )
                         );
                     }
@@ -166,17 +159,10 @@ namespace JJKGame.Player
         private void BuildVisual()
         {
             presentationHandle = PresentationVfxRuntime.Spawn(
-                PresentationVfxSpawnRequest.Follow(
+                GojoBluePresentationPreset.CreateFieldRequest(
                     transform,
-                    Vector3.up * 0.35f,
-                    new Color(0.02f, 0.18f, 0.92f, 0.94f),
-                    new Color(0.12f, 0.82f, 1f, 0.78f),
-                    radius * 0.16f,
                     radius,
-                    duration,
-                    0f,
-                    PresentationVfxTimePolicy.Scaled,
-                    PresentationVfxStyleId.GojoBlue
+                    duration
                 )
             );
         }

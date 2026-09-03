@@ -149,6 +149,15 @@ detail ceiling과 다음 polish 방향을 정하는 단계다.
 
 Blue가 사용자 합격하기 전에는 Red production pass로 넘어가지 않는다.
 
+## Gate 5B VFXLab developer tool
+
+Gate 5B VFX production iteration을 위해 캐릭터 이동, prototype/future authored motion, 실제 production
+Blue VFX, orbit camera, scene-owned lighting/Bloom, replay/loop/slow motion을 한 scene에서 검수하는
+developer-only `Assets/Scenes/VFXLab.unity`를 추가했다. Combat gameplay 없이 동일
+`GojoBlueVfxInstance`를 호출하며 상세 사용법은 `docs/VFX_LAB.md`를 따른다.
+
+Blue 상태는 계속 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이다.
+
 
 ## Pass 8R-2A Unity test / hotfix 상태
 
