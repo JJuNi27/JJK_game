@@ -512,6 +512,22 @@ namespace JJKGame.Player
             DarkFragment = 3,
         }
 
+        private enum BlueEnergyLayerKind
+        {
+            DenseBody,
+            FresnelShell,
+            OuterShell,
+        }
+
+        private enum BlueParticleLayerKind
+        {
+            Corona,
+            FastSpiral,
+            SlowSpiral,
+            GroundDust,
+            DarkDebris,
+        }
+
         private sealed class ParticleLayerBinding
         {
             private static readonly int ModeId = Shader.PropertyToID("_Mode");
@@ -525,14 +541,18 @@ namespace JJKGame.Player
             private readonly float emission;
             private readonly float breakup;
 
+            public BlueParticleLayerKind Kind { get; }
+
             public ParticleLayerBinding(
                 ParticleSystemRenderer targetRenderer,
+                BlueParticleLayerKind layerKind,
                 BlueParticleMaskMode maskMode,
                 float emissionMultiplier,
                 float breakupAmount
             )
             {
                 renderer = targetRenderer;
+                Kind = layerKind;
                 mode = (float)maskMode;
                 emission = emissionMultiplier;
                 breakup = breakupAmount;
@@ -573,8 +593,11 @@ namespace JJKGame.Player
             private readonly float pulseAmount;
             private readonly float phaseOffset;
 
+            public BlueEnergyLayerKind Kind { get; }
+
             public EnergyLayerBinding(
                 Renderer targetRenderer,
+                BlueEnergyLayerKind layerKind,
                 Color newBodyColor,
                 Color newMidColor,
                 Color newEdgeColor,
@@ -593,6 +616,7 @@ namespace JJKGame.Player
             )
             {
                 renderer = targetRenderer;
+                Kind = layerKind;
                 bodyColor = newBodyColor;
                 midColor = newMidColor;
                 edgeColor = newEdgeColor;
@@ -727,7 +751,7 @@ namespace JJKGame.Player
         private readonly List<ConvergenceArcBinding> convergenceArcs =
             new List<ConvergenceArcBinding>(8);
         private readonly List<ParticleLayerBinding> particleLayers =
-            new List<ParticleLayerBinding>(3);
+            new List<ParticleLayerBinding>(5);
 
         private Transform coreRoot;
         private Light compressionLight;
@@ -739,6 +763,18 @@ namespace JJKGame.Player
         private float lightPulse;
         private float baseLightIntensity;
         private float baseDistortionStrength;
+        private float impactCollapse;
+        private float denseEnergyWeight;
+        private float fresnelEnergyWeight;
+        private float outerEnergyWeight;
+        private float coronaWeight;
+        private float fastSpiralWeight;
+        private float slowSpiralWeight;
+        private float groundDustWeight;
+        private float darkDebrisWeight;
+        private float convergenceArcWeight;
+        private float distortionWeight;
+        private float lightWeight;
 
         public static GojoBlueVfxInstance Spawn(
             PresentationVfxSpawnRequest request,
@@ -758,6 +794,7 @@ namespace JJKGame.Player
         protected override void Build(PresentationVfxSpawnRequest request)
         {
             impactCue = !request.FollowsTarget;
+            UpdatePresentationTiming(0f);
             float inner = Mathf.Max(0.08f, request.StartRadius);
             float outer = Mathf.Max(inner * 2f, request.EndRadius);
             float orbDiameter = Mathf.Clamp(inner * 1.42f, 0.72f, 1.22f);
@@ -778,6 +815,7 @@ namespace JJKGame.Player
             CreateEnergySphere(
                 coreRoot,
                 "DenseEnergyBody",
+                BlueEnergyLayerKind.DenseBody,
                 orbDiameter * 0.74f,
                 40,
                 materialLibrary.EnergyMaterial,
@@ -800,6 +838,7 @@ namespace JJKGame.Player
             CreateEnergySphere(
                 coreRoot,
                 "FresnelEnergyShell",
+                BlueEnergyLayerKind.FresnelShell,
                 orbDiameter * 1.04f,
                 41,
                 materialLibrary.EnergyMaterial,
@@ -822,6 +861,7 @@ namespace JJKGame.Player
             CreateEnergySphere(
                 coreRoot,
                 "ThinOuterDistortionShell",
+                BlueEnergyLayerKind.OuterShell,
                 orbDiameter * 1.42f,
                 42,
                 materialLibrary.EnergyMaterial,
@@ -851,11 +891,14 @@ namespace JJKGame.Player
             distortionSource = gameObject.AddComponent<GojoBlueDistortionSource>();
             distortionSource.Configure(
                 distortionWorldRadius,
-                baseDistortionStrength,
+                baseDistortionStrength * distortionWeight,
                 impactCue,
                 distortionRenderer
             );
             ApplyEnergyLayers(1f);
+            ApplyParticleLayers(1f);
+            ApplyConvergenceArcFade(1f);
+            ApplyEnvironmentEmissionRates();
         }
 
         private Renderer CreateDistortionShell(
@@ -896,6 +939,7 @@ namespace JJKGame.Player
         private void CreateEnergySphere(
             Transform parent,
             string name,
+            BlueEnergyLayerKind layerKind,
             float diameter,
             int sortingOrder,
             Material sharedMaterial,
@@ -941,6 +985,7 @@ namespace JJKGame.Player
             energyLayers.Add(
                 new EnergyLayerBinding(
                     renderer,
+                    layerKind,
                     bodyColor,
                     midColor,
                     edgeColor,
@@ -991,6 +1036,7 @@ namespace JJKGame.Player
             BindParticleLayer(
                 corona,
                 particleMaterial,
+                BlueParticleLayerKind.Corona,
                 BlueParticleMaskMode.BrokenWisp,
                 1.30f,
                 0.24f
@@ -1049,6 +1095,7 @@ namespace JJKGame.Player
             BindParticleLayer(
                 fastSpiral,
                 particleMaterial,
+                BlueParticleLayerKind.FastSpiral,
                 BlueParticleMaskMode.TaperedStreak,
                 1.36f,
                 0.16f
@@ -1096,6 +1143,7 @@ namespace JJKGame.Player
             BindParticleLayer(
                 slowSpiral,
                 particleMaterial,
+                BlueParticleLayerKind.SlowSpiral,
                 BlueParticleMaskMode.SoftMote,
                 1.16f,
                 0.10f
@@ -1106,6 +1154,7 @@ namespace JJKGame.Player
         private void BindParticleLayer(
             ParticleSystem system,
             Material sharedMaterial,
+            BlueParticleLayerKind layerKind,
             BlueParticleMaskMode maskMode,
             float emission,
             float breakup
@@ -1126,11 +1175,12 @@ namespace JJKGame.Player
             renderer.sharedMaterial = sharedMaterial;
             ParticleLayerBinding binding = new ParticleLayerBinding(
                 renderer,
+                layerKind,
                 maskMode,
                 emission,
                 breakup
             );
-            binding.Apply(1f);
+            binding.Apply(ResolveParticleLayerWeight(layerKind));
             particleLayers.Add(binding);
         }
 
@@ -1142,7 +1192,7 @@ namespace JJKGame.Player
             groundDustSuction = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "GroundDustSuction",
-                new Color(0.16f, 0.18f, 0.21f, 0.28f),
+                new Color(0.16f, 0.18f, 0.21f, 0.35f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
@@ -1151,10 +1201,10 @@ namespace JJKGame.Player
                 impactCue ? 0.30f : 1.05f,
                 0f,
                 0f,
-                0.026f,
-                0.066f,
+                0.035f,
+                0.088f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.78f,
+                boundaryRadius * 0.85f,
                 false,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 20 : 8,
@@ -1165,7 +1215,7 @@ namespace JJKGame.Player
             dustShape.position = Vector3.down
                 * Mathf.Clamp(boundaryRadius * 0.065f, 0.22f, 0.30f);
             dustShape.radiusThickness = 0.16f;
-            dustShape.scale = new Vector3(1f, 0.055f, 1f);
+            dustShape.scale = new Vector3(1f, 0.065f, 1f);
             ParticleSystem.MainModule dustMain = groundDustSuction.main;
             dustMain.startColor = Color.white;
             dustMain.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
@@ -1177,8 +1227,8 @@ namespace JJKGame.Player
             // Keep the unused axes in TwoConstants mode to match Y.
             dustVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
             dustVelocity.y = new ParticleSystem.MinMaxCurve(
-                impactCue ? 0.48f : 0.20f,
-                impactCue ? 0.92f : 0.52f
+                impactCue ? 0.55f : 0.30f,
+                impactCue ? 1.00f : 0.68f
             );
             dustVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             dustVelocity.radial = CreateAcceleratingInwardCurve(
@@ -1199,6 +1249,7 @@ namespace JJKGame.Player
             BindParticleLayer(
                 groundDustSuction,
                 particleMaterial,
+                BlueParticleLayerKind.GroundDust,
                 BlueParticleMaskMode.SoftMote,
                 0.82f,
                 0.16f
@@ -1217,21 +1268,21 @@ namespace JJKGame.Player
                 impactCue ? 0.30f : 0.90f,
                 0f,
                 0f,
-                0.040f,
-                0.105f,
+                0.058f,
+                0.150f,
                 ParticleSystemShapeType.Sphere,
                 boundaryRadius * 0.86f,
                 false,
                 ParticleSystemSimulationSpace.Local,
-                impactCue ? 12 : 4,
-                impactCue ? 0f : 7.5f,
+                impactCue ? 12 : 5,
+                impactCue ? 0f : 10f,
                 particleMaterial
             );
             ParticleSystem.ShapeModule debrisShape = darkDebrisFragments.shape;
             debrisShape.position = Vector3.down
                 * Mathf.Clamp(boundaryRadius * 0.035f, 0.08f, 0.18f);
             debrisShape.radiusThickness = 0.12f;
-            debrisShape.scale = new Vector3(1f, 0.22f, 1f);
+            debrisShape.scale = new Vector3(1f, 0.28f, 1f);
             ParticleSystem.MainModule debrisMain = darkDebrisFragments.main;
             debrisMain.startColor = Color.white;
             debrisMain.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
@@ -1242,8 +1293,8 @@ namespace JJKGame.Player
             // Match the linear velocity curve mode on every axis (TwoConstants).
             debrisVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
             debrisVelocity.y = new ParticleSystem.MinMaxCurve(
-                impactCue ? 0.18f : 0.06f,
-                impactCue ? 0.52f : 0.24f
+                impactCue ? 0.25f : 0.12f,
+                impactCue ? 0.62f : 0.38f
             );
             debrisVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             debrisVelocity.radial = CreateAcceleratingInwardCurve(
@@ -1264,6 +1315,7 @@ namespace JJKGame.Player
             BindParticleLayer(
                 darkDebrisFragments,
                 particleMaterial,
+                BlueParticleLayerKind.DarkDebris,
                 BlueParticleMaskMode.DarkFragment,
                 0.78f,
                 0.20f
@@ -1366,27 +1418,29 @@ namespace JJKGame.Player
             compressionLight.color = new Color(0.025f, 0.22f, 1f);
             compressionLight.range = Mathf.Clamp(orbDiameter * 4.4f, 3.0f, 5.2f);
             baseLightIntensity = impactCue ? 0.52f : 0.66f;
-            compressionLight.intensity = baseLightIntensity;
+            compressionLight.intensity = baseLightIntensity * lightWeight;
             compressionLight.shadows = LightShadows.None;
         }
 
         protected override void Tick(float elapsed, float normalized, float deltaTime)
         {
+            UpdatePresentationTiming(normalized);
             shaderCompression = impactCue
-                ? Mathf.SmoothStep(0.25f, 1f, normalized)
+                ? Mathf.Lerp(0.25f, 1f, impactCollapse)
                 : 0.34f + Mathf.Sin(elapsed * 8.6f) * 0.08f;
             lightPulse = 0.88f + Mathf.Sin(elapsed * 10.2f) * 0.12f;
 
             float environmentSimulationSpeed = impactCue
-                ? Mathf.Lerp(1.05f, 1.65f, shaderCompression)
-                : 1f;
+                ? Mathf.Lerp(1.05f, 1.65f, impactCollapse)
+                : 1f + SmoothRamp(0.85f, 1f, normalized) * 0.12f;
             SetSimulationSpeed(groundDustSuction, environmentSimulationSpeed);
             SetSimulationSpeed(darkDebrisFragments, environmentSimulationSpeed);
+            ApplyEnvironmentEmissionRates();
 
             if (coreRoot != null)
             {
                 float scale = impactCue
-                    ? Mathf.Lerp(1.24f, 0.58f, Mathf.SmoothStep(0f, 1f, normalized))
+                    ? Mathf.Lerp(1.24f, 0.58f, impactCollapse)
                     : 1f + Mathf.Sin(elapsed * 8.6f) * 0.035f;
                 coreRoot.localScale = Vector3.one * scale;
                 coreRoot.Rotate(Vector3.up, (impactCue ? 95f : 42f) * deltaTime, Space.Self);
@@ -1402,27 +1456,22 @@ namespace JJKGame.Player
         {
             base.ApplyVisualFade(fade);
             ApplyEnergyLayers(fade);
-            foreach (ConvergenceArcBinding arc in convergenceArcs)
-            {
-                arc?.ApplyFade(fade);
-            }
+            ApplyConvergenceArcFade(fade);
             if (compressionLight != null)
             {
-                compressionLight.intensity = baseLightIntensity * lightPulse * fade;
+                compressionLight.intensity =
+                    baseLightIntensity * lightPulse * lightWeight * fade;
             }
             if (distortionSource != null)
             {
                 float compressionBoost = impactCue
-                    ? Mathf.Lerp(1.35f, 0.35f, shaderCompression)
+                    ? Mathf.Lerp(1.08f, 1.28f, impactCollapse)
                     : 0.90f + shaderCompression * 0.20f;
                 distortionSource.SetStrength(
-                    baseDistortionStrength * compressionBoost * fade
+                    baseDistortionStrength * compressionBoost * distortionWeight * fade
                 );
             }
-            foreach (ParticleLayerBinding layer in particleLayers)
-            {
-                layer?.Apply(fade);
-            }
+            ApplyParticleLayers(fade);
         }
 
         private static void SetSimulationSpeed(ParticleSystem system, float speed)
@@ -1440,8 +1489,117 @@ namespace JJKGame.Player
         {
             foreach (EnergyLayerBinding layer in energyLayers)
             {
-                layer?.Apply(fade, shaderCompression);
+                layer?.Apply(
+                    fade * ResolveEnergyLayerWeight(layer.Kind),
+                    shaderCompression
+                );
             }
+        }
+
+        private void ApplyParticleLayers(float fade)
+        {
+            foreach (ParticleLayerBinding layer in particleLayers)
+            {
+                layer?.Apply(fade * ResolveParticleLayerWeight(layer.Kind));
+            }
+        }
+
+        private void ApplyConvergenceArcFade(float fade)
+        {
+            float fieldAlphaScale = impactCue ? 1f : 0.87f;
+            foreach (ConvergenceArcBinding arc in convergenceArcs)
+            {
+                arc?.ApplyFade(fade * convergenceArcWeight * fieldAlphaScale);
+            }
+        }
+
+        private void ApplyEnvironmentEmissionRates()
+        {
+            SetEmissionRate(
+                groundDustSuction,
+                impactCue ? 0f : 18f * groundDustWeight
+            );
+            SetEmissionRate(
+                darkDebrisFragments,
+                impactCue ? 0f : 10f * darkDebrisWeight
+            );
+        }
+
+        private static void SetEmissionRate(ParticleSystem system, float rate)
+        {
+            if (system == null)
+            {
+                return;
+            }
+
+            ParticleSystem.EmissionModule emission = system.emission;
+            emission.rateOverTimeMultiplier = Mathf.Max(0f, rate);
+        }
+
+        private void UpdatePresentationTiming(float normalized)
+        {
+            if (impactCue)
+            {
+                impactCollapse = SmoothRamp(0.20f, 0.75f, normalized);
+                denseEnergyWeight = 1f;
+                fresnelEnergyWeight = 1f;
+                outerEnergyWeight = 1f;
+                coronaWeight = 1f;
+                fastSpiralWeight = 1f;
+                slowSpiralWeight = 1f;
+                groundDustWeight = 1f;
+                darkDebrisWeight = 1f;
+                convergenceArcWeight = 1f;
+                distortionWeight = Mathf.Lerp(
+                    0.58f,
+                    1f,
+                    SmoothRamp(0f, 0.20f, normalized)
+                );
+                lightWeight = 1f;
+                return;
+            }
+
+            impactCollapse = 0f;
+            denseEnergyWeight = SmoothRamp(0f, 0.12f, normalized);
+            fresnelEnergyWeight = SmoothRamp(0.10f, 0.30f, normalized);
+            outerEnergyWeight = SmoothRamp(0.14f, 0.34f, normalized);
+            coronaWeight = SmoothRamp(0.10f, 0.30f, normalized);
+            slowSpiralWeight = SmoothRamp(0.20f, 0.50f, normalized);
+            groundDustWeight = SmoothRamp(0.20f, 0.50f, normalized);
+            darkDebrisWeight = SmoothRamp(0.28f, 0.56f, normalized);
+            fastSpiralWeight = SmoothRamp(0.45f, 0.68f, normalized);
+            convergenceArcWeight = SmoothRamp(0.16f, 0.48f, normalized);
+            distortionWeight = SmoothRamp(0.10f, 0.32f, normalized);
+            lightWeight = SmoothRamp(0.02f, 0.48f, normalized);
+        }
+
+        private float ResolveEnergyLayerWeight(BlueEnergyLayerKind layerKind)
+        {
+            return layerKind switch
+            {
+                BlueEnergyLayerKind.DenseBody => denseEnergyWeight,
+                BlueEnergyLayerKind.FresnelShell => fresnelEnergyWeight,
+                BlueEnergyLayerKind.OuterShell => outerEnergyWeight,
+                _ => 1f,
+            };
+        }
+
+        private float ResolveParticleLayerWeight(BlueParticleLayerKind layerKind)
+        {
+            return layerKind switch
+            {
+                BlueParticleLayerKind.Corona => coronaWeight,
+                BlueParticleLayerKind.FastSpiral => fastSpiralWeight,
+                BlueParticleLayerKind.SlowSpiral => slowSpiralWeight,
+                BlueParticleLayerKind.GroundDust => groundDustWeight,
+                BlueParticleLayerKind.DarkDebris => darkDebrisWeight,
+                _ => 1f,
+            };
+        }
+
+        private static float SmoothRamp(float start, float end, float normalized)
+        {
+            return Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(start, end, normalized));
         }
     }
 

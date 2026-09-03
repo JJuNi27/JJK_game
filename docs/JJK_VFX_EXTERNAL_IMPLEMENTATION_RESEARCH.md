@@ -304,7 +304,7 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이다. Unity에서 바닥 착시, sparse density,
 fighter/enemy readability와 inward identity가 유지되는지 확인한다.
 
-## D. Stage timing layer가 부족
+## D. Stage timing layer 구현, 사용자 시각 검수 대기
 
 고퀄 reference는:
 charge → establish core → environment reaction → compression → release/impact
@@ -312,11 +312,16 @@ charge → establish core → environment reaction → compression → release/i
 처럼 작은 단계가 분리됨.
 
 우리:
-spawn 직후 core/particles/arcs가 거의 같이 나타남.
+- field normalized time으로 dense core를 먼저 점화
+- Fresnel/outer shell, distortion, corona를 뒤이어 확립
+- slow spiral과 ground dust/dark debris 환경 반응을 중간에 도입
+- fast spiral은 후반 convergence에서 최종 강도에 도달
+- impact는 짧은 hold 뒤 collapse를 가속하고 기존 lifecycle fade로 종료
 
 결론:
-현재 gameplay timing을 바꾸지 않고 presentation 내부 normalized time으로
-layer onset을 stagger하는 것이 필요.
+gameplay timing을 바꾸지 않고 presentation 내부 normalized time으로 layer onset을 stagger했다.
+구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 실제 단계 구분과 impact handoff는
+Unity 사용자 검수 후 확정한다.
 
 ---
 
@@ -360,13 +365,14 @@ Blue를 아직 USER VERIFIED로 닫지 않는다.
 
 실제 Rigidbody / map gameplay는 건드리지 않음.
 
-## 4순위 — Internal timing stagger
+## 4순위 — Internal timing stagger 사용자 검수
 
-예:
+현재 구현:
 - 0~15%: dense core ignition
-- 10~35%: outer field appears
-- 20%~end: spiral attraction
-- impact: all layers fast collapse
+- 10~35%: Fresnel/outer field, corona, distortion establishment
+- 20~55%: slow spiral과 dust/debris environment reaction
+- 45~85%: fast spiral을 포함한 full convergence
+- impact: 0~20% hold 뒤 20~75% collapse 가속
 
 실제 Blue gameplay duration 변경 없음.
 
