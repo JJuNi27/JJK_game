@@ -3,7 +3,7 @@ Shader "JJKGame/VFX/Gojo Blue Particle"
     Properties
     {
         [HDR] _TintColor("Tint", Color) = (1, 1, 1, 1)
-        _Mode("Mask Mode", Range(0, 2)) = 0
+        _Mode("Mask Mode", Range(0, 3)) = 0
         _Fade("Fade", Range(0, 1)) = 1
         _Emission("Emission", Range(0, 3)) = 1.2
         _Breakup("Edge Breakup", Range(0, 0.5)) = 0.15
@@ -148,14 +148,33 @@ Shader "JJKGame/VFX/Gojo Blue Particle"
                 brokenWisp *= 1.0 - smoothstep(0.58, 1.0, longitudinal);
                 brokenWisp *= lerp(1.0 - _Breakup, 1.0, noise);
 
-                float mode = clamp(_Mode, 0.0, 2.0);
+                float2 shardUv = float2(
+                    centeredUv.x + centeredUv.y * 0.28,
+                    centeredUv.y - centeredUv.x * 0.12
+                );
+                float shardDistance = max(
+                    abs(shardUv.x) * 0.82,
+                    abs(shardUv.y) * 1.34
+                );
+                float darkFragment = 1.0 - smoothstep(0.58, 0.82, shardDistance);
+                float chippedCorner = smoothstep(
+                    -0.86,
+                    -0.18,
+                    shardUv.x + shardUv.y * 0.72
+                );
+                darkFragment *= chippedCorner;
+                darkFragment *= lerp(1.0 - _Breakup, 1.0, noise);
+
+                float mode = clamp(_Mode, 0.0, 3.0);
                 float moteWeight = 1.0 - step(0.5, mode);
                 float streakWeight = step(0.5, mode) * (1.0 - step(1.5, mode));
-                float wispWeight = step(1.5, mode);
+                float wispWeight = step(1.5, mode) * (1.0 - step(2.5, mode));
+                float fragmentWeight = step(2.5, mode);
                 float mask = saturate(
                     softMote * moteWeight
                     + taperedStreak * streakWeight
                     + brokenWisp * wispWeight
+                    + darkFragment * fragmentWeight
                 );
 
                 float centerGlow = 1.0 - smoothstep(0.0, 0.82, radialDistance);

@@ -16,6 +16,8 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - Gojo Blue Localized Screen Distortion:
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+- Gojo Blue Visual-Only Environment Suction:
+  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
 
@@ -27,6 +29,8 @@ Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승
 - Sukuna slash 계열은 상대적으로 개선되었으므로 현재 rework 대상에서 제외
 - localized distortion은 오류 없이 동작하지만 field 강도가 흐림처럼 보일 정도로 약했음
 - `FastClockwiseInwardStreaks`의 긴 stretched billboard가 laser bar처럼 보여 우선 rework 대상이 됨
+- distortion `0.19`와 procedural particle mask는 개선됐지만 Blue 주변 공간이 비어
+  “파란 구체 + arc”처럼 보이는 문제가 다음 우선순위가 됨
 
 ## 기준 문서
 
@@ -117,6 +121,7 @@ Blue에만 다음 production benchmark를 원격 구현했다.
 - outward burst가 아닌 impact collapse
 - renderer feature와 분리된 `GojoBlueDistortionSource` 기반 localized screen distortion shell
 - procedural mask 기반 Blue 전용 particle shader와 shared material template
+- presentation-only ground dust와 sparse dark debris inward suction layer
 
 VFX Graph, Full Screen Pass, PC Renderer YAML, external texture는 추가하지 않았다.
 Red/Purple/Unlimited Void/Sukuna/Megumi와 gameplay 값도 변경하지 않았다.
@@ -146,9 +151,9 @@ detail ceiling과 다음 polish 방향을 정하는 단계다.
 `Blue Production VFX Benchmark 2차 polish`를 검토하는 것이다.
 
 권장 우선순위:
-1. field distortion strength와 custom particle mask Unity 시각 검수
-2. short tapered streak / soft mote / broken wisp 최종 튜닝
-3. visual-only debris/dust suction
+1. visual-only dust/debris suction Unity 시각 검수
+2. field distortion과 short tapered particle 유지 확인
+3. dust/debris density와 readability 최종 튜닝
 4. presentation layer onset stagger
 5. 사용자 영상/스크린샷 기반 final art tuning
 
@@ -187,6 +192,24 @@ REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - SlowCounterSpiralMotes는 soft mote, BlueCorona는 random-rotation broken wisp를 사용한다.
 - generic particle factory의 기본 material/stretch 값과 다른 technique VFX는 변경하지 않았다.
 - 실제 particle silhouette, warning, replay/cleanup 결과는 Unity 사용자 검수 전이다.
+
+## Gojo Blue Visual-Only Environment Suction
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+- `GojoBlueVfxInstance`가 `GroundDustSuction`과 `DarkDebrisFragments` ParticleSystem을 직접 소유한다.
+- dust는 Blue anchor 기준 낮은 얇은 영역에서 soft mote로 떠오르며 중심으로 수렴한다.
+- debris는 sparse dark blue-gray fragment로 생성되어 약하게 orbit한 뒤 중심에서 축소·소멸한다.
+- inward radial speed가 orbit보다 크고 noise는 가장 약하게 제한된다.
+- impact cue는 짧은 lifetime/높은 inward speed와 normalized compression 기반 simulation 가속을 사용한다.
+- `GojoBlueParticle.shader`에 procedural `DarkFragment` mode 하나만 추가했다.
+- Rigidbody, collider, Physics query, scene object 이동, gameplay 값 변경은 없다.
+- 두 system은 기존 Blue instance particle/material lifecycle과 cleanup을 그대로 따른다.
+- 실제 밀도, 바닥 착시, fighter readability와 cleanup 결과는 Unity 사용자 검수 전이다.
 
 ## Gate 5B VFXLab developer tool
 
@@ -245,9 +268,9 @@ Pass 8R-2A merge 이후 실제 Unity Editor에서 다음 오류가 발견되어 
 
 ## 다음 권장 작업
 
-먼저 CombatMVP와 VFXLab에서 강화된 field distortion과 procedural particle mask의 shader compile,
-streak 길이, mote/wisp silhouette, impact 유지, replay/cleanup을 사용자 시각 검수한다. 그 결과가
-승인된 뒤에만 Blue final polish와 Red/Purple 재사용 경계를 결정한다.
+먼저 CombatMVP와 VFXLab에서 ground dust 위치, dark debris 밀도, inward/orbit 우선순위,
+impact collapse, fighter readability, replay/cleanup을 사용자 시각 검수한다. 기존 distortion과
+tapered particle 유지도 함께 확인한 뒤에만 Blue final polish와 Red/Purple 재사용 경계를 결정한다.
 
 Blue가 아직 시각적으로 부족하다고 판정되면:
 - R-2B로 넘어가기 전에 Blue shader/noise/core/spiral/arc art tuning을 먼저 수행한다.

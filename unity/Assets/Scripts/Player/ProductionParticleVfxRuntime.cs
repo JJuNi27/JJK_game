@@ -509,6 +509,7 @@ namespace JJKGame.Player
             SoftMote = 0,
             TaperedStreak = 1,
             BrokenWisp = 2,
+            DarkFragment = 3,
         }
 
         private sealed class ParticleLayerBinding
@@ -731,6 +732,8 @@ namespace JJKGame.Player
         private Transform coreRoot;
         private Light compressionLight;
         private GojoBlueDistortionSource distortionSource;
+        private ParticleSystem groundDustSuction;
+        private ParticleSystem darkDebrisFragments;
         private bool impactCue;
         private float shaderCompression;
         private float lightPulse;
@@ -841,6 +844,7 @@ namespace JJKGame.Player
 
             BuildCorona(orbDiameter, materialLibrary.ParticleMaterial);
             BuildSpiralFlow(boundaryRadius, materialLibrary.ParticleMaterial);
+            BuildEnvironmentSuction(boundaryRadius, materialLibrary.ParticleMaterial);
             BuildConvergenceField(outer, boundaryRadius);
             BuildCompressionLight(orbDiameter);
 
@@ -1130,6 +1134,154 @@ namespace JJKGame.Player
             particleLayers.Add(binding);
         }
 
+        private void BuildEnvironmentSuction(
+            float boundaryRadius,
+            Material particleMaterial
+        )
+        {
+            groundDustSuction = ProductionSignatureVfxFactory.CreateParticleSystem(
+                transform,
+                "GroundDustSuction",
+                new Color(0.16f, 0.18f, 0.21f, 0.28f),
+                RuntimeMaterials,
+                MaterialColors,
+                !impactCue,
+                Duration,
+                impactCue ? 0.18f : 0.65f,
+                impactCue ? 0.30f : 1.05f,
+                0f,
+                0f,
+                0.026f,
+                0.066f,
+                ParticleSystemShapeType.Sphere,
+                boundaryRadius * 0.78f,
+                false,
+                ParticleSystemSimulationSpace.Local,
+                impactCue ? 20 : 8,
+                impactCue ? 0f : 18f,
+                particleMaterial
+            );
+            ParticleSystem.ShapeModule dustShape = groundDustSuction.shape;
+            dustShape.position = Vector3.down
+                * Mathf.Clamp(boundaryRadius * 0.065f, 0.22f, 0.30f);
+            dustShape.radiusThickness = 0.16f;
+            dustShape.scale = new Vector3(1f, 0.055f, 1f);
+            ParticleSystem.MainModule dustMain = groundDustSuction.main;
+            dustMain.startColor = Color.white;
+            dustMain.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            ParticleSystem.VelocityOverLifetimeModule dustVelocity =
+                groundDustSuction.velocityOverLifetime;
+            dustVelocity.enabled = true;
+            dustVelocity.space = ParticleSystemSimulationSpace.Local;
+            dustVelocity.y = new ParticleSystem.MinMaxCurve(
+                impactCue ? 0.48f : 0.20f,
+                impactCue ? 0.92f : 0.52f
+            );
+            dustVelocity.radial = CreateAcceleratingInwardCurve(
+                impactCue ? 5.2f : 1.6f,
+                impactCue ? 7.4f : 3.0f
+            );
+            dustVelocity.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
+            dustVelocity.orbitalY = new ParticleSystem.MinMaxCurve(
+                impactCue ? 2.2f : 0.75f,
+                impactCue ? 3.4f : 1.45f
+            );
+            dustVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f, 0f);
+            ParticleSystem.NoiseModule dustNoise = groundDustSuction.noise;
+            dustNoise.enabled = true;
+            dustNoise.strength = impactCue ? 0.075f : 0.045f;
+            dustNoise.frequency = 0.24f;
+            ConfigureInwardSize(groundDustSuction, 0.015f);
+            BindParticleLayer(
+                groundDustSuction,
+                particleMaterial,
+                BlueParticleMaskMode.SoftMote,
+                0.82f,
+                0.16f
+            );
+            Track(groundDustSuction);
+
+            darkDebrisFragments = ProductionSignatureVfxFactory.CreateParticleSystem(
+                transform,
+                "DarkDebrisFragments",
+                new Color(0.10f, 0.13f, 0.18f, 0.72f),
+                RuntimeMaterials,
+                MaterialColors,
+                !impactCue,
+                Duration,
+                impactCue ? 0.18f : 0.55f,
+                impactCue ? 0.30f : 0.90f,
+                0f,
+                0f,
+                0.040f,
+                0.105f,
+                ParticleSystemShapeType.Sphere,
+                boundaryRadius * 0.86f,
+                false,
+                ParticleSystemSimulationSpace.Local,
+                impactCue ? 12 : 4,
+                impactCue ? 0f : 7.5f,
+                particleMaterial
+            );
+            ParticleSystem.ShapeModule debrisShape = darkDebrisFragments.shape;
+            debrisShape.position = Vector3.down
+                * Mathf.Clamp(boundaryRadius * 0.035f, 0.08f, 0.18f);
+            debrisShape.radiusThickness = 0.12f;
+            debrisShape.scale = new Vector3(1f, 0.22f, 1f);
+            ParticleSystem.MainModule debrisMain = darkDebrisFragments.main;
+            debrisMain.startColor = Color.white;
+            debrisMain.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            ParticleSystem.VelocityOverLifetimeModule debrisVelocity =
+                darkDebrisFragments.velocityOverLifetime;
+            debrisVelocity.enabled = true;
+            debrisVelocity.space = ParticleSystemSimulationSpace.Local;
+            debrisVelocity.y = new ParticleSystem.MinMaxCurve(
+                impactCue ? 0.18f : 0.06f,
+                impactCue ? 0.52f : 0.24f
+            );
+            debrisVelocity.radial = CreateAcceleratingInwardCurve(
+                impactCue ? 6.2f : 1.9f,
+                impactCue ? 9.2f : 3.2f
+            );
+            debrisVelocity.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
+            debrisVelocity.orbitalY = new ParticleSystem.MinMaxCurve(
+                impactCue ? 2.8f : 1.0f,
+                impactCue ? 4.2f : 1.9f
+            );
+            debrisVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(0f, 0f);
+            ParticleSystem.NoiseModule debrisNoise = darkDebrisFragments.noise;
+            debrisNoise.enabled = true;
+            debrisNoise.strength = impactCue ? 0.065f : 0.035f;
+            debrisNoise.frequency = 0.20f;
+            ConfigureInwardSize(darkDebrisFragments, 0.01f);
+            BindParticleLayer(
+                darkDebrisFragments,
+                particleMaterial,
+                BlueParticleMaskMode.DarkFragment,
+                0.78f,
+                0.20f
+            );
+            Track(darkDebrisFragments);
+        }
+
+        private static ParticleSystem.MinMaxCurve CreateAcceleratingInwardCurve(
+            float initialSpeed,
+            float finalSpeed
+        )
+        {
+            float safeFinalSpeed = Mathf.Max(0.01f, finalSpeed);
+            float initialRatio = Mathf.Clamp01(initialSpeed / safeFinalSpeed);
+            float middleRatio = Mathf.Lerp(initialRatio, 1f, 0.42f);
+            return new ParticleSystem.MinMaxCurve(
+                safeFinalSpeed,
+                new AnimationCurve(
+                    new Keyframe(0f, -initialRatio),
+                    new Keyframe(0.46f, -middleRatio),
+                    new Keyframe(1f, -1f)
+                )
+            );
+        }
+
         private static void ConfigureInwardSize(ParticleSystem system, float finalSize)
         {
             ParticleSystem.SizeOverLifetimeModule size = system.sizeOverLifetime;
@@ -1218,6 +1370,12 @@ namespace JJKGame.Player
                 : 0.34f + Mathf.Sin(elapsed * 8.6f) * 0.08f;
             lightPulse = 0.88f + Mathf.Sin(elapsed * 10.2f) * 0.12f;
 
+            float environmentSimulationSpeed = impactCue
+                ? Mathf.Lerp(1.05f, 1.65f, shaderCompression)
+                : 1f;
+            SetSimulationSpeed(groundDustSuction, environmentSimulationSpeed);
+            SetSimulationSpeed(darkDebrisFragments, environmentSimulationSpeed);
+
             if (coreRoot != null)
             {
                 float scale = impactCue
@@ -1258,6 +1416,17 @@ namespace JJKGame.Player
             {
                 layer?.Apply(fade);
             }
+        }
+
+        private static void SetSimulationSpeed(ParticleSystem system, float speed)
+        {
+            if (system == null)
+            {
+                return;
+            }
+
+            ParticleSystem.MainModule main = system.main;
+            main.simulationSpeed = speed;
         }
 
         private void ApplyEnergyLayers(float fade)

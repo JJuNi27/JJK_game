@@ -248,6 +248,7 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 - GojoBlueDistortionSource-driven localized distortion shell
 - URP `_CameraOpaqueTexture` actual screen sampling (user visual test pending)
 - external texture 없이 procedural soft mote / tapered streak / broken wisp particle mask 구현
+- presentation-only ground dust / sparse dark fragment inward suction 구현
 
 현재 가장 큰 차이:
 
@@ -285,7 +286,7 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이다. Unity에서 긴 laser bar가 실제로
 줄었는지, soft edge와 inward readability가 유지되는지 확인한 뒤 추가 texture 필요성을 결정한다.
 
-## C. Environment reaction이 부족
+## C. Visual-only environment suction 1차 구현, 사용자 시각 검수 대기
 
 고퀄 reference:
 - debris suction
@@ -294,11 +295,14 @@ https://realtimevfx.com/t/hollow-purple-wip1/27632
 - impact decal
 
 우리:
-- core 주변 particle만 반응
+- Blue-owned ground dust와 dark debris ParticleSystem 2개만 추가
+- 실제 environment object/physics 없이 낮은 spawn illusion 사용
+- negative radial speed > weak orbit > restrained noise 순서로 중심 수렴
+- impact는 짧은 lifetime과 normalized compression 기반 simulation 가속 사용
 
 결론:
-gameplay physics를 바꾸지 않고 visual-only debris / dust / fragment를 추가하면
-"공간이 빨려 들어간다"는 체감이 크게 올라갈 가능성이 높음.
+구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이다. Unity에서 바닥 착시, sparse density,
+fighter/enemy readability와 inward identity가 유지되는지 확인한다.
 
 ## D. Stage timing layer가 부족
 
@@ -347,12 +351,12 @@ Blue를 아직 USER VERIFIED로 닫지 않는다.
 목표:
 기본 billboard / 선 모양을 줄임.
 
-## 3순위 — Visual-only environment suction
+## 3순위 — Visual-only environment suction 사용자 검수
 
-- 작은 dark debris
-- dust
-- fragment
-- 일부는 core 주변 orbit 후 흡수
+- 낮은 ground dust 위치와 동시 표시 밀도
+- sparse dark fragment visibility
+- inward > orbit > noise motion hierarchy
+- impact collapse와 replay/cleanup
 
 실제 Rigidbody / map gameplay는 건드리지 않음.
 
