@@ -5,6 +5,22 @@ using UnityEngine;
 
 namespace JJKGame.Player
 {
+    /// <summary>
+    /// Canonical production defaults shared with presentation-only preview hosts.
+    /// These values describe Red's spatial inputs and do not execute gameplay.
+    /// </summary>
+    public static class GojoRedProductionDefaults
+    {
+        public const float Range = 11f;
+        public const float ProjectileSpeed = 22f;
+        public const float Radius = 1.7f;
+        public const float SpawnHeight = 1f;
+        public const float SpawnForwardOffset = 0.9f;
+
+        public static float TravelDuration => Range / ProjectileSpeed;
+        public static float PreviewEndForwardDistance => SpawnForwardOffset + Range;
+    }
+
     public sealed class RedTechniqueProjectile : MonoBehaviour
     {
         private readonly HashSet<Health> damagedTargets = new HashSet<Health>();
@@ -144,7 +160,8 @@ namespace JJKGame.Player
                 GojoRedPresentationPreset.CreateReleaseRequest(
                     transform,
                     radius,
-                    maxRange / speed + 0.15f,
+                    maxRange,
+                    speed,
                     direction
                 )
             );
@@ -170,10 +187,12 @@ namespace JJKGame.Player
         public static PresentationVfxSpawnRequest CreateReleaseRequest(
             Transform anchor,
             float radius,
-            float duration,
+            float range,
+            float projectileSpeed,
             Vector3 direction
         )
         {
+            float duration = range / Mathf.Max(0.1f, projectileSpeed) + 0.15f;
             return PresentationVfxSpawnRequest.Follow(
                 anchor,
                 Vector3.zero,

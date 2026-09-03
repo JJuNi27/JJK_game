@@ -30,9 +30,10 @@ namespace JJKGame.Player
 
         [Header("Cursed Technique Reversal: Red")]
         [SerializeField, Min(0.01f)] private float redCastTime = 0.30f;
-        [SerializeField, Min(0.1f)] private float redRange = 11f;
-        [SerializeField, Min(0.1f)] private float redProjectileSpeed = 22f;
-        [SerializeField, Min(0.1f)] private float redRadius = 1.7f;
+        [SerializeField, Min(0.1f)] private float redRange = GojoRedProductionDefaults.Range;
+        [SerializeField, Min(0.1f)] private float redProjectileSpeed =
+            GojoRedProductionDefaults.ProjectileSpeed;
+        [SerializeField, Min(0.1f)] private float redRadius = GojoRedProductionDefaults.Radius;
         [SerializeField, Min(0f)] private float redDamage = 18f;
         [SerializeField, Min(0f)] private float redPushSpeed = 23f;
         [SerializeField, Min(0f)] private float redHitStun = 0.52f;
@@ -222,7 +223,9 @@ namespace JJKGame.Player
         private void SpawnRedProjectile()
         {
             Vector3 direction = pendingRedDirection.sqrMagnitude > 0.001f ? pendingRedDirection.normalized : transform.forward;
-            Vector3 start = transform.position + Vector3.up * 1.0f + direction * 0.9f;
+            Vector3 start = transform.position
+                + Vector3.up * GojoRedProductionDefaults.SpawnHeight
+                + direction * GojoRedProductionDefaults.SpawnForwardOffset;
             GameObject projectileObject = new GameObject("RedTechniqueProjectile");
             projectileObject.transform.position = start;
             RedTechniqueProjectile projectile = projectileObject.AddComponent<RedTechniqueProjectile>();

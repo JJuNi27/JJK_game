@@ -102,7 +102,7 @@ Anticipation → Cast → production Blue field → impact collapse → Recover
 
 ### Red
 
-`E`는 VFXLab-local anticipation/cast/travel/impact/recover 순서에서 production `GojoRedPresentationPreset` request와 `GojoRedVfxInstance` renderer를 실행한다. CombatMVP의 `RedTechniqueProjectile`도 같은 preset을 사용한다. Preview travel anchor만 VFXLab이 이동시키며 projectile gameplay actor는 생성하지 않는다.
+`E`는 VFXLab-local anticipation/cast/travel/impact/recover 순서에서 production `GojoRedPresentationPreset` request와 `GojoRedVfxInstance` renderer를 실행한다. CombatMVP와 VFXLab은 `GojoRedProductionDefaults`의 range/speed/radius 및 같은 preset을 공유하므로 preview anchor도 canonical 11m를 22m/s로 이동한다. Projectile gameplay actor는 생성하지 않는다.
 
 ### Hollow Purple
 
@@ -110,7 +110,7 @@ Anticipation → Cast → production Blue field → impact collapse → Recover
 
 ### Unlimited Void
 
-`V` 한 번은 짧은 anticipation 뒤 production `UnlimitedVoidProductionVisual`을 preview-owned host에서 실행한다. Host는 cancel/replay/complete 시 제거된다. Domain gameplay component, artisan input, radius query, stun, duration state, burnout은 실행하지 않는다.
+`V` 한 번은 0.34초 character anticipation motion 뒤 추가 anticipation particle 없이 production `UnlimitedVoidProductionVisual`을 preview-owned host에서 실행한다. Host는 cancel/replay/complete 시 제거된다. Domain gameplay component, artisan input, radius query, stun, duration state, burnout은 실행하지 않는다.
 
 ## Production presentation 재사용
 

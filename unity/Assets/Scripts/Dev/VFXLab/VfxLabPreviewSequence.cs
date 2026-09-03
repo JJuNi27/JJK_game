@@ -24,8 +24,6 @@ namespace JJKGame.Dev.VFXLab
         private const float BlueRadius = 4.5f;
         private const float BlueFieldDuration = 0.95f;
         private const float BasicComboResetDelay = 0.9f;
-        private const float RedVisualRadius = 1.7f;
-        private const float RedVisualLifetime = 0.65f;
         private const float PreviewAnchorForwardDistance = 4.2f;
         private const float PreviewAnchorHeight = 1f;
         private const float LoopDelay = 0.34f;
@@ -299,8 +297,10 @@ namespace JJKGame.Dev.VFXLab
                     SpawnBlueImpact();
                     break;
                 case VfxLabPreviewAction.Red:
-                    PositionPreviewAnchorFromCharacter(6.5f);
-                    CaptureTravelPath(0.9f);
+                    PositionPreviewAnchorFromCharacter(
+                        GojoRedProductionDefaults.PreviewEndForwardDistance
+                    );
+                    CaptureTravelPath(GojoRedProductionDefaults.SpawnForwardOffset);
                     CurrentPhaseLabel = "ANTICIPATION";
                     previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueAnticipation);
                     break;
@@ -397,13 +397,19 @@ namespace JJKGame.Dev.VFXLab
 
         private void TickRed()
         {
+            const float releaseAt = 0.44f;
+            const float recoverDelayAfterImpact = 0.19f;
+            const float completeDelayAfterImpact = 0.50f;
+            float travelDuration = GojoRedProductionDefaults.TravelDuration;
+            float impactAt = releaseAt + travelDuration;
+
             if (sequenceStep == 0 && sequenceElapsed >= 0.26f)
             {
                 CurrentPhaseLabel = "CAST";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueCast);
                 sequenceStep = 1;
             }
-            if (sequenceStep == 1 && sequenceElapsed >= 0.44f)
+            if (sequenceStep == 1 && sequenceElapsed >= releaseAt)
             {
                 CurrentPhaseLabel = "RED RELEASE";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRelease);
@@ -412,21 +418,22 @@ namespace JJKGame.Dev.VFXLab
             }
             if (sequenceStep >= 2 && sequenceStep < 4)
             {
-                UpdateTravelAnchor(0.44f, 0.42f);
+                UpdateTravelAnchor(releaseAt, travelDuration);
             }
-            if (sequenceStep == 2 && sequenceElapsed >= 0.86f)
+            if (sequenceStep == 2 && sequenceElapsed >= impactAt)
             {
                 CurrentPhaseLabel = "RED IMPACT";
                 SpawnRedImpact();
                 sequenceStep = 3;
             }
-            if (sequenceStep == 3 && sequenceElapsed >= 1.05f)
+            if (sequenceStep == 3
+                && sequenceElapsed >= impactAt + recoverDelayAfterImpact)
             {
                 CurrentPhaseLabel = "RECOVER";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRecover);
                 sequenceStep = 4;
             }
-            if (sequenceElapsed >= 1.36f)
+            if (sequenceElapsed >= impactAt + completeDelayAfterImpact)
             {
                 CompletePreview();
             }
@@ -484,7 +491,6 @@ namespace JJKGame.Dev.VFXLab
         {
             CurrentPhaseLabel = "DOMAIN ANTICIPATION";
             previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.DomainAnticipation);
-            SpawnDomainAnticipation();
         }
 
         private void ActivateUnlimitedVoid()
@@ -651,8 +657,9 @@ namespace JJKGame.Dev.VFXLab
             Track(PresentationVfxRuntime.Spawn(
                 GojoRedPresentationPreset.CreateReleaseRequest(
                     anchor,
-                    RedVisualRadius,
-                    RedVisualLifetime,
+                    GojoRedProductionDefaults.Radius,
+                    GojoRedProductionDefaults.Range,
+                    GojoRedProductionDefaults.ProjectileSpeed,
                     ResolveCharacterForward()
                 )
             ));
@@ -663,7 +670,7 @@ namespace JJKGame.Dev.VFXLab
             Track(PresentationVfxRuntime.Spawn(
                 GojoRedPresentationPreset.CreateImpactRequest(
                     travelEnd,
-                    RedVisualRadius,
+                    GojoRedProductionDefaults.Radius,
                     ResolveCharacterForward()
                 )
             ));
@@ -683,26 +690,6 @@ namespace JJKGame.Dev.VFXLab
                     previewCharacter.transform,
                     hollowPurpleClock
                 );
-        }
-
-        private void SpawnDomainAnticipation()
-        {
-            if (previewCharacter == null)
-            {
-                return;
-            }
-            Track(PresentationVfxRuntime.Spawn(
-                PresentationVfxSpawnRequest.Follow(
-                    previewCharacter.transform,
-                    Vector3.up * 1.05f,
-                    new Color(0.18f, 0.64f, 1f, 0.70f),
-                    new Color(0.58f, 0.42f, 1f, 0.55f),
-                    0.18f, 2.8f, 2.6f, 0f,
-                    PresentationVfxTimePolicy.Scaled,
-                    PresentationVfxStyleId.UnlimitedVoidAnticipation,
-                    ResolveCharacterForward()
-                )
-            ));
         }
 
         private void Track(PresentationVfxHandle handle)
