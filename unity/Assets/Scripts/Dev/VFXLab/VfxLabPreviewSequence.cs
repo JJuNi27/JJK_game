@@ -16,6 +16,8 @@ namespace JJKGame.Dev.VFXLab
     {
         private const float BlueRadius = 4.5f;
         private const float BlueFieldDuration = 0.95f;
+        private const float PreviewAnchorForwardDistance = 4.2f;
+        private const float PreviewAnchorHeight = 1f;
         private const float FullCastAt = 0.34f;
         private const float FullFieldAt = 0.58f;
         private const float FullImpactAt = 1.30f;
@@ -173,6 +175,7 @@ namespace JJKGame.Dev.VFXLab
         private void Begin(VfxLabPreviewKind kind)
         {
             StopHandles();
+            PositionPreviewAnchorFromCharacter();
             selectedPreview = kind;
             sequenceElapsed = 0f;
             loopWaitElapsed = 0f;
@@ -204,6 +207,29 @@ namespace JJKGame.Dev.VFXLab
             {
                 CurrentPhaseLabel = "PAUSED";
             }
+        }
+
+        private void PositionPreviewAnchorFromCharacter()
+        {
+            if (previewPoint == null || previewCharacter == null)
+            {
+                return;
+            }
+
+            Transform characterTransform = previewCharacter.transform;
+            Vector3 forward = characterTransform.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude <= 0.001f)
+            {
+                forward = Vector3.forward;
+            }
+            forward.Normalize();
+
+            previewPoint.position = characterTransform.position
+                + forward * PreviewAnchorForwardDistance
+                + Vector3.up * PreviewAnchorHeight;
+            previewPoint.rotation = Quaternion.LookRotation(forward, Vector3.up);
+            previewCharacter.SetTechniqueAnchor(previewPoint.position);
         }
 
         private void TickFullSequence()

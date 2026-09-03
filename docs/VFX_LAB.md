@@ -109,6 +109,11 @@ trigger TechniqueRecover
 Animator Controller와 parameter가 존재할 때만 hook을 호출하므로 없는 parameter warning을 만들지 않는다.
 Gate 4E의 gameplay-owned state/cue 경계를 바꾸지 않으며 CombatMVP animation ownership도 변경하지 않는다.
 
+각 preview/replay/loop가 시작되는 순간 `VFXPreviewPoint`는 PreviewCharacter의 현재 위치와 수평
+forward를 기준으로 4.2m 앞에 배치된다. 술식 motion 동안 캐릭터는 이 고정 anchor를 바라보며,
+이동하더라도 재생 중 effect anchor가 캐릭터를 따라오지는 않는다. 다음 시작 시점에는 그때의
+캐릭터 위치/forward로 anchor를 다시 계산한다. 이 계산은 VFXLab developer code에만 존재한다.
+
 ## Blue preview 구성
 
 Full preview는 gameplay cast가 아닌 VFXLab-local presentation sequence다.
@@ -149,6 +154,9 @@ VFXLab에는 다음 component나 상태가 없다.
 `Immediate`로 정리한다. 실제 instance 및 그 child ParticleSystem, runtime material, temporary Light,
 `GojoBlueDistortionSource`는 scene-owned production lifecycle로 함께 파기된다.
 
+`R` replay와 loop restart는 cleanup 후 현재 PreviewCharacter pose를 기준으로 preview anchor를 다시
+배치한다. 재생 중에는 anchor Transform을 갱신하지 않으므로 field가 캐릭터 이동에 끌려가지 않는다.
+
 VFXLab의 Global Volume profile, stage materials, marker materials와 preview character materials도
 scene-owned이며 Play 종료/scene unload에서 정리된다. `Time.timeScale`과 `Time.fixedDeltaTime`은
 VFXLab 진입 값을 캡처하고 component disable/destroy 때 복원한다.
@@ -183,6 +191,10 @@ Timeline은 animation asset과 실제 clip timing 조정 이점이 생길 때 �
 - [ ] `VFXLab.unity`를 직접 열고 Play해도 match가 시작되지 않는다.
 - [ ] enemy, HP, CE, cooldown, combat HUD가 없다.
 - [ ] Gojo procedural preview character가 보이고 `WASD` 이동/방향 전환이 된다.
+- [ ] 이동/회전 후 `1`, `2`, `3`을 누르면 현재 캐릭터 forward 앞에서 Blue가 시작된다.
+- [ ] Anticipation/Cast/Release 동안 캐릭터가 현재 Blue anchor를 바라본다.
+- [ ] Blue 재생 중 캐릭터를 움직여도 이미 정한 anchor와 effect는 따라오지 않는다.
+- [ ] 이동 후 `R` 또는 다음 loop에서 새 현재 위치/forward 기준으로 anchor가 다시 배치된다.
 - [ ] Idle/Move fallback motion이 보인다.
 - [ ] `1`에서 Anticipation → Cast → Field → Impact → Recover가 재생된다.
 - [ ] `2`와 `3`으로 field-only / impact-only를 따로 볼 수 있다.

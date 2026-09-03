@@ -47,6 +47,8 @@ namespace JJKGame.Dev.VFXLab
         private float motionStartedAt;
         private VfxLabTechniqueMotion techniqueMotion;
         private bool usesAuthoredAnimator;
+        private bool hasTechniqueAnchor;
+        private Vector3 techniqueAnchor;
 
         public float PlanarSpeed => planarSpeed;
         public bool UsesAuthoredAnimator => usesAuthoredAnimator;
@@ -102,6 +104,10 @@ namespace JJKGame.Dev.VFXLab
 
             techniqueMotion = motion;
             motionStartedAt = Time.time;
+            if (motion == VfxLabTechniqueMotion.Idle)
+            {
+                hasTechniqueAnchor = false;
+            }
             if (!usesAuthoredAnimator)
             {
                 return;
@@ -118,6 +124,13 @@ namespace JJKGame.Dev.VFXLab
             SetAnimatorTrigger(trigger);
         }
 
+        public void SetTechniqueAnchor(Vector3 worldPoint)
+        {
+            techniqueAnchor = worldPoint;
+            hasTechniqueAnchor = true;
+            FaceTechniqueAnchor(1f);
+        }
+
         private void ApplyMovement()
         {
             if (motor == null)
@@ -128,7 +141,11 @@ namespace JJKGame.Dev.VFXLab
             Vector2 rawInput = ProductionCombatInput.Move;
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 direction = BuildCameraRelativeDirection(rawInput);
-            if (direction.sqrMagnitude > 0.001f)
+            if (hasTechniqueAnchor && techniqueMotion != VfxLabTechniqueMotion.Idle)
+            {
+                FaceTechniqueAnchor(1f - Mathf.Exp(-RotationSpeed * Time.deltaTime));
+            }
+            else if (direction.sqrMagnitude > 0.001f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
                 transform.rotation = Quaternion.Slerp(
@@ -147,6 +164,26 @@ namespace JJKGame.Dev.VFXLab
             planarSpeed = velocity.magnitude;
             velocity.y = verticalVelocity;
             motor.Move(velocity * Time.deltaTime);
+        }
+
+        private void FaceTechniqueAnchor(float weight)
+        {
+            Vector3 direction = techniqueAnchor - transform.position;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= 0.001f)
+            {
+                return;
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(
+                direction.normalized,
+                Vector3.up
+            );
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                Mathf.Clamp01(weight)
+            );
         }
 
         private Vector3 BuildCameraRelativeDirection(Vector2 input)
