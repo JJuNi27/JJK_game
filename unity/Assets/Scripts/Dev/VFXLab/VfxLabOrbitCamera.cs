@@ -3,7 +3,7 @@ using UnityEngine;
 namespace JJKGame.Dev.VFXLab
 {
     /// <summary>
-    /// Developer inspection camera. RMB drag orbits, wheel zooms, and Home resets.
+    /// Developer inspection camera. MMB drag orbits, wheel zooms, and Home resets.
     /// It uses unscaled time so inspection remains available while preview is paused.
     /// </summary>
     [DisallowMultipleComponent]
@@ -31,7 +31,7 @@ namespace JJKGame.Dev.VFXLab
 
         private void LateUpdate()
         {
-            if (Input.GetMouseButton(1))
+            if (Input.GetMouseButton(2))
             {
                 yaw += Input.GetAxis("Mouse X") * 4.2f;
                 pitch = Mathf.Clamp(

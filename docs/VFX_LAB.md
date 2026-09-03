@@ -1,60 +1,41 @@
-# VFXLab — Production VFX Preview Stage
+# VFXLab · Character Presentation / Production VFX Workbench
 
 작성 기준: 2026-09-03
 
 ## 목적
 
-`VFXLab`은 Gate 5B production VFX를 전투 한 판을 시작하지 않고 반복 제작·검수하기 위한
-developer-only presentation sandbox다.
+`VFXLab`은 프로젝트 전 캐릭터의 모델, 이동, animation hook, action motion과 production VFX를 전투 규칙 없이 빠르게 반복 검수하는 developer-only workbench다.
 
 ```text
-캐릭터 이동
-+ prototype/future authored motion
-+ 실제 production VFX
-+ orbit camera
-+ scene-owned lighting / Bloom
-+ replay / loop / pause / slow motion
+Preview Character
+  + movement / idle / locomotion
+  + basic attack / dodge / technique / domain motion
+  + procedural fallback 또는 future authored model + Animator
+Production Presentation VFX
+  + presentation-only local sequence
+Camera Inspection
+  + replay / loop / pause / speed / clear
 ```
 
-ParticleSystem만 따로 보는 viewer가 아니며 production 시작 scene 또는 CharacterSelect → CombatMVP
-흐름의 일부가 아니다. Build Settings도 변경하지 않는다.
+이 scene은 gameplay simulation이 아니다. Enemy AI, match state, damage, hitbox, CE, cooldown, target lock, pull/push/stun을 만들거나 실행하지 않는다. CharacterSelect, production HUD, CombatMVP camera/lighting에도 관여하지 않는다.
 
-## Production VFX와의 관계
-
-Blue renderer를 VFXLab용으로 복제하지 않는다.
-
-```text
-GojoBluePresentationPreset
-        ↓ PresentationVfxSpawnRequest
-ProductionParticleVfxRuntime
-        ↓ PresentationVfxStyleId.GojoBlue
-GojoBlueVfxInstance
-        ├─ CombatMVP / BlueConvergenceField
-        └─ VFXLab / VfxLabPreviewSequence
-```
-
-`GojoBluePresentationPreset`이 field와 impact request의 색, 반경 mapping, duration metadata,
-style id를 한 곳에서 만든다. CombatMVP와 VFXLab은 동일 shader, shared material library,
-particle, arc, temporary light, distortion-source hook 및 lifecycle 구현을 사용한다.
-
-VFXLab은 어떤 presentation을 언제 보여줄지만 소유한다. Blue가 어떻게 렌더링되는지는 계속
-production `GojoBlueVfxInstance`가 소유한다.
+현재 첫 profile은 Gojo이며, 캐릭터 선택 UI나 범용 ability framework는 아직 만들지 않는다.
 
 ## Scene 열기
 
-1. Unity Project 창에서 `Assets/Scenes/VFXLab.unity`를 연다.
-2. 이 scene이 활성 scene인지 확인한다.
-3. Play를 누른다.
-4. Game view를 한 번 클릭해 키보드와 마우스 입력 focus를 준다.
+1. Unity Project 창에서 `Assets/Scenes/VFXLab.unity`를 직접 연다.
+2. 활성 scene이 `VFXLab`인지 확인한다.
+3. Play 후 Game view를 한 번 클릭해 입력 focus를 준다.
 
-Build Settings에 추가할 필요가 없고 기본 시작 scene으로 설정하지 않는다.
+Build Settings 변경이나 시작 scene 지정은 필요하지 않다.
 
-Play Mode hierarchy의 주요 scene-owned object:
+주요 scene-owned hierarchy:
 
 ```text
 VFXLab
 ├─ PreviewStage
 ├─ PreviewCharacter
+│  └─ AuthoredModelRoot
 ├─ VFXPreviewPoint
 ├─ ProductionVfxRuntime
 ├─ PreviewCamera
@@ -64,164 +45,164 @@ VFXLab
 
 ## Controls
 
-| 입력 | 기능 |
+### Production-facing character controls
+
+| 입력 | Preview action |
 |---|---|
-| `WASD` | preview character 이동 |
-| `1` | Blue full sequence |
-| `2` | Blue field only |
-| `3` | Blue impact/collapse only |
-| `R` | 마지막 선택 preview 즉시 replay |
-| `L` | loop on/off |
-| `P` | preview pause/resume |
-| `[` / `]` | playback speed 0.125x~2x 감소/증가 |
-| `Backspace` | 현재 preview 즉시 clear |
-| `RMB drag` | camera horizontal/vertical orbit |
-| `Mouse wheel` | zoom in/out |
-| `Home` | camera framing reset |
+| `WASD` | Movement |
+| `LMB` | Basic Attack 1 → 2 → Finisher presentation |
+| `Space` | Dodge presentation |
+| `Q` | Cursed Technique Lapse: Blue |
+| `E` | Cursed Technique Reversal: Red |
+| `R` | Hollow Purple |
+| `V` | Unlimited Void gesture 진입 |
+| `X` | 현재 action/domain presentation cancel |
 
-좌측 상단 developer IMGUI overlay는 selected preview, current phase, loop, speed, pause,
-animation source와 control 요약을 표시한다. Production Combat HUD는 사용하지 않는다.
-
-## Movement와 character presentation
-
-현재 저장소에는 authored Gojo rig/Animator/AnimationClip이 없다. 기존 production/prototype movement와
-`FighterAnimationStateSource`는 `Health`, `BasicAttack`, CE 및 combat action state에 연결되어 있으므로
-VFXLab에 통째로 가져오지 않았다.
-
-대신 `VfxLabPreviewCharacter`가 combat dependency 없는 `CharacterController` 이동과 Gojo 식별용
-procedural fallback character를 제공한다. Idle/Move와 다음 technique motion 단계가 보인다.
+`V`의 presentation-only gesture는 production input identity를 따른다.
 
 ```text
-Idle → Anticipation → Cast → Release → Recover → Idle
+V
+→ RMB press / hold
+→ LMB
+→ RMB release
+→ Unlimited Void visual
 ```
 
-이 fallback은 final animation이라는 뜻이 아니다. 실제 Animator가 추가되면 PreviewCharacter 아래에
-Animator를 연결하고 다음 optional parameter를 제공할 수 있다.
+VFXLab은 이 gesture의 animation/input presentation만 제공하며 CE, domain gameplay state, release 성공 판정, stun 또는 physics overlap은 실행하지 않는다. `Shift+V`는 environment visual을 바로 반복 검수하는 direct shortcut이다.
+
+### Developer controls
+
+| 입력 | 기능 |
+|---|---|
+| `Shift+R` | 마지막 선택 action replay |
+| `L` | Loop on/off |
+| `P` | Pause/resume |
+| `[` / `]` | Playback speed 0.125x~2x |
+| `Backspace` | 즉시 hard clear |
+| `Shift+2` | Blue field-only debug |
+| `Shift+3` | Blue impact-only debug |
+| `Shift+V` | Unlimited Void direct visual preview |
+| `MMB drag` | Camera orbit |
+| `Mouse wheel` | Zoom |
+| `Home` | Camera framing reset |
+
+`R`은 Purple 전용이며 replay가 점유하지 않는다. `RMB`는 Domain gesture용으로 비워 두고 camera orbit은 `MMB`가 소유한다.
+
+## Supported Gojo preview actions
+
+### Basic Attack
+
+한 번의 `LMB` preview가 `BasicAttack1 → BasicAttack2 → BasicAttackFinisher → Recover`를 순서대로 보여 준다. Contact point에는 production `BasicHit1`, `BasicHit2`, `BasicHitFinisher` style renderer가 실행된다.
+
+실제 `BasicAttack` gameplay component는 실행하지 않으므로 Physics overlap, damage, knockback, hit stun 또는 gameplay combo state가 없다.
+
+### Dodge
+
+`Space` 입력 시 현재 WASD 방향, 입력이 없으면 캐릭터 forward를 사용해 짧은 presentation-only 이동과 body pose를 보여 준다. Invincibility, stamina, collision immunity 또는 combat state는 없다.
+
+### Blue
+
+`Q`는 기존 full sequence를 실행한다.
 
 ```text
-float PlanarSpeed
+Anticipation → Cast → production Blue field → impact collapse → Recover
+```
+
+각 시작/replay 시 캐릭터의 현재 position/forward로 anchor를 다시 계산하고, 재생 중에는 world anchor를 고정한다. `Shift+2`, `Shift+3`으로 field/impact를 개별 검수할 수 있다.
+
+### Red
+
+`E`는 VFXLab-local anticipation/cast/travel/impact/recover 순서에서 production `PresentationVfxStyleId.GojoRed` renderer를 실행한다. Preview travel anchor만 VFXLab이 이동시키며 `RedTechniqueProjectile` gameplay actor는 생성하지 않는다.
+
+### Hollow Purple
+
+`R`은 readiness, CE, cooldown 없이 production `HollowPurpleFormation`과 `HollowPurpleRelease` renderer를 직접 검수한다. VFXLab-local sequence는 gameplay의 damage capsule, 18m range 및 0.24/0.78 timing을 사용하거나 변경하지 않는다.
+
+### Unlimited Void
+
+`V` gesture 또는 `Shift+V` direct shortcut은 production `UnlimitedVoidProductionVisual`을 preview-owned host에서 실행한다. Host는 cancel/replay/complete 시 제거된다. Domain gameplay component, radius query, stun, duration state, burnout은 실행하지 않는다.
+
+## Production presentation 재사용
+
+VFXLab 전용 Blue/Red/Purple renderer는 없다.
+
+```text
+VfxLabPreviewSequence
+  └─ 무엇을 / 언제 / 어디에서 보여 줄지만 결정
+       ↓
+PresentationVfxRuntime
+       ↓
+ProductionParticleVfxRuntime
+       ├─ GojoBlueVfxInstance
+       ├─ GojoRedVfxInstance
+       └─ ProductionParticleVfxInstance
+            ├─ BasicHit styles
+            └─ HollowPurple styles
+
+Unlimited Void
+  └─ UnlimitedVoidProductionVisual
+```
+
+Blue는 `GojoBluePresentationPreset`을 그대로 사용한다. 모든 short-lived preview는 `PresentationVfxHandle`을 보관하고 cancel/replay/loop 전 `Immediate`로 정리한다. Red/Purple 이동용 임시 anchor와 Domain host도 VFXLab이 별도로 제거한다.
+
+`TechniquePresentationRequest`는 production gameplay owner(`Health`)를 기준으로 camera/animation consumer에 전달된다. VFXLab에는 gameplay owner를 만들지 않으므로 해당 event를 위조하지 않고 renderer-facing production runtime을 직접 호출한다.
+
+## Character model / Animator hook
+
+`PreviewCharacter/AuthoredModelRoot` 아래에 future character prefab 또는 model을 넣는다. Renderer 또는 Animator가 발견되면 `PreviewGojoFallback`은 생성되지 않거나 비활성화된다. Authored model이 없으면 현재 procedural Gojo가 자동으로 유지된다.
+
+Inspector의 `Authored Model Root`, `Animator`와 parameter 이름은 교체 가능하다. 실제 Animator Controller가 있고 해당 parameter가 존재할 때만 값을 쓰므로 없는 parameter warning을 만들지 않는다.
+
+지원 hook:
+
+```text
+float   PlanarSpeed
+trigger Idle
+trigger BasicAttack1
+trigger BasicAttack2
+trigger BasicAttackFinisher
+trigger Dodge
 trigger TechniqueAnticipation
 trigger TechniqueCast
 trigger TechniqueRelease
 trigger TechniqueRecover
+trigger DomainAnticipation
+trigger DomainRelease
 ```
 
-Animator Controller와 parameter가 존재할 때만 hook을 호출하므로 없는 parameter warning을 만들지 않는다.
-Gate 4E의 gameplay-owned state/cue 경계를 바꾸지 않으며 CombatMVP animation ownership도 변경하지 않는다.
-
-각 preview/replay/loop가 시작되는 순간 `VFXPreviewPoint`는 PreviewCharacter의 현재 위치와 수평
-forward를 기준으로 4.2m 앞에 배치된다. 술식 motion 동안 캐릭터는 이 고정 anchor를 바라보며,
-이동하더라도 재생 중 effect anchor가 캐릭터를 따라오지는 않는다. 다음 시작 시점에는 그때의
-캐릭터 위치/forward로 anchor를 다시 계산한다. 이 계산은 VFXLab developer code에만 존재한다.
-
-## Blue preview 구성
-
-Full preview는 gameplay cast가 아닌 VFXLab-local presentation sequence다.
-
-```text
-Anticipation
-→ Cast
-→ production Blue field
-→ production Blue impact collapse
-→ Recover
-→ Immediate handle cleanup
-```
-
-Field radius `4.5`, field lifetime `0.95`, impact lifetime `0.28`은 현재 production request와 같은
-presentation input을 사용한다. Full preview의 단계 배치와 loop wait만 developer preview sequencing이다.
-
-Field와 impact 모두 VFXLab에서는 `Scaled` presentation time을 사용해 pause와 playback speed에
-반응한다. CombatMVP의 field/impact time policy는 기존 `Scaled`/`Unscaled` 의미를 그대로 유지한다.
-
-## Gameplay가 아닌 것
-
-VFXLab에는 다음 component나 상태가 없다.
-
-- enemy AI / Health / DamageReceiver
-- match controller / victory / defeat / KO / team
-- CE / cooldown / burnout
-- hitbox / Physics overlap / damage
-- pull / stun / Rigidbody suction target
-- Target Lock / production HUD
-- gameplay camera feedback / hit-stop director
-
-`BlueConvergenceField`는 overlap, damage, pull, stun, gameplay lifetime을 소유하므로 VFXLab에서 실행하지
-않는다. VFXLab은 presentation request만 production runtime에 보낸다.
-
-## Replay와 lifecycle
-
-새 preview, `R`, `Backspace`, loop restart 전에 현재 field/impact `PresentationVfxHandle`을
-`Immediate`로 정리한다. 실제 instance 및 그 child ParticleSystem, runtime material, temporary Light,
-`GojoBlueDistortionSource`는 scene-owned production lifecycle로 함께 파기된다.
-
-`R` replay와 loop restart는 cleanup 후 현재 PreviewCharacter pose를 기준으로 preview anchor를 다시
-배치한다. 재생 중에는 anchor Transform을 갱신하지 않으므로 field가 캐릭터 이동에 끌려가지 않는다.
-
-VFXLab의 Global Volume profile, stage materials, marker materials와 preview character materials도
-scene-owned이며 Play 종료/scene unload에서 정리된다. `Time.timeScale`과 `Time.fixedDeltaTime`은
-VFXLab 진입 값을 캡처하고 component disable/destroy 때 복원한다.
+이 hook은 VFXLab-local adapter이며 Gate 4E의 `FighterAnimationStateSource`, `FighterAnimationCue`, CombatMVP animation ownership을 변경하지 않는다.
 
 ## Stage / lighting / camera
 
-- dark neutral floor와 background separation panel
-- character/VFX 위치를 읽기 위한 낮은 밝기의 guide ring
-- 현재 CombatMVP readability 기준에 가까운 ACES와 restrained Bloom
-- cool key/fill + warm rim으로 character silhouette 분리
-- horizontal orbit, 제한된 vertical orbit, zoom, reset
-- pause 중에도 unscaled camera inspection 가능
+- 64×64 neutral cool-gray 단일 floor
+- wall/backdrop geometry 없음
+- fog 없음
+- neutral gray camera background
+- 전 구역을 커버하는 inspection directional key/fill
+- Neutral tonemapping과 약한 Bloom
+- subtle Stage/Character/Blue guide
+- MMB orbit, wheel zoom, Home reset
 
-stage 값은 VFXLab scene-owned다. `ProductionArenaMoodController`와 CombatMVP lighting object는 수정하지
-않는다. Cinemachine과 VFX Graph도 추가하지 않는다.
+Stage/lighting 값은 VFXLab scene-owned이며 `ProductionArenaMoodController`와 CombatMVP lighting을 변경하지 않는다.
 
-## Future Red / Purple / Void 확장
+## Unity 사용자 테스트 순서
 
-1. production renderer에 이미 존재하는 style/instance를 유지한다.
-2. CombatMVP producer에 흩어진 request tuning이 있으면 작은 presentation-only preset/factory로 추출한다.
-3. `VfxLabPreviewSequence`에 preview kind와 순서만 추가한다.
-4. developer code에 shader, particle, material 또는 effect instance 복제품을 만들지 않는다.
-5. technique별 gameplay controller, damage actor, domain state를 VFXLab에 가져오지 않는다.
-
-Timeline은 animation asset과 실제 clip timing 조정 이점이 생길 때 선택적으로 연결한다. 현재는 asset이
-없고 짧은 Blue sequence이므로 작은 code state machine이 더 단순하며 Timeline을 억지로 추가하지 않았다.
-
-## Unity 사용자 테스트 체크리스트
-
-### VFXLab
-
-- [ ] `VFXLab.unity`를 직접 열고 Play해도 match가 시작되지 않는다.
-- [ ] enemy, HP, CE, cooldown, combat HUD가 없다.
-- [ ] Gojo procedural preview character가 보이고 `WASD` 이동/방향 전환이 된다.
-- [ ] 이동/회전 후 `1`, `2`, `3`을 누르면 현재 캐릭터 forward 앞에서 Blue가 시작된다.
-- [ ] Anticipation/Cast/Release 동안 캐릭터가 현재 Blue anchor를 바라본다.
-- [ ] Blue 재생 중 캐릭터를 움직여도 이미 정한 anchor와 effect는 따라오지 않는다.
-- [ ] 이동 후 `R` 또는 다음 loop에서 새 현재 위치/forward 기준으로 anchor가 다시 배치된다.
-- [ ] Idle/Move fallback motion이 보인다.
-- [ ] `1`에서 Anticipation → Cast → Field → Impact → Recover가 재생된다.
-- [ ] `2`와 `3`으로 field-only / impact-only를 따로 볼 수 있다.
-- [ ] `R` 연타 후 이전 effect가 누적되지 않는다.
-- [ ] `L` loop가 여러 번 돌아도 effect, Light, material이 누적되지 않는다.
-- [ ] `P`, `[`, `]`로 pause/slow motion/speed-up이 particle와 arc timing에 반영된다.
-- [ ] pause 중에도 RMB orbit, wheel zoom, Home reset이 된다.
-- [ ] `Backspace` 후 production Blue child, Light, distortion source가 남지 않는다.
-- [ ] Hierarchy에서 production `GojoBlueVfxInstance` 경로가 사용된다.
-- [ ] Bloom에서 deep-blue/electric-blue/cyan 계층이 white blob으로 날아가지 않는다.
-- [ ] Console에 red error, shader error, MissingReference가 없다.
-
-### CombatMVP regression
-
-- [ ] 기존 Blue cast/distance/radius/duration/pulse가 동일하다.
-- [ ] damage, pull, stun, CE, cooldown, hit timing이 동일하다.
-- [ ] 기존 Blue visual이 동일 production preset/instance를 통해 보인다.
-- [ ] Red / Hollow Purple / Unlimited Void에 regression이 없다.
-- [ ] Pass 7 camera/FOV/focus/flash/hit-stop이 동일하다.
-- [ ] CharacterSelect / team / KO / HUD flow가 동일하다.
-- [ ] reload/return 후 Console error와 VFX 잔류가 없다.
+1. `VFXLab.unity`를 열고 Play한다. Console red error/MissingReference가 없는지 확인한다.
+2. `WASD` 이동 후 procedural idle/locomotion과 camera follow를 확인한다.
+3. `LMB`, `Space`로 basic combo와 directional dodge를 확인한다.
+4. 이동/회전 후 `Q`, `E`, `R`을 각각 실행하고 캐릭터 motion, anchor, production renderer를 확인한다.
+5. `V → RMB hold → LMB → RMB release`와 `Shift+V`를 각각 확인한다.
+6. Domain gesture 중 RMB가 camera orbit을 일으키지 않고 `MMB drag`가 orbit하는지 확인한다.
+7. `Shift+2`, `Shift+3`으로 Blue field/impact debug를 확인한다.
+8. 각 action에서 `Shift+R`, `L`, `P`, `[`, `]`, `X`, `Backspace`를 확인한다.
+9. replay/loop/cancel 후 effect, Light, travel anchor, Domain host가 누적되지 않는지 Hierarchy에서 확인한다.
+10. `AuthoredModelRoot` hook과 overlay의 Character/Action/Phase/Motion 표시를 확인한다.
 
 ## 검증 상태
 
-정적 코드 검증과 Unity Editor compile 성공은 Play Mode visual/lifecycle 검증을 대신하지 않는다.
-
 ```text
-VFXLab: REMOTE IMPLEMENTED / USER TEST PENDING
-Blue Pass 8R-2A: REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+VFXLab Generalized Workbench
+REMOTE IMPLEMENTED / USER TEST PENDING
 ```
+
+정적 compile 성공은 Unity Play Mode visual/input/lifecycle 또는 Console 검증을 대신하지 않는다.

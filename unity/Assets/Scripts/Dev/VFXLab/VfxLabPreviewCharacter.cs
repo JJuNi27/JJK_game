@@ -5,13 +5,19 @@ using UnityEngine.Rendering;
 
 namespace JJKGame.Dev.VFXLab
 {
-    public enum VfxLabTechniqueMotion
+    public enum VfxLabPreviewMotion
     {
         Idle,
-        Anticipation,
-        Cast,
-        Release,
-        Recover,
+        BasicAttack1,
+        BasicAttack2,
+        BasicAttackFinisher,
+        Dodge,
+        TechniqueAnticipation,
+        TechniqueCast,
+        TechniqueRelease,
+        TechniqueRecover,
+        DomainAnticipation,
+        DomainRelease,
     }
 
     /// <summary>
@@ -28,12 +34,23 @@ namespace JJKGame.Dev.VFXLab
         private readonly List<Material> runtimeMaterials = new List<Material>(8);
         private readonly HashSet<int> animatorParameters = new HashSet<int>();
 
+        [Header("Authored Character Hook")]
+        [SerializeField] private Transform authoredModelRoot;
         [SerializeField] private Animator animator;
+
+        [Header("Optional Animator Parameters")]
         [SerializeField] private string planarSpeedParameter = "PlanarSpeed";
+        [SerializeField] private string idleTrigger = "Idle";
+        [SerializeField] private string basicAttack1Trigger = "BasicAttack1";
+        [SerializeField] private string basicAttack2Trigger = "BasicAttack2";
+        [SerializeField] private string basicAttackFinisherTrigger = "BasicAttackFinisher";
+        [SerializeField] private string dodgeTrigger = "Dodge";
         [SerializeField] private string anticipationTrigger = "TechniqueAnticipation";
         [SerializeField] private string castTrigger = "TechniqueCast";
         [SerializeField] private string releaseTrigger = "TechniqueRelease";
         [SerializeField] private string recoverTrigger = "TechniqueRecover";
+        [SerializeField] private string domainAnticipationTrigger = "DomainAnticipation";
+        [SerializeField] private string domainReleaseTrigger = "DomainRelease";
 
         private CharacterController motor;
         private Transform cameraTransform;
@@ -45,16 +62,21 @@ namespace JJKGame.Dev.VFXLab
         private float verticalVelocity;
         private float planarSpeed;
         private float motionStartedAt;
-        private VfxLabTechniqueMotion techniqueMotion;
+        private VfxLabPreviewMotion previewMotion;
+        private bool usesAuthoredModel;
         private bool usesAuthoredAnimator;
         private bool hasTechniqueAnchor;
         private Vector3 techniqueAnchor;
+        private Vector3 dodgeDirection;
 
         public float PlanarSpeed => planarSpeed;
+        public bool UsesAuthoredModel => usesAuthoredModel;
         public bool UsesAuthoredAnimator => usesAuthoredAnimator;
         public string AnimationSourceLabel => usesAuthoredAnimator
-            ? "AUTHORED ANIMATOR HOOK"
-            : "PROTOTYPE PROCEDURAL MOTION";
+            ? "AUTHORED MODEL + ANIMATOR"
+            : usesAuthoredModel
+                ? "AUTHORED MODEL · NO ANIMATOR CONTROLLER"
+                : "PROTOTYPE PROCEDURAL MOTION";
 
         public void Configure(Transform newCameraTransform)
         {
@@ -73,12 +95,24 @@ namespace JJKGame.Dev.VFXLab
             motor.center = Vector3.up;
             motor.stepOffset = 0.28f;
 
-            animator ??= GetComponentInChildren<Animator>();
+            authoredModelRoot ??= transform.Find("AuthoredModelRoot");
+            animator ??= authoredModelRoot != null
+                ? authoredModelRoot.GetComponentInChildren<Animator>(true)
+                : GetComponentInChildren<Animator>(true);
+            usesAuthoredModel = HasAuthoredVisual();
             usesAuthoredAnimator = animator != null && animator.runtimeAnimatorController != null;
             CacheAnimatorParameters();
-            if (!usesAuthoredAnimator)
+            if (!usesAuthoredModel)
             {
                 BuildFallbackGojo();
+            }
+            else
+            {
+                Transform fallback = transform.Find("PreviewGojoFallback");
+                if (fallback != null)
+                {
+                    fallback.gameObject.SetActive(false);
+                }
             }
         }
 
@@ -89,24 +123,28 @@ namespace JJKGame.Dev.VFXLab
             {
                 SetAnimatorFloat(planarSpeedParameter, planarSpeed);
             }
-            else
+            else if (!usesAuthoredModel)
             {
                 ApplyProceduralMotion();
             }
         }
 
-        public void SetTechniqueMotion(VfxLabTechniqueMotion motion)
+        public void SetPreviewMotion(VfxLabPreviewMotion motion)
         {
-            if (techniqueMotion == motion)
+            if (previewMotion == motion)
             {
                 return;
             }
 
-            techniqueMotion = motion;
+            previewMotion = motion;
             motionStartedAt = Time.time;
-            if (motion == VfxLabTechniqueMotion.Idle)
+            if (motion == VfxLabPreviewMotion.Idle)
             {
                 hasTechniqueAnchor = false;
+            }
+            if (motion == VfxLabPreviewMotion.Dodge)
+            {
+                CaptureDodgeDirection();
             }
             if (!usesAuthoredAnimator)
             {
@@ -115,10 +153,17 @@ namespace JJKGame.Dev.VFXLab
 
             string trigger = motion switch
             {
-                VfxLabTechniqueMotion.Anticipation => anticipationTrigger,
-                VfxLabTechniqueMotion.Cast => castTrigger,
-                VfxLabTechniqueMotion.Release => releaseTrigger,
-                VfxLabTechniqueMotion.Recover => recoverTrigger,
+                VfxLabPreviewMotion.Idle => idleTrigger,
+                VfxLabPreviewMotion.BasicAttack1 => basicAttack1Trigger,
+                VfxLabPreviewMotion.BasicAttack2 => basicAttack2Trigger,
+                VfxLabPreviewMotion.BasicAttackFinisher => basicAttackFinisherTrigger,
+                VfxLabPreviewMotion.Dodge => dodgeTrigger,
+                VfxLabPreviewMotion.TechniqueAnticipation => anticipationTrigger,
+                VfxLabPreviewMotion.TechniqueCast => castTrigger,
+                VfxLabPreviewMotion.TechniqueRelease => releaseTrigger,
+                VfxLabPreviewMotion.TechniqueRecover => recoverTrigger,
+                VfxLabPreviewMotion.DomainAnticipation => domainAnticipationTrigger,
+                VfxLabPreviewMotion.DomainRelease => domainReleaseTrigger,
                 _ => string.Empty,
             };
             SetAnimatorTrigger(trigger);
@@ -141,7 +186,16 @@ namespace JJKGame.Dev.VFXLab
             Vector2 rawInput = ProductionCombatInput.Move;
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 direction = BuildCameraRelativeDirection(rawInput);
-            if (hasTechniqueAnchor && techniqueMotion != VfxLabTechniqueMotion.Idle)
+            float speed = MoveSpeed;
+            float motionElapsed = Time.time - motionStartedAt;
+            if (previewMotion == VfxLabPreviewMotion.Dodge && motionElapsed < 0.36f)
+            {
+                direction = dodgeDirection;
+                float dodgeProgress = Mathf.Clamp01(motionElapsed / 0.36f);
+                speed = Mathf.Lerp(9.5f, 5.5f, dodgeProgress);
+            }
+
+            if (hasTechniqueAnchor && IsTechniqueOrDomainMotion())
             {
                 FaceTechniqueAnchor(1f - Mathf.Exp(-RotationSpeed * Time.deltaTime));
             }
@@ -160,10 +214,35 @@ namespace JJKGame.Dev.VFXLab
                 verticalVelocity = -2f;
             }
             verticalVelocity += Gravity * Time.deltaTime;
-            Vector3 velocity = direction * MoveSpeed;
+            Vector3 velocity = direction * speed;
             planarSpeed = velocity.magnitude;
             velocity.y = verticalVelocity;
             motor.Move(velocity * Time.deltaTime);
+        }
+
+        private bool IsTechniqueOrDomainMotion()
+        {
+            return previewMotion == VfxLabPreviewMotion.TechniqueAnticipation
+                || previewMotion == VfxLabPreviewMotion.TechniqueCast
+                || previewMotion == VfxLabPreviewMotion.TechniqueRelease
+                || previewMotion == VfxLabPreviewMotion.TechniqueRecover
+                || previewMotion == VfxLabPreviewMotion.DomainAnticipation
+                || previewMotion == VfxLabPreviewMotion.DomainRelease;
+        }
+
+        private void CaptureDodgeDirection()
+        {
+            Vector2 input = Vector2.ClampMagnitude(ProductionCombatInput.Move, 1f);
+            dodgeDirection = BuildCameraRelativeDirection(input);
+            if (dodgeDirection.sqrMagnitude <= 0.001f)
+            {
+                dodgeDirection = transform.forward;
+                dodgeDirection.y = 0f;
+            }
+            dodgeDirection = dodgeDirection.sqrMagnitude > 0.001f
+                ? dodgeDirection.normalized
+                : Vector3.forward;
+            transform.rotation = Quaternion.LookRotation(dodgeDirection, Vector3.up);
         }
 
         private void FaceTechniqueAnchor(float weight)
@@ -229,9 +308,41 @@ namespace JJKGame.Dev.VFXLab
 
             float elapsed = Time.time - motionStartedAt;
             float enterWeight = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / 0.12f));
-            switch (techniqueMotion)
+            switch (previewMotion)
             {
-                case VfxLabTechniqueMotion.Anticipation:
+                case VfxLabPreviewMotion.BasicAttack1:
+                    ApplyTechniquePose(
+                        new Vector3(6f, -14f, -3f),
+                        new Vector3(-28f, -8f, 24f),
+                        new Vector3(-96f, 4f, -12f),
+                        enterWeight
+                    );
+                    break;
+                case VfxLabPreviewMotion.BasicAttack2:
+                    ApplyTechniquePose(
+                        new Vector3(5f, 16f, 3f),
+                        new Vector3(-102f, -4f, 12f),
+                        new Vector3(-24f, 10f, -26f),
+                        enterWeight
+                    );
+                    break;
+                case VfxLabPreviewMotion.BasicAttackFinisher:
+                    ApplyTechniquePose(
+                        new Vector3(12f, 0f, 0f),
+                        new Vector3(-112f, -12f, 18f),
+                        new Vector3(-112f, 12f, -18f),
+                        enterWeight
+                    );
+                    break;
+                case VfxLabPreviewMotion.Dodge:
+                    ApplyTechniquePose(
+                        new Vector3(18f, 0f, -8f),
+                        new Vector3(28f, -6f, 18f),
+                        new Vector3(28f, 6f, -18f),
+                        enterWeight
+                    );
+                    break;
+                case VfxLabPreviewMotion.TechniqueAnticipation:
                     ApplyTechniquePose(
                         new Vector3(5f, -8f, 0f),
                         new Vector3(-54f, -16f, 30f),
@@ -239,7 +350,7 @@ namespace JJKGame.Dev.VFXLab
                         enterWeight
                     );
                     break;
-                case VfxLabTechniqueMotion.Cast:
+                case VfxLabPreviewMotion.TechniqueCast:
                     ApplyTechniquePose(
                         new Vector3(7f, 0f, 0f),
                         new Vector3(-80f, -10f, 22f),
@@ -247,7 +358,7 @@ namespace JJKGame.Dev.VFXLab
                         enterWeight
                     );
                     break;
-                case VfxLabTechniqueMotion.Release:
+                case VfxLabPreviewMotion.TechniqueRelease:
                     ApplyTechniquePose(
                         new Vector3(-4f, 10f, 0f),
                         new Vector3(-34f, -20f, 28f),
@@ -255,7 +366,7 @@ namespace JJKGame.Dev.VFXLab
                         enterWeight
                     );
                     break;
-                case VfxLabTechniqueMotion.Recover:
+                case VfxLabPreviewMotion.TechniqueRecover:
                     float recoverWeight = 1f - Mathf.SmoothStep(
                         0f,
                         1f,
@@ -266,6 +377,22 @@ namespace JJKGame.Dev.VFXLab
                         new Vector3(-34f, -20f, 28f),
                         new Vector3(-118f, 2f, -8f),
                         recoverWeight
+                    );
+                    break;
+                case VfxLabPreviewMotion.DomainAnticipation:
+                    ApplyTechniquePose(
+                        new Vector3(0f, -5f, 0f),
+                        new Vector3(-86f, -24f, 30f),
+                        new Vector3(-86f, 24f, -30f),
+                        enterWeight
+                    );
+                    break;
+                case VfxLabPreviewMotion.DomainRelease:
+                    ApplyTechniquePose(
+                        new Vector3(-3f, 0f, 0f),
+                        new Vector3(-118f, -8f, 12f),
+                        new Vector3(-118f, 8f, -12f),
+                        enterWeight
                     );
                     break;
             }
@@ -299,6 +426,16 @@ namespace JJKGame.Dev.VFXLab
                     weight
                 );
             }
+        }
+
+        private bool HasAuthoredVisual()
+        {
+            if (authoredModelRoot == null)
+            {
+                return animator != null;
+            }
+            return authoredModelRoot.GetComponentInChildren<Renderer>(true) != null
+                || animator != null;
         }
 
         private void BuildFallbackGojo()

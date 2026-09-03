@@ -358,29 +358,30 @@ namespace JJKGame.Dev.VFXLab
             }
             EnsureStyles();
             const float margin = 14f;
-            float width = Mathf.Min(430f, Screen.width - margin * 2f);
-            Rect panel = new Rect(margin, margin, width, 180f);
+            float width = Mathf.Min(540f, Screen.width - margin * 2f);
+            Rect panel = new Rect(margin, margin, width, 234f);
             Color previous = GUI.color;
             GUI.color = new Color(0.008f, 0.015f, 0.035f, 0.92f);
             GUI.DrawTexture(panel, Texture2D.whiteTexture);
             GUI.color = previous;
             GUI.Box(panel, GUIContent.none);
 
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, 24f), "VFX LAB · GOJO BLUE", titleStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 36f, panel.width - 24f, 20f), $"Preview  {sequence.SelectedPreviewLabel}", lineStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 57f, panel.width - 24f, 20f), $"Phase    {sequence.CurrentPhaseLabel}", lineStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 78f, panel.width - 24f, 20f), $"Loop     {(sequence.LoopEnabled ? "ON" : "OFF")}    Speed  {sequence.PlaybackSpeed:0.###}x    {(sequence.Paused ? "PAUSED" : "PLAYING")}", lineStyle);
-            GUI.Label(new Rect(panel.x + 12f, panel.y + 99f, panel.width - 24f, 20f), $"Motion   {previewCharacter.AnimationSourceLabel}", lineStyle);
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 8f, panel.width - 24f, 24f), "VFX LAB · GOJO", titleStyle);
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 36f, panel.width - 24f, 20f), "Character  GOJO", lineStyle);
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 57f, panel.width - 24f, 20f), $"Action     {sequence.SelectedActionLabel}", lineStyle);
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 78f, panel.width - 24f, 20f), $"Phase      {sequence.CurrentPhaseLabel}", lineStyle);
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 99f, panel.width - 24f, 20f), $"Loop       {(sequence.LoopEnabled ? "ON" : "OFF")}    Speed  {sequence.PlaybackSpeed:0.###}x    {(sequence.Paused ? "PAUSED" : "PLAYING")}", lineStyle);
+            GUI.Label(new Rect(panel.x + 12f, panel.y + 120f, panel.width - 24f, 20f), $"Motion     {previewCharacter.AnimationSourceLabel}", lineStyle);
             if (!sequence.RuntimeReady)
             {
                 Color oldColor = lineStyle.normal.textColor;
                 lineStyle.normal.textColor = new Color(1f, 0.28f, 0.22f);
-                GUI.Label(new Rect(panel.x + 12f, panel.y + 120f, panel.width - 24f, 20f), "Production VFX runtime is not registered", lineStyle);
+                GUI.Label(new Rect(panel.x + 12f, panel.y + 141f, panel.width - 24f, 20f), "Production VFX runtime is not registered", lineStyle);
                 lineStyle.normal.textColor = oldColor;
             }
             GUI.Label(
-                new Rect(panel.x + 12f, panel.y + 121f, panel.width - 24f, 50f),
-                "1 Full  ·  2 Field  ·  3 Impact  ·  R Replay  ·  L Loop\nP Pause  ·  [ / ] Speed  ·  Backspace Clear  ·  RMB Orbit  ·  Wheel Zoom  ·  Home Camera",
+                new Rect(panel.x + 12f, panel.y + 162f, panel.width - 24f, 66f),
+                "WASD Move · LMB Basic · Space Dodge · Q Blue · E Red · R Purple · V Domain · X Cancel\nShift+2 Blue Field · Shift+3 Blue Impact · Shift+V Direct Domain\nShift+R Replay · L Loop · P Pause · [ / ] Speed · Backspace Hard Clear · MMB Orbit · Wheel Zoom · Home Camera",
                 lineStyle
             );
         }
