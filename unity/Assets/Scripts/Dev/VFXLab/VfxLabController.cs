@@ -109,42 +109,17 @@ namespace JJKGame.Dev.VFXLab
                 return;
             }
 
-            Material floorMaterial = CreateLitMaterial(new Color(0.060f, 0.078f, 0.115f, 1f), 0.12f, 0.48f);
-            Material backdropMaterial = CreateLitMaterial(new Color(0.032f, 0.047f, 0.078f, 1f), 0.02f, 0.55f);
-            Material accentMaterial = CreateUnlitMaterial(new Color(0.030f, 0.20f, 0.46f, 0.30f), 1.2f);
-            Material markerMaterial = CreateUnlitMaterial(new Color(0.06f, 0.48f, 0.76f, 0.46f), 1.45f);
+            Material floorMaterial = CreateLitMaterial(new Color(0.28f, 0.32f, 0.36f, 1f), 0.02f, 0.30f);
+            Material accentMaterial = CreateUnlitMaterial(new Color(0.035f, 0.095f, 0.15f, 0.20f), 0.25f);
+            Material markerMaterial = CreateUnlitMaterial(new Color(0.045f, 0.18f, 0.26f, 0.24f), 0.35f);
 
             CreateBox(
                 previewStage,
                 "NeutralFloor",
-                new Vector3(0f, -0.14f, 2.5f),
-                new Vector3(18f, 0.24f, 18f),
+                new Vector3(0f, -0.11f, 0f),
+                new Vector3(64f, 0.18f, 64f),
                 floorMaterial,
                 true
-            );
-            CreateBox(
-                previewStage,
-                "DarkBackdrop",
-                new Vector3(0f, 4f, 11f),
-                new Vector3(18f, 8f, 0.25f),
-                backdropMaterial,
-                false
-            );
-            CreateBox(
-                previewStage,
-                "LeftSeparationPanel",
-                new Vector3(-8.5f, 2.4f, 2.5f),
-                new Vector3(0.20f, 4.8f, 17f),
-                backdropMaterial,
-                false
-            );
-            CreateBox(
-                previewStage,
-                "RightSeparationPanel",
-                new Vector3(8.5f, 2.4f, 2.5f),
-                new Vector3(0.20f, 4.8f, 17f),
-                backdropMaterial,
-                false
             );
 
             CreateRing(previewStage, "StageGuideRing", new Vector3(0f, 0.015f, 2.5f), 5.8f, 0.026f, accentMaterial, 80);
@@ -159,37 +134,26 @@ namespace JJKGame.Dev.VFXLab
 
         private void BuildLightingAndPostProcess()
         {
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = new Color(0.024f, 0.036f, 0.065f, 1f);
-            RenderSettings.fogStartDistance = 24f;
-            RenderSettings.fogEndDistance = 58f;
+            RenderSettings.fog = false;
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.115f, 0.155f, 0.245f, 1f);
-            RenderSettings.ambientEquatorColor = new Color(0.064f, 0.088f, 0.142f, 1f);
-            RenderSettings.ambientGroundColor = new Color(0.028f, 0.036f, 0.060f, 1f);
-            RenderSettings.ambientIntensity = 1.05f;
+            RenderSettings.ambientSkyColor = new Color(0.60f, 0.64f, 0.70f, 1f);
+            RenderSettings.ambientEquatorColor = new Color(0.42f, 0.46f, 0.52f, 1f);
+            RenderSettings.ambientGroundColor = new Color(0.30f, 0.33f, 0.38f, 1f);
+            RenderSettings.ambientIntensity = 1f;
 
             CreateDirectionalLight(
-                "CoolKey",
-                Quaternion.Euler(46f, -34f, 0f),
-                new Color(0.78f, 0.88f, 1f),
-                1.22f,
+                "InspectionKey",
+                Quaternion.Euler(50f, -35f, 0f),
+                new Color(0.96f, 0.98f, 1f),
+                1.35f,
                 LightShadows.Soft
             );
-            CreatePointLight(
-                "CoolFill",
-                new Vector3(-4.2f, 3.4f, 1.8f),
-                new Color(0.20f, 0.44f, 1f),
-                4.1f,
-                13f
-            );
-            CreatePointLight(
-                "WarmRim",
-                new Vector3(4.5f, 2.8f, 5.5f),
-                new Color(1f, 0.32f, 0.16f),
-                2.8f,
-                12f
+            CreateDirectionalLight(
+                "InspectionFill",
+                Quaternion.Euler(32f, 145f, 0f),
+                new Color(0.58f, 0.68f, 0.84f),
+                0.45f,
+                LightShadows.None
             );
 
             Volume volume = lightingRoot.GetComponent<Volume>();
@@ -207,33 +171,18 @@ namespace JJKGame.Dev.VFXLab
             volume.profile = runtimeVolumeProfile;
 
             Tonemapping tonemapping = runtimeVolumeProfile.Add<Tonemapping>(true);
-            tonemapping.mode.Override(TonemappingMode.ACES);
+            tonemapping.mode.Override(TonemappingMode.Neutral);
 
             Bloom bloom = runtimeVolumeProfile.Add<Bloom>(true);
-            bloom.threshold.Override(1.0f);
-            bloom.intensity.Override(0.20f);
-            bloom.scatter.Override(0.48f);
-            bloom.clamp.Override(5f);
-            bloom.tint.Override(new Color(0.92f, 0.97f, 1f, 1f));
+            bloom.threshold.Override(1.1f);
+            bloom.intensity.Override(0.12f);
+            bloom.scatter.Override(0.35f);
+            bloom.clamp.Override(4f);
+            bloom.tint.Override(Color.white);
             bloom.highQualityFiltering.Override(false);
 
-            ColorAdjustments color = runtimeVolumeProfile.Add<ColorAdjustments>(true);
-            color.postExposure.Override(0.12f);
-            color.contrast.Override(7f);
-            color.colorFilter.Override(new Color(0.97f, 0.985f, 1f, 1f));
-            color.saturation.Override(-2f);
-
-            WhiteBalance whiteBalance = runtimeVolumeProfile.Add<WhiteBalance>(true);
-            whiteBalance.temperature.Override(-4f);
-            whiteBalance.tint.Override(1f);
-
-            Vignette vignette = runtimeVolumeProfile.Add<Vignette>(true);
-            vignette.color.Override(new Color(0.004f, 0.008f, 0.020f, 1f));
-            vignette.intensity.Override(0.07f);
-            vignette.smoothness.Override(0.55f);
-
             previewCamera.clearFlags = CameraClearFlags.SolidColor;
-            previewCamera.backgroundColor = new Color(0.022f, 0.034f, 0.062f, 1f);
+            previewCamera.backgroundColor = new Color(0.18f, 0.20f, 0.23f, 1f);
             previewCamera.fieldOfView = 55f;
             previewCamera.nearClipPlane = 0.1f;
             previewCamera.farClipPlane = 120f;
@@ -266,25 +215,6 @@ namespace JJKGame.Dev.VFXLab
             light.intensity = intensity;
             light.shadows = shadows;
             light.shadowStrength = 0.62f;
-        }
-
-        private void CreatePointLight(
-            string name,
-            Vector3 position,
-            Color color,
-            float intensity,
-            float range
-        )
-        {
-            GameObject lightObject = new GameObject(name);
-            lightObject.transform.SetParent(lightingRoot, false);
-            lightObject.transform.localPosition = position;
-            Light light = lightObject.AddComponent<Light>();
-            light.type = LightType.Point;
-            light.color = color;
-            light.intensity = intensity;
-            light.range = range;
-            light.shadows = LightShadows.None;
         }
 
         private static Transform RequireChild(Transform parent, string childName)

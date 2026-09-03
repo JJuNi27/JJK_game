@@ -11,8 +11,8 @@ namespace JJKGame.Dev.VFXLab
     public sealed class VfxLabOrbitCamera : MonoBehaviour
     {
         private const float DefaultYaw = 0f;
-        private const float DefaultPitch = 22f;
-        private const float DefaultDistance = 10f;
+        private const float DefaultPitch = 20f;
+        private const float DefaultDistance = 8.5f;
 
         private Transform characterTarget;
         private Transform vfxTarget;
