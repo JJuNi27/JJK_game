@@ -20,6 +20,8 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - Gojo Blue Final Timing / Readability Tuning:
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+- Gojo Blue Stylized Suction Wind Layer:
+  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
 
@@ -233,6 +235,24 @@ REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
   새 managed allocation은 추가하지 않았다.
 - Blue 전체는 아직 USER VERIFIED가 아니며 실제 onset 순서, dust/debris 가독성, impact handoff와
   replay/cleanup은 Unity 사용자 검수 전이다.
+
+## Gojo Blue Stylized Suction Wind Layer
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+- Blue 전용 `AirflowSuctionWisps`와 `WindRibbonConvergence` ParticleSystem을 추가했다.
+- 기존 shared `GojoBlueParticle` material에 procedural `AirflowWisp`/`WindRibbon` mask mode를 추가하고
+  renderer별 `MaterialPropertyBlock`으로 선택한다.
+- 두 layer는 local 3D height/radius variation, 약한 orbit/noise, 가속되는 inward radial curve를 사용한다.
+- airflow는 field 18~34%, sparse ribbon은 28~52%에 등장해 core/shell보다 늦고 fast convergence보다
+  먼저 공기 흡입을 보조한다.
+- 외부 asset, VFX Graph, fluid/fog simulation, generic particle factory 변경은 없다.
+- 기존 Blue instance lifetime과 cleanup을 따르며 실제 3D depth, arc 구분, core readability와 누적 여부는
+  Unity 사용자 검수 전이다. Blue 전체 상태도 계속 USER VISUAL TEST PENDING이다.
 
 ## Gate 5B VFXLab developer tool
 

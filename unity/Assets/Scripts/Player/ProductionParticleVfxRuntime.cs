@@ -510,6 +510,8 @@ namespace JJKGame.Player
             TaperedStreak = 1,
             BrokenWisp = 2,
             DarkFragment = 3,
+            AirflowWisp = 4,
+            WindRibbon = 5,
         }
 
         private enum BlueEnergyLayerKind
@@ -526,6 +528,8 @@ namespace JJKGame.Player
             SlowSpiral,
             GroundDust,
             DarkDebris,
+            AirflowWisp,
+            WindRibbon,
         }
 
         private sealed class ParticleLayerBinding
@@ -751,13 +755,15 @@ namespace JJKGame.Player
         private readonly List<ConvergenceArcBinding> convergenceArcs =
             new List<ConvergenceArcBinding>(8);
         private readonly List<ParticleLayerBinding> particleLayers =
-            new List<ParticleLayerBinding>(5);
+            new List<ParticleLayerBinding>(7);
 
         private Transform coreRoot;
         private Light compressionLight;
         private GojoBlueDistortionSource distortionSource;
         private ParticleSystem groundDustSuction;
         private ParticleSystem darkDebrisFragments;
+        private ParticleSystem airflowSuctionWisps;
+        private ParticleSystem windRibbonConvergence;
         private bool impactCue;
         private float shaderCompression;
         private float lightPulse;
@@ -772,6 +778,8 @@ namespace JJKGame.Player
         private float slowSpiralWeight;
         private float groundDustWeight;
         private float darkDebrisWeight;
+        private float airflowWispWeight;
+        private float windRibbonWeight;
         private float convergenceArcWeight;
         private float distortionWeight;
         private float lightWeight;
@@ -885,6 +893,7 @@ namespace JJKGame.Player
             BuildCorona(orbDiameter, materialLibrary.ParticleMaterial);
             BuildSpiralFlow(boundaryRadius, materialLibrary.ParticleMaterial);
             BuildEnvironmentSuction(boundaryRadius, materialLibrary.ParticleMaterial);
+            BuildSuctionWind(boundaryRadius, materialLibrary.ParticleMaterial);
             BuildConvergenceField(outer, boundaryRadius);
             BuildCompressionLight(orbDiameter);
 
@@ -1323,6 +1332,159 @@ namespace JJKGame.Player
             Track(darkDebrisFragments);
         }
 
+        private void BuildSuctionWind(
+            float boundaryRadius,
+            Material particleMaterial
+        )
+        {
+            airflowSuctionWisps = ProductionSignatureVfxFactory.CreateParticleSystem(
+                transform,
+                "AirflowSuctionWisps",
+                new Color(0.38f, 0.56f, 0.68f, 0.22f),
+                RuntimeMaterials,
+                MaterialColors,
+                !impactCue,
+                Duration,
+                impactCue ? 0.16f : 0.36f,
+                impactCue ? 0.28f : 0.62f,
+                0f,
+                0f,
+                0.045f,
+                0.110f,
+                ParticleSystemShapeType.Sphere,
+                boundaryRadius * 0.80f,
+                true,
+                ParticleSystemSimulationSpace.Local,
+                impactCue ? 14 : 5,
+                impactCue ? 0f : 18f,
+                particleMaterial
+            );
+            airflowSuctionWisps.transform.localPosition = Vector3.up * 0.06f;
+            ParticleSystem.ShapeModule airflowShape = airflowSuctionWisps.shape;
+            airflowShape.radiusThickness = 0.20f;
+            airflowShape.scale = new Vector3(1f, 0.48f, 1f);
+            ParticleSystem.MainModule airflowMain = airflowSuctionWisps.main;
+            airflowMain.startColor = Color.white;
+            airflowMain.startRotation = new ParticleSystem.MinMaxCurve(
+                -0.18f,
+                0.18f
+            );
+            ParticleSystem.VelocityOverLifetimeModule airflowVelocity =
+                airflowSuctionWisps.velocityOverLifetime;
+            airflowVelocity.enabled = true;
+            airflowVelocity.space = ParticleSystemSimulationSpace.Local;
+            airflowVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
+            airflowVelocity.y = new ParticleSystem.MinMaxCurve(
+                impactCue ? 0.12f : 0.05f,
+                impactCue ? 0.34f : 0.24f
+            );
+            airflowVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            airflowVelocity.radial = CreateAcceleratingInwardCurve(
+                impactCue ? 5.0f : 1.0f,
+                impactCue ? 8.2f : 3.6f
+            );
+            airflowVelocity.orbitalX = new ParticleSystem.MinMaxCurve(-0.18f, 0.18f);
+            airflowVelocity.orbitalY = new ParticleSystem.MinMaxCurve(
+                impactCue ? 2.0f : 0.75f,
+                impactCue ? 3.0f : 1.45f
+            );
+            airflowVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(-0.14f, 0.14f);
+            ParticleSystem.NoiseModule airflowNoise = airflowSuctionWisps.noise;
+            airflowNoise.enabled = true;
+            airflowNoise.strength = impactCue ? 0.045f : 0.025f;
+            airflowNoise.frequency = 0.18f;
+            ConfigureInwardSize(airflowSuctionWisps, 0.05f);
+            ParticleSystemRenderer airflowRenderer =
+                airflowSuctionWisps.GetComponent<ParticleSystemRenderer>();
+            if (airflowRenderer != null)
+            {
+                airflowRenderer.velocityScale = 0.025f;
+                airflowRenderer.lengthScale = 0.68f;
+                airflowRenderer.sortingOrder = 32;
+            }
+            BindParticleLayer(
+                airflowSuctionWisps,
+                particleMaterial,
+                BlueParticleLayerKind.AirflowWisp,
+                BlueParticleMaskMode.AirflowWisp,
+                0.70f,
+                0.24f
+            );
+            Track(airflowSuctionWisps);
+
+            windRibbonConvergence = ProductionSignatureVfxFactory.CreateParticleSystem(
+                transform,
+                "WindRibbonConvergence",
+                new Color(0.50f, 0.66f, 0.76f, 0.14f),
+                RuntimeMaterials,
+                MaterialColors,
+                !impactCue,
+                Duration,
+                impactCue ? 0.18f : 0.52f,
+                impactCue ? 0.30f : 0.84f,
+                0f,
+                0f,
+                0.022f,
+                0.048f,
+                ParticleSystemShapeType.Sphere,
+                boundaryRadius * 0.92f,
+                true,
+                ParticleSystemSimulationSpace.Local,
+                impactCue ? 8 : 3,
+                impactCue ? 0f : 4.5f,
+                particleMaterial
+            );
+            windRibbonConvergence.transform.localPosition = Vector3.up * 0.12f;
+            ParticleSystem.ShapeModule ribbonShape = windRibbonConvergence.shape;
+            ribbonShape.radiusThickness = 0.10f;
+            ribbonShape.scale = new Vector3(1f, 0.62f, 1f);
+            ParticleSystem.MainModule ribbonMain = windRibbonConvergence.main;
+            ribbonMain.startColor = Color.white;
+            ribbonMain.startRotation = new ParticleSystem.MinMaxCurve(-0.12f, 0.12f);
+            ParticleSystem.VelocityOverLifetimeModule ribbonVelocity =
+                windRibbonConvergence.velocityOverLifetime;
+            ribbonVelocity.enabled = true;
+            ribbonVelocity.space = ParticleSystemSimulationSpace.Local;
+            ribbonVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
+            ribbonVelocity.y = new ParticleSystem.MinMaxCurve(
+                impactCue ? -0.10f : -0.08f,
+                impactCue ? 0.24f : 0.18f
+            );
+            ribbonVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            ribbonVelocity.radial = CreateAcceleratingInwardCurve(
+                impactCue ? 5.8f : 1.25f,
+                impactCue ? 9.0f : 4.2f
+            );
+            ribbonVelocity.orbitalX = new ParticleSystem.MinMaxCurve(-0.28f, 0.28f);
+            ribbonVelocity.orbitalY = new ParticleSystem.MinMaxCurve(
+                impactCue ? 2.2f : 0.95f,
+                impactCue ? 3.2f : 1.75f
+            );
+            ribbonVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(-0.22f, 0.22f);
+            ParticleSystem.NoiseModule ribbonNoise = windRibbonConvergence.noise;
+            ribbonNoise.enabled = true;
+            ribbonNoise.strength = impactCue ? 0.038f : 0.020f;
+            ribbonNoise.frequency = 0.16f;
+            ConfigureInwardSize(windRibbonConvergence, 0.035f);
+            ParticleSystemRenderer ribbonRenderer =
+                windRibbonConvergence.GetComponent<ParticleSystemRenderer>();
+            if (ribbonRenderer != null)
+            {
+                ribbonRenderer.velocityScale = 0.018f;
+                ribbonRenderer.lengthScale = 1.05f;
+                ribbonRenderer.sortingOrder = 33;
+            }
+            BindParticleLayer(
+                windRibbonConvergence,
+                particleMaterial,
+                BlueParticleLayerKind.WindRibbon,
+                BlueParticleMaskMode.WindRibbon,
+                0.48f,
+                0.30f
+            );
+            Track(windRibbonConvergence);
+        }
+
         private static ParticleSystem.MinMaxCurve CreateAcceleratingInwardCurve(
             float initialSpeed,
             float finalSpeed
@@ -1435,6 +1597,8 @@ namespace JJKGame.Player
                 : 1f + SmoothRamp(0.85f, 1f, normalized) * 0.12f;
             SetSimulationSpeed(groundDustSuction, environmentSimulationSpeed);
             SetSimulationSpeed(darkDebrisFragments, environmentSimulationSpeed);
+            SetSimulationSpeed(airflowSuctionWisps, environmentSimulationSpeed);
+            SetSimulationSpeed(windRibbonConvergence, environmentSimulationSpeed);
             ApplyEnvironmentEmissionRates();
 
             if (coreRoot != null)
@@ -1523,6 +1687,14 @@ namespace JJKGame.Player
                 darkDebrisFragments,
                 impactCue ? 0f : darkDebrisWeight
             );
+            SetEmissionRateMultiplier(
+                airflowSuctionWisps,
+                impactCue ? 0f : airflowWispWeight
+            );
+            SetEmissionRateMultiplier(
+                windRibbonConvergence,
+                impactCue ? 0f : windRibbonWeight
+            );
         }
 
         private static void SetEmissionRateMultiplier(
@@ -1552,6 +1724,8 @@ namespace JJKGame.Player
                 slowSpiralWeight = 1f;
                 groundDustWeight = 1f;
                 darkDebrisWeight = 1f;
+                airflowWispWeight = 1f;
+                windRibbonWeight = 1f;
                 convergenceArcWeight = 1f;
                 distortionWeight = Mathf.Lerp(
                     0.58f,
@@ -1569,7 +1743,9 @@ namespace JJKGame.Player
             coronaWeight = SmoothRamp(0.12f, 0.28f, normalized);
             groundDustWeight = SmoothRamp(0.18f, 0.34f, normalized);
             darkDebrisWeight = SmoothRamp(0.22f, 0.38f, normalized);
+            airflowWispWeight = SmoothRamp(0.18f, 0.34f, normalized);
             slowSpiralWeight = SmoothRamp(0.24f, 0.42f, normalized);
+            windRibbonWeight = SmoothRamp(0.28f, 0.52f, normalized);
             convergenceArcWeight = SmoothRamp(0.30f, 0.50f, normalized);
             fastSpiralWeight = SmoothRamp(0.42f, 0.58f, normalized);
             distortionWeight = SmoothRamp(0.08f, 0.22f, normalized);
@@ -1596,6 +1772,8 @@ namespace JJKGame.Player
                 BlueParticleLayerKind.SlowSpiral => slowSpiralWeight,
                 BlueParticleLayerKind.GroundDust => groundDustWeight,
                 BlueParticleLayerKind.DarkDebris => darkDebrisWeight,
+                BlueParticleLayerKind.AirflowWisp => airflowWispWeight,
+                BlueParticleLayerKind.WindRibbon => windRibbonWeight,
                 _ => 1f,
             };
         }

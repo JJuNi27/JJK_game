@@ -326,6 +326,15 @@ gameplay timing을 바꾸지 않고 presentation 내부 normalized time으로 la
 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이며 실제 단계 구분과 impact handoff는 Unity 사용자
 검수 후 확정한다.
 
+## E. Stylized suction wind layer 구현, 사용자 시각 검수 대기
+
+외부 wind texture나 fluid/VFX Graph 없이 기존 Blue procedural particle shader에 soft airflow wisp와
+sparse wind ribbon mask를 추가했다. 두 Blue-owned ParticleSystem은 height/radius variation과 local orbit,
+약한 noise, inward radial acceleration을 조합하며 각각 field 18~34%, 28~52%에 등장한다.
+
+구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이다. Unity camera orbit에서 3D suction으로
+읽히는지, ribbon이 energy arc나 core보다 강해지지 않는지, replay/cleanup 시 누적되지 않는지 확인한다.
+
 ---
 
 # 7. 다음 권장 작업 — Blue Production VFX Benchmark 2차 polish

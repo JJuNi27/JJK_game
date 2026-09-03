@@ -3,7 +3,7 @@ Shader "JJKGame/VFX/Gojo Blue Particle"
     Properties
     {
         [HDR] _TintColor("Tint", Color) = (1, 1, 1, 1)
-        _Mode("Mask Mode", Range(0, 3)) = 0
+        _Mode("Mask Mode", Range(0, 5)) = 0
         _Fade("Fade", Range(0, 1)) = 1
         _Emission("Emission", Range(0, 3)) = 1.2
         _Breakup("Edge Breakup", Range(0, 0.5)) = 0.15
@@ -165,16 +165,65 @@ Shader "JJKGame/VFX/Gojo Blue Particle"
                 darkFragment *= chippedCorner;
                 darkFragment *= lerp(1.0 - _Breakup, 1.0, noise);
 
-                float mode = clamp(_Mode, 0.0, 3.0);
+                float airflowLongitudinal = abs(centeredUv.x);
+                float airflowBend = centeredUv.y
+                    + centeredUv.x * 0.16
+                    + sin(centeredUv.x * 3.4 + time * 0.52) * 0.08;
+                float airflowWidth = lerp(
+                    0.26,
+                    0.07,
+                    smoothstep(0.0, 1.0, airflowLongitudinal)
+                );
+                float airflowWisp = 1.0 - smoothstep(
+                    airflowWidth,
+                    airflowWidth + 0.20,
+                    abs(airflowBend)
+                );
+                airflowWisp *= 1.0 - smoothstep(
+                    0.60,
+                    1.0,
+                    airflowLongitudinal
+                );
+                airflowWisp *= lerp(
+                    0.58 * (1.0 - _Breakup),
+                    1.0,
+                    noise
+                );
+
+                float ribbonBend = centeredUv.y
+                    + centeredUv.x * 0.10
+                    + sin(centeredUv.x * 2.7 - time * 0.38) * 0.13;
+                float ribbonWidth = 0.085 + noise * 0.035;
+                float windRibbon = 1.0 - smoothstep(
+                    ribbonWidth,
+                    ribbonWidth + 0.18,
+                    abs(ribbonBend)
+                );
+                windRibbon *= 1.0 - smoothstep(
+                    0.62,
+                    1.0,
+                    airflowLongitudinal
+                );
+                windRibbon *= lerp(
+                    0.48 * (1.0 - _Breakup),
+                    1.0,
+                    noise
+                );
+
+                float mode = clamp(_Mode, 0.0, 5.0);
                 float moteWeight = 1.0 - step(0.5, mode);
                 float streakWeight = step(0.5, mode) * (1.0 - step(1.5, mode));
                 float wispWeight = step(1.5, mode) * (1.0 - step(2.5, mode));
-                float fragmentWeight = step(2.5, mode);
+                float fragmentWeight = step(2.5, mode) * (1.0 - step(3.5, mode));
+                float airflowWeight = step(3.5, mode) * (1.0 - step(4.5, mode));
+                float ribbonWeight = step(4.5, mode);
                 float mask = saturate(
                     softMote * moteWeight
                     + taperedStreak * streakWeight
                     + brokenWisp * wispWeight
                     + darkFragment * fragmentWeight
+                    + airflowWisp * airflowWeight
+                    + windRibbon * ribbonWeight
                 );
 
                 float centerGlow = 1.0 - smoothstep(0.0, 0.82, radialDistance);
