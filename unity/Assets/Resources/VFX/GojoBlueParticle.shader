@@ -167,45 +167,45 @@ Shader "JJKGame/VFX/Gojo Blue Particle"
 
                 float airflowLongitudinal = abs(centeredUv.x);
                 float airflowBend = centeredUv.y
-                    + centeredUv.x * 0.16
-                    + sin(centeredUv.x * 3.4 + time * 0.52) * 0.08;
+                    + centeredUv.x * 0.11
+                    + sin(centeredUv.x * 2.8 + time * 0.42) * 0.10;
                 float airflowWidth = lerp(
-                    0.26,
-                    0.07,
+                    0.52,
+                    0.18,
                     smoothstep(0.0, 1.0, airflowLongitudinal)
                 );
                 float airflowWisp = 1.0 - smoothstep(
                     airflowWidth,
-                    airflowWidth + 0.20,
+                    airflowWidth + 0.28,
                     abs(airflowBend)
                 );
                 airflowWisp *= 1.0 - smoothstep(
-                    0.60,
-                    1.0,
+                    0.70,
+                    0.98,
                     airflowLongitudinal
                 );
                 airflowWisp *= lerp(
-                    0.58 * (1.0 - _Breakup),
+                    0.40 * (1.0 - _Breakup),
                     1.0,
                     noise
                 );
 
                 float ribbonBend = centeredUv.y
-                    + centeredUv.x * 0.10
-                    + sin(centeredUv.x * 2.7 - time * 0.38) * 0.13;
-                float ribbonWidth = 0.085 + noise * 0.035;
+                    + centeredUv.x * 0.07
+                    + sin(centeredUv.x * 2.2 - time * 0.32) * 0.16;
+                float ribbonWidth = 0.24 + noise * 0.09;
                 float windRibbon = 1.0 - smoothstep(
                     ribbonWidth,
-                    ribbonWidth + 0.18,
+                    ribbonWidth + 0.26,
                     abs(ribbonBend)
                 );
                 windRibbon *= 1.0 - smoothstep(
-                    0.62,
-                    1.0,
+                    0.54,
+                    0.91,
                     airflowLongitudinal
                 );
                 windRibbon *= lerp(
-                    0.48 * (1.0 - _Breakup),
+                    0.32 * (1.0 - _Breakup),
                     1.0,
                     noise
                 );

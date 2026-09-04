@@ -35,6 +35,7 @@ namespace JJKGame.Dev.VFXLab
 
         private Transform previewPoint;
         private VfxLabPreviewCharacter previewCharacter;
+        private PrototypeCombatAudio previewAudio;
         private VfxLabPreviewAction selectedAction = VfxLabPreviewAction.Blue;
         private VfxLabPreviewAction activeAction;
         private PrototypeHollowPurplePresentationRuntime.OrbSequence hollowPurpleSequence;
@@ -85,6 +86,7 @@ namespace JJKGame.Dev.VFXLab
         {
             previewPoint = newPreviewPoint;
             previewCharacter = newPreviewCharacter;
+            GetPreviewAudio();
         }
 
         private void OnEnable()
@@ -279,21 +281,25 @@ namespace JJKGame.Dev.VFXLab
                 case VfxLabPreviewAction.BasicAttack:
                     CurrentPhaseLabel = $"BASIC ATTACK {basicAttackStep}";
                     previewCharacter?.SetPreviewMotion(GetBasicAttackMotion(basicAttackStep));
+                    GetPreviewAudio()?.PlayBasicSwingRuntime(basicAttackStep);
                     break;
                 case VfxLabPreviewAction.Dodge:
                     CurrentPhaseLabel = "DODGE";
                     previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.Dodge);
+                    GetPreviewAudio()?.PlayDodgeRuntime();
                     break;
                 case VfxLabPreviewAction.BlueFieldDebug:
                     PositionPreviewAnchorFromCharacter(PreviewAnchorForwardDistance);
                     CurrentPhaseLabel = "FIELD · DEBUG";
                     previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRelease);
+                    GetPreviewAudio()?.PlayBlueCastRuntime();
                     SpawnBlueField();
                     break;
                 case VfxLabPreviewAction.BlueImpactDebug:
                     PositionPreviewAnchorFromCharacter(PreviewAnchorForwardDistance);
                     CurrentPhaseLabel = "IMPACT · DEBUG";
                     previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRelease);
+                    GetPreviewAudio()?.PlayBlueImpactRuntime();
                     SpawnBlueImpact();
                     break;
                 case VfxLabPreviewAction.Red:
@@ -374,6 +380,7 @@ namespace JJKGame.Dev.VFXLab
             {
                 CurrentPhaseLabel = "CAST";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueCast);
+                GetPreviewAudio()?.PlayBlueCastRuntime();
                 sequenceStep = 1;
             }
             if (sequenceStep == 1 && sequenceElapsed >= releaseAt)
@@ -386,6 +393,7 @@ namespace JJKGame.Dev.VFXLab
             if (sequenceStep == 2 && sequenceElapsed >= impactAt)
             {
                 CurrentPhaseLabel = "IMPACT COLLAPSE";
+                GetPreviewAudio()?.PlayBlueImpactRuntime();
                 SpawnBlueImpact();
                 sequenceStep = 3;
             }
@@ -414,6 +422,7 @@ namespace JJKGame.Dev.VFXLab
             {
                 CurrentPhaseLabel = "CAST";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueCast);
+                GetPreviewAudio()?.PlayRedCastRuntime();
                 sequenceStep = 1;
             }
             if (sequenceStep == 1 && sequenceElapsed >= releaseAt)
@@ -430,6 +439,7 @@ namespace JJKGame.Dev.VFXLab
             if (sequenceStep == 2 && sequenceElapsed >= impactAt)
             {
                 CurrentPhaseLabel = "RED IMPACT";
+                GetPreviewAudio()?.PlayRedImpactRuntime();
                 SpawnRedImpact();
                 sequenceStep = 3;
             }
@@ -458,6 +468,7 @@ namespace JJKGame.Dev.VFXLab
             {
                 CurrentPhaseLabel = "HOLLOW PURPLE · MERGE";
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRelease);
+                GetPreviewAudio()?.PlayPurpleRuntime();
                 SpawnCanonicalHollowPurple();
                 sequenceStep = hollowPurpleSequence != null ? 2 : 3;
             }
@@ -505,6 +516,7 @@ namespace JJKGame.Dev.VFXLab
             StopHandles();
             CurrentPhaseLabel = "DOMAIN ACTIVE · UNLIMITED VOID";
             previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.DomainRelease);
+            GetPreviewAudio()?.PlayDomainRuntime();
 
             domainPreviewRoot = new GameObject("VFXLab_UnlimitedVoidPreview");
             domainPreviewRoot.SetActive(false);
@@ -594,6 +606,7 @@ namespace JJKGame.Dev.VFXLab
 
         private void SpawnBasicHit(int step)
         {
+            GetPreviewAudio()?.PlayBasicHitRuntime(step);
             Vector3 contactPoint = previewCharacter != null
                 ? previewCharacter.transform.position
                     + ResolveCharacterForward() * (1.05f + step * 0.12f)
@@ -736,6 +749,7 @@ namespace JJKGame.Dev.VFXLab
 
         private void StopPreviewContent()
         {
+            previewAudio?.StopTransientRuntimePlayback();
             StopHandles();
             if (hollowPurpleSequence != null)
             {
@@ -828,6 +842,12 @@ namespace JJKGame.Dev.VFXLab
         private void OnDestroy()
         {
             RestoreTimeScale();
+        }
+
+        private PrototypeCombatAudio GetPreviewAudio()
+        {
+            previewAudio ??= PrototypeCombatAudio.GetOrCreate(gameObject);
+            return previewAudio;
         }
     }
 }

@@ -208,6 +208,17 @@ namespace JJKGame.Core
             GetCameraFeedback()?.AddShake(0.05f, 0.10f);
         }
 
+        /// <summary>
+        /// Stops transient runtime playback without touching background music.
+        /// Developer preview hosts use this to prevent one-shot/voice overlap when
+        /// a preview is replayed, looped, or cancelled.
+        /// </summary>
+        public void StopTransientRuntimePlayback()
+        {
+            sfxSource?.Stop();
+            voiceSource?.Stop();
+        }
+
         public void PlayPlayerHitRuntime()
         {
             PlaySfx(playerHitSound != null ? playerHitSound : playerHitFallback, 0.92f);

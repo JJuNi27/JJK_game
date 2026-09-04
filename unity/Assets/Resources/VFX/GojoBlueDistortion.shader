@@ -132,8 +132,13 @@ Shader "JJKGame/VFX/Gojo Blue Distortion"
                 half3 normalWS = normalize(input.normalWS);
                 half3 viewDirectionWS = normalize(input.viewDirectionWS);
                 float facing = saturate(dot(normalWS, viewDirectionWS));
-                float localizedFalloff = smoothstep(0.02, 0.72, facing);
-                localizedFalloff *= localizedFalloff;
+                float outerProfile = smoothstep(0.015, 0.62, facing);
+                outerProfile *= outerProfile;
+                float innerProfile = smoothstep(0.48, 0.96, facing);
+                innerProfile *= innerProfile;
+                float localizedFalloff = saturate(
+                    outerProfile * 0.46 + innerProfile * 0.78
+                );
 
                 float impact = saturate(_Impact);
                 float radiusNoiseScale = lerp(
@@ -153,17 +158,19 @@ Shader "JJKGame/VFX/Gojo Blue Distortion"
                     primaryNoise * 0.72 + detailNoise * 0.28 - 0.5
                 ) * 2.0;
 
-                float maximumOffset = lerp(0.009, 0.017, impact);
+                float maximumOffset = lerp(0.014, 0.022, impact);
+                float radialCompression = lerp(0.34, 1.62, innerProfile);
                 float offsetAmount = saturate(_Strength)
                     * maximumOffset
-                    * localizedFalloff;
+                    * localizedFalloff
+                    * radialCompression;
                 float2 warpedUv = screenUv
-                    + inwardDirection * offsetAmount * (1.0 + animatedNoise * 0.12)
-                    + tangentDirection * offsetAmount * animatedNoise * 0.08;
+                    + inwardDirection * offsetAmount * (1.0 + animatedNoise * 0.10)
+                    + tangentDirection * offsetAmount * animatedNoise * 0.045;
 
                 half3 warpedSceneColor = SampleSceneColor(warpedUv);
                 float opacity = localizedFalloff
-                    * saturate(0.55 + _Strength * 1.40);
+                    * saturate(0.36 + innerProfile * 0.48 + _Strength * 1.18);
                 return half4(warpedSceneColor, opacity);
             }
             ENDHLSL

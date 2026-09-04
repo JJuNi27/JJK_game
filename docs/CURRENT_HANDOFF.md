@@ -24,6 +24,8 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - Gojo Blue Oppressive Singularity + 4-Hit Gameplay:
   REMOTE IMPLEMENTED / USER TEST PENDING
+- Gojo Blue Oppressive Singularity Visual Rework 2 + VFXLab Audio Preview:
+  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
 
@@ -274,6 +276,34 @@ REMOTE IMPLEMENTED / USER TEST PENDING
   shrink를 강화해 실제 physics나 map destruction 없이 특이점 착시를 보강했다.
 - CE, cooldown, cast time, range, field radius/duration, pull speed와 target selection은 변경하지 않았다.
 - 실제 4-hit count/damage 합계/stun 체감과 visual 위압감은 Unity 사용자 검수 전이다.
+
+## Gojo Blue Oppressive Singularity Visual Rework 2 + VFXLab Audio Preview
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+- 1차 Oppressive visual은 사용자 검수에서 변화가 너무 미세해 실패했으며, 이번 rework가 이를 대체한다.
+- VFXLab sequence host가 `PrototypeCombatAudio.GetOrCreate(gameObject)`를 한 번만 사용하고 runtime-only
+  playback entry point를 직접 호출한다. Blue full/field debug/impact debug와 Basic, Dodge, Red, Purple,
+  Unlimited Void preview에 fallback SFX parity를 제공하며 replay/cancel 때 transient source만 정지한다.
+- gameplay outer radius를 바꾸지 않고 visual spawn 반경을 dust `1.20x`, debris `1.26x`, tidal debris
+  `1.30x`, airflow `1.32x`, wind ribbon `1.43x` 수준으로 확대했다.
+- `TidalDebrisTrails` sparse layer를 추가해 바깥의 작은 파편이 최대 `24m/s`로 급가속하고 마지막
+  lifetime 18%에서 급격히 가늘어져 사라지는 spaghettification proxy를 만든다.
+- airflow/ribbon particle 크기와 shader mask 폭을 크게 키우고 alpha/emission을 제한해 얇은 파란 선보다
+  넓은 반투명 pressure sheet로 읽히도록 했다.
+- field distortion shell은 기본 Blue에서 약 `1.48m -> 4.14m`, base strength는 `0.19 -> 0.26`으로
+  확대했다. shader는 약한 outer warp와 강한 inner compression의 2단 radial profile을 사용한다.
+- core는 dark navy density, cyan/white pressure rim, 지름 약 `0.18m` white-hot compression point로
+  대비를 재구성했다. 단순 emission 증가 대신 중심부 명암과 scale compression을 분리했다.
+- 18/38/58/78% pulse는 기존 gameplay schedule을 그대로 공유하며 core contraction `4.5% -> 18%`,
+  suction speed accent `10% -> 62%`, distortion accent `8% -> 38%`, light accent `18% -> 44%`로 강화했다.
+- Blue 4-hit damage/stun/pull 및 CE/cooldown/cast/range/radius/duration 값은 변경하지 않았다.
+- 실제 SFX 출력, 네 번의 inward pulse 가독성, gameplay camera/HUD readability와 Console 상태는
+  Unity 사용자 검수 전이다.
 
 ## Gate 5B VFXLab developer tool
 

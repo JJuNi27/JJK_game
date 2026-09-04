@@ -516,6 +516,7 @@ namespace JJKGame.Player
 
         private enum BlueEnergyLayerKind
         {
+            CompressionPoint,
             DenseBody,
             FresnelShell,
             OuterShell,
@@ -528,6 +529,7 @@ namespace JJKGame.Player
             SlowSpiral,
             GroundDust,
             DarkDebris,
+            TidalDebris,
             AirflowWisp,
             WindRibbon,
         }
@@ -751,17 +753,18 @@ namespace JJKGame.Player
         }
 
         private readonly List<EnergyLayerBinding> energyLayers =
-            new List<EnergyLayerBinding>(3);
+            new List<EnergyLayerBinding>(4);
         private readonly List<ConvergenceArcBinding> convergenceArcs =
             new List<ConvergenceArcBinding>(8);
         private readonly List<ParticleLayerBinding> particleLayers =
-            new List<ParticleLayerBinding>(7);
+            new List<ParticleLayerBinding>(8);
 
         private Transform coreRoot;
         private Light compressionLight;
         private GojoBlueDistortionSource distortionSource;
         private ParticleSystem groundDustSuction;
         private ParticleSystem darkDebrisFragments;
+        private ParticleSystem tidalDebrisTrails;
         private ParticleSystem airflowSuctionWisps;
         private ParticleSystem windRibbonConvergence;
         private bool impactCue;
@@ -778,6 +781,7 @@ namespace JJKGame.Player
         private float slowSpiralWeight;
         private float groundDustWeight;
         private float darkDebrisWeight;
+        private float tidalDebrisWeight;
         private float airflowWispWeight;
         private float windRibbonWeight;
         private float convergenceArcWeight;
@@ -811,9 +815,11 @@ namespace JJKGame.Player
             GojoBlueMaterialLibrary materialLibrary =
                 GojoBlueMaterialLibrary.GetOrCreate(transform.parent);
 
-            baseDistortionStrength = impactCue ? 0.24f : 0.19f;
+            baseDistortionStrength = impactCue ? 0.30f : 0.26f;
             float distortionWorldRadius =
-                orbDiameter * (impactCue ? 1.75f : 1.45f);
+                impactCue
+                    ? orbDiameter * 1.95f
+                    : Mathf.Max(orbDiameter * 2.15f, boundaryRadius * 0.98f);
             Renderer distortionRenderer = CreateDistortionShell(
                 materialLibrary.DistortionMaterial,
                 distortionWorldRadius
@@ -828,10 +834,10 @@ namespace JJKGame.Player
                 orbDiameter * 0.74f,
                 40,
                 materialLibrary.EnergyMaterial,
-                new Color(0.003f, 0.018f, 0.24f, 1f),
-                new Color(0.015f, 0.10f, 0.78f, 1f),
-                new Color(0.08f, 0.48f, 1f, 1f),
-                0.97f,
+                new Color(0.001f, 0.004f, 0.055f, 1f),
+                new Color(0.004f, 0.035f, 0.30f, 1f),
+                new Color(0.018f, 0.28f, 0.92f, 1f),
+                0.99f,
                 0f,
                 3.8f,
                 0.22f,
@@ -839,7 +845,7 @@ namespace JJKGame.Player
                 -0.48f,
                 3.4f,
                 0.16f,
-                1.28f,
+                0.92f,
                 7.2f,
                 0.08f,
                 0.17f
@@ -851,10 +857,10 @@ namespace JJKGame.Player
                 orbDiameter * 1.04f,
                 41,
                 materialLibrary.EnergyMaterial,
-                new Color(0.004f, 0.045f, 0.42f, 1f),
-                new Color(0.025f, 0.26f, 1f, 1f),
-                new Color(0.24f, 0.90f, 1f, 1f),
-                0.56f,
+                new Color(0.002f, 0.025f, 0.24f, 1f),
+                new Color(0.018f, 0.24f, 0.96f, 1f),
+                new Color(0.62f, 0.97f, 1f, 1f),
+                0.64f,
                 1f,
                 4.9f,
                 -0.31f,
@@ -862,7 +868,7 @@ namespace JJKGame.Player
                 0.62f,
                 2.25f,
                 0.42f,
-                1.34f,
+                1.68f,
                 5.2f,
                 0.12f,
                 0.49f
@@ -871,13 +877,13 @@ namespace JJKGame.Player
                 coreRoot,
                 "ThinOuterDistortionShell",
                 BlueEnergyLayerKind.OuterShell,
-                orbDiameter * 1.42f,
+                orbDiameter * 1.58f,
                 42,
                 materialLibrary.EnergyMaterial,
                 new Color(0.002f, 0.028f, 0.18f, 1f),
                 new Color(0.02f, 0.30f, 0.82f, 1f),
                 new Color(0.28f, 0.94f, 1f, 1f),
-                0.19f,
+                0.24f,
                 2f,
                 6.2f,
                 0.17f,
@@ -885,10 +891,33 @@ namespace JJKGame.Player
                 -0.78f,
                 1.55f,
                 0.63f,
-                0.82f,
+                1.02f,
                 3.8f,
                 0.14f,
                 0.83f
+            );
+            CreateEnergySphere(
+                coreRoot,
+                "WhiteHotCompressionPoint",
+                BlueEnergyLayerKind.CompressionPoint,
+                orbDiameter * 0.18f,
+                43,
+                materialLibrary.EnergyMaterial,
+                new Color(0.36f, 0.88f, 1f, 1f),
+                new Color(0.78f, 0.98f, 1f, 1f),
+                Color.white,
+                1f,
+                0f,
+                2.6f,
+                0.36f,
+                8.0f,
+                -0.64f,
+                1.2f,
+                0.04f,
+                2.45f,
+                10.5f,
+                0.05f,
+                0.31f
             );
 
             BuildCorona(orbDiameter, materialLibrary.ParticleMaterial);
@@ -1202,19 +1231,19 @@ namespace JJKGame.Player
             groundDustSuction = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "GroundDustSuction",
-                new Color(0.16f, 0.18f, 0.21f, 0.40f),
+                new Color(0.15f, 0.19f, 0.24f, 0.58f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
                 Duration,
-                impactCue ? 0.18f : 0.65f,
-                impactCue ? 0.30f : 1.05f,
+                impactCue ? 0.18f : 0.62f,
+                impactCue ? 0.30f : 0.90f,
                 0f,
                 0f,
-                0.039f,
-                0.099f,
+                0.075f,
+                0.180f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.92f,
+                boundaryRadius * 1.28f,
                 false,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 20 : 8,
@@ -1242,8 +1271,8 @@ namespace JJKGame.Player
             );
             dustVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             dustVelocity.radial = CreateAcceleratingInwardCurve(
-                impactCue ? 5.2f : 1.6f,
-                impactCue ? 7.4f : 3.0f
+                impactCue ? 5.2f : 1.35f,
+                impactCue ? 7.4f : 18.0f
             );
             dustVelocity.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
             dustVelocity.orbitalY = new ParticleSystem.MinMaxCurve(
@@ -1261,7 +1290,7 @@ namespace JJKGame.Player
                 particleMaterial,
                 BlueParticleLayerKind.GroundDust,
                 BlueParticleMaskMode.SoftMote,
-                0.82f,
+                0.94f,
                 0.16f
             );
             Track(groundDustSuction);
@@ -1269,19 +1298,19 @@ namespace JJKGame.Player
             darkDebrisFragments = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "DarkDebrisFragments",
-                new Color(0.13f, 0.18f, 0.27f, 0.78f),
+                new Color(0.075f, 0.12f, 0.22f, 0.90f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
                 Duration,
-                impactCue ? 0.18f : 0.55f,
-                impactCue ? 0.30f : 0.90f,
+                impactCue ? 0.18f : 0.58f,
+                impactCue ? 0.30f : 0.86f,
                 0f,
                 0f,
-                0.065f,
-                0.165f,
+                0.080f,
+                0.220f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.95f,
+                boundaryRadius * 1.34f,
                 false,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 12 : 5,
@@ -1308,8 +1337,8 @@ namespace JJKGame.Player
             );
             debrisVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             debrisVelocity.radial = CreateAcceleratingInwardCurve(
-                impactCue ? 6.2f : 1.9f,
-                impactCue ? 9.2f : 3.2f
+                impactCue ? 6.2f : 1.45f,
+                impactCue ? 9.2f : 21.0f
             );
             debrisVelocity.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
             debrisVelocity.orbitalY = new ParticleSystem.MinMaxCurve(
@@ -1327,10 +1356,84 @@ namespace JJKGame.Player
                 particleMaterial,
                 BlueParticleLayerKind.DarkDebris,
                 BlueParticleMaskMode.DarkFragment,
-                0.78f,
+                0.90f,
                 0.20f
             );
             Track(darkDebrisFragments);
+
+            BuildTidalDebrisTrails(boundaryRadius, particleMaterial);
+        }
+
+        private void BuildTidalDebrisTrails(
+            float boundaryRadius,
+            Material particleMaterial
+        )
+        {
+            tidalDebrisTrails = ProductionSignatureVfxFactory.CreateParticleSystem(
+                transform,
+                "TidalDebrisTrails",
+                new Color(0.045f, 0.10f, 0.20f, 0.86f),
+                RuntimeMaterials,
+                MaterialColors,
+                !impactCue,
+                Duration,
+                impactCue ? 0.16f : 0.62f,
+                impactCue ? 0.28f : 0.90f,
+                0f,
+                0f,
+                0.055f,
+                0.130f,
+                ParticleSystemShapeType.Sphere,
+                boundaryRadius * 1.38f,
+                true,
+                ParticleSystemSimulationSpace.Local,
+                impactCue ? 7 : 4,
+                impactCue ? 0f : 7f,
+                particleMaterial
+            );
+            tidalDebrisTrails.transform.localPosition = Vector3.up * 0.08f;
+            ParticleSystem.ShapeModule tidalShape = tidalDebrisTrails.shape;
+            tidalShape.radiusThickness = 0.08f;
+            tidalShape.scale = new Vector3(1f, 0.32f, 1f);
+            ParticleSystem.MainModule tidalMain = tidalDebrisTrails.main;
+            tidalMain.startColor = Color.white;
+            tidalMain.startRotation = new ParticleSystem.MinMaxCurve(
+                -0.28f,
+                0.28f
+            );
+            ParticleSystem.VelocityOverLifetimeModule tidalVelocity =
+                tidalDebrisTrails.velocityOverLifetime;
+            tidalVelocity.enabled = true;
+            tidalVelocity.space = ParticleSystemSimulationSpace.Local;
+            tidalVelocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
+            tidalVelocity.y = new ParticleSystem.MinMaxCurve(0.12f, 0.58f);
+            tidalVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            tidalVelocity.radial = CreateAcceleratingInwardCurve(1.35f, 24.0f);
+            tidalVelocity.orbitalX = new ParticleSystem.MinMaxCurve(-0.10f, 0.10f);
+            tidalVelocity.orbitalY = new ParticleSystem.MinMaxCurve(0.45f, 1.15f);
+            tidalVelocity.orbitalZ = new ParticleSystem.MinMaxCurve(-0.08f, 0.08f);
+            ParticleSystem.NoiseModule tidalNoise = tidalDebrisTrails.noise;
+            tidalNoise.enabled = true;
+            tidalNoise.strength = 0.025f;
+            tidalNoise.frequency = 0.16f;
+            ConfigureInwardSize(tidalDebrisTrails, 0.004f);
+            ParticleSystemRenderer tidalRenderer =
+                tidalDebrisTrails.GetComponent<ParticleSystemRenderer>();
+            if (tidalRenderer != null)
+            {
+                tidalRenderer.velocityScale = 0.12f;
+                tidalRenderer.lengthScale = 1.65f;
+                tidalRenderer.sortingOrder = 31;
+            }
+            BindParticleLayer(
+                tidalDebrisTrails,
+                particleMaterial,
+                BlueParticleLayerKind.TidalDebris,
+                BlueParticleMaskMode.DarkFragment,
+                0.72f,
+                0.18f
+            );
+            Track(tidalDebrisTrails);
         }
 
         private void BuildSuctionWind(
@@ -1341,19 +1444,19 @@ namespace JJKGame.Player
             airflowSuctionWisps = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "AirflowSuctionWisps",
-                new Color(0.38f, 0.56f, 0.68f, 0.22f),
+                new Color(0.30f, 0.54f, 0.68f, 0.34f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
                 Duration,
-                impactCue ? 0.16f : 0.36f,
-                impactCue ? 0.28f : 0.62f,
+                impactCue ? 0.16f : 0.60f,
+                impactCue ? 0.28f : 0.90f,
                 0f,
                 0f,
-                0.045f,
-                0.110f,
+                0.120f,
+                0.280f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.90f,
+                boundaryRadius * 1.40f,
                 true,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 14 : 5,
@@ -1381,8 +1484,8 @@ namespace JJKGame.Player
             );
             airflowVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             airflowVelocity.radial = CreateAcceleratingInwardCurve(
-                impactCue ? 5.0f : 1.0f,
-                impactCue ? 8.2f : 3.6f
+                impactCue ? 5.0f : 1.10f,
+                impactCue ? 8.2f : 18.5f
             );
             airflowVelocity.orbitalX = new ParticleSystem.MinMaxCurve(-0.18f, 0.18f);
             airflowVelocity.orbitalY = new ParticleSystem.MinMaxCurve(
@@ -1399,8 +1502,8 @@ namespace JJKGame.Player
                 airflowSuctionWisps.GetComponent<ParticleSystemRenderer>();
             if (airflowRenderer != null)
             {
-                airflowRenderer.velocityScale = 0.025f;
-                airflowRenderer.lengthScale = 0.68f;
+                airflowRenderer.velocityScale = 0.018f;
+                airflowRenderer.lengthScale = 0.54f;
                 airflowRenderer.sortingOrder = 32;
             }
             BindParticleLayer(
@@ -1408,7 +1511,7 @@ namespace JJKGame.Player
                 particleMaterial,
                 BlueParticleLayerKind.AirflowWisp,
                 BlueParticleMaskMode.AirflowWisp,
-                0.70f,
+                0.62f,
                 0.24f
             );
             Track(airflowSuctionWisps);
@@ -1416,19 +1519,19 @@ namespace JJKGame.Player
             windRibbonConvergence = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "WindRibbonConvergence",
-                new Color(0.50f, 0.66f, 0.76f, 0.14f),
+                new Color(0.34f, 0.62f, 0.78f, 0.26f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
                 Duration,
-                impactCue ? 0.18f : 0.52f,
-                impactCue ? 0.30f : 0.84f,
+                impactCue ? 0.18f : 0.58f,
+                impactCue ? 0.30f : 0.86f,
                 0f,
                 0f,
-                0.022f,
-                0.048f,
+                0.145f,
+                0.320f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 1.05f,
+                boundaryRadius * 1.52f,
                 true,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 8 : 3,
@@ -1453,8 +1556,8 @@ namespace JJKGame.Player
             );
             ribbonVelocity.z = new ParticleSystem.MinMaxCurve(0f, 0f);
             ribbonVelocity.radial = CreateAcceleratingInwardCurve(
-                impactCue ? 5.8f : 1.25f,
-                impactCue ? 9.0f : 4.2f
+                impactCue ? 5.8f : 1.40f,
+                impactCue ? 9.0f : 20.0f
             );
             ribbonVelocity.orbitalX = new ParticleSystem.MinMaxCurve(-0.28f, 0.28f);
             ribbonVelocity.orbitalY = new ParticleSystem.MinMaxCurve(
@@ -1471,8 +1574,8 @@ namespace JJKGame.Player
                 windRibbonConvergence.GetComponent<ParticleSystemRenderer>();
             if (ribbonRenderer != null)
             {
-                ribbonRenderer.velocityScale = 0.018f;
-                ribbonRenderer.lengthScale = 1.05f;
+                ribbonRenderer.velocityScale = 0.012f;
+                ribbonRenderer.lengthScale = 0.68f;
                 ribbonRenderer.sortingOrder = 33;
             }
             BindParticleLayer(
@@ -1480,7 +1583,7 @@ namespace JJKGame.Player
                 particleMaterial,
                 BlueParticleLayerKind.WindRibbon,
                 BlueParticleMaskMode.WindRibbon,
-                0.48f,
+                0.46f,
                 0.30f
             );
             Track(windRibbonConvergence);
@@ -1515,8 +1618,10 @@ namespace JJKGame.Player
                 new AnimationCurve(
                     new Keyframe(0f, 0.55f),
                     new Keyframe(0.16f, 1f),
-                    new Keyframe(0.62f, 0.70f),
-                    new Keyframe(0.84f, 0.24f),
+                    new Keyframe(0.68f, 0.74f),
+                    new Keyframe(0.82f, 0.34f),
+                    new Keyframe(0.91f, 0.10f),
+                    new Keyframe(0.97f, 0.025f),
                     new Keyframe(1f, finalSize)
                 )
             );
@@ -1596,18 +1701,19 @@ namespace JJKGame.Player
                 : EvaluateFieldPulseAccent(normalized);
             shaderCompression = impactCue
                 ? Mathf.Lerp(0.25f, 1f, impactCollapse)
-                : 0.34f
-                    + Mathf.Sin(elapsed * 8.6f) * 0.08f
-                    + fieldPulseAccent * 0.16f;
+                : 0.42f
+                    + Mathf.Sin(elapsed * 8.6f) * 0.055f
+                    + fieldPulseAccent * 0.38f;
             lightPulse = 0.88f + Mathf.Sin(elapsed * 10.2f) * 0.12f;
 
             float environmentSimulationSpeed = impactCue
                 ? Mathf.Lerp(1.05f, 1.65f, impactCollapse)
                 : 1f
-                    + SmoothRamp(0.85f, 1f, normalized) * 0.16f
-                    + fieldPulseAccent * 0.10f;
+                    + SmoothRamp(0.76f, 1f, normalized) * 0.24f
+                    + fieldPulseAccent * 0.62f;
             SetSimulationSpeed(groundDustSuction, environmentSimulationSpeed);
             SetSimulationSpeed(darkDebrisFragments, environmentSimulationSpeed);
+            SetSimulationSpeed(tidalDebrisTrails, environmentSimulationSpeed);
             SetSimulationSpeed(airflowSuctionWisps, environmentSimulationSpeed);
             SetSimulationSpeed(windRibbonConvergence, environmentSimulationSpeed);
             ApplyEnvironmentEmissionRates();
@@ -1617,8 +1723,8 @@ namespace JJKGame.Player
                 float scale = impactCue
                     ? Mathf.Lerp(1.24f, 0.58f, impactCollapse)
                     : 1f
-                        + Mathf.Sin(elapsed * 8.6f) * 0.025f
-                        - fieldPulseAccent * 0.045f;
+                        + Mathf.Sin(elapsed * 8.6f) * 0.018f
+                        - fieldPulseAccent * 0.18f;
                 coreRoot.localScale = Vector3.one * scale;
                 coreRoot.Rotate(Vector3.up, (impactCue ? 95f : 42f) * deltaTime, Space.Self);
             }
@@ -1639,7 +1745,7 @@ namespace JJKGame.Player
                 compressionLight.intensity =
                     baseLightIntensity
                     * lightPulse
-                    * (1f + fieldPulseAccent * 0.18f)
+                    * (1f + fieldPulseAccent * 0.44f)
                     * lightWeight
                     * fade;
             }
@@ -1648,8 +1754,8 @@ namespace JJKGame.Player
                 float compressionBoost = impactCue
                     ? Mathf.Lerp(1.08f, 1.28f, impactCollapse)
                     : 0.90f
-                        + shaderCompression * 0.20f
-                        + fieldPulseAccent * 0.08f;
+                        + shaderCompression * 0.24f
+                        + fieldPulseAccent * 0.38f;
                 distortionSource.SetStrength(
                     baseDistortionStrength * compressionBoost * distortionWeight * fade
                 );
@@ -1707,6 +1813,10 @@ namespace JJKGame.Player
                 impactCue ? 0f : darkDebrisWeight
             );
             SetEmissionRateMultiplier(
+                tidalDebrisTrails,
+                impactCue ? 0f : tidalDebrisWeight
+            );
+            SetEmissionRateMultiplier(
                 airflowSuctionWisps,
                 impactCue ? 0f : airflowWispWeight
             );
@@ -1743,6 +1853,7 @@ namespace JJKGame.Player
                 slowSpiralWeight = 1f;
                 groundDustWeight = 1f;
                 darkDebrisWeight = 1f;
+                tidalDebrisWeight = 1f;
                 airflowWispWeight = 1f;
                 windRibbonWeight = 1f;
                 convergenceArcWeight = 1f;
@@ -1761,10 +1872,11 @@ namespace JJKGame.Player
             outerEnergyWeight = SmoothRamp(0.12f, 0.28f, normalized);
             coronaWeight = SmoothRamp(0.12f, 0.28f, normalized);
             groundDustWeight = SmoothRamp(0.18f, 0.34f, normalized);
-            darkDebrisWeight = SmoothRamp(0.22f, 0.38f, normalized);
-            airflowWispWeight = SmoothRamp(0.18f, 0.34f, normalized);
+            darkDebrisWeight = SmoothRamp(0.16f, 0.31f, normalized);
+            tidalDebrisWeight = SmoothRamp(0.20f, 0.36f, normalized);
+            airflowWispWeight = SmoothRamp(0.12f, 0.28f, normalized);
             slowSpiralWeight = SmoothRamp(0.24f, 0.42f, normalized);
-            windRibbonWeight = SmoothRamp(0.28f, 0.52f, normalized);
+            windRibbonWeight = SmoothRamp(0.18f, 0.38f, normalized);
             convergenceArcWeight = SmoothRamp(0.30f, 0.50f, normalized);
             fastSpiralWeight = SmoothRamp(0.42f, 0.58f, normalized);
             distortionWeight = SmoothRamp(0.08f, 0.22f, normalized);
@@ -1775,6 +1887,7 @@ namespace JJKGame.Player
         {
             return layerKind switch
             {
+                BlueEnergyLayerKind.CompressionPoint => denseEnergyWeight,
                 BlueEnergyLayerKind.DenseBody => denseEnergyWeight,
                 BlueEnergyLayerKind.FresnelShell => fresnelEnergyWeight,
                 BlueEnergyLayerKind.OuterShell => outerEnergyWeight,
@@ -1791,6 +1904,7 @@ namespace JJKGame.Player
                 BlueParticleLayerKind.SlowSpiral => slowSpiralWeight,
                 BlueParticleLayerKind.GroundDust => groundDustWeight,
                 BlueParticleLayerKind.DarkDebris => darkDebrisWeight,
+                BlueParticleLayerKind.TidalDebris => tidalDebrisWeight,
                 BlueParticleLayerKind.AirflowWisp => airflowWispWeight,
                 BlueParticleLayerKind.WindRibbon => windRibbonWeight,
                 _ => 1f,
@@ -1808,13 +1922,13 @@ namespace JJKGame.Player
             {
                 float pulseTime = GojoBluePulseSchedule.GetNormalizedTime(pulseIndex);
                 float attack = SmoothRamp(
-                    pulseTime - 0.018f,
+                    pulseTime - 0.026f,
                     pulseTime,
                     normalized
                 );
                 float release = 1f - SmoothRamp(
                     pulseTime,
-                    pulseTime + 0.075f,
+                    pulseTime + 0.105f,
                     normalized
                 );
                 accent = Mathf.Max(accent, attack * release);
