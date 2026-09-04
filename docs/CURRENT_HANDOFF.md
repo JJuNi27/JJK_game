@@ -26,6 +26,8 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   REMOTE IMPLEMENTED / USER TEST PENDING
 - Gojo Blue Oppressive Singularity Visual Rework 2 + VFXLab Audio Preview:
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+- Gojo Blue Final Visual Polish (Palette + Early Onset):
+  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
 
@@ -304,6 +306,28 @@ REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - Blue 4-hit damage/stun/pull 및 CE/cooldown/cast/range/radius/duration 값은 변경하지 않았다.
 - 실제 SFX 출력, 네 번의 inward pulse 가독성, gameplay camera/HUD readability와 Console 상태는
   Unity 사용자 검수 전이다.
+
+## Gojo Blue Final Visual Polish (Palette + Early Onset)
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+```
+
+- Dense body를 near-black navy `(0.001, 0.004, 0.055)`에서 deep vivid blue `(0.004, 0.028, 0.18)`로,
+  mid를 `(0.004, 0.035, 0.30)`에서 electric blue `(0.008, 0.16, 0.82)`로 옮겼다.
+- Dense emission은 `0.92 -> 1.05`의 제한된 보정만 사용하고 Fresnel/outer shell 및 환경 suction 색을
+  azure/cyan 쪽으로 이동해 white-hot point, dark density, cyan rim의 깊이는 유지했다.
+- field 시작 weight를 ground dust `20%`, dark debris `24%`, tidal debris `16%`로 주고 각각 normalized
+  `42/40/46%`까지 점진적으로 full strength가 되도록 바꿨다.
+- 사용자가 말한 상부 나선환은 `FastClockwiseInwardStreaks`와 보조 `SlowCounterSpiralMotes`로 해석했다.
+  fast spiral은 기존 `42~58%` fade-in 대신 시작 `22% -> 38%에서 full`, slow spiral은 시작
+  `16% -> 46%에서 full`로 변경해 초반부터 보이되 후반 수렴이 계속 강해진다.
+- airflow는 시작 `12% -> 44%에서 full`, wind ribbon은 시작 `8% -> 48%에서 full`로 앞당겼다.
+  Convergence arc는 기존 `30~50%`를 유지해 core와 suction sign보다 먼저 주인공이 되지 않게 했다.
+- Blue gameplay, VFXLab `2.20s` duration, audio preview wiring, Red/Purple/Domain, HUD/camera/RP asset은
+  변경하지 않았다. 실제 palette와 early onset 가독성 및 Console 상태는 Unity 사용자 검수 전이다.
 
 ## Gate 5B VFXLab developer tool
 

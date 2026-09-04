@@ -834,9 +834,9 @@ namespace JJKGame.Player
                 orbDiameter * 0.74f,
                 40,
                 materialLibrary.EnergyMaterial,
-                new Color(0.001f, 0.004f, 0.055f, 1f),
-                new Color(0.004f, 0.035f, 0.30f, 1f),
-                new Color(0.018f, 0.28f, 0.92f, 1f),
+                new Color(0.004f, 0.028f, 0.18f, 1f),
+                new Color(0.008f, 0.16f, 0.82f, 1f),
+                new Color(0.055f, 0.62f, 1f, 1f),
                 0.99f,
                 0f,
                 3.8f,
@@ -845,7 +845,7 @@ namespace JJKGame.Player
                 -0.48f,
                 3.4f,
                 0.16f,
-                0.92f,
+                1.05f,
                 7.2f,
                 0.08f,
                 0.17f
@@ -857,8 +857,8 @@ namespace JJKGame.Player
                 orbDiameter * 1.04f,
                 41,
                 materialLibrary.EnergyMaterial,
-                new Color(0.002f, 0.025f, 0.24f, 1f),
-                new Color(0.018f, 0.24f, 0.96f, 1f),
+                new Color(0.004f, 0.07f, 0.38f, 1f),
+                new Color(0.015f, 0.38f, 1f, 1f),
                 new Color(0.62f, 0.97f, 1f, 1f),
                 0.64f,
                 1f,
@@ -880,9 +880,9 @@ namespace JJKGame.Player
                 orbDiameter * 1.58f,
                 42,
                 materialLibrary.EnergyMaterial,
-                new Color(0.002f, 0.028f, 0.18f, 1f),
-                new Color(0.02f, 0.30f, 0.82f, 1f),
-                new Color(0.28f, 0.94f, 1f, 1f),
+                new Color(0.003f, 0.055f, 0.32f, 1f),
+                new Color(0.025f, 0.46f, 1f, 1f),
+                new Color(0.36f, 0.97f, 1f, 1f),
                 0.24f,
                 2f,
                 6.2f,
@@ -1049,7 +1049,7 @@ namespace JJKGame.Player
             ParticleSystem corona = ProductionSignatureVfxFactory.CreateParticleSystem(
                 coreRoot,
                 "BlueCorona",
-                new Color(0.08f, 0.58f, 1f, 0.58f),
+                new Color(0.06f, 0.66f, 1f, 0.58f),
                 RuntimeMaterials,
                 MaterialColors,
                 true,
@@ -1088,7 +1088,7 @@ namespace JJKGame.Player
             ParticleSystem fastSpiral = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "FastClockwiseInwardStreaks",
-                new Color(0.025f, 0.38f, 1f, 0.72f),
+                new Color(0.03f, 0.48f, 1f, 0.72f),
                 RuntimeMaterials,
                 MaterialColors,
                 true,
@@ -1144,7 +1144,7 @@ namespace JJKGame.Player
             ParticleSystem slowSpiral = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "SlowCounterSpiralMotes",
-                new Color(0.10f, 0.72f, 1f, 0.48f),
+                new Color(0.08f, 0.78f, 1f, 0.48f),
                 RuntimeMaterials,
                 MaterialColors,
                 true,
@@ -1298,7 +1298,7 @@ namespace JJKGame.Player
             darkDebrisFragments = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "DarkDebrisFragments",
-                new Color(0.075f, 0.12f, 0.22f, 0.90f),
+                new Color(0.055f, 0.16f, 0.36f, 0.90f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
@@ -1372,7 +1372,7 @@ namespace JJKGame.Player
             tidalDebrisTrails = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "TidalDebrisTrails",
-                new Color(0.045f, 0.10f, 0.20f, 0.86f),
+                new Color(0.035f, 0.13f, 0.31f, 0.86f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
@@ -1444,7 +1444,7 @@ namespace JJKGame.Player
             airflowSuctionWisps = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "AirflowSuctionWisps",
-                new Color(0.30f, 0.54f, 0.68f, 0.34f),
+                new Color(0.20f, 0.56f, 0.85f, 0.34f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
@@ -1519,7 +1519,7 @@ namespace JJKGame.Player
             windRibbonConvergence = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 "WindRibbonConvergence",
-                new Color(0.34f, 0.62f, 0.78f, 0.26f),
+                new Color(0.22f, 0.62f, 0.92f, 0.26f),
                 RuntimeMaterials,
                 MaterialColors,
                 !impactCue,
@@ -1686,7 +1686,7 @@ namespace JJKGame.Player
             lightObject.transform.SetParent(coreRoot, false);
             compressionLight = lightObject.AddComponent<Light>();
             compressionLight.type = LightType.Point;
-            compressionLight.color = new Color(0.025f, 0.22f, 1f);
+            compressionLight.color = new Color(0.025f, 0.34f, 1f);
             compressionLight.range = Mathf.Clamp(orbDiameter * 4.4f, 3.0f, 5.2f);
             baseLightIntensity = impactCue ? 0.52f : 0.66f;
             compressionLight.intensity = baseLightIntensity * lightWeight;
@@ -1871,14 +1871,14 @@ namespace JJKGame.Player
             fresnelEnergyWeight = SmoothRamp(0.08f, 0.22f, normalized);
             outerEnergyWeight = SmoothRamp(0.12f, 0.28f, normalized);
             coronaWeight = SmoothRamp(0.12f, 0.28f, normalized);
-            groundDustWeight = SmoothRamp(0.18f, 0.34f, normalized);
-            darkDebrisWeight = SmoothRamp(0.16f, 0.31f, normalized);
-            tidalDebrisWeight = SmoothRamp(0.20f, 0.36f, normalized);
-            airflowWispWeight = SmoothRamp(0.12f, 0.28f, normalized);
-            slowSpiralWeight = SmoothRamp(0.24f, 0.42f, normalized);
-            windRibbonWeight = SmoothRamp(0.18f, 0.38f, normalized);
+            groundDustWeight = EarlyPresence(0.20f, 0.42f, normalized);
+            darkDebrisWeight = EarlyPresence(0.24f, 0.40f, normalized);
+            tidalDebrisWeight = EarlyPresence(0.16f, 0.46f, normalized);
+            airflowWispWeight = EarlyPresence(0.12f, 0.44f, normalized);
+            slowSpiralWeight = EarlyPresence(0.16f, 0.46f, normalized);
+            windRibbonWeight = EarlyPresence(0.08f, 0.48f, normalized);
             convergenceArcWeight = SmoothRamp(0.30f, 0.50f, normalized);
-            fastSpiralWeight = SmoothRamp(0.42f, 0.58f, normalized);
+            fastSpiralWeight = EarlyPresence(0.22f, 0.38f, normalized);
             distortionWeight = SmoothRamp(0.08f, 0.22f, normalized);
             lightWeight = SmoothRamp(0.05f, 0.30f, normalized);
         }
@@ -1934,6 +1934,19 @@ namespace JJKGame.Player
                 accent = Mathf.Max(accent, attack * release);
             }
             return accent;
+        }
+
+        private static float EarlyPresence(
+            float initialWeight,
+            float reachesFullAt,
+            float normalized
+        )
+        {
+            return Mathf.Lerp(
+                Mathf.Clamp01(initialWeight),
+                1f,
+                SmoothRamp(0f, reachesFullAt, normalized)
+            );
         }
 
         private static float SmoothRamp(float start, float end, float normalized)
