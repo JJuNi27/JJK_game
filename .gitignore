@@ -35,3 +35,7 @@ unity/*.VC.db
 
 # 개인 테스트용 BGM/대사 파일은 저장소에 포함하지 않는다.
 unity/Assets/Resources/LocalAudio/
+unity/Assets/Resources/LocalAudio.meta
+
+# 개인 보관용 원본 음성/사운드
+사운드 모음/
