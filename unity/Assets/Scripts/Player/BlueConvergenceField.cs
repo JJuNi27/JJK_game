@@ -5,20 +5,39 @@ using UnityEngine;
 
 namespace JJKGame.Player
 {
+    internal static class GojoBluePulseSchedule
+    {
+        public const int HitCount = 4;
+
+        public static float GetNormalizedTime(int pulseIndex)
+        {
+            return pulseIndex switch
+            {
+                0 => 0.18f,
+                1 => 0.38f,
+                2 => 0.58f,
+                3 => 0.78f,
+                _ => 1f,
+            };
+        }
+    }
+
     public sealed class BlueConvergenceField : MonoBehaviour
     {
-        private readonly HashSet<Health> damagedTargets = new HashSet<Health>();
+        private readonly Dictionary<Health, int> targetHitCounts =
+            new Dictionary<Health, int>();
         private readonly HashSet<Health> pulseTargets = new HashSet<Health>();
 
         private Health owner;
         private float radius;
         private float duration;
         private float pulseInterval;
-        private float damage;
+        private float damagePerHit;
         private float pullSpeed;
         private float hitStun;
         private float startedAt;
         private float nextPulseAt;
+        private int nextDamagePulseIndex;
         private Action<Health> onTargetHit;
         private Action onFirstImpact;
         private bool impactPlayed;
@@ -40,13 +59,14 @@ namespace JJKGame.Player
             radius = Mathf.Max(0.1f, newRadius);
             duration = Mathf.Max(0.1f, newDuration);
             pulseInterval = Mathf.Max(0.03f, newPulseInterval);
-            damage = Mathf.Max(0f, newDamage);
+            damagePerHit = Mathf.Max(0f, newDamage) / GojoBluePulseSchedule.HitCount;
             pullSpeed = Mathf.Max(0f, newPullSpeed);
             hitStun = Mathf.Max(0f, newHitStun);
             onTargetHit = newOnTargetHit;
             onFirstImpact = newOnFirstImpact;
             startedAt = Time.time;
             nextPulseAt = Time.time;
+            nextDamagePulseIndex = 0;
 
             BuildVisual();
             ApplyPulse();
@@ -61,7 +81,7 @@ namespace JJKGame.Player
                 return;
             }
 
-            if (Time.time >= nextPulseAt)
+            if (Time.time >= nextPulseAt || IsDamagePulseDue(Time.time))
             {
                 ApplyPulse();
             }
@@ -76,6 +96,11 @@ namespace JJKGame.Player
         private void ApplyPulse()
         {
             nextPulseAt = Time.time + pulseInterval;
+            bool damagePulse = IsDamagePulseDue(Time.time);
+            if (damagePulse)
+            {
+                nextDamagePulseIndex++;
+            }
             pulseTargets.Clear();
 
             Collider[] hits = Physics.OverlapSphere(transform.position, radius);
@@ -92,11 +117,15 @@ namespace JJKGame.Player
                     continue;
                 }
 
-                bool firstSuccessfulHit = !damagedTargets.Contains(target);
-                if (firstSuccessfulHit)
+                targetHitCounts.TryGetValue(target, out int previousHitCount);
+                bool firstSuccessfulHit = false;
+                if (
+                    damagePulse
+                    && previousHitCount < GojoBluePulseSchedule.HitCount
+                )
                 {
                     DamageContext context = new DamageContext(
-                        damage,
+                        damagePerHit,
                         owner != null ? owner.gameObject : gameObject,
                         DamageDeliveryType.CursedTechnique,
                         DamageTraits.None,
@@ -108,7 +137,8 @@ namespace JJKGame.Player
                         continue;
                     }
 
-                    damagedTargets.Add(target);
+                    targetHitCounts[target] = previousHitCount + 1;
+                    firstSuccessfulHit = previousHitCount == 0;
                     onTargetHit?.Invoke(target);
                     if (!impactPlayed)
                     {
@@ -141,6 +171,18 @@ namespace JJKGame.Player
                 float stun = firstSuccessfulHit ? hitStun : Mathf.Min(0.08f, hitStun);
                 ApplyHitReaction(target, direction.normalized * pullSpeed, stun);
             }
+        }
+
+        private bool IsDamagePulseDue(float currentTime)
+        {
+            if (nextDamagePulseIndex >= GojoBluePulseSchedule.HitCount)
+            {
+                return false;
+            }
+
+            float normalized = Mathf.Clamp01((currentTime - startedAt) / duration);
+            return normalized
+                >= GojoBluePulseSchedule.GetNormalizedTime(nextDamagePulseIndex);
         }
 
         private static void ApplyHitReaction(Health target, Vector3 impulse, float stun)

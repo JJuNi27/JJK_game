@@ -335,6 +335,15 @@ sparse wind ribbon mask를 추가했다. 두 Blue-owned ParticleSystem은 height
 구현 상태는 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`이다. Unity camera orbit에서 3D suction으로
 읽히는지, ribbon이 energy arc나 core보다 강해지지 않는지, replay/cleanup 시 누적되지 않는지 확인한다.
 
+## F. Oppressive singularity + 4-hit pulse 구현, 사용자 검수 대기
+
+Blue visual reaction radius를 넓히고 outer motion은 느리게 시작해 near-core에서 급가속·축소되도록
+inward/size curve를 조정했다. Gameplay는 기존 총 damage를 normalized 18/38/58/78%의 4회로 균등
+분배하며, production visual도 같은 schedule로 core/light/distortion/suction에 작은 compression beat를 준다.
+
+구현 상태는 `REMOTE IMPLEMENTED / USER TEST PENDING`이다. 총 damage 보존, target별 4-hit 상한,
+stun-lock 방지와 실제 gameplay camera에서의 위압감은 Unity 사용자 검수 후 확정한다.
+
 ---
 
 # 7. 다음 권장 작업 — Blue Production VFX Benchmark 2차 polish

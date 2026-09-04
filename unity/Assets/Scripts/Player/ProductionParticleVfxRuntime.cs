@@ -783,6 +783,7 @@ namespace JJKGame.Player
         private float convergenceArcWeight;
         private float distortionWeight;
         private float lightWeight;
+        private float fieldPulseAccent;
 
         public static GojoBlueVfxInstance Spawn(
             PresentationVfxSpawnRequest request,
@@ -1213,7 +1214,7 @@ namespace JJKGame.Player
                 0.039f,
                 0.099f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.85f,
+                boundaryRadius * 0.92f,
                 false,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 20 : 8,
@@ -1280,7 +1281,7 @@ namespace JJKGame.Player
                 0.065f,
                 0.165f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.86f,
+                boundaryRadius * 0.95f,
                 false,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 12 : 5,
@@ -1352,7 +1353,7 @@ namespace JJKGame.Player
                 0.045f,
                 0.110f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.80f,
+                boundaryRadius * 0.90f,
                 true,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 14 : 5,
@@ -1427,7 +1428,7 @@ namespace JJKGame.Player
                 0.022f,
                 0.048f,
                 ParticleSystemShapeType.Sphere,
-                boundaryRadius * 0.92f,
+                boundaryRadius * 1.05f,
                 true,
                 ParticleSystemSimulationSpace.Local,
                 impactCue ? 8 : 3,
@@ -1492,12 +1493,14 @@ namespace JJKGame.Player
         {
             float safeFinalSpeed = Mathf.Max(0.01f, finalSpeed);
             float initialRatio = Mathf.Clamp01(initialSpeed / safeFinalSpeed);
-            float middleRatio = Mathf.Lerp(initialRatio, 1f, 0.42f);
+            float middleRatio = Mathf.Lerp(initialRatio, 1f, 0.24f);
+            float nearCoreRatio = Mathf.Lerp(initialRatio, 1f, 0.72f);
             return new ParticleSystem.MinMaxCurve(
                 safeFinalSpeed,
                 new AnimationCurve(
                     new Keyframe(0f, -initialRatio),
-                    new Keyframe(0.46f, -middleRatio),
+                    new Keyframe(0.58f, -middleRatio),
+                    new Keyframe(0.86f, -nearCoreRatio),
                     new Keyframe(1f, -1f)
                 )
             );
@@ -1511,8 +1514,9 @@ namespace JJKGame.Player
                 1f,
                 new AnimationCurve(
                     new Keyframe(0f, 0.55f),
-                    new Keyframe(0.18f, 1f),
-                    new Keyframe(0.76f, 0.64f),
+                    new Keyframe(0.16f, 1f),
+                    new Keyframe(0.62f, 0.70f),
+                    new Keyframe(0.84f, 0.24f),
                     new Keyframe(1f, finalSize)
                 )
             );
@@ -1587,14 +1591,21 @@ namespace JJKGame.Player
         protected override void Tick(float elapsed, float normalized, float deltaTime)
         {
             UpdatePresentationTiming(normalized);
+            fieldPulseAccent = impactCue
+                ? 0f
+                : EvaluateFieldPulseAccent(normalized);
             shaderCompression = impactCue
                 ? Mathf.Lerp(0.25f, 1f, impactCollapse)
-                : 0.34f + Mathf.Sin(elapsed * 8.6f) * 0.08f;
+                : 0.34f
+                    + Mathf.Sin(elapsed * 8.6f) * 0.08f
+                    + fieldPulseAccent * 0.16f;
             lightPulse = 0.88f + Mathf.Sin(elapsed * 10.2f) * 0.12f;
 
             float environmentSimulationSpeed = impactCue
                 ? Mathf.Lerp(1.05f, 1.65f, impactCollapse)
-                : 1f + SmoothRamp(0.85f, 1f, normalized) * 0.12f;
+                : 1f
+                    + SmoothRamp(0.85f, 1f, normalized) * 0.16f
+                    + fieldPulseAccent * 0.10f;
             SetSimulationSpeed(groundDustSuction, environmentSimulationSpeed);
             SetSimulationSpeed(darkDebrisFragments, environmentSimulationSpeed);
             SetSimulationSpeed(airflowSuctionWisps, environmentSimulationSpeed);
@@ -1605,7 +1616,9 @@ namespace JJKGame.Player
             {
                 float scale = impactCue
                     ? Mathf.Lerp(1.24f, 0.58f, impactCollapse)
-                    : 1f + Mathf.Sin(elapsed * 8.6f) * 0.035f;
+                    : 1f
+                        + Mathf.Sin(elapsed * 8.6f) * 0.025f
+                        - fieldPulseAccent * 0.045f;
                 coreRoot.localScale = Vector3.one * scale;
                 coreRoot.Rotate(Vector3.up, (impactCue ? 95f : 42f) * deltaTime, Space.Self);
             }
@@ -1624,13 +1637,19 @@ namespace JJKGame.Player
             if (compressionLight != null)
             {
                 compressionLight.intensity =
-                    baseLightIntensity * lightPulse * lightWeight * fade;
+                    baseLightIntensity
+                    * lightPulse
+                    * (1f + fieldPulseAccent * 0.18f)
+                    * lightWeight
+                    * fade;
             }
             if (distortionSource != null)
             {
                 float compressionBoost = impactCue
                     ? Mathf.Lerp(1.08f, 1.28f, impactCollapse)
-                    : 0.90f + shaderCompression * 0.20f;
+                    : 0.90f
+                        + shaderCompression * 0.20f
+                        + fieldPulseAccent * 0.08f;
                 distortionSource.SetStrength(
                     baseDistortionStrength * compressionBoost * distortionWeight * fade
                 );
@@ -1776,6 +1795,31 @@ namespace JJKGame.Player
                 BlueParticleLayerKind.WindRibbon => windRibbonWeight,
                 _ => 1f,
             };
+        }
+
+        private static float EvaluateFieldPulseAccent(float normalized)
+        {
+            float accent = 0f;
+            for (
+                int pulseIndex = 0;
+                pulseIndex < GojoBluePulseSchedule.HitCount;
+                pulseIndex++
+            )
+            {
+                float pulseTime = GojoBluePulseSchedule.GetNormalizedTime(pulseIndex);
+                float attack = SmoothRamp(
+                    pulseTime - 0.018f,
+                    pulseTime,
+                    normalized
+                );
+                float release = 1f - SmoothRamp(
+                    pulseTime,
+                    pulseTime + 0.075f,
+                    normalized
+                );
+                accent = Mathf.Max(accent, attack * release);
+            }
+            return accent;
         }
 
         private static float SmoothRamp(float start, float end, float normalized)

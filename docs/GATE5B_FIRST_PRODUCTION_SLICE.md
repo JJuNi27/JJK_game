@@ -1122,9 +1122,14 @@ REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 
 Unity shader compile과 CombatMVP/VFXLab 실제 시각 결과는 사용자 검수 전이다.
 
-변경하지 않은 항목:
-- `GojoTechniqueController`와 `BlueConvergenceField` gameplay 코드 및 값
-- cast/distance/radius/duration/pulse/damage/pull/stun/cooldown/CE/target/damage timing
+후속 Oppressive Singularity + 4-Hit pass:
+- `BlueConvergenceField`는 normalized 18/38/58/78% damage pulse와 target별 최대 4-hit를 사용
+- 각 hit는 controller가 전달한 기존 총 damage의 1/4이며 첫 hit만 full stun, 이후는 기존 0.08s 상한
+- 기존 0.10s pull pulse, cast/distance/radius/duration/pull/cooldown/CE/target logic은 유지
+- production visual은 같은 schedule의 subtle compression/suction accent와 넓은 visual reaction radius 사용
+
+계속 변경하지 않은 항목:
+- `GojoTechniqueController`의 serialized Blue gameplay 값
 - Red, Hollow Purple, Unlimited Void, Sukuna, Megumi visual 값
 - ProductionArenaMoodController Bloom/lighting 값
 

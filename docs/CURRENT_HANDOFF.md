@@ -22,6 +22,8 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - Gojo Blue Stylized Suction Wind Layer:
   REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+- Gojo Blue Oppressive Singularity + 4-Hit Gameplay:
+  REMOTE IMPLEMENTED / USER TEST PENDING
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
 
@@ -254,6 +256,25 @@ REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
 - 기존 Blue instance lifetime과 cleanup을 따르며 실제 3D depth, arc 구분, core readability와 누적 여부는
   Unity 사용자 검수 전이다. Blue 전체 상태도 계속 USER VISUAL TEST PENDING이다.
 
+## Gojo Blue Oppressive Singularity + 4-Hit Gameplay
+
+상태:
+
+```text
+REMOTE IMPLEMENTED / USER TEST PENDING
+```
+
+- 기존 `0.10s` pull pulse와 field duration은 유지하고 normalized 18/38/58/78%에 damage pulse 4회를 둔다.
+- `BlueConvergenceField`가 target별 성공 hit count를 보관하며 각 hit는 기존 총 damage의 1/4이다.
+- 첫 성공 hit만 기존 full hit stun을 사용하고 이후 hit/pull reaction은 기존 `0.08s` 상한을 유지한다.
+- 첫 impact VFX/audio는 한 번만 발생하고 `BlueHit`은 성공한 각 damage pulse를 전달한다.
+- production Blue visual은 같은 4-pulse schedule로 core compression, light/distortion, suction speed를
+  미세하게 accent한다. VFXLab도 같은 shared visual beat를 사용하지만 gameplay damage는 실행하지 않는다.
+- dust/debris/airflow/ribbon의 visual spawn radius를 넓히고, inward curve의 후반 가속과 near-core
+  shrink를 강화해 실제 physics나 map destruction 없이 특이점 착시를 보강했다.
+- CE, cooldown, cast time, range, field radius/duration, pull speed와 target selection은 변경하지 않았다.
+- 실제 4-hit count/damage 합계/stun 체감과 visual 위압감은 Unity 사용자 검수 전이다.
+
 ## Gate 5B VFXLab developer tool
 
 Gate 5B VFX production iteration을 위해 캐릭터 이동, prototype/future authored motion, 실제 production
@@ -328,13 +349,13 @@ Blue가 아직 시각적으로 부족하다고 판정되면:
 
 ## 변경 금지
 
-- gameplay damage
+- Blue 총 damage 값과 4-hit 외 gameplay damage
 - CE
 - cooldown
 - range
 - hitbox
 - pull/push
-- hit timing
+- Blue 4-hit schedule 외 hit timing
 - Purple 0.24 / 0.78 / 18m timing
 - Domain duration/radius/state/input
 - camera gameplay
