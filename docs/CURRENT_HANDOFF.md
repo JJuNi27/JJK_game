@@ -1,35 +1,161 @@
 # Current Project Handoff
 
-작성 기준: 2026-09-04
+작성 기준: 2026-09-06
 
 ## 현재 단계
 
 Gate 5B First Production-Quality Vertical Slice 진행 중.
 
-현재 VFX 상태:
+현재 상태:
 
 - Pass 8 JJK-Referenced Production Particle VFX Runtime:
   USER VISUAL REVIEW FAILED / REWORK REQUIRED
 - Pass 8R-1 Gojo Signature VFX Reference-First Rework:
   USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
 - Pass 8R-2A Gojo Blue Production VFX Benchmark:
-  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
-- Gojo Blue Localized Screen Distortion:
-  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
-- Gojo Blue Visual-Only Environment Suction:
-  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
-- Gojo Blue Final Timing / Readability Tuning:
-  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
-- Gojo Blue Stylized Suction Wind Layer:
-  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
-- Gojo Blue Oppressive Singularity + 4-Hit Gameplay:
-  REMOTE IMPLEMENTED / USER TEST PENDING
-- Gojo Blue Oppressive Singularity Visual Rework 2 + VFXLab Audio Preview:
-  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
-- Gojo Blue Final Visual Polish (Palette + Early Onset):
-  REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+  USER VERIFIED / CLOSED
+- Gojo Blue 4-hit gameplay:
+  USER VERIFIED as part of accepted Blue slice
+- Gojo Blue local voice playback:
+  USER VERIFIED LOCALLY
+- Gojo adult blindfold model + Humanoid pipeline:
+  USER VERIFIED LOCALLY
+- Gojo custom Idle animation:
+  USER VERIFIED LOCALLY
+- Next animation task:
+  RUN locomotion
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
+Pass 8R-2A는 이후 반복 polish를 거쳐 사용자가 최종적으로 "이 정도면 합격" 판정을 했으므로 CLOSED다.
+
+> 중요: 아래에 남아 있는 Pass 8R-2A 세부 섹션의 `REMOTE IMPLEMENTED / USER VISUAL TEST PENDING`
+> 문구는 당시 진행 이력을 보존한 historical 기록이다. 현재 상태 판단은 이 문서 상단의 2026-09-06 최신 상태가 우선한다.
+
+## 2026-09-06 최신 로컬 작업 인수인계
+
+### 원격 branch 기준
+
+현재 작업 branch:
+
+`feat/gojo-blue-screen-distortion`
+
+문서 갱신 직전 원격 HEAD:
+
+`a36c6e199065ba0eb32a67133e5eb50dc60c59b3`
+(`chore: ignore local audio assets`)
+
+이후의 고죠 모델/Blender/Animator/Idle 작업은 사용자 PC의 로컬 Unity 프로젝트에서 진행됐다.
+따라서 GitHub에 해당 FBX/텍스처/Animator/scene 변경이 이미 올라갔다고 가정하면 안 된다.
+다음 Git 작업 시작 전에 반드시 실제 `git status`와 diff를 확인한다.
+
+### Blue VFX / Audio
+
+- Gojo Blue production VFX는 사용자 시각 합격으로 `USER VERIFIED / CLOSED`.
+- Red는 아직 시작하지 않는다.
+- 사용자 지시 순서: Blue 완성 → Blue 음성 → Gojo 모델/애니메이션 → Red.
+- Blue 음성은 로컬 `unity/Assets/Resources/LocalAudio/Gojo_Blue.ogg`에서 재생되며 사용자가 Unity에서 실제 출력 확인.
+- `LocalAudio`와 루트 `사운드 모음/`은 현재 원격 `.gitignore`에 포함되어 있어 공개 저장소에 올라가지 않는다.
+- 음성은 로컬 개발용 자산으로 취급한다.
+
+### Gojo 모델
+
+현재 실제 사용 기준은 성인 붕대/안대 고죠 모델.
+
+로컬 작업 흐름:
+
+1. 원본 `Gojo_Blindfold_Rigged.fbx`를 Mixamo로 Humanoid 리깅.
+2. Unity에서 Humanoid 주요 bone mapping 정상 확인.
+3. 모델 visual scale은 VFXLab child 기준 `0.5 / 0.5 / 0.5`.
+4. 재질/텍스처는 사용자가 Unity에서 직접 비교해 올바르게 연결했고 시각 확인 완료.
+5. 원본 `Gojo_Blindfold_Rigged`는 이제 기준 본체가 아니라 백업 원본으로만 유지.
+6. 실제 씬 기준 본체는 `Gojo_Blender_Master`.
+
+모델 출처/권리 provenance가 명확하지 않으므로 현재 정책은 local-only다.
+원격 `.gitignore`에는 아직 `unity/Assets/LocalModels/` 항목이 없으므로,
+다음 commit 전에 반드시 모델을 Git에 올리지 않을 정책을 다시 확인하고 ignore를 추가한 뒤 `git status`를 검수할 것.
+
+### Blender animation pipeline — 중요
+
+Blender 작업 파일:
+
+`Gojo_Animation_Work.blend`
+
+현재 custom Action:
+
+`Gojo_Idle`
+
+Idle:
+- 30 fps
+- frame 1 / 30 / 60
+- 양손 주머니
+- 한쪽 다리에 체중을 둔 건방진/여유로운 포즈
+- frame 30에서 Head/Neck 중심의 아주 작은 breathing motion
+- loop 재생 정상
+
+처음에는 `Gojo_Idle.fbx`를 별도 Humanoid Avatar로 만들면서 Unity에서 손목이 펴지고
+짝다리 포즈가 소실되는 문제가 발생했다.
+
+실제 원인:
+- 원본 Mixamo FBX Avatar와 Blender-export animation FBX의 Transform hierarchy가 달랐음.
+- Unity에서 `Copied Avatar Rig Configuration mis-match`
+  / `Transform 'Armature' not found in HumanDescription` 오류 발생.
+- 별도 `Create From This Model` Avatar를 쓰면 Humanoid retarget 결과가 Blender 원본 포즈와 달라져
+  손목/다리 포즈가 틀어졌음.
+
+확정 해결 pipeline:
+
+1. Blender에서 같은 Mesh + Armature를 animation 없이
+   `Gojo_Blender_Master.fbx`로 export.
+2. Unity에서 `Gojo_Blender_Master`:
+   `Humanoid → Create From This Model`.
+3. 이것을 새 기준 `Gojo_Blender_MasterAvatar`로 사용.
+4. 같은 Blender Armature에서 export한 `Gojo_Idle.fbx`:
+   `Humanoid → Copy From Other Avatar → Gojo_Blender_MasterAvatar`.
+5. VFXLab 실제 모델도 `Gojo_Blender_Master`를 사용.
+6. Animator:
+   - Controller: `Gojo_Animator`
+   - Avatar: `Gojo_Blender_MasterAvatar`
+   - Apply Root Motion: OFF
+7. 이 구조로 바꾼 뒤 Blender의 손목 꺾임 + 짝다리 포즈가 Unity에서도 정상 재생되는 것을
+   사용자가 직접 확인함: `USER VERIFIED LOCALLY`.
+
+이 pipeline은 이후 Gojo locomotion / Blue cast / attacks에도 그대로 유지한다.
+다시 기존 `Gojo_Blindfold_RiggedAvatar`와 Blender animation FBX를 섞지 않는다.
+
+### VFXLab 현재 로컬 hierarchy 방향
+
+```text
+VFXLab
+└─ PreviewCharacter
+   └─ AuthoredModelRoot
+      └─ Gojo_Blender_Master   ← current local working model
+```
+
+기존 `Gojo_Blindfold_Rigged` Hierarchy 인스턴스는 제거 가능하며,
+Project의 원본 FBX는 비교/백업용으로 당분간 남긴다.
+
+Unity Editor에서 반복적으로 보이는:
+
+- `MissingReferenceException: m_Targets of GameObjectInspector...`
+- `SerializedObjectNotCreatableException: Object at index 0 is null`
+
+은 현재 확인된 stack 상 Unity Editor Inspector stale-reference 계열이며,
+게임/animation 기능은 정상 동작했다. 작업을 막지 않는 한 별도 우선순위로 올리지 않는다.
+
+### 다음 작업 — 사용자 지정
+
+다음 세션 첫 작업은 **Run locomotion**.
+
+권장 순서:
+
+1. Run
+2. 필요 시 Walk/locomotion 보완
+3. Gojo Blue 시전 모션 + hand/anchor integration
+4. Basic Attack 1 / 2 / Finisher
+5. 그 뒤 Red
+
+Run은 처음부터 전부 손으로 만들기보다 Mixamo `In Place` clip을 같은 기준 rig에 맞춰 가져온 뒤
+Gojo 느낌을 Blender에서 보정하는 방식이 우선 후보다.
 
 ## 사용자 시각 피드백 핵심
 
@@ -167,7 +293,8 @@ detail ceiling과 다음 polish 방향을 정하는 단계다.
 4. presentation layer onset stagger
 5. 사용자 영상/스크린샷 기반 final art tuning
 
-Blue가 사용자 합격하기 전에는 Red production pass로 넘어가지 않는다.
+Blue는 2026-09-06 기준 사용자 합격으로 CLOSED다.
+단, 사용자 지시에 따라 Red로 바로 넘어가지 않고 Gojo 모델/애니메이션 slice를 먼저 완성한다.
 
 ## Gojo Blue Localized Screen Distortion
 
@@ -432,14 +559,15 @@ Blue가 아직 시각적으로 부족하다고 판정되면:
 새 채팅에서는 아래처럼 요청하면 된다.
 
 "GitHub JJuNi27/JJK_game 프로젝트 작업을 이어서 할게.
-먼저 master의 docs/CURRENT_HANDOFF.md, docs/JJK_VFX_REFERENCE_GOJO.md,
-docs/JJK_VFX_EXTERNAL_REFERENCE_SURVEY.md, docs/DEVELOPMENT_ROADMAP.md,
-docs/GATE5B_FIRST_PRODUCTION_SLICE.md를 읽고 현재 Gate/Pass 상태와 마지막 Blue VFX 테스트 상태를 요약해줘.
-기존 USER VERIFIED 상태를 되돌리지 말고, REMOTE IMPLEMENTED와 USER VISUAL VERIFIED를 구분해.
-지금은 Gate 5B Pass 8R 계열 고죠 production VFX를 reference-first 방식으로 재작업 중이고,
-Blue가 사용자 시각 합격하기 전에는 Red로 넘어가면 안 돼.
-내가 마지막으로 본 Blue의 시각 평가부터 물어보고 그 결과에 따라 다음 작업을 정해줘.
-큰 작업은 Codex용 프롬프트를 만들어주고, feature branch → commit/push → GitHub diff review → merge → Unity user test 순서를 유지해줘." 
+먼저 feat/gojo-blue-screen-distortion branch의 docs/CURRENT_HANDOFF.md,
+docs/NEW_CHAT_BOOTSTRAP.md, docs/GATE5B_FIRST_PRODUCTION_SLICE.md를 읽고 현재 상태를 복구해줘.
+Gojo Blue VFX는 이미 USER VERIFIED / CLOSED이고 Blue voice도 로컬 Unity에서 USER VERIFIED야.
+현재는 Gojo 모델/애니메이션 integration 단계이며, Blender-exported Gojo_Blender_MasterAvatar를
+기준 Avatar로 통일해 Humanoid retarget 문제를 해결했고 custom Gojo_Idle도 Unity에서 USER VERIFIED LOCALLY야.
+다만 모델/텍스처/Animator/scene 작업은 로컬일 수 있으니 GitHub에 있다고 가정하지 말고 먼저 git status/diff를 확인해.
+다음 작업은 Run locomotion이며, 이후 Blue cast motion/anchor → basic attacks → Red 순서야.
+기존 USER VERIFIED 상태를 되돌리지 말고 REMOTE와 LOCAL USER VERIFIED를 구분해.
+큰 작업은 feature branch → commit/push → GitHub 실제 diff review → 사용자 Unity test 순서를 유지해줘." 
 
 
 ## 새 채팅 인수인계
