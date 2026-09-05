@@ -1,6 +1,6 @@
 # Gate 5B — First Production-Quality Vertical Slice
 
-작성 기준일: 2026-08-24
+작성 기준일: 2026-09-06
 
 ## 상태
 
@@ -46,10 +46,53 @@ Pass 8R-1 · Gojo Signature VFX Reference-First Rework:
 USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
 
 Pass 8R-2A · Gojo Blue Production VFX Benchmark:
-REMOTE IMPLEMENTED / USER VISUAL TEST PENDING
+USER VERIFIED / CLOSED
+
+Gojo model / Humanoid / custom Idle integration:
+USER VERIFIED LOCALLY
+
+Current next task:
+RUN LOCOMOTION
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
+
+## 2026-09-06 Gojo character/animation integration checkpoint
+
+Blue production benchmark는 반복 polish 후 사용자 시각 합격으로 CLOSED 처리한다.
+현재 Gate 5B의 즉시 작업 초점은 Red가 아니라 **Gojo character + animation integration**이다.
+
+로컬에서 확인된 상태:
+- Blue voice playback: USER VERIFIED LOCALLY
+- adult blindfold Gojo model: USER VERIFIED LOCALLY
+- Mixamo rig / Unity Humanoid mapping: 정상
+- custom `Gojo_Idle`: USER VERIFIED LOCALLY
+- VFXLab actual model: `Gojo_Blender_Master`
+- Animator: `Gojo_Animator`
+- Avatar: `Gojo_Blender_MasterAvatar`
+- Apply Root Motion: OFF
+- visual scale baseline: `0.5 / 0.5 / 0.5`
+
+Humanoid retarget 문제 해결:
+- 원본 Mixamo Avatar와 Blender-export animation FBX를 섞으면 hierarchy mismatch가 발생했고,
+  `Transform 'Armature' not found in HumanDescription` 오류가 확인되었다.
+- 별도 Avatar 생성 시 Blender에서 만든 손목/짝다리 포즈가 Unity에서 달라졌다.
+- Blender에서 동일 Mesh + Armature를 `Gojo_Blender_Master.fbx`로 export해 기준 Avatar를 만들고,
+  같은 Armature에서 나온 animation FBX들이 해당 Avatar를 Copy하도록 통일했다.
+- 이 pipeline에서 손목과 비대칭 다리 포즈가 Unity에서도 정상 재생되는 것을 사용자가 확인했다.
+
+현재 animation 순서:
+1. Idle — DONE / USER VERIFIED LOCALLY
+2. Run — NEXT
+3. 필요 시 Walk/locomotion 보완
+4. Blue casting motion + hand/anchor
+5. Basic Attack 1 / 2 / Finisher
+6. Red
+
+주의:
+모델/텍스처/Blender/animation FBX/scene 변경은 로컬 작업일 수 있다.
+원격 저장소에 존재한다고 가정하지 않고 commit 전에 실제 `git status` / diff를 확인한다.
+`LocalAudio`는 gitignore되어 있으며 `LocalModels` ignore 여부는 다음 Git 작업 전에 반드시 확인한다.
 
 ---
 
