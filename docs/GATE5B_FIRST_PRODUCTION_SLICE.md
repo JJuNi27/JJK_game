@@ -51,8 +51,14 @@ USER VERIFIED / CLOSED
 Gojo model / Humanoid / custom Idle integration:
 USER VERIFIED LOCALLY
 
+Gojo Run + Idle ↔ Run locomotion:
+USER VERIFIED LOCALLY
+
+Gojo face/jaw skin-weight repair:
+USER VERIFIED LOCALLY
+
 Current next task:
-RUN LOCOMOTION
+BLUE CASTING MOTION + HAND/ANCHOR INTEGRATION
 ```
 
 Assistant는 Unity를 직접 실행/컴파일했다고 주장하지 않는다.
@@ -83,16 +89,31 @@ Humanoid retarget 문제 해결:
 
 현재 animation 순서:
 1. Idle — DONE / USER VERIFIED LOCALLY
-2. Run — NEXT
-3. 필요 시 Walk/locomotion 보완
-4. Blue casting motion + hand/anchor
-5. Basic Attack 1 / 2 / Finisher
-6. Red
+2. Run — DONE / USER VERIFIED LOCALLY
+3. Idle ↔ Run PlanarSpeed wiring — DONE / USER VERIFIED LOCALLY
+4. 얼굴/jaw skin-weight repair — DONE / USER VERIFIED LOCALLY
+5. Blue casting motion + hand/anchor — NEXT
+6. Basic Attack 1 / 2 / Finisher
+7. Red
 
 주의:
 모델/텍스처/Blender/animation FBX/scene 변경은 로컬 작업일 수 있다.
 원격 저장소에 존재한다고 가정하지 않고 commit 전에 실제 `git status` / diff를 확인한다.
-`LocalAudio`는 gitignore되어 있으며 `LocalModels` ignore 여부는 다음 Git 작업 전에 반드시 확인한다.
+`LocalAudio`와 `LocalModels`는 gitignore되어 있으며 모델/텍스처/animation FBX는 local-only로 유지한다.
+
+## 2026-09-07 Run / locomotion / jaw checkpoint
+
+- Mixamo Fast Run In Place source를 Blender에서 Master Armature 기준으로 constraint retarget 후 frame 1~17 bake.
+- Unity `Gojo_Run.fbx`는 `Humanoid → Copy From Other Avatar → Gojo_Blender_MasterAvatar`.
+- 사용자 Unity 재생 확인: Run clip `USER VERIFIED LOCALLY`.
+- Animator `PlanarSpeed` 조건으로 Idle ↔ Run 연결.
+- VFXLab에서 정지 → Idle, WASD → Run, 입력 해제 → Idle 복귀 사용자 확인: `USER VERIFIED LOCALLY`.
+- VFXLab Animator가 씬 인스턴스 대신 FBX asset Animator를 참조해 Controller가 null이던 문제를
+  `VfxLabPreviewCharacter.RefreshAnimatorBinding()`에서 `AuthoredModelRoot` 계층 소속 여부까지 검사하도록 수정.
+- 관련 커밋: `751e3e4b9134576e84bf46bc73c926ed3dc0c0cd`.
+- Mixamo skin weight로 턱/아랫얼굴이 늘어나는 문제는 얼굴 mesh를 Head 기준으로 재웨이트하고
+  `Gojo_Blender_Master.fbx`를 다시 export해 Idle/Run에서 크게 개선. 사용자 확인 완료.
+- 다음 animation 작업은 Blue casting motion + hand/anchor integration.
 
 ---
 
