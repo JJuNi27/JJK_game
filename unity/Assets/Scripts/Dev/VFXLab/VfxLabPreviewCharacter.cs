@@ -31,7 +31,7 @@ namespace JJKGame.Dev.VFXLab
         private const float Gravity = -24f;
 
         [Header("Movement")]
-        [SerializeField, Min(0.1f)] private float moveSpeed = 7f;
+        [SerializeField, Min(0.1f)] private float moveSpeed = 9.5f;
 
         private readonly List<Material> runtimeMaterials = new List<Material>(8);
         private readonly HashSet<int> animatorParameters = new HashSet<int>();
