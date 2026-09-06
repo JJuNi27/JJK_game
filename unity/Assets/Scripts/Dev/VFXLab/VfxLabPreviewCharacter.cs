@@ -96,12 +96,8 @@ namespace JJKGame.Dev.VFXLab
             motor.stepOffset = 0.28f;
 
             authoredModelRoot ??= transform.Find("AuthoredModelRoot");
-            animator ??= authoredModelRoot != null
-                ? authoredModelRoot.GetComponentInChildren<Animator>(true)
-                : GetComponentInChildren<Animator>(true);
+            RefreshAnimatorBinding();
             usesAuthoredModel = HasAuthoredVisual();
-            usesAuthoredAnimator = animator != null && animator.runtimeAnimatorController != null;
-            CacheAnimatorParameters();
             if (!usesAuthoredModel)
             {
                 BuildFallbackGojo();
@@ -564,9 +560,15 @@ namespace JJKGame.Dev.VFXLab
 
         private void RefreshAnimatorBinding()
         {
-            if (animator == null && authoredModelRoot != null)
+            Transform animatorRoot = authoredModelRoot != null
+                ? authoredModelRoot
+                : transform;
+            bool animatorBelongsToPreview = animator != null
+                && (animator.transform == animatorRoot
+                    || animator.transform.IsChildOf(animatorRoot));
+            if (!animatorBelongsToPreview)
             {
-                animator = authoredModelRoot.GetComponentInChildren<Animator>(true);
+                animator = animatorRoot.GetComponentInChildren<Animator>(true);
             }
 
             bool animatorReady =
