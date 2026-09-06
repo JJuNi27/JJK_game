@@ -24,8 +24,12 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   USER VERIFIED LOCALLY
 - Gojo Run clip retarget/bake/export:
   USER VERIFIED LOCALLY
+- Gojo Idle ↔ Run locomotion wiring:
+  USER VERIFIED LOCALLY
+- Gojo face/jaw skin-weight repair:
+  USER VERIFIED LOCALLY
 - Next animation task:
-  Animator Idle ↔ Run locomotion wiring
+  Blue casting motion + hand/anchor integration
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
 Pass 8R-2A는 이후 반복 polish를 거쳐 사용자가 최종적으로 "이 정도면 합격" 판정을 했으므로 CLOSED다.
@@ -41,10 +45,10 @@ Pass 8R-2A는 이후 반복 polish를 거쳐 사용자가 최종적으로 "이 �
 
 `feat/gojo-blue-screen-distortion`
 
-문서 갱신 직전 원격 HEAD:
+locomotion fix 직후 원격 HEAD:
 
-`a36c6e199065ba0eb32a67133e5eb50dc60c59b3`
-(`chore: ignore local audio assets`)
+`751e3e4b9134576e84bf46bc73c926ed3dc0c0cd`
+(`fix: bind VFXLab to scene animator`)
 
 이후의 고죠 모델/Blender/Animator/Idle 작업은 사용자 PC의 로컬 Unity 프로젝트에서 진행됐다.
 따라서 GitHub에 해당 FBX/텍스처/Animator/scene 변경이 이미 올라갔다고 가정하면 안 된다.
@@ -73,8 +77,8 @@ Pass 8R-2A는 이후 반복 polish를 거쳐 사용자가 최종적으로 "이 �
 6. 실제 씬 기준 본체는 `Gojo_Blender_Master`.
 
 모델 출처/권리 provenance가 명확하지 않으므로 현재 정책은 local-only다.
-원격 `.gitignore`에는 아직 `unity/Assets/LocalModels/` 항목이 없으므로,
-다음 commit 전에 반드시 모델을 Git에 올리지 않을 정책을 다시 확인하고 ignore를 추가한 뒤 `git status`를 검수할 것.
+`unity/Assets/LocalModels/`와 `unity/Assets/LocalModels.meta`는 원격 `.gitignore`에 추가했다.
+모델/텍스처/Blender-export FBX는 계속 공개 GitHub에 올리지 않는다.
 
 ### Blender animation pipeline — 중요
 
@@ -144,17 +148,32 @@ Unity Editor에서 반복적으로 보이는:
 은 현재 확인된 stack 상 Unity Editor Inspector stale-reference 계열이며,
 게임/animation 기능은 정상 동작했다. 작업을 막지 않는 한 별도 우선순위로 올리지 않는다.
 
+### 2026-09-07 얼굴 웨이트 + locomotion 완료
+
+Mixamo auto-rig 이후 특정 motion에서 턱/아랫얼굴이 길게 늘어나는 문제가 있었다.
+얼굴 mesh의 `mixamorig:Neck` / `mixamorig:Spine2` 영향이 턱 변형을 만들고 있었고,
+얼굴 mesh 전체를 `mixamorig:Head = 1.0` 기준으로 고정한 뒤 Master FBX를 다시 export해
+Idle/Run에서 턱 변형이 크게 개선된 것을 사용자가 확인했다: `USER VERIFIED LOCALLY`.
+
+Run animation clip은 Blender retarget/bake → Master Avatar export까지 성공했고 사용자 Unity 재생 확인 완료.
+이후 Animator `PlanarSpeed` 기반 Idle ↔ Run 전환도 실제 Play Mode에서 검증 완료했다.
+정지 시 Idle, WASD 이동 시 Run, 입력 해제 시 Idle 복귀가 정상 동작한다: `USER VERIFIED LOCALLY`.
+
+VFXLab locomotion 연결 중 `VfxLabPreviewCharacter.animator`가 씬 인스턴스 Animator가 아니라
+원본 FBX asset Animator를 참조해 `runtimeAnimatorController == null`이 되는 문제가 확인됐다.
+`RefreshAnimatorBinding()`이 Animator가 `AuthoredModelRoot` 계층에 속하는지도 검사하도록 수정해
+씬 자식 Animator로 재바인딩한다. 커밋: `751e3e4b9134576e84bf46bc73c926ed3dc0c0cd`.
+
 ### 다음 작업 — 사용자 지정
 
-Run animation clip 자체는 2026-09-07에 Blender retarget/bake → Master Avatar export까지 성공했고 사용자가 Unity에서 정상 재생을 확인했다.
-다음 작업은 **Animator Idle ↔ Run locomotion wiring**.
+다음 작업은 **Gojo Blue casting motion + hand/anchor integration**.
 
 권장 순서:
 
 1. Run clip retarget/bake/export — DONE / USER VERIFIED LOCALLY
-2. Animator Idle ↔ Run transition using PlanarSpeed — NEXT
-3. 필요 시 Walk/locomotion 보완
-4. Gojo Blue 시전 모션 + hand/anchor integration
+2. Animator Idle ↔ Run transition using PlanarSpeed — DONE / USER VERIFIED LOCALLY
+3. 얼굴/jaw skin-weight repair — DONE / USER VERIFIED LOCALLY
+4. Gojo Blue 시전 모션 + hand/anchor integration — NEXT
 5. Basic Attack 1 / 2 / Finisher
 6. 그 뒤 Red
 
@@ -171,7 +190,8 @@ Gojo 느낌을 Blender에서 보정하는 방식이 우선 후보다.
 - FBX export 핵심: Selected Objects ON, Add Leaf Bones OFF, NLA Strips OFF, All Actions OFF.
 - Unity에서 Gojo_Run.fbx를 Humanoid / Copy From Other Avatar / Gojo_Blender_MasterAvatar로 연결.
 - 사용자가 Unity에서 실제 재생 후 "잘 뛴다" 확인.
-- 따라서 Run clip 자체는 USER VERIFIED LOCALLY. 아직 VFXLab의 PlanarSpeed 기반 Idle↔Run 전환 연결은 미완료.
+- 따라서 Run clip 자체는 USER VERIFIED LOCALLY.
+- VFXLab의 PlanarSpeed 기반 Idle↔Run 전환도 2026-09-07 USER VERIFIED LOCALLY.
 
 ## 사용자 시각 피드백 핵심
 
