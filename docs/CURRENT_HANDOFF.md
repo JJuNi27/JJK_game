@@ -22,8 +22,10 @@ Gate 5B First Production-Quality Vertical Slice 진행 중.
   USER VERIFIED LOCALLY
 - Gojo custom Idle animation:
   USER VERIFIED LOCALLY
+- Gojo Run clip retarget/bake/export:
+  USER VERIFIED LOCALLY
 - Next animation task:
-  RUN locomotion
+  Animator Idle ↔ Run locomotion wiring
 
 Pass 8R-1은 Pass 8 대비 방향성은 개선됐지만 final-quality VFX로 승인되지 않았다.
 Pass 8R-2A는 이후 반복 polish를 거쳐 사용자가 최종적으로 "이 정도면 합격" 판정을 했으므로 CLOSED다.
@@ -144,18 +146,32 @@ Unity Editor에서 반복적으로 보이는:
 
 ### 다음 작업 — 사용자 지정
 
-다음 세션 첫 작업은 **Run locomotion**.
+Run animation clip 자체는 2026-09-07에 Blender retarget/bake → Master Avatar export까지 성공했고 사용자가 Unity에서 정상 재생을 확인했다.
+다음 작업은 **Animator Idle ↔ Run locomotion wiring**.
 
 권장 순서:
 
-1. Run
-2. 필요 시 Walk/locomotion 보완
-3. Gojo Blue 시전 모션 + hand/anchor integration
-4. Basic Attack 1 / 2 / Finisher
-5. 그 뒤 Red
+1. Run clip retarget/bake/export — DONE / USER VERIFIED LOCALLY
+2. Animator Idle ↔ Run transition using PlanarSpeed — NEXT
+3. 필요 시 Walk/locomotion 보완
+4. Gojo Blue 시전 모션 + hand/anchor integration
+5. Basic Attack 1 / 2 / Finisher
+6. 그 뒤 Red
 
 Run은 처음부터 전부 손으로 만들기보다 Mixamo `In Place` clip을 같은 기준 rig에 맞춰 가져온 뒤
 Gojo 느낌을 Blender에서 보정하는 방식이 우선 후보다.
+
+2026-09-07 Run pipeline result:
+- Mixamo Fast Run (In Place, 30 fps) source clip 사용.
+- source Armature.001의 Action을 Master Armature에 직접 지정하면 팔이 안쪽으로 꼬였음.
+- 원인은 source/target rig의 기준축/rest pose 차이로 같은 local rotation 값이 다르게 해석된 것.
+- Blender에서 Master Armature가 source Armature.001의 실제 world-space pose를 constraint로 따라가게 하고,
+  frame 1~17을 Visual Keying + Clear Local Constraints로 Bake.
+- Bake 결과를 Master 기준 Run Action으로 export.
+- FBX export 핵심: Selected Objects ON, Add Leaf Bones OFF, NLA Strips OFF, All Actions OFF.
+- Unity에서 Gojo_Run.fbx를 Humanoid / Copy From Other Avatar / Gojo_Blender_MasterAvatar로 연결.
+- 사용자가 Unity에서 실제 재생 후 "잘 뛴다" 확인.
+- 따라서 Run clip 자체는 USER VERIFIED LOCALLY. 아직 VFXLab의 PlanarSpeed 기반 Idle↔Run 전환 연결은 미완료.
 
 ## 사용자 시각 피드백 핵심
 
