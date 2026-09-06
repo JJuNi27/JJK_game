@@ -27,9 +27,11 @@ namespace JJKGame.Dev.VFXLab
     [DisallowMultipleComponent]
     public sealed class VfxLabPreviewCharacter : MonoBehaviour
     {
-        private const float MoveSpeed = 4.5f;
         private const float RotationSpeed = 14f;
         private const float Gravity = -24f;
+
+        [Header("Movement")]
+        [SerializeField, Min(0.1f)] private float moveSpeed = 7f;
 
         private readonly List<Material> runtimeMaterials = new List<Material>(8);
         private readonly HashSet<int> animatorParameters = new HashSet<int>();
@@ -183,7 +185,7 @@ namespace JJKGame.Dev.VFXLab
             Vector2 rawInput = ProductionCombatInput.Move;
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 direction = BuildCameraRelativeDirection(rawInput);
-            float speed = MoveSpeed;
+            float speed = moveSpeed;
             float motionElapsed = Time.time - motionStartedAt;
             if (previewMotion == VfxLabPreviewMotion.Dodge && motionElapsed < 0.36f)
             {
@@ -289,7 +291,7 @@ namespace JJKGame.Dev.VFXLab
                 return;
             }
 
-            float movementWeight = Mathf.Clamp01(planarSpeed / MoveSpeed);
+            float movementWeight = Mathf.Clamp01(planarSpeed / moveSpeed);
             float walkPhase = Time.time * 8f;
             float armSwing = Mathf.Sin(walkPhase) * 24f * movementWeight;
             float legSwing = -armSwing * 0.75f;
