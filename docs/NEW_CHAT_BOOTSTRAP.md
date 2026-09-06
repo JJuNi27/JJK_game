@@ -35,7 +35,10 @@ master만 보고 현재 작업 상태를 추정하지 말 것.
 - Gojo Blue voice playback: USER VERIFIED LOCALLY
 - Gojo adult blindfold model + Humanoid pipeline: USER VERIFIED LOCALLY
 - Gojo custom Idle animation: USER VERIFIED LOCALLY
-- 다음 작업: Run locomotion
+- Gojo Run retarget/bake/export: USER VERIFIED LOCALLY
+- Gojo Idle ↔ Run PlanarSpeed locomotion: USER VERIFIED LOCALLY
+- Gojo face/jaw skin-weight repair: USER VERIFIED LOCALLY
+- 다음 작업: Blue casting motion + hand/anchor integration
 
 중요: Blue는 더 이상 USER VISUAL TEST PENDING이 아니다.
 사용자가 최종적으로 합격 판정을 했으므로 Blue를 다시 pending으로 되돌리지 말 것.
@@ -44,9 +47,9 @@ master만 보고 현재 작업 상태를 추정하지 말 것.
 1. Blue 완성 — DONE
 2. Blue voice — DONE
 3. Gojo model + animation integration — CURRENT
-4. Run locomotion — NEXT
-5. 필요 시 Walk/locomotion 보완
-6. Blue casting motion + hand/anchor integration
+4. Run locomotion — DONE
+5. 얼굴/jaw skin-weight repair — DONE
+6. Blue casting motion + hand/anchor integration — NEXT
 7. Basic Attack 1 / 2 / Finisher
 8. 그 뒤 Red
 
@@ -62,6 +65,14 @@ Gojo animation pipeline에서 매우 중요한 해결 사항:
 - Animator는 `Gojo_Animator`, Avatar는 `Gojo_Blender_MasterAvatar`, Apply Root Motion은 OFF.
 - 이 구조로 바꾼 뒤 Blender의 손목/짝다리 포즈가 Unity에서도 정상 재생됨을 사용자가 직접 확인했다.
 
+현재 locomotion:
+- Idle: USER VERIFIED LOCALLY
+- Run: USER VERIFIED LOCALLY
+- Animator `PlanarSpeed` 기반 Idle ↔ Run 자동 전환: USER VERIFIED LOCALLY
+- 정지 → Idle / WASD → Run / 입력 해제 → Idle 복귀 정상
+- VFXLab Animator 바인딩 버그는 `751e3e4`에서 씬 `AuthoredModelRoot` 계층 Animator를 재탐색하도록 수정
+- 얼굴/jaw 늘어남은 얼굴 mesh를 Head 기준으로 재웨이트하고 Master FBX를 갱신해 크게 개선, USER VERIFIED LOCALLY
+
 현재 custom Idle:
 - Blender Action: `Gojo_Idle`
 - 30 fps
@@ -74,7 +85,7 @@ Gojo animation pipeline에서 매우 중요한 해결 사항:
 모델/음성 저작권성 자산은 local-only 정책.
 - `unity/Assets/Resources/LocalAudio/`는 gitignore됨
 - `사운드 모음/`도 gitignore됨
-- `unity/Assets/LocalModels/`은 원격 .gitignore에 아직 없을 수 있으므로 다음 commit 전에 반드시 실제 `.gitignore`와 `git status`를 확인하고, 모델/텍스처가 공개 GitHub에 올라가지 않게 처리할 것.
+- `unity/Assets/LocalModels/`와 `unity/Assets/LocalModels.meta`는 원격 `.gitignore`에 포함됨. 모델/텍스처/animation FBX는 계속 local-only로 유지할 것.
 
 매우 중요:
 현재 Gojo model / textures / Animator / Blender-export FBX / VFXLab scene 변경은 사용자 PC 로컬에만 있을 수 있다.
@@ -107,8 +118,8 @@ stack trace가 프로젝트 `Assets/Scripts`를 가리키거나 실제 기능을
 
 새 채팅에서는 문서를 읽고:
 1. 현재 branch/remote 상태와 local-only handoff를 5~10줄로 요약하고
-2. 사용자가 다음에 해야 할 행동은 Run locomotion 작업 하나부터 제시하고
-3. 필요하면 Mixamo In Place Run → Blender 보정 → 같은 Master Avatar pipeline → Unity 검증 순서로 안내해줘.
+2. 사용자가 다음에 해야 할 행동은 Blue casting motion + hand/anchor integration 하나부터 제시하고
+3. 같은 `Gojo_Blender_MasterAvatar` pipeline을 유지하며 Blue 시전 포즈/타이밍/손 anchor를 Unity VFX와 맞추는 순서로 안내해줘.
 
 참고:
 무량공처 장인 인식(MediaPipe/RandomForest) 관련 별도 문서는 다른 실험/MVP 흐름이다.
