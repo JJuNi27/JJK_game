@@ -118,6 +118,7 @@ namespace JJKGame.Dev.VFXLab
 
         private void Update()
         {
+            RefreshAnimatorBinding();
             ApplyMovement();
             if (usesAuthoredAnimator)
             {
@@ -559,6 +560,26 @@ namespace JJKGame.Dev.VFXLab
             Material material = new Material(shader) { color = color };
             runtimeMaterials.Add(material);
             return material;
+        }
+
+        private void RefreshAnimatorBinding()
+        {
+            if (animator == null && authoredModelRoot != null)
+            {
+                animator = authoredModelRoot.GetComponentInChildren<Animator>(true);
+            }
+
+            bool animatorReady =
+                animator != null &&
+                animator.runtimeAnimatorController != null;
+
+            if (animatorReady == usesAuthoredAnimator)
+            {
+                return;
+            }
+
+            usesAuthoredAnimator = animatorReady;
+            CacheAnimatorParameters();
         }
 
         private void CacheAnimatorParameters()
