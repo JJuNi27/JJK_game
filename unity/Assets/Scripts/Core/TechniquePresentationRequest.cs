@@ -11,6 +11,8 @@ namespace JJKGame.Core
         MalevolentShrine,
         DivineDog,
         Nue,
+        GojoBlue,
+        GojoRed,
     }
 
     public enum TechniquePresentationPhase

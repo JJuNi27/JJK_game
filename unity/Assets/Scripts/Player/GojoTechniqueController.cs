@@ -6,7 +6,7 @@ namespace JJKGame.Player
 {
     [RequireComponent(typeof(Health))]
     [RequireComponent(typeof(TargetLockController))]
-    public sealed class GojoTechniqueController : MonoBehaviour
+    public sealed class GojoTechniqueController : MonoBehaviour, ITechniqueReleaseReceiver
     {
         private enum CastState
         {
@@ -14,6 +14,11 @@ namespace JJKGame.Player
             Blue,
             Red,
         }
+
+        [Header("Optional Authored Animation Binding")]
+        [SerializeField] private TechniqueAnimationBinding blueAnimation = new TechniqueAnimationBinding();
+        [SerializeField] private TechniqueAnimationBinding redAnimation = new TechniqueAnimationBinding();
+        private readonly TechniqueReleaseClock releaseClock = new TechniqueReleaseClock();
 
         [Header("Cursed Technique Lapse: Blue")]
         [SerializeField, Min(0.01f)] private float blueCastTime = 0.24f;
@@ -115,7 +120,7 @@ namespace JJKGame.Player
                     CancelCast();
                     return;
                 }
-                if (Time.time >= castCompletesAt)
+                if (releaseClock.TryConsume(Time.time))
                 {
                     CompleteCast();
                 }
@@ -177,12 +182,32 @@ namespace JJKGame.Player
             castState = state;
             castStartedAt = Time.time;
             castCompletesAt = Time.time + Mathf.Max(0.01f, duration);
+            TechniqueAnimationBinding binding = state == CastState.Blue ? blueAnimation : redAnimation;
+            releaseClock.Begin(Time.time, castCompletesAt - castStartedAt,
+                binding != null && binding.acceptPresentationRelease);
+            RaiseChoreographyCue(TechniqueChoreographyPhase.Began);
+        }
+
+        public bool RequestPresentationRelease(int castToken)
+        {
+            return enabled && IsCasting && CombatActive && !DomainBusy
+                && releaseClock.RequestRelease(castToken);
+        }
+
+        private void RaiseChoreographyCue(TechniqueChoreographyPhase phase)
+        {
+            bool blue = castState == CastState.Blue;
+            TechniqueChoreographyCues.Raise(new TechniqueChoreographyCue(
+                ownHealth, blue ? TechniquePresentationId.GojoBlue : TechniquePresentationId.GojoRed,
+                releaseClock.Token, castCompletesAt - castStartedAt,
+                blue ? blueAnimation : redAnimation, phase, this));
         }
 
         private void CompleteCast()
         {
             CastState completed = castState;
-            CancelCast();
+            RaiseChoreographyCue(TechniqueChoreographyPhase.Released);
+            ResetCast();
             if (completed == CastState.Blue)
             {
                 SpawnBlueField();
@@ -195,6 +220,13 @@ namespace JJKGame.Player
 
         private void CancelCast()
         {
+            if (IsCasting) RaiseChoreographyCue(TechniqueChoreographyPhase.Cancelled);
+            ResetCast();
+        }
+
+        private void ResetCast()
+        {
+            releaseClock.Cancel();
             castState = CastState.None;
             castStartedAt = 0f;
             castCompletesAt = 0f;

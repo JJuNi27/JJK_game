@@ -27,20 +27,38 @@ namespace JJKGame.Player
         private SukunaDomainController sukunaDomain;
         private CombatActionGate actionGate;
         private float verticalVelocity;
+        private readonly EvadeMotion evadeMotion = new EvadeMotion();
+        private CharacterMovementProfile movementProfile;
+        private EvadeProfile activeEvade;
+        private float invulnerabilityStartsAt;
+        private float invulnerabilityEndsAt;
+        private bool pendingInvulnerability;
+        private bool recoveryCueRaised;
+        private bool completionCueRaised = true;
+        private float dodgeStartedAt;
         private float dodgeEndsAt;
         private float nextDodgeAt;
         private Vector3 dodgeDirection;
 
-        public bool IsDodging => Time.time < dodgeEndsAt;
+        // Movement integration may consume its final interval in this frame. Keep the
+        // existing wall-clock action lock until the full duration since accepted input.
+        public bool IsDodging => Time.time < dodgeEndsAt || evadeMotion.IsActive;
         public bool DodgeReady =>
             Time.time >= nextDodgeAt
             && !IsDodging
             && (actionGate == null || actionGate.CanStartDodge);
         public float DodgeCooldownRemaining => Mathf.Max(0f, nextDodgeAt - Time.time);
-        public float DodgeProgress => !IsDodging
-            ? 0f
-            : 1f - Mathf.Clamp01((dodgeEndsAt - Time.time) / Mathf.Max(0.01f, dodgeDuration));
+        public float DodgeProgress => IsDodging
+            ? Mathf.Clamp01((Time.time - dodgeStartedAt) / Mathf.Max(0.01f, dodgeEndsAt - dodgeStartedAt))
+            : 0f;
         public Vector3 DodgeDirection => dodgeDirection;
+
+        public void ConfigureMovement(CharacterMovementProfile profile)
+        {
+            CancelDodge();
+            movementProfile = profile;
+            // Preserve the owner cooldown across character swaps.
+        }
 
         private bool TechniqueCasting
         {
@@ -82,6 +100,17 @@ namespace JJKGame.Player
 
         private void Update()
         {
+            if (health == null || health.IsDead)
+            {
+                CancelDodge();
+                return;
+            }
+            UpdateDodgeInvulnerability();
+            if (!IsDodging && !completionCueRaised)
+            {
+                completionCueRaised = true;
+                RaiseEvadeCue(EvadePresentationPhase.Completed);
+            }
             Vector2 rawInput = ProductionCombatInput.Move;
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 moveDirection = BuildCameraRelativeDirection(rawInput);
@@ -114,9 +143,12 @@ namespace JJKGame.Player
             }
 
             ApplyGroundingAndGravity();
+            float locomotionSpeed = movementProfile == null ? moveSpeed
+                : Mathf.Max(0.1f, ProductionCombatInput.RunHeld
+                    ? movementProfile.runSpeed : movementProfile.walkSpeed);
             float currentMoveSpeed = TechniqueCasting
-                ? moveSpeed * techniqueCastMoveMultiplier
-                : moveSpeed;
+                ? locomotionSpeed * techniqueCastMoveMultiplier
+                : locomotionSpeed;
             Vector3 velocity = moveDirection * currentMoveSpeed;
             velocity.y = verticalVelocity;
             controller.Move(velocity * Time.deltaTime);
@@ -131,9 +163,24 @@ namespace JJKGame.Player
             dodgeDirection.Normalize();
 
             transform.rotation = Quaternion.LookRotation(dodgeDirection, Vector3.up);
-            dodgeEndsAt = Time.time + dodgeDuration;
-            nextDodgeAt = Time.time + dodgeCooldown;
-            health.GrantInvulnerability(dodgeInvulnerabilityDuration);
+            activeEvade = movementProfile?.evade ?? new EvadeProfile
+            {
+                burstSpeed = dodgeSpeed,
+                movementDuration = dodgeDuration,
+                cooldown = dodgeCooldown,
+                invulnerabilityDuration = dodgeInvulnerabilityDuration,
+            };
+            evadeMotion.Begin(activeEvade);
+            recoveryCueRaised = false;
+            completionCueRaised = false;
+            dodgeStartedAt = Time.time;
+            dodgeEndsAt = Time.time + activeEvade.ActionDuration;
+            nextDodgeAt = Time.time + Mathf.Max(0f, activeEvade.cooldown);
+            invulnerabilityStartsAt = Time.time + Mathf.Clamp(activeEvade.invulnerabilityStart, 0f, activeEvade.ActionDuration);
+            invulnerabilityEndsAt = invulnerabilityStartsAt + Mathf.Max(0f, activeEvade.invulnerabilityDuration);
+            pendingInvulnerability = activeEvade.invulnerabilityDuration > 0f;
+            UpdateDodgeInvulnerability();
+            RaiseEvadeCue(EvadePresentationPhase.Started);
             CombatAudioEvents.Raise(
                 CombatAudioEvent.ForOwner(health, CombatAudioEventId.Dodge)
             );
@@ -142,10 +189,39 @@ namespace JJKGame.Player
         private void ApplyDodgeMovement()
         {
             ApplyGroundingAndGravity();
-            Vector3 velocity = dodgeDirection * dodgeSpeed;
-            velocity.y = verticalVelocity;
-            controller.Move(velocity * Time.deltaTime);
+            float displacement = evadeMotion.Advance(Time.deltaTime);
+            EvadeMotion.Move(controller, dodgeDirection, displacement, verticalVelocity * Time.deltaTime);
+            if (!recoveryCueRaised && (evadeMotion.IsRecovering || !evadeMotion.IsActive))
+            {
+                recoveryCueRaised = true;
+                RaiseEvadeCue(EvadePresentationPhase.Recovery);
+            }
         }
+
+        private void UpdateDodgeInvulnerability()
+        {
+            if (!pendingInvulnerability || Time.time < invulnerabilityStartsAt) return;
+            pendingInvulnerability = false;
+            float remaining = invulnerabilityEndsAt - Time.time;
+            if (remaining > 0f) health.GrantInvulnerability(remaining);
+        }
+
+        private void RaiseEvadeCue(EvadePresentationPhase phase)
+        {
+            EvadePresentationCues.Raise(new EvadePresentationCue(transform, dodgeDirection, activeEvade, phase));
+        }
+
+        private void CancelDodge()
+        {
+            bool wasActive = IsDodging;
+            evadeMotion.Cancel();
+            dodgeEndsAt = 0f;
+            pendingInvulnerability = false;
+            completionCueRaised = true;
+            if (wasActive) RaiseEvadeCue(EvadePresentationPhase.Cancelled);
+        }
+
+        private void OnDisable() => CancelDodge();
 
         private void ApplyGroundingAndGravity()
         {

@@ -31,10 +31,15 @@ namespace JJKGame.Dev.VFXLab
         private const float Gravity = -24f;
 
         [Header("Movement")]
-        [SerializeField, Min(0.1f)] private float moveSpeed = 14f;
+        [SerializeField] private CharacterMovementProfile movementProfile = new CharacterMovementProfile();
+        private readonly EvadeMotion evadeMotion = new EvadeMotion();
+        private bool recoveryCueRaised;
 
         private readonly List<Material> runtimeMaterials = new List<Material>(8);
-        private readonly HashSet<int> animatorParameters = new HashSet<int>();
+        private readonly Dictionary<int, AnimatorControllerParameterType> animatorParameters =
+            new Dictionary<int, AnimatorControllerParameterType>();
+        private Animator cachedAnimator;
+        private RuntimeAnimatorController cachedAnimatorController;
 
         [Header("Authored Character Hook")]
         [SerializeField] private Transform authoredModelRoot;
@@ -72,6 +77,8 @@ namespace JJKGame.Dev.VFXLab
         private Vector3 dodgeDirection;
 
         public float PlanarSpeed => planarSpeed;
+        public bool IsEvading => evadeMotion.IsActive;
+        public bool IsEvadeRecovering => evadeMotion.IsRecovering;
         public bool UsesAuthoredModel => usesAuthoredModel;
         public bool UsesAuthoredAnimator => usesAuthoredAnimator;
         public string AnimationSourceLabel => usesAuthoredAnimator
@@ -87,6 +94,8 @@ namespace JJKGame.Dev.VFXLab
 
         private void Awake()
         {
+            movementProfile ??= new CharacterMovementProfile();
+            movementProfile.evade ??= EvadeProfile.CreateGojo();
             motor = GetComponent<CharacterController>();
             if (motor == null)
             {
@@ -120,7 +129,10 @@ namespace JJKGame.Dev.VFXLab
             ApplyMovement();
             if (usesAuthoredAnimator)
             {
-                SetAnimatorFloat(planarSpeedParameter, planarSpeed);
+                // Use the existing relaxed Idle until an authored evade clip is available.
+                bool relaxedEvade = previewMotion == VfxLabPreviewMotion.Dodge
+                    && movementProfile.evade.styleId == "gojo-blue-burst";
+                SetAnimatorFloat(planarSpeedParameter, relaxedEvade ? 0f : planarSpeed);
             }
             else if (!usesAuthoredModel)
             {
@@ -137,6 +149,11 @@ namespace JJKGame.Dev.VFXLab
 
             previewMotion = motion;
             motionStartedAt = Time.time;
+            if (motion != VfxLabPreviewMotion.Dodge && evadeMotion.IsActive)
+            {
+                evadeMotion.Cancel();
+                RaiseEvadeCue(EvadePresentationPhase.Cancelled);
+            }
             if (motion == VfxLabPreviewMotion.Idle)
             {
                 hasTechniqueAnchor = false;
@@ -144,6 +161,9 @@ namespace JJKGame.Dev.VFXLab
             if (motion == VfxLabPreviewMotion.Dodge)
             {
                 CaptureDodgeDirection();
+                evadeMotion.Begin(movementProfile.evade);
+                recoveryCueRaised = false;
+                RaiseEvadeCue(EvadePresentationPhase.Started);
             }
             if (!usesAuthoredAnimator)
             {
@@ -156,7 +176,8 @@ namespace JJKGame.Dev.VFXLab
                 VfxLabPreviewMotion.BasicAttack1 => basicAttack1Trigger,
                 VfxLabPreviewMotion.BasicAttack2 => basicAttack2Trigger,
                 VfxLabPreviewMotion.BasicAttackFinisher => basicAttackFinisherTrigger,
-                VfxLabPreviewMotion.Dodge => dodgeTrigger,
+                VfxLabPreviewMotion.Dodge => string.IsNullOrEmpty(movementProfile.evade.animationTrigger)
+                    ? dodgeTrigger : movementProfile.evade.animationTrigger,
                 VfxLabPreviewMotion.TechniqueAnticipation => anticipationTrigger,
                 VfxLabPreviewMotion.TechniqueCast => castTrigger,
                 VfxLabPreviewMotion.TechniqueRelease => releaseTrigger,
@@ -185,13 +206,15 @@ namespace JJKGame.Dev.VFXLab
             Vector2 rawInput = ProductionCombatInput.Move;
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 direction = BuildCameraRelativeDirection(rawInput);
-            float speed = moveSpeed;
-            float motionElapsed = Time.time - motionStartedAt;
-            if (previewMotion == VfxLabPreviewMotion.Dodge && motionElapsed < 0.36f)
+            float speed = Mathf.Max(0.1f, ProductionCombatInput.RunHeld
+                ? movementProfile.runSpeed : movementProfile.walkSpeed);
+            bool evading = evadeMotion.IsActive;
+            float evadeDisplacement = 0f;
+            if (evading)
             {
                 direction = dodgeDirection;
-                float dodgeProgress = Mathf.Clamp01(motionElapsed / 0.36f);
-                speed = Mathf.Lerp(9.5f, 5.5f, dodgeProgress);
+                evadeDisplacement = evadeMotion.Advance(Time.deltaTime);
+                speed = Time.deltaTime > 0f ? evadeDisplacement / Time.deltaTime : 0f;
             }
 
             if (hasTechniqueAnchor && IsTechniqueOrDomainMotion())
@@ -214,9 +237,37 @@ namespace JJKGame.Dev.VFXLab
             }
             verticalVelocity += Gravity * Time.deltaTime;
             Vector3 velocity = direction * speed;
-            planarSpeed = velocity.magnitude;
             velocity.y = verticalVelocity;
-            motor.Move(velocity * Time.deltaTime);
+            Vector3 before = transform.position;
+            if (evading)
+                EvadeMotion.Move(motor, direction, evadeDisplacement, verticalVelocity * Time.deltaTime);
+            else
+                motor.Move(velocity * Time.deltaTime);
+            Vector3 actualMovement = transform.position - before;
+            actualMovement.y = 0f;
+            planarSpeed = Time.deltaTime > 0f ? actualMovement.magnitude / Time.deltaTime : 0f;
+            if (evading)
+            {
+                if (!recoveryCueRaised && (evadeMotion.IsRecovering || !evadeMotion.IsActive))
+                {
+                    recoveryCueRaised = true;
+                    RaiseEvadeCue(EvadePresentationPhase.Recovery);
+                }
+                if (!evadeMotion.IsActive) RaiseEvadeCue(EvadePresentationPhase.Completed);
+            }
+        }
+
+        private void RaiseEvadeCue(EvadePresentationPhase phase)
+        {
+            EvadePresentationCues.Raise(new EvadePresentationCue(
+                transform, dodgeDirection, movementProfile.evade, phase));
+        }
+
+        private void OnDisable()
+        {
+            if (!evadeMotion.IsActive) return;
+            evadeMotion.Cancel();
+            RaiseEvadeCue(EvadePresentationPhase.Cancelled);
         }
 
         private bool IsTechniqueOrDomainMotion()
@@ -291,7 +342,10 @@ namespace JJKGame.Dev.VFXLab
                 return;
             }
 
-            float movementWeight = Mathf.Clamp01(planarSpeed / moveSpeed);
+            bool relaxedEvade = previewMotion == VfxLabPreviewMotion.Dodge
+                && movementProfile.evade.styleId == "gojo-blue-burst";
+            float movementWeight = relaxedEvade ? 0f
+                : Mathf.Clamp01(planarSpeed / Mathf.Max(0.1f, movementProfile.runSpeed));
             float walkPhase = Time.time * 8f;
             float armSwing = Mathf.Sin(walkPhase) * 24f * movementWeight;
             float legSwing = -armSwing * 0.75f;
@@ -334,6 +388,7 @@ namespace JJKGame.Dev.VFXLab
                     );
                     break;
                 case VfxLabPreviewMotion.Dodge:
+                    if (relaxedEvade) break;
                     ApplyTechniquePose(
                         new Vector3(18f, 0f, -8f),
                         new Vector3(28f, -6f, 18f),
@@ -577,12 +632,17 @@ namespace JJKGame.Dev.VFXLab
                 animator != null &&
                 animator.runtimeAnimatorController != null;
 
-            if (animatorReady == usesAuthoredAnimator)
+            RuntimeAnimatorController currentController = animatorReady ? animator.runtimeAnimatorController : null;
+            if (animatorReady == usesAuthoredAnimator && cachedAnimator == animator
+                && cachedAnimatorController == currentController)
             {
                 return;
             }
 
             usesAuthoredAnimator = animatorReady;
+            cachedAnimator = animator;
+            cachedAnimatorController = currentController;
+            if (animatorReady) animator.applyRootMotion = false;
             CacheAnimatorParameters();
         }
 
@@ -595,14 +655,16 @@ namespace JJKGame.Dev.VFXLab
             }
             foreach (AnimatorControllerParameter parameter in animator.parameters)
             {
-                animatorParameters.Add(parameter.nameHash);
+                animatorParameters[parameter.nameHash] = parameter.type;
             }
         }
 
         private void SetAnimatorFloat(string parameterName, float value)
         {
+            if (string.IsNullOrEmpty(parameterName)) return;
             int hash = Animator.StringToHash(parameterName);
-            if (animator != null && animatorParameters.Contains(hash))
+            if (animator != null && animatorParameters.TryGetValue(hash, out var type)
+                && type == AnimatorControllerParameterType.Float)
             {
                 animator.SetFloat(hash, value);
             }
@@ -615,7 +677,8 @@ namespace JJKGame.Dev.VFXLab
                 return;
             }
             int hash = Animator.StringToHash(parameterName);
-            if (animator != null && animatorParameters.Contains(hash))
+            if (animator != null && animatorParameters.TryGetValue(hash, out var type)
+                && type == AnimatorControllerParameterType.Trigger)
             {
                 animator.SetTrigger(hash);
             }

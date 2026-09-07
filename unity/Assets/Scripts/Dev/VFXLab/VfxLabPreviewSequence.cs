@@ -165,7 +165,7 @@ namespace JJKGame.Dev.VFXLab
 
         private void HandleInput()
         {
-            bool shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            bool shift = ProductionCombatInput.RunHeld;
 
             if (ProductionCombatInput.CancelPressed)
             {
@@ -356,13 +356,12 @@ namespace JJKGame.Dev.VFXLab
 
         private void TickDodge()
         {
-            if (sequenceElapsed >= 0.36f && sequenceStep == 0)
+            if (previewCharacter != null && previewCharacter.IsEvadeRecovering && sequenceStep == 0)
             {
                 CurrentPhaseLabel = "DODGE RECOVER";
-                previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.Idle);
                 sequenceStep = 1;
             }
-            if (sequenceElapsed >= 0.58f)
+            if (previewCharacter == null || !previewCharacter.IsEvading)
             {
                 CompletePreview();
             }

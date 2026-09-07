@@ -18,6 +18,9 @@ namespace JJKGame.Player
     {
         private static PrototypeCharacterId selectedCharacter = PrototypeCharacterId.GojoModern;
 
+        [Header("Character Movement")]
+        [SerializeField] private CharacterMovementProfile gojoMovement = new CharacterMovementProfile();
+
         private Health health;
         private CursedEnergyController cursedEnergy;
         private SukunaDomainController sukunaDomain;
@@ -99,6 +102,8 @@ namespace JJKGame.Player
             selectedCharacter = nextCharacter;
             activeCharacter = nextCharacter;
             showSukunaHelp = false;
+            GetComponent<ThirdPersonPlayerController>()?.ConfigureMovement(
+                nextCharacter == PrototypeCharacterId.GojoModern ? gojoMovement : null);
 
             switch (nextCharacter)
             {

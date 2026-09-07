@@ -86,7 +86,10 @@ namespace JJKGame.Player
 
             if (snapshot.IsDodging)
             {
-                ApplyDodgePose(snapshot.DodgeProgress);
+                if (snapshot.CharacterId == PrototypeCharacterId.GojoModern)
+                    ApplyLocomotionStance(0f);
+                else
+                    ApplyDodgePose(snapshot.DodgeProgress);
                 return;
             }
 

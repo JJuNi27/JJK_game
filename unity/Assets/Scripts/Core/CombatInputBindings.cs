@@ -10,6 +10,8 @@ namespace JJKGame.Core
         public const KeyCode Domain = KeyCode.V;
         public const KeyCode CancelCommand = KeyCode.X;
         public const KeyCode Dodge = KeyCode.Space;
+        public const KeyCode Run = KeyCode.LeftShift;
+        public const KeyCode RunAlternate = KeyCode.RightShift;
         public const KeyCode TargetLock = KeyCode.Tab;
 
         // Gate 5B production-facing reserve-slot commands.
@@ -41,6 +43,8 @@ namespace JJKGame.Core
 
         public static bool BasicAttackPressed => Input.GetMouseButtonDown(0);
         public static bool DodgePressed => Input.GetKeyDown(CombatInputBindings.Dodge);
+        public static bool RunHeld => Input.GetKey(CombatInputBindings.Run)
+            || Input.GetKey(CombatInputBindings.RunAlternate);
         public static bool TargetLockPressed =>
             Input.GetKeyDown(CombatInputBindings.TargetLock);
         public static bool Skill1Pressed => Input.GetKeyDown(CombatInputBindings.Skill1);
