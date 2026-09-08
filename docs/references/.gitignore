@@ -1,0 +1,14 @@
+# Keep temporary visual reference media local by default.
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.mp4
+*.mov
+*.mkv
+*.webm
+
+# README / text guidance remains tracked.
+!README.md
+!**/README.md
