@@ -1,71 +1,72 @@
-# Unity Validation Workflow
+# Unity 검증 Workflow
 
-Goal: preserve quality without repeatedly burning Codex usage on full validation during every tiny edit.
+목표: 작은 수정마다 전체 검증을 반복해서 Codex 사용량을 낭비하지 않으면서 품질을 유지한다.
 
-## Before editing
-Run:
+## 수정 전
+실행:
 - `git status -sb`
 - `git diff --stat`
 
-Identify existing local changes before touching files.
+기존 로컬 변경사항을 먼저 확인한다.
 
-## During iteration
-Use the cheapest targeted validation that can disprove the current change.
-Examples:
+## 작업 중
+현재 변경을 반증할 수 있는 가장 싼 targeted validation부터 사용한다.
+
+예:
 - C# compile / static check
 - focused Editor test
-- one affected ability preview
-- one cleanup/repeat-cast check
+- 변경한 ability 하나의 preview
+- cleanup / repeat-cast 단일 체크
 
-Do **not** repeatedly run the entire Unity suite after every small visual tweak.
+작은 비주얼 수정마다 전체 Unity suite를 반복하지 않는다.
 
-## After implementation is stable
-Run the full required regression suite once.
+## 구현이 안정된 뒤
+필요한 전체 regression을 **마지막에 한 번** 수행한다.
 
-Latest known successful checkpoint before the next active task:
-- Unity: **17/17 passed**, 0 failed, 0 skipped
-- Python: **13 passed**
-- CombatMVP validation completed
-- VFXLab preview completed
+### 이번 Gojo 3차 polish의 Codex 보고
+- focused checks: **4/4**
+- combined targeted lab checks: **5/5**
+- full Unity regression: **21/21**, 마지막에 1회 수행
+- Python: **13/13**
 
-These are historical checkpoint results, not proof that later edits are safe.
+이 결과는 현재 로컬 working tree에 대한 **CODEX VALIDATED** 기록이며 사용자 시각 승인을 의미하지 않는다.
 
-## Active-task validation priorities
-For the current next pass, use targeted checks first for:
-- post-Domain basic melee recovery
-- Red projectile speed/range and cleanup
-- Purple travel range / hit behavior / cleanup
-- Domain exit restoration
-- visual reference-driven Domain changes
+## 다음 검토에서 특히 확인할 것
+- Domain 종료 후 basic melee 실제 복구
+- Red 속도 / 사거리 / cleanup / impact feel
+- Purple travel range / hit / cleanup / caster readability
+- Domain exit transition이 실제 영상에서 자연스럽게 이어지는지
+- Unlimited Void nebula / White Blood / Cosmic Eye balance
 
-Only after those are stable, run the full regression suite once.
+## 시각 검증 상태 용어
+사용자가 직접 확인하기 전에는 `USER VERIFIED`를 사용하지 않는다.
 
-## Visual validation labels
-Never use USER VERIFIED unless the user personally checked it.
-
-Use:
+사용:
 - CODEX VALIDATED
 - AUTOMATED TEST PASSED
 - CODEX PREVIEW
 - PENDING USER VISUAL REVIEW
 
-## Unity license issue history
-Unity Personal was active, but one automated shell initially failed with `No valid Unity Editor license found`.
-After the Hub-launched Editor refreshed authentication, automated Unity execution succeeded.
+## Unity license 이력
+Unity Personal은 활성화되어 있었지만 한 번 자동 shell에서
+`No valid Unity Editor license found`
+오류가 발생했다.
 
-If this happens again:
-- do not delete / return / reactivate the license automatically
-- preserve the exact failure log
-- verify Hub / Editor authentication and retry
+Hub-launched Editor가 authentication을 갱신한 뒤 자동 Unity 실행이 정상화됐다.
 
-## Editor-open safety
-If the real Unity Editor is already open, do not interfere with unsaved work.
-Use a safe test copy / separate validation path when appropriate.
+다시 발생하면:
+- license를 자동 delete / return / reactivate하지 않는다.
+- 정확한 failure log를 보존한다.
+- Hub / Editor authentication 확인 후 재시도한다.
 
-## Final report should include
-- changed files
+## Editor가 열려 있을 때
+실제 Unity Editor가 이미 열려 있다면 unsaved work를 방해하지 않는다.
+필요하면 safe test copy / 별도 validation path를 사용한다.
+
+## 최종 보고에 포함
+- 변경 파일
 - targeted validation
-- full test counts/results
-- any failures and exact reason
-- what remains PENDING USER VISUAL REVIEW
-- no commit / push unless explicitly approved
+- full test count / result
+- 실패가 있다면 정확한 이유
+- 사용자 시각 검토 대기 항목
+- 명시적 승인 없는 commit / push 금지

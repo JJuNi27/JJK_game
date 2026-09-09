@@ -1,12 +1,12 @@
-# General References
+# 범용 레퍼런스
 
-Use this folder for project-wide references that are not tied to one character or technique.
+특정 캐릭터/기술에 묶이지 않는 프로젝트 공통 레퍼런스용 폴더.
 
-Examples:
-- combat-camera language
-- general hit-stop / impact examples
-- UI presentation references
+예:
+- combat camera language
+- 일반 hit-stop / impact 예시
+- UI presentation
 - lighting / post-processing mood
-- environment concepts
+- environment concept
 
-Temporary media files are local-only by default.
+임시 media 파일은 기본적으로 로컬 전용이다.

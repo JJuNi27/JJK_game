@@ -1,97 +1,79 @@
-# Gojo VFX Architecture / Current Baseline
+# 고죠 VFX 아키텍처 / 현재 기준
 
-This file records the current accepted baseline so future prompts do not need to repeat the full history.
+이 문서는 과거 대화를 매번 다시 설명하지 않도록 현재 받아들여진 기준을 기록한다.
 
-## Global visual philosophy
-This project intentionally values spectacle, aura, strong hit feel, and readable exaggerated VFX.
-Do not be overly conservative merely because a VFX layer looks intense in isolation.
-The user has explicitly approved pushing the presentation harder than a cautious default, provided the character and gameplay remain readable.
-
----
-
-## Blue / Ao
-
-### Preserve
-- existing 4-hit gameplay
-- current attraction / singularity direction
-- active debris concept
-
-### Current baseline
-- pre-cast decoration was previously reworked toward inward compression
-- active Blue uses irregular debris around the singularity
-
-### Current USER feedback / next refinement
-- the remaining small blue pre-cast effects in front of Gojo still have no clear meaning to the user
-- remove those small ambiguous pre-cast decorations unless they are strictly necessary for the effect to function
-- debris still reads too much like bright ice
-- shift large debris toward darker, rougher rock / broken-environment fragments
-- slightly reduce giant hero-chunk dominance
-- add more medium/small debris variation
-- keep the core visible
-- make inward collapse / suction more obvious
-
-Desired read:
-**the surrounding environment is being ripped apart and pulled into Blue.**
+## 전체 비주얼 철학
+이 프로젝트는 의도적으로 화려함, 아우라, 강한 타격감, 읽기 쉬운 과장된 VFX를 중요하게 본다.
+캐릭터와 gameplay 가독성이 유지되는 한, 효과가 강해 보인다는 이유만으로 보수적으로 약화하지 않는다.
 
 ---
 
-## Red / Aka
+## Blue / 아오
 
-### Preserve
-- charge created once
-- charge removed on release
-- repeated casts must not leak stale charge objects
-- repulsion identity; do not turn Red into a generic fireball
+### 반드시 보존
+- 기존 4-hit gameplay
+- 현재 attraction / singularity 방향
+- debris 컨셉
 
-### Current CODEX VALIDATED baseline
-- stronger flash / shock ring
-- gray-white residual aftermath around **0.95 s**
+### 사용자 방향
+- 고죠 앞에 의미 없이 보이는 작은 pre-cast 파란 장식은 제거
+- 파편은 밝고 매끈한 얼음보다 어둡고 거친 돌 / 건물 잔해처럼 보이게
+- 거대한 파편 몇 개의 지배력을 줄이고 중/소형 파편 다양성 증가
+- core가 가려지지 않게 유지
+- inward collapse / suction이 명확하게 읽히게
 
-### Current USER feedback / next refinement
-- projectile feels too slow
-- range feels too short
-- increase projectile travel speed and effective range while keeping gameplay controllable
-- current aftermath should not look like round smoke puffs
-- use pressure-displaced air / dust / vapor / residue tearing outward from the impact center
-- integrate flash + shockwave + outward pressure residue into one stronger `BANG`
-- strong spectacle is welcome
+목표:
+**주변 환경이 찢겨서 Blue 안으로 끌려 들어가는 느낌.**
 
-Desired read:
-**compressed repulsion releases, space rejects everything outward, and the pressure leaves a visible aftermath.**
+---
+
+## Red / 아카
+
+### 반드시 보존
+- charge는 1회 생성
+- release 시 charge 제거
+- 반복 사용 시 오래된 charge object가 남지 않음
+- Red는 화염구가 아니라 반발/척력
+
+### 현재 로컬 working tree의 Codex 구현 결과
+- projectile: **26 m**
+- 속도: **42 m/s**
+- flash / shockwave 강화
+- 바깥으로 찢겨 나가는 pressure residue 강화
+
+이 값과 시각 품질은 아직 **사용자 시각 검토 대기**다.
+
+목표:
+**압축된 척력이 풀리며 공간이 모든 것을 밀어내고, 압력이 눈에 보이는 잔향을 남기는 느낌.**
 
 ---
 
 ## Hollow Purple
 
-### Preserve aggressively
-Current formation / Blue+Red fusion foundation is one of the strongest effects.
-Do not broadly redesign it.
+### 매우 강하게 보존
+현재 Blue+Red formation / fusion 기반은 프로젝트에서 가장 성공적인 효과 중 하나다.
+광범위하게 재설계하지 않는다.
 
-### Current CODEX VALIDATED tuning
-- Fusion-complete hold: **0.32 s**
-- Visual size: **1.65×** previous scale
+### 현재 로컬 working tree의 Codex 구현 결과
+- Fusion-complete hold: **0.32 s 유지**
+- travel: **48 m / 1.6 s**
+- caster가 덜 가려지도록 hold 위치 조정
+- release 강화
+- branching violet lightning 강화
+- distortion wake 강화
+
+기존 기준:
+- Visual size: **1.65×**
 - Gameplay hit radius: **3.2 m**
 - Residual scar width: **4.5 m**
 - Residual lifetime: **1.8 s**
 
-### Current USER feedback / next refinement
-- range is still too short; it feels like Purple launches and ends too soon
-- increase travel range / lifetime enough for Purple to feel like a true long-reaching ultimate
-- completed Purple currently obscures too much of Gojo; adjust spawn/hold offset or framing so Gojo remains readable before release
-- release should feel more violent and premium
-- increase irregular violet lightning / branching arcs around the projectile
-- strengthen spatial distortion / lensing / warped-space wake during travel
-- retain the larger projectile and gameplay-relevant size
+위 시각 결과는 아직 **사용자 시각 검토 대기**다.
 
-### Minor optional scar polish
-- scar can look too flat / carpet-like
-- make scar edges more irregular
-- add breakup / residue variation if cheap
-- do not broadly rebuild the scar system
+### Scar 소규모 polish
+- 평평한 보라색 카펫처럼 보이지 않게 edge를 불규칙하게
+- 값싼 범위에서 breakup / residue variation 추가 가능
+- scar 시스템 전체 재작성 금지
 
-### Hold timing
-Current hold is 0.32 s.
-Do not change automatically unless the task requests it; user may later compare against roughly 0.45–0.60 s.
-
-Desired read:
-**Purple does not merely travel through the map; it violently deforms and wounds the space it crosses.**
+목표:
+**Purple이 단순히 맵을 통과하는 것이 아니라, 지나가는 공간 자체를 강제로 왜곡하고 상처 내는 느낌.**
