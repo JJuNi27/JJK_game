@@ -20,9 +20,19 @@
 핵심:
 - 1:1 중심 3D 액션 격투
 - 넓은 JJK 도시형 전투 맵
+- Gojo는 첫 캐릭터일 뿐 주인공 고정이 아님
 - 팬텀 퍼레이드/애니/만화 고증을 최대한 살린 기술
 - 원작 규칙을 Trait / Passive / Domain rule로 시스템화
 - Data-driven / Inspector 튜닝 우선
+
+## VFX 품질 방향
+읽기: `docs/design/VFX_DIRECTION.md`
+
+핵심:
+- 원작 정체성 + Strikeborn급 이상의 연출 밀도/타격감
+- 기술을 단순히 발사→폭발로 끝내지 않음
+- impact / environment reaction / aftermath / camera/screen feedback까지 고려
+- Strikeborn/JJS의 asset을 복사하는 것이 아니라 presentation philosophy만 참고
 
 ## 비주얼 방향
 이 프로젝트는 게임이며 **강한 가독성, 화려함, 타격감**이 핵심 목표다.
@@ -44,6 +54,10 @@
 사용자가 직접 조절하는 Inspector/Data 항목은 가능하면 **한글 Header/Tooltip/표시명**을 제공한다.
 내부 C# 식별자는 유지보수를 위해 영어를 기본으로 한다.
 사용자가 코드를 열지 않고 주요 수치를 조절할 수 있어야 한다.
+
+## VFXLab
+VFXLab은 **Gojo 전용 scene이 아니다.**
+현재는 첫 캐릭터가 Gojo일 뿐이며, 장기적으로 Character Select 기반 공용 presentation/test scene으로 확장한다.
 
 ## 보호된 고죠 기준값
 읽기: `docs/locked/USER_VERIFIED_SETTINGS.md`

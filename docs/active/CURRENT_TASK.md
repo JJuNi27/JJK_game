@@ -1,326 +1,256 @@
-# 현재 작업 — 3차 폴리싱 실플레이 피드백 정리
+# 현재 작업 — Fourth Polish 이후 사용자 검수 / 다음 분리 패스
 
-상태: **사용자 구현 승인 완료 — 다음 Codex 구현 pass 시작 가능**
+상태: **이전 P0~P6 자동검증 완료 / 사용자 실플레이 피드백 반영 완료 / 다음 구현은 Sol → Astra 순서 권장**
 
-사용자가 현재까지 정리된 실플레이 피드백과 Cosmic Eye 분석을 기준으로 다음 구현 pass 진행을 승인했다.
+## 이전 pass 공식 종료 상태
 
-이번 pass의 범위는 이 문서의 P0~P6 수정이다.
-`docs/design/GAME_VISION.md`와 `docs/architecture/COMBAT_DATA_DRIVEN.md`는 장기 방향 참고용이며,
-**이번 pass에서 전투 전체를 Data-driven 구조로 대규모 migration하지 않는다.**
+FourthPolishQA 기준:
+- Full Unity regression: **25 / 25 통과**
+- targeted validation: 최종 안정화 검사 통과
+- Python: unittest 11 / 11, pytest 2 / 2 통과
+- Blue / 기존 Unlimited Void blue-black nebula / 보호 대상 로컬 자산 보존
+- commit / push / merge 없음
 
-현재 USER VERIFIED인 Blue와 Unlimited Void 푸른 성운 배경은 잠금 상태로 보존한다.
+중요:
+자동검증 결과보다 **사용자 실제 Play Mode 검수 결과가 우선**한다.
 
----
-
-## P0 — 최우선 실제 버그: Domain 종료 후 평타가 여전히 안 나감
-
-### 사용자 실제 검증
-CombatMVP에서 Unlimited Void 종료 후:
-**basic melee / physical attack이 여전히 실행되지 않음.**
-
-이전 자동 test 21/21은 실제 버그를 잡지 못했다.
-
-### 다음 구현 원칙
-- technique burnout은 의도대로 유지 가능
-- basic melee만 정상 복구해야 함
-- broad reset 금지
-- 실제 input → BasicAttack → state/action lock 경로를 추적
-- 내부 bool만 보고 "fixed"라고 판단 금지
-
-### 반드시 확인할 후보
-- `BasicAttack`
-- `TechniqueBurnoutController`
-- Domain presentation/session lock
-- player action lock
-- restoration timing/state
-
-### Done
-실제 CombatMVP에서:
-- Domain 종료
-- technique skill은 burnout 규칙대로 동작
-- basic melee 입력 시 실제 공격 sequence 시작
+사용자 실제 검수 결과:
+- Domain 종료 후 basic melee: **여전히 실패**
+- 따라서 P0는 아직 해결되지 않음
 
 ---
 
-## LOCKED — Blue / 아오
+# 다음 작업은 두 트랙으로 분리
 
-### 사용자 판정
-**1차 완성.**
-
-새로운 아이디어가 생기기 전까지 수정하지 않는다.
-
-보존:
-- 현재 Blue visual
-- 현재 debris
-- current attraction/singularity
-- 4-hit gameplay
-
----
-
-## P1 — Red / 아카
-
-### 버그
-Enemy에 맞아 impact가 발생했는데도 projectile visual이 계속 날아감.
-
-### 다음 구조
-대상별 Collision Response로 분리:
-- Enemy/Character → impact + damage + projectile 종료
-- Destructible Building/Object → 파괴/충격 전달 가능 + Red는 계속 통과 가능
-- Hard World Solid → impact + 종료
-- Trigger/Ignore → 통과
-- Max Range → 자연 소멸
-
-미래의 넓은 도쿄 도시맵 / 건물 파괴를 고려해 확장 가능한 구조로 설계.
-
-### Impact VFX
-현재 smoke / vapor가 너무 약함.
-
-강화:
-- 더 큰 volume
-- 더 강한 initial pressure burst
-- 방사형/수평으로 밀려나는 회백색 air/dust/vapor
-- 약간 더 긴 residue
-- cartoon smoke puff 금지
-- fire explosion 금지
-
----
-
-## P2 — Hollow Purple
-
-### 문제 A — 중앙 정렬
-caster 가림을 해결하려다 Purple이 Gojo 오른쪽에 생김.
-
-수정:
-- Purple은 Gojo 정중앙 축에서 완성
-- lateral X offset = 0 원칙
-- 가림은 forward offset / vertical offset / framing으로 해결
-
-### 문제 B — scar 폭
-사용자 체감상 바닥 잔상이 다시 좁아짐.
-
-권장:
-- scar width를 Purple actual visual diameter에 비례하도록 설계
-- width multiplier를 Inspector/Data에서 조절 가능하게
-- Purple scale 변경 시 scar만 가늘어지는 regression 방지
-
-### 보존
-- current fusion
-- 0.32 s hold
-- current long-range direction
-- lightning / distortion direction
-
----
-
-## P3 — Unlimited Void White Blood 리듬
-
-### 현재 문제
-그냥 빠르게 순서대로 spawn되는 느낌.
-
-### 원하는 리듬
-**1차 퉁 → pause → 2차 투둥 → pause → 3차 퉁**
-
-### 구조
-White Blood를 3개 spatial group으로 배분:
-- Group 1
-- Group 2
-- Group 3
-
-각 그룹은:
-- 앞/뒤/좌/우/위/아래에 골고루
-- near/mid/far depth에 골고루
-- 특정 방향에 몰리지 않음
-
-### Inspector/Data tuning
-최소:
-- Group1 Time
-- Group2 Time
-- Group2 SubBeat Gap
-- Group3 Time
-
-나중에 실제 음성에 맞게 사용자가 조절 가능해야 함.
-
----
-
-## P4 — 사운드 / 음성 구조
-
-사용자 선호:
-**타격별/행동별 SFX를 분리하는 방향 선호.**
-
-합의된 설계:
-- 짧은 punch/kick/whoosh/impact → event별 clip
-- 연속된 voice line → 하나의 clip 유지 가능
-- animation과 audio 모두 공통 Beat/Timeline에 동기화
-- 한쪽이 다른 쪽에 hard-bind되지 않음
-
-자세한 기준:
-`docs/architecture/AUDIO_PRESENTATION.md`
-
----
-
-## P5 — Cosmic Eye
-
-### 사용자 판정
-현재 eye는 아직 reference를 충분히 따라하지 못함.
-
-다음에는 자유로운 재해석보다:
-`docs/references/gojo/unlimited_void/cosmic_eye_ref_01.png`
-를 **매우 가까운 구조/비율/색층 목표**로 취급한다.
-
-전경 캐릭터는 구현 대상이 아니다.
-
-### Astra 분석 결과 — 다음 구현 기준
-분석 원문:
-`docs/references/gojo/unlimited_void/COSMIC_EYE_REFERENCE_ANALYSIS.md`
-
-핵심 결론:
-**더 크게 만드는 것보다 명암 구조, 큰 구름 덩어리, warm rim, 오른쪽 tail을 먼저 맞추는 것이 reference 재현 효과가 크다.**
-
-#### Reference 비율 시작값
-Eye outer radius = `1.00` 기준:
-- Pupil radius: **0.42~0.45**, 시작값 **0.43**
-- Main iris: **0.45~0.83**
-- Bright rim 중심: **0.84~0.89**
-- Bright rim 강한 띠 두께: **0.015~0.04**
-- Rim 주변 glow: **0.04~0.09**
-- Outer corona: **0.90~1.00**
-- Pupil/rim 중심 편차: **0~0.03**
-- 오른쪽 tail visible extent: 중심에서 약 **2.6~2.9**
-
-#### 반드시 맞출 명암 구조
-`pitch-black pupil`
-→ `어두운 iris 여백 + 큰 비정형 cloud`
-→ `강한 바깥 bright rim`
-→ `부드럽게 사라지는 outer corona`
-
-금지:
-- pupil 바로 둘레에 강한 네온 ring
-- iris 전체를 같은 밝기로 채우기
-- 촘촘한 반복 섬유/방사선이 화면을 지배
-- pupil 내부에 star/glow/fiber 넣기
-
-#### 색 규칙
-- near-white
-- warm ivory
-- **pale gold/orange accent 유지**
-- pale blue
-- cyan
-- violet
-- subtle spectral fringe
-
-Gold/orange는 fire color가 아니라 outer rim 일부의 따뜻한 spectral accent로 사용.
-
-#### 구조 / 구현 방향
-기존 Domain / focal ownership을 유지하면서:
-- main pupil/iris shader
-- 제한된 수의 layered cloud/corona plane
-- 오른쪽으로 연결되는 nebula tail
-을 조합한 **volumetric-like hybrid**를 우선 검토.
-
-Claude가 제안한 기술 중 다음은 적극 활용 가능:
-- FBM noise
-- domain warping
-- multiple flow layers with different speeds
-- asymmetric cloud thickness
-- subtle chromatic dispersion
-- outer corona
-- hybrid shader + secondary cloud/streak layers
-
-부분적으로만 사용할 것:
-- polar-coordinate swirl: iris flow에는 유용하지만 전체를 규칙적인 소용돌이로 만들지 말 것
-- Einstein-like rim: outer rim 개념에는 유용하지만 pupil에 붙은 균일 neon ring으로 만들지 말 것
-
-#### Rightward nebula tail
-선택 장식이 아니라 reference silhouette의 핵심.
-
-권장:
-main iris의 넓은 cloud connection
-→ 소수의 world-space cloud layer
-→ 먼 부분의 희미한 streak/particle 보조층
-
-particle만으로 분사 연기처럼 만들지 않는다.
-
-### 다음 구현 Top 5
-1. 촘촘한 밝은 반복선 제거/약화 + 명암 구조 재분리
-2. 오른쪽 대형 cloud + tail 연결
-3. pupil 약 0.43 / bright rim 약 0.86 기준으로 비율과 비대칭 수정
-4. ivory/gold와 cold blue/violet cloud 색층 분리
-5. corona / cloud / tail에 제한적 depth를 주고 reference 비교 시점 확보
+## Track A — Sol 전달: 구조 / 한글화 / 실제 P0 수정
 
 목표:
-**가능한 한 reference 자체의 eye 구조를 충실하게 재현.**
+시각 결과를 가능한 한 변경하지 않고, 재사용 가능한 다중 캐릭터 구조와 사용자 조절성을 개선한다.
+
+### A0. Domain 종료 후 평타 실제 미해결
+사용자가 실제 CombatMVP에서 Domain 종료 후 평타가 여전히 나오지 않는 것을 확인함.
+
+완료 조건:
+Character Select
+→ CombatMVP
+→ Unlimited Void
+→ Domain 종료
+→ 실제 공격 입력
+→ 실제 BasicAttack animation / pose / hit sequence가 정상 시작
+
+규칙:
+- technique burnout은 의도대로 유지 가능
+- 평타/물리 공격만 복구
+- 기존 자동 replay만으로 해결 주장 금지
+- 가능하면 실제 input path와 scene transition을 그대로 재현
+- 자동테스트는 사용자 실제 결과를 대신하지 않음
+
+### A1. Inspector 사용자-facing 한글화
+사용자가 직접 조절하는 Inspector/Data 표시를 가능한 한 한글화.
+
+원칙:
+- C# identifier / class / enum 이름: 영어 유지
+- Header / Tooltip / Custom Inspector Label: 한글
+- 과도한 CustomEditor 작성 금지
+- 기존 SerializeField 연결을 깨지 않음
+
+예:
+- Walk Speed → 걷기 속도
+- Run Speed → 달리기 속도
+- Domain Active Duration → 영역 지속시간
+- Blue/Red/Purple voice field도 사용자에게 읽기 쉽게 표시
+
+자세한 기준:
+`docs/architecture/COMBAT_DATA_DRIVEN.md`
+
+### A2. VFXLab은 Gojo 전용 scene이 아님
+매우 중요:
+**Gojo는 첫 번째 production-quality 캐릭터일 뿐이며 게임의 주인공으로 고정된 캐릭터가 아니다.**
+
+VFXLab의 장기 역할:
+- Character Select
+- 선택 캐릭터의 Animation / VFX / Audio / Technique / Domain preview
+- 이후 Sukuna / Yuji / Yuta / Megumi / Maki 등 확장 가능
+
+따라서 안전한 범위에서:
+- Gojo-specific naming / wiring / inspector layout을 공통 구조로 분리
+- 기존 Gojo 동작은 그대로 유지
+- 지금 당장 Character Select 완전체를 만들 필요는 없음
+- 다음 캐릭터가 들어와도 시스템을 다시 새로 만들 필요가 없도록 seam/interface/data 구조를 마련
+
+### A3. Audio / Voice 구조 일반화
+현재 `Blue Voice / Red Voice / Purple Voice / Domain Voice`처럼 Gojo 기술이 공통 컴포넌트에 직접 박혀 보이는 구조를 조사.
+
+장기 목표 예:
+- CharacterPresentationProfile
+- TechniquePresentationProfile
+- CombatAudioProfile / VoiceProfile
+
+기술별:
+- Voice
+- Cast SFX
+- Release SFX
+- Travel SFX
+- Impact SFX
+- Timing / Beat hook
+
+이번 Sol pass에서는:
+- 기존 오디오 동작을 깨지 않는 최소 안전 일반화
+- 실제 새 캐릭터용 asset 제작 금지
+- 대규모 폴더 이동 금지
+- binary asset 이동 금지
+
+### A4. Data-driven 준비
+이번 pass에서 전체 AbilityDefinition migration을 끝내려 하지 않는다.
+
+가능한 범위:
+- 기존 hardcoded / serialized tuning 값을 조사
+- 사용자 조절값은 한글 Inspector로 노출
+- 다음 Character/Ability/Profile 확장을 위한 구조적 seam만 마련
+
+금지:
+- 전체 전투 시스템 대규모 재작성
+- Blue/Red/Purple 시각 결과 변경
+- USER VERIFIED movement 변경
 
 ---
 
-## LOCKED — Unlimited Void 푸른 성운 배경
+## Track B — Astra 전달: Strikeborn Impact Standard 기반 VFX enhancement
 
-### 사용자 판정
-**현재 배경 매우 만족. 1차 완성.**
+자세한 방향:
+`docs/design/VFX_DIRECTION.md`
+
+핵심 목표:
+**팬텀 퍼레이드 + 원작 고증을 유지하면서, 실제 플레이의 연출 밀도/타격감/잔류감은 Strikeborn급 이상을 목표로 한다.**
+
+"기술 본체 하나 + 펑"에서 끝내지 않는다.
+
+공통 presentation 단계:
+Anticipation
+→ Charge
+→ Release
+→ Travel
+→ Impact
+→ Environment Reaction
+→ Aftermath
+→ Camera / Screen FX
+→ Audio hook / Cleanup
+
+### B0. 기존 Blue baseline 보호 + 2차 enhancement 허용
+이전 Blue는 1차 완성 baseline으로 보호한다.
 
 보존:
-- 현재 blue-black nebula
-- cosmic depth
-- star/depth language
-- invisible floor / orientation ambiguity
+- 4-hit gameplay
+- core / attraction / singularity
+- 현재 debris 방향
+- 현재 사용자가 만족한 기본 형태
 
-White Blood / eye / exit 수정 중 이 배경을 같이 바꾸지 않는다.
+이제 허용:
+- Strikeborn-style impact density
+- 환경 반응
+- 마지막 collapse의 hit feel
+- restrained camera/screen feedback
+- residual spatial shimmer / aftermath
+- 기존 visual identity를 망가뜨리지 않는 추가 레이어
+
+즉 "갈아엎기"가 아니라 **baseline 위에 presentation layer 강화**.
+
+### B1. Red — Strikeborn급 repulsion presentation
+현재 gameplay/collision 구조는 보존.
+
+VFX 목표:
+- compressed anticipation
+- 강한 release
+- travel 중 공기/압력 반응
+- impact flash
+- irregular repulsive shockwave
+- environment debris / dust
+- 넓은 회백색 pressure vapor
+- residual pressure aftermath
+
+금지:
+- fireball처럼 보이기
+- cartoon smoke puff
+- 충돌 후 빨간 projectile가 계속 생존
+
+원작의 "척력" 정체성을 유지하면서 Strikeborn의 연출 밀도를 적용한다.
+
+### B2. Hollow Purple
+현재 좋은 formation / fusion은 강하게 보호.
+
+실제 사용자 피드백:
+**완성된 Purple이 발사될 때 약간 아래 방향으로 나감.**
+
+수정:
+- Gojo 중앙축에서 형성
+- launch vector가 의도한 수평 정면축을 따르도록 실제 anchor/vector 원인 수정
+- 단순 눈속임 offset으로 덮지 않음
+
+2차 enhancement:
+- release flash / compression
+- stronger launch readability
+- FOV / camera impulse는 과하지 않게
+- travel distortion
+- branching violet lightning
+- environment reaction
+- scar / residual electricity / spatial shimmer
+- 기술이 지나간 공간에 결과가 남는 presentation
+
+보존:
+- fusion
+- 0.32s hold baseline
+- 현재 넓어진 scar width 관계
+
+### B3. Cosmic Eye — 거의 완료, pulse 제거
+현재 reference fidelity는 크게 개선됨.
+
+사용자 만족:
+"진짜 많이 비슷해졌다. 조금만 더"
+
+새 요구:
+- Eye 전체가 숨쉬듯/심장 뛰듯 scale/intensity pulse하는 움직임 제거
+- pupil / 전체 iris silhouette는 안정적으로 유지
+- cloud / rim / tail의 subtle flow는 유지 가능
+- reference와 더 가까운 정적이고 압도적인 landmark 느낌
+
+기존 Astra reference 분석 수치/구조 유지:
+`docs/references/gojo/unlimited_void/COSMIC_EYE_REFERENCE_ANALYSIS.md`
+
+### B4. Domain release ceiling/dome artifact 제거
+현재 caster-centered world-space release 방향은 유지.
+
+사용자 영상에서 release 중:
+- 천장
+- 돔 내부면
+- shell / ceiling
+처럼 읽히는 이상한 면이 나타남.
+
+요구:
+- 해당 artifact의 실제 원인 추적 후 제거
+- infinite / orientation-ambiguous Unlimited Void 느낌 유지
+- USER VERIFIED blue-black nebula background는 변경하지 않음
+- participant restoration / camera handoff / cleanup 보존
 
 ---
 
-## P6 — Domain exit를 caster-centered world-space release로
+# 공통 잠금 / 원칙
 
-### 현재 문제
-현재는 카메라 화면에 붙은 curtain/wipe처럼 보임.
+## 보호
+- 사용자 검증 완료 locomotion
+- Blue 1차 baseline
+- Unlimited Void blue-black nebula background
+- Purple formation/fusion
+- Domain capture / barrier / isolated interior / restoration architecture
 
-### 원하는 연출
-Domain을 전개한 Gojo의 world position을 release center로 사용.
+## VFX 품질 기준
+앞으로 화려함을 임의로 줄이지 않는다.
+실제 플레이에서:
+- 타격 순간
+- 환경 반응
+- 화면/카메라 feedback
+- aftermath
+까지 포함해서 평가한다.
 
-`Domain active`
-→ caster 중심 release 시작
-→ world-space radial/spherical boundary 확장
-→ original map이 그 중심 기준으로 드러남
-→ safe camera/combat handoff
-
-카메라를 움직여도 해제 중심이 screen center에 붙지 않아야 함.
-
-### 제약
-- same-scene isolated Domain architecture 유지
-- participant restoration 안전성 유지
-- camera drift 금지
-- repeated use cleanup
-- barrier HP/destruction gameplay는 구현하지 않음
-
----
-
-## 현재 사용자 승인 상태
-
-### 잠금 / 더 이상 건드리지 않음
-- Blue 1차 완성
-- Unlimited Void 푸른 성운 배경 1차 완성
-
-### 다음 수정 필요
-- Domain 종료 후 basic melee
-- Red impact projectile termination / collision response / smoke
-- Purple 중앙 정렬 / scar width
-- White Blood 3-beat choreography
-- sound/voice beat architecture
-- Cosmic Eye fidelity
-- caster-centered Domain release
-
-## 다음 단계
-**Codex 구현 시작 가능.**
-
-작업 순서 권장:
-1. P0 실제 평타 복구 버그를 먼저 원인 진단/수정
-2. Red
-3. Purple
-4. White Blood
-5. Cosmic Eye
-6. Domain release
-7. 관련 targeted validation
-8. 구현 안정 후 full regression 1회
-9. 사용자 Play Mode 시각 검토 대기
-
-사운드/음성은 이번 pass에서 새 audio asset을 만들지 않는다.
-White Blood timing과 기존 beat 구조가 향후 audio sync에 맞게 조절 가능한 상태만 유지한다.
-
-명시적 승인 없는 commit / push / merge 금지.
+## 사용자 승인 전
+- USER VERIFIED 표현 금지
+- commit / push / merge 금지

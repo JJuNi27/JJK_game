@@ -3,7 +3,24 @@
 상태: **장기 설계 기준**
 
 ## 한 문장 정의
-**주술회전 팬텀 퍼레이드의 화려한 기술 연출과 원작의 술식/영역/패시브 규칙을 3D Unity에서 최대한 고증하여 구현하는, 넓은 도시형 전투 맵 기반 1:1 캐릭터 액션 격투게임.**
+**주술회전 팬텀 퍼레이드의 기술 연출과 원작의 술식/영역/패시브 규칙을 3D Unity에서 최대한 고증하여 구현하고, Strikeborn급 이상의 타격감과 연출 밀도를 지향하는 넓은 도시형 전투 맵 기반 1:1 캐릭터 액션 격투게임.**
+
+## 매우 중요한 캐릭터 원칙
+**Gojo는 주인공으로 고정된 캐릭터가 아니다.**
+현재 첫 번째 production-quality 캐릭터로 Gojo를 먼저 개발하고 있을 뿐이다.
+
+장기적으로 플레이어는 캐릭터를 선택한다.
+
+예:
+- Gojo
+- Yuji
+- Sukuna
+- Yuta
+- Megumi
+- Maki
+- 이후 추가 캐릭터
+
+따라서 공통 Combat / VFXLab / Audio / Presentation 시스템을 Gojo 전용 구조로 설계하지 않는다.
 
 ## 핵심 목표
 
@@ -23,7 +40,25 @@
 - 특수 체질
 까지 gameplay rule로 시스템화한다.
 
-### 2. 1:1 중심
+### 2. VFX / 타격감 품질
+상세 기준:
+`docs/design/VFX_DIRECTION.md`
+
+핵심:
+원작 정체성을 유지하면서 실제 플레이 presentation density는 Strikeborn급 이상을 목표로 한다.
+
+기술을 단순 `발사 → 폭발 → 끝`으로 처리하지 않고,
+필요한 기술은:
+- anticipation
+- release
+- travel
+- impact
+- environment reaction
+- aftermath
+- camera/screen feedback
+까지 하나의 presentation으로 설계한다.
+
+### 3. 1:1 중심
 초기 핵심 전투는 1:1.
 
 지원 우선순위:
@@ -35,7 +70,7 @@
 2v2 / 3v3 / tag battle은 현재 보류.
 코어 1v1이 안정된 뒤 재검토.
 
-### 3. 넓은 도시형 전투 맵
+### 4. 넓은 도시형 전투 맵
 작은 링형 격투장이 아니라:
 - 신주쿠
 - 시부야
@@ -50,7 +85,23 @@
 
 환경 파괴는 단계적으로 구현하며, 초기에는 제한된 destructible set부터 시작한다.
 
-### 4. 캐릭터별 강한 정체성
+### 5. VFXLab / Preview
+VFXLab은 Gojo 전용 scene이 아니다.
+
+장기 목표:
+Character Select
+→ 선택한 캐릭터의
+- movement
+- basic attack
+- techniques
+- VFX
+- audio
+- domain
+을 빠르게 preview / regression check.
+
+현재 Gojo 작업을 보존하면서 공통 presentation lab으로 확장한다.
+
+### 6. 캐릭터별 강한 정체성
 모든 캐릭터를 같은 공통 스킬 템플릿에 억지로 맞추지 않는다.
 공통 시스템은 재사용하되 캐릭터별 원작 특성을 충분히 표현할 수 있어야 한다.
 
@@ -141,6 +192,10 @@ RCT 가능 캐릭터는 공통 passive/ability framework를 사용.
 - TraitDefinition
 - DamageProfile
 - TargetingProfile
+- CharacterPresentationProfile
+- TechniquePresentationProfile
+
+사용자-facing Inspector/Data 표시는 가능한 한 한글.
 
 ## 현재 개발 전략
 지금은 Gojo를 첫 production-quality 기준 캐릭터로 완성한다.
