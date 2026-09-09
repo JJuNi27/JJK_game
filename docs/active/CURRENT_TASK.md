@@ -161,18 +161,87 @@ White Blood를 3개 spatial group으로 배분:
 
 다음에는 자유로운 재해석보다:
 `docs/references/gojo/unlimited_void/cosmic_eye_ref_01.png`
-를 **매우 가까운 구조/비율/색층 목표**로 취급.
+를 **매우 가까운 구조/비율/색층 목표**로 취급한다.
 
-따라갈 요소:
-- giant black pupil
-- broad luminous iris
-- layered thin flow
-- blue/cyan/violet spectral fringe
+전경 캐릭터는 구현 대상이 아니다.
+
+### Astra 분석 결과 — 다음 구현 기준
+분석 원문:
+`docs/references/gojo/unlimited_void/COSMIC_EYE_REFERENCE_ANALYSIS.md`
+
+핵심 결론:
+**더 크게 만드는 것보다 명암 구조, 큰 구름 덩어리, warm rim, 오른쪽 tail을 먼저 맞추는 것이 reference 재현 효과가 크다.**
+
+#### Reference 비율 시작값
+Eye outer radius = `1.00` 기준:
+- Pupil radius: **0.42~0.45**, 시작값 **0.43**
+- Main iris: **0.45~0.83**
+- Bright rim 중심: **0.84~0.89**
+- Bright rim 강한 띠 두께: **0.015~0.04**
+- Rim 주변 glow: **0.04~0.09**
+- Outer corona: **0.90~1.00**
+- Pupil/rim 중심 편차: **0~0.03**
+- 오른쪽 tail visible extent: 중심에서 약 **2.6~2.9**
+
+#### 반드시 맞출 명암 구조
+`pitch-black pupil`
+→ `어두운 iris 여백 + 큰 비정형 cloud`
+→ `강한 바깥 bright rim`
+→ `부드럽게 사라지는 outer corona`
+
+금지:
+- pupil 바로 둘레에 강한 네온 ring
+- iris 전체를 같은 밝기로 채우기
+- 촘촘한 반복 섬유/방사선이 화면을 지배
+- pupil 내부에 star/glow/fiber 넣기
+
+#### 색 규칙
+- near-white
+- warm ivory
+- **pale gold/orange accent 유지**
+- pale blue
+- cyan
+- violet
+- subtle spectral fringe
+
+Gold/orange는 fire color가 아니라 outer rim 일부의 따뜻한 spectral accent로 사용.
+
+#### 구조 / 구현 방향
+기존 Domain / focal ownership을 유지하면서:
+- main pupil/iris shader
+- 제한된 수의 layered cloud/corona plane
+- 오른쪽으로 연결되는 nebula tail
+을 조합한 **volumetric-like hybrid**를 우선 검토.
+
+Claude가 제안한 기술 중 다음은 적극 활용 가능:
+- FBM noise
+- domain warping
+- multiple flow layers with different speeds
+- asymmetric cloud thickness
+- subtle chromatic dispersion
 - outer corona
-- eye-like composition
-- reference scale ratio
+- hybrid shader + secondary cloud/streak layers
 
-Foreground character는 무시.
+부분적으로만 사용할 것:
+- polar-coordinate swirl: iris flow에는 유용하지만 전체를 규칙적인 소용돌이로 만들지 말 것
+- Einstein-like rim: outer rim 개념에는 유용하지만 pupil에 붙은 균일 neon ring으로 만들지 말 것
+
+#### Rightward nebula tail
+선택 장식이 아니라 reference silhouette의 핵심.
+
+권장:
+main iris의 넓은 cloud connection
+→ 소수의 world-space cloud layer
+→ 먼 부분의 희미한 streak/particle 보조층
+
+particle만으로 분사 연기처럼 만들지 않는다.
+
+### 다음 구현 Top 5
+1. 촘촘한 밝은 반복선 제거/약화 + 명암 구조 재분리
+2. 오른쪽 대형 cloud + tail 연결
+3. pupil 약 0.43 / bright rim 약 0.86 기준으로 비율과 비대칭 수정
+4. ivory/gold와 cold blue/violet cloud 색층 분리
+5. corona / cloud / tail에 제한적 depth를 주고 reference 비교 시점 확보
 
 목표:
 **가능한 한 reference 자체의 eye 구조를 충실하게 재현.**

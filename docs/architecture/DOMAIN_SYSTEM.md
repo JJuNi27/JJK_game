@@ -111,26 +111,92 @@ White Blood를 공간적으로 골고루 섞인 **3개 팀**으로 사전 배분
 
 ## Cosmic Eye
 
-### 현재 사용자 판정
-현재 결과는 여전히 reference와 충분히 비슷하지 않음.
-
-다음 pass에서는 자유로운 재해석을 줄이고,
+### 목표 reference
 `docs/references/gojo/unlimited_void/cosmic_eye_ref_01.png`
-를 **구도/비율/형태 기준에 매우 가깝게 맞추는 목표 reference**로 취급한다.
 
-중요하게 따라갈 요소:
-- 거대한 pitch-black pupil
-- pupil 대비 충분히 넓은 luminous iris / accretion band
-- 한 덩어리 흰 smoke가 아니라 여러 개의 얇은 layered flow
-- white + pale blue + cyan + violet + subtle spectral fringe
-- outer corona의 흐림 / 깊이
-- 명확한 "눈동자" 인상
-- reference의 scale relationship
+분석 원문:
+`docs/references/gojo/unlimited_void/COSMIC_EYE_REFERENCE_ANALYSIS.md`
 
-전경 캐릭터는 구현 대상이 아니다.
+이 reference는 자유로운 영감용이 아니라 **형태/비율/색층/실루엣의 직접 목표**다.
+
+### Astra 분석 핵심
+현재 구현이 reference처럼 안 보이는 가장 큰 이유는 단순 크기가 아니다.
+
+현재 문제 우선순위:
+1. iris 전체가 너무 밝고 촘촘한 섬유 무늬로 차 있음
+2. 오른쪽 tail이 없음
+3. 큰 비정형 cloud mass보다 반복 물결/선이 강함
+4. warm ivory/gold가 cold white와 충분히 분리되지 않음
+5. bright rim이 reference보다 안쪽 역할과 겹침
+6. outer corona가 별도 depth로 읽히지 않음
+7. 단일 camera-facing quad의 평면성이 보임
+
+### Reference 비율
+Eye outer radius = 1.0 기준:
+- pupil: **0.42~0.45** / 시작 0.43
+- main iris: **0.45~0.83**
+- bright rim center: **0.84~0.89**
+- bright rim strong width: **0.015~0.04**
+- rim glow: **0.04~0.09**
+- corona: **0.90~1.00**
+- pupil/rim center offset: **0~0.03**
+- visible right tail: center 기준 약 **2.6~2.9**
+
+### 명암 구조
+반드시:
+**black pupil → dark breathing room + cloud mass → outer bright rim → fading corona**
+
+금지:
+- pupil 바로 옆의 균일 neon ring
+- iris 전체 동일 brightness
+- 규칙적인 radial fiber가 주인공이 되는 구성
+- pupil 내부 발광/별/무늬
+
+### 색
+사용:
+- white / near-white
+- warm ivory
+- pale gold/orange accent
+- pale blue
+- cyan
+- violet
+- subtle spectral fringe
+
+Warm gold/orange는 reference에 실제로 존재하므로 제거하지 않는다.
+다만 fire/explosion 색이 아니라 outer rim 일부의 spectral warm arc로 사용한다.
+
+### Cloud / Flow
+- 큰 cloud mass를 먼저 맞춘 뒤 미세한 flow를 추가
+- asymmetric thickness
+- multiple flow layers
+- FBM / domain warping 적합
+- polar-coordinate flow는 iris 내부 한정으로 유용
+- pupil silhouette는 안정적으로 유지
+
+### Rightward tail
+**필수 실루엣 요소.**
+
+본체 cloud에서 자연스럽게 연결:
+wide cloud connector
+→ a few world-space cloud layers
+→ faint distant streak/particle assist
+
+particle-only tail 금지.
+
+### 공간 구현
+현재 Domain architecture / focal ownership을 유지한다.
+
+권장:
+**existing focalRoot 내부의 volumetric-like hybrid**
+- pupil/main iris
+- 제한된 layered cloud planes
+- outer corona
+- rightward tail
+
+새 Domain system 또는 별도 병렬 black-hole system을 만들지 않는다.
 
 목표:
-**블랙홀에 흰 연기가 감긴 모습이 아니라, 거대한 우주적 눈동자 자체로 읽혀야 한다.**
+**블랙홀에 흰 연기가 감긴 모습이 아니라, reference의 거대한 우주적 눈동자로 읽히는 것.**
 
 ---
 
