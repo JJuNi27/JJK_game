@@ -14,6 +14,16 @@
 - 작업 중에는 targeted validation을 우선하고, 전체 regression은 구현이 안정된 뒤 마지막에 한 번 수행한다.
 - 주관적인 시각 품질을 절대 `USER VERIFIED`라고 표현하지 않는다. Unity Play Mode의 최종 시각 승인은 사용자만 할 수 있다.
 
+## 게임 방향
+읽기: `docs/design/GAME_VISION.md`
+
+핵심:
+- 1:1 중심 3D 액션 격투
+- 넓은 JJK 도시형 전투 맵
+- 팬텀 퍼레이드/애니/만화 고증을 최대한 살린 기술
+- 원작 규칙을 Trait / Passive / Domain rule로 시스템화
+- Data-driven / Inspector 튜닝 우선
+
 ## 비주얼 방향
 이 프로젝트는 게임이며 **강한 가독성, 화려함, 타격감**이 핵심 목표다.
 효과 하나만 떼어봤을 때 "너무 화려한 것 같다"는 이유로 자동으로 약하게 만들지 않는다.
@@ -27,6 +37,13 @@
 4. 프리미엄 VFX
 5. 캐릭터별 원작 정체성
 6. 유지보수성 및 Inspector/Data-driven 튜닝
+
+## Combat Data / Inspector 튜닝
+읽기: `docs/architecture/COMBAT_DATA_DRIVEN.md`
+
+사용자가 직접 조절하는 Inspector/Data 항목은 가능하면 **한글 Header/Tooltip/표시명**을 제공한다.
+내부 C# 식별자는 유지보수를 위해 영어를 기본으로 한다.
+사용자가 코드를 열지 않고 주요 수치를 조절할 수 있어야 한다.
 
 ## 보호된 고죠 기준값
 읽기: `docs/locked/USER_VERIFIED_SETTINGS.md`
