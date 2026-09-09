@@ -1,223 +1,240 @@
-# 현재 작업 — 고죠 3차 폴리싱 + Domain 종료 복구
+# 현재 작업 — 3차 폴리싱 실플레이 피드백 정리
 
-상태: **CODEX 구현/자동검증 완료 — 사용자 시각 검토 대기**
+상태: **피드백 문서화 완료 — 아직 다음 Codex 구현 시작 금지**
 
-중요:
-현재 구현은 **로컬 working tree에만 존재**하며 아직 commit / push되지 않았다.
-GitHub의 실제 Unity 코드와 이 문서의 구현 상태가 일시적으로 다를 수 있다.
+사용자가 추가 아이디어를 더 전달할 예정이므로,
+이 문서는 현재까지 합의된 피드백을 안전하게 보존하기 위한 중간 작업지다.
 
-## 목표
-1. 무량공처 종료 후 기본 melee가 잠기는 실제 gameplay regression 수정
-2. Blue / Red / Purple / Unlimited Void presentation을 한 단계 더 강하게 개선
-
-사용자는 화려함을 원한다.
-VFX가 강하다는 이유만으로 자동으로 약하게 만들지 않는다.
+Codex는 사용자가 명시적으로 "작업 시작"을 승인하기 전까지 이 문서를 구현 지시로 사용하지 않는다.
 
 ---
 
-## P0 — Domain 종료 후 기본 melee 복구
+## P0 — 최우선 실제 버그: Domain 종료 후 평타가 여전히 안 나감
 
-### 요청
-- intended cursed-technique burnout은 필요하면 유지
-- 영역 종료 후 basic melee / physical attack은 정상 복구
-- 관련 없는 combat state를 광범위하게 reset하지 않음
-- normal completion / 관련 cancel/end path 검증
+### 사용자 실제 검증
+CombatMVP에서 Unlimited Void 종료 후:
+**basic melee / physical attack이 여전히 실행되지 않음.**
 
-### Codex 보고
-**구현 완료**
-- stale Domain melee lock 수정
-- physical attack 복구
-- technique burnout 유지
+이전 자동 test 21/21은 실제 버그를 잡지 못했다.
 
-상태: 자동검증 완료, 실제 Play Mode 확인 필요.
+### 다음 구현 원칙
+- technique burnout은 의도대로 유지 가능
+- basic melee만 정상 복구해야 함
+- broad reset 금지
+- 실제 input → BasicAttack → state/action lock 경로를 추적
+- 내부 bool만 보고 "fixed"라고 판단 금지
 
----
+### 반드시 확인할 후보
+- `BasicAttack`
+- `TechniqueBurnoutController`
+- Domain presentation/session lock
+- player action lock
+- restoration timing/state
 
-## P1 — Blue
-
-### 사용자 요청
-- 고죠 앞의 의미 없는 작은 pre-cast blue decoration 제거
-- singularity / attraction 정체성 유지
-- 밝고 매끈한 얼음 파편 대신 어둡고 거친 rubble
-- 큰 파편 비중 약간 감소
-- medium/small debris 다양성 증가
-- core 가독성 유지
-- inward suction / collapse 강화
-- 강한 spectacle 허용
-
-### 반드시 보존
-- Blue 4-hit gameplay
-
-### Codex 보고
-**구현 완료**
-- 작은 pre-cast decoration 비활성화
-- 더 어둡고 거친 debris
-- inward collapse 가독성 강화
-- 4-hit gameplay 유지
-
-상태: 사용자 시각 검토 대기.
+### Done
+실제 CombatMVP에서:
+- Domain 종료
+- technique skill은 burnout 규칙대로 동작
+- basic melee 입력 시 실제 공격 sequence 시작
 
 ---
 
-## P2 — Red
+## LOCKED — Blue / 아오
 
-### 사용자 요청
-- projectile 속도 증가
-- 사거리 증가
-- round smoke puff 대신 압력에 밀려 찢기는 air / dust / vapor
-- flash + shockwave + residue를 하나의 강한 `BANG`으로
-- 반복 cast cleanup 유지
-- fire explosion처럼 만들지 않음
+### 사용자 판정
+**1차 완성.**
 
-### Codex 보고
-**구현 완료**
-- **26 m**
-- **42 m/s**
-- flash / shockwave 강화
-- torn outward pressure residue 강화
+새로운 아이디어가 생기기 전까지 수정하지 않는다.
 
-상태: 사용자 시각 검토 대기.
+보존:
+- 현재 Blue visual
+- 현재 debris
+- current attraction/singularity
+- 4-hit gameplay
 
 ---
 
-## P3 — Hollow Purple
+## P1 — Red / 아카
 
-### 사용자 요청
-Purple 핵심 fusion은 매우 좋으므로 광범위하게 재설계하지 않는다.
+### 버그
+Enemy에 맞아 impact가 발생했는데도 projectile visual이 계속 날아감.
 
-변경:
-- travel range / lifetime 증가
-- gameplay range도 일치
-- hold 중 Gojo를 덜 가리도록 offset 조정
-- release 강화
-- irregular violet lightning 강화
-- spatial distortion / warped-space wake 강화
-- 큰 visual/gameplay size 유지
-- 가능하면 scar edge를 조금 더 불규칙하게
+### 다음 구조
+대상별 Collision Response로 분리:
+- Enemy/Character → impact + damage + projectile 종료
+- Destructible Building/Object → 파괴/충격 전달 가능 + Red는 계속 통과 가능
+- Hard World Solid → impact + 종료
+- Trigger/Ignore → 통과
+- Max Range → 자연 소멸
 
-### Codex 보고
-**구현 완료**
-- **48 m / 1.6 s**
-- **0.32 s hold 유지**
-- hold offset 조정
-- release 강화
-- branching lightning
-- distortion wake 강화
+미래의 넓은 도쿄 도시맵 / 건물 파괴를 고려해 확장 가능한 구조로 설계.
 
-상태: 사용자 시각 검토 대기.
+### Impact VFX
+현재 smoke / vapor가 너무 약함.
+
+강화:
+- 더 큰 volume
+- 더 강한 initial pressure burst
+- 방사형/수평으로 밀려나는 회백색 air/dust/vapor
+- 약간 더 긴 residue
+- cartoon smoke puff 금지
+- fire explosion 금지
 
 ---
 
-## P4 — Unlimited Void interior
+## P2 — Hollow Purple
 
-### 기존 문제
-어두운 빈 공간 + 너무 많은 밝은 White Blood가 화면을 지배함.
+### 문제 A — 중앙 정렬
+caster 가림을 해결하려다 Purple이 Gojo 오른쪽에 생김.
 
-### 사용자 목표
-- black abyss 기반 유지
-- richer deep-blue / blue-white nebula / cosmic depth
-- subtle star 허용
-- White Blood clutter 감소
-- White Blood는 near/mid/far의 보조 accent
-- 360° / above-below 분포 유지
-- visible floor는 숨기고 collision floor 유지
+수정:
+- Purple은 Gojo 정중앙 축에서 완성
+- lateral X offset = 0 원칙
+- 가림은 forward offset / vertical offset / framing으로 해결
+
+### 문제 B — scar 폭
+사용자 체감상 바닥 잔상이 다시 좁아짐.
+
+권장:
+- scar width를 Purple actual visual diameter에 비례하도록 설계
+- width multiplier를 Inspector/Data에서 조절 가능하게
+- Purple scale 변경 시 scar만 가늘어지는 regression 방지
+
+### 보존
+- current fusion
+- 0.32 s hold
+- current long-range direction
+- lightning / distortion direction
+
+---
+
+## P3 — Unlimited Void White Blood 리듬
+
+### 현재 문제
+그냥 빠르게 순서대로 spawn되는 느낌.
+
+### 원하는 리듬
+**1차 퉁 → pause → 2차 투둥 → pause → 3차 퉁**
+
+### 구조
+White Blood를 3개 spatial group으로 배분:
+- Group 1
+- Group 2
+- Group 3
+
+각 그룹은:
+- 앞/뒤/좌/우/위/아래에 골고루
+- near/mid/far depth에 골고루
+- 특정 방향에 몰리지 않음
+
+### Inspector/Data tuning
+최소:
+- Group1 Time
+- Group2 Time
+- Group2 SubBeat Gap
+- Group3 Time
+
+나중에 실제 음성에 맞게 사용자가 조절 가능해야 함.
+
+---
+
+## P4 — 사운드 / 음성 구조
+
+사용자 선호:
+**타격별/행동별 SFX를 분리하는 방향 선호.**
+
+합의된 설계:
+- 짧은 punch/kick/whoosh/impact → event별 clip
+- 연속된 voice line → 하나의 clip 유지 가능
+- animation과 audio 모두 공통 Beat/Timeline에 동기화
+- 한쪽이 다른 쪽에 hard-bind되지 않음
+
+자세한 기준:
+`docs/architecture/AUDIO_PRESENTATION.md`
+
+---
+
+## P5 — Cosmic Eye
+
+### 사용자 판정
+현재 eye는 아직 reference를 충분히 따라하지 못함.
+
+다음에는 자유로운 재해석보다:
+`docs/references/gojo/unlimited_void/cosmic_eye_ref_01.png`
+를 **매우 가까운 구조/비율/색층 목표**로 취급.
+
+따라갈 요소:
+- giant black pupil
+- broad luminous iris
+- layered thin flow
+- blue/cyan/violet spectral fringe
+- outer corona
+- eye-like composition
+- reference scale ratio
+
+Foreground character는 무시.
 
 목표:
-**infinite blue-black cosmic nebula + impossible depth + suspended white organic liquid splashes.**
-
-### Codex 보고
-**구현 완료**
-- layered blue-black nebula
-- persistent stars
-- White Blood clutter 감소
-
-상태: 사용자 시각 검토 대기.
-
-### 레퍼런스
-구현 전에 아래 로컬 파일을 직접 확인:
-`docs/references/gojo/unlimited_void/`
-
-- `interior_anime_ref_01.png`
-- `interior_concept_ref_01.png`
-- `cosmic_eye_ref_01.png`
-
-전경 캐릭터는 구현 대상이 아니다.
+**가능한 한 reference 자체의 eye 구조를 충실하게 재현.**
 
 ---
 
-## P5 — Unlimited Void Cosmic Eye
+## LOCKED — Unlimited Void 푸른 성운 배경
 
-### 사용자 요청
-- 현재보다 훨씬 크게
-- pitch-black center
-- broad iris / accretion / luminous structure
-- pale blue + white + violet + subtle iridescent spectral layer
-- 여러 translucent layer와 서로 다른 flow speed
-- hypnotic / sublime / eye-like
-- simple clean ring 금지
+### 사용자 판정
+**현재 배경 매우 만족. 1차 완성.**
 
-### Codex 보고
-**구현 완료**
-- larger cosmic eye
-- black pupil
-- broader spectral flows
+보존:
+- 현재 blue-black nebula
+- cosmic depth
+- star/depth language
+- invisible floor / orientation ambiguity
 
-상태: 사용자 시각 검토 대기.
+White Blood / eye / exit 수정 중 이 배경을 같이 바꾸지 않는다.
 
 ---
 
-## P6 — Domain exit / barrier release
+## P6 — Domain exit를 caster-centered world-space release로
 
-### 사용자 요청
-기존의 갑작스러운 맵 복귀를 개선.
+### 현재 문제
+현재는 카메라 화면에 붙은 curtain/wipe처럼 보임.
 
-원하는 흐름:
-Domain active
-→ Domain release 시작
-→ interior/barrier가 중심에서 바깥으로 dissolve
-→ original world가 점진적으로 reveal
-→ normal combat camera/state로 안전하게 handoff
+### 원하는 연출
+Domain을 전개한 Gojo의 world position을 release center로 사용.
 
-### Codex 보고
-**구현 완료**
-- **1.15 s center-outward reveal**
-- participant restoration / camera handoff 자동검증 완료
+`Domain active`
+→ caster 중심 release 시작
+→ world-space radial/spherical boundary 확장
+→ original map이 그 중심 기준으로 드러남
+→ safe camera/combat handoff
 
-상태: 사용자 시각 검토 대기.
+카메라를 움직여도 해제 중심이 screen center에 붙지 않아야 함.
+
+### 제약
+- same-scene isolated Domain architecture 유지
+- participant restoration 안전성 유지
+- camera drift 금지
+- repeated use cleanup
+- barrier HP/destruction gameplay는 구현하지 않음
 
 ---
 
-## 절대 광범위하게 변경하지 말 것
-- Walk Speed 3
-- Run Speed 14
-- Walk Time Scale 1.15
-- current locomotion / Animator / evade
-- Blue 4-hit gameplay
-- successful Purple fusion foundation
-- Unlimited Void purple tunnel
-- Gameplay Capture Radius / Visual Barrier / Interior 분리
-- same-scene far-away isolated Domain Interior
-- participant별 restoration
-- hidden visual floor + collision floor
-- existing camera ownership / restore system
+## 현재 사용자 승인 상태
 
-## 이번 Codex 검증 결과
-- focused checks: **4/4**
-- combined targeted lab checks: **5/5**
-- full Unity regression: **21/21**
-- Python: **13/13**
-- full regression은 마지막에 1회 수행
-- 3개 레퍼런스 모두 확인했다고 보고
-- commit / push / merge 없음
+### 잠금 / 더 이상 건드리지 않음
+- Blue 1차 완성
+- Unlimited Void 푸른 성운 배경 1차 완성
 
-## 이제 사용자에게 남은 검토
-Play Mode / preview 영상에서 직접 판단:
-- Blue debris가 아직 얼음처럼 보이는지
-- Red 속도/사거리와 `BANG` 타격감
-- Purple 사거리, hold 가독성, 발사 힘, lightning / distortion
-- Unlimited Void nebula와 White Blood 비율
-- Cosmic Eye 크기/외형
-- Domain exit이 실제로 끊기지 않고 자연스럽게 이어지는지
-- Domain 종료 후 basic melee가 실제로 정상 동작하는지
+### 다음 수정 필요
+- Domain 종료 후 basic melee
+- Red impact projectile termination / collision response / smoke
+- Purple 중앙 정렬 / scar width
+- White Blood 3-beat choreography
+- sound/voice beat architecture
+- Cosmic Eye fidelity
+- caster-centered Domain release
 
-사용자가 확인하기 전까지 위 항목은 **PENDING USER VISUAL REVIEW**다.
+## 다음 단계
+사용자가 추가 아이디어를 더 전달한다.
+그 내용을 받은 뒤 이 문서를 최종 정리하고,
+사용자 승인 후에만 다음 Codex 구현 pass를 시작한다.

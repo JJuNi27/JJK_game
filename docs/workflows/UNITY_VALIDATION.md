@@ -3,7 +3,6 @@
 목표: 작은 수정마다 전체 검증을 반복해서 Codex 사용량을 낭비하지 않으면서 품질을 유지한다.
 
 ## 수정 전
-실행:
 - `git status -sb`
 - `git diff --stat`
 
@@ -23,20 +22,27 @@
 ## 구현이 안정된 뒤
 필요한 전체 regression을 **마지막에 한 번** 수행한다.
 
-### 이번 Gojo 3차 polish의 Codex 보고
-- focused checks: **4/4**
-- combined targeted lab checks: **5/5**
-- full Unity regression: **21/21**, 마지막에 1회 수행
-- Python: **13/13**
+## 중요한 교훈 — 내부 flag test만으로 gameplay를 증명하지 말 것
+Gojo 3차 polish에서:
+- full Unity regression **21/21**
+- focused checks 통과
 
-이 결과는 현재 로컬 working tree에 대한 **CODEX VALIDATED** 기록이며 사용자 시각 승인을 의미하지 않는다.
+했지만 실제 CombatMVP에서는 Domain 종료 후 basic melee가 여전히 동작하지 않았다.
 
-## 다음 검토에서 특히 확인할 것
-- Domain 종료 후 basic melee 실제 복구
-- Red 속도 / 사거리 / cleanup / impact feel
-- Purple travel range / hit / cleanup / caster readability
-- Domain exit transition이 실제 영상에서 자연스럽게 이어지는지
-- Unlimited Void nebula / White Blood / Cosmic Eye balance
+따라서 action-state 관련 버그에서는:
+- `meleeAllowed == true` 같은 내부 상태만 검사하지 말 것
+- 실제 gameplay 호출 경로를 재현할 것
+- 가능하면 실제 `BasicAttack` 실행 가능성 / input-to-action path를 검증할 것
+
+### 다음 P0 검증 요구
+Domain 종료 후:
+1. technique burnout state 확인
+2. basic melee input 시도
+3. BasicAttack 진입 확인
+4. 공격 animation / hit sequence가 실제 시작되는지 확인
+5. technique skill은 의도대로 burnout에 막히는지 별도 확인
+
+이 둘을 분리 검증해야 한다.
 
 ## 시각 검증 상태 용어
 사용자가 직접 확인하기 전에는 `USER VERIFIED`를 사용하지 않는다.

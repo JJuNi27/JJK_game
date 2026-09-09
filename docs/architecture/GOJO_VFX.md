@@ -10,41 +10,71 @@
 
 ## Blue / 아오
 
+### 상태
+**USER VERIFIED — 1차 완성**
+
+새로운 사용자 아이디어가 생기기 전까지 수정하지 않는다.
+
 ### 반드시 보존
 - 기존 4-hit gameplay
 - 현재 attraction / singularity 방향
-- debris 컨셉
+- 현재 debris 스타일
+- 현재 pre-cast / active presentation
 
-### 사용자 방향
-- 고죠 앞에 의미 없이 보이는 작은 pre-cast 파란 장식은 제거
-- 파편은 밝고 매끈한 얼음보다 어둡고 거친 돌 / 건물 잔해처럼 보이게
-- 거대한 파편 몇 개의 지배력을 줄이고 중/소형 파편 다양성 증가
-- core가 가려지지 않게 유지
-- inward collapse / suction이 명확하게 읽히게
-
-목표:
-**주변 환경이 찢겨서 Blue 안으로 끌려 들어가는 느낌.**
+다른 기술 작업 때문에 Blue를 함께 리팩터링하거나 시각적으로 변경하지 않는다.
 
 ---
 
 ## Red / 아카
 
-### 반드시 보존
-- charge는 1회 생성
-- release 시 charge 제거
-- 반복 사용 시 오래된 charge object가 남지 않음
-- Red는 화염구가 아니라 반발/척력
+### 현재 사용자 피드백
+- 적에게 이미 충돌하여 폭발했는데도 빨간 projectile visual이 계속 전진하는 문제가 있음.
+- impact 후 smoke / vapor가 여전히 약함.
+- 미래에는 도쿄 도시형 넓은 맵을 만들 예정이므로, 단순 "적만 충돌" 설계로 고정하면 확장성이 부족함.
 
-### 현재 로컬 working tree의 Codex 구현 결과
-- projectile: **26 m**
-- 속도: **42 m/s**
-- flash / shockwave 강화
-- 바깥으로 찢겨 나가는 pressure residue 강화
+### 권장 Collision Response 모델
+"무엇과 충돌했는가"에 따라 반응을 분리한다.
 
-이 값과 시각 품질은 아직 **사용자 시각 검토 대기**다.
+1. **Enemy / Character**
+   - hit / damage / impact
+   - 강한 Red 폭발 / 압력 잔향
+   - projectile 종료
+
+2. **Destructible World / Building**
+   - 경로상의 건물/오브젝트에 파괴/충격 이벤트 전달 가능
+   - Red는 계속 통과할 수 있도록 설계 가능
+   - 미래 도시 파괴 시스템과 연결할 수 있게 coupling을 약하게 유지
+
+3. **Hard World Solid / Non-penetrable**
+   - impact
+   - projectile 종료
+
+4. **Trigger / Ignore**
+   - 통과
+
+5. **Max Range / Lifetime**
+   - 자연 소멸
+
+핵심:
+**"Enemy only" 또는 "모든 오브젝트에 막힘" 중 하나로 고정하지 않는다.**
+대상별 Collision Response가 미래 확장에 유리하다.
+
+### Impact 연기 / 압력 잔향
+불꽃 폭발 연기가 아니라:
+- 충격 중심에서 방사형 / 수평으로 밀려나는 회백색 air / dust / vapor
+- 더 넓은 volume
+- 더 강한 initial burst
+- 현재보다 조금 더 오래 남는 residual pressure
+- 둥근 cartoon smoke puff보다 찢기고 밀려나는 형태
 
 목표:
-**압축된 척력이 풀리며 공간이 모든 것을 밀어내고, 압력이 눈에 보이는 잔향을 남기는 느낌.**
+**맞는 순간 projectile은 명확히 끝나고, 그 자리에 거대한 척력의 압력이 남는다.**
+
+### 기존 보존
+- charge 1회 생성
+- release 시 charge cleanup
+- repeat cast leak 없음
+- Red는 fireball이 아니라 repulsion
 
 ---
 
@@ -54,26 +84,37 @@
 현재 Blue+Red formation / fusion 기반은 프로젝트에서 가장 성공적인 효과 중 하나다.
 광범위하게 재설계하지 않는다.
 
-### 현재 로컬 working tree의 Codex 구현 결과
-- Fusion-complete hold: **0.32 s 유지**
-- travel: **48 m / 1.6 s**
-- caster가 덜 가려지도록 hold 위치 조정
-- release 강화
-- branching violet lightning 강화
-- distortion wake 강화
+### 현재 문제 1 — 완성된 Purple 위치
+사용자가 "Gojo를 가린다"고 한 피드백을 lateral offset으로 해결하면서,
+완성된 Purple이 Gojo 기준 오른쪽에 생기게 됨.
 
-기존 기준:
-- Visual size: **1.65×**
-- Gameplay hit radius: **3.2 m**
-- Residual scar width: **4.5 m**
-- Residual lifetime: **1.8 s**
+이 해결법은 잘못됨.
 
-위 시각 결과는 아직 **사용자 시각 검토 대기**다.
+### 위치 원칙
+- Purple은 **Gojo의 정중앙 축에서 완성**
+- local lateral offset: **X = 0 원칙**
+- caster 가림 문제는 옆으로 빼지 말고:
+  - forward offset
+  - 필요 시 약간의 vertical offset
+  - hold scale / camera framing
+  로 해결
 
-### Scar 소규모 polish
-- 평평한 보라색 카펫처럼 보이지 않게 edge를 불규칙하게
-- 값싼 범위에서 breakup / residue variation 추가 가능
-- scar 시스템 전체 재작성 금지
+목표:
+**중앙에서 태어나되 Gojo의 silhouette는 읽힌다.**
+
+### 현재 문제 2 — Purple scar 폭
+사용자 체감상 바닥 잔상의 가로폭이 다시 좁아짐.
+
+권장:
+- scar width를 별도 임의 숫자로만 관리하지 말고
+- 가능하면 **Purple actual visual diameter × multiplier** 방식으로 연결
+- Purple 크기가 바뀌어도 scar가 혼자 가늘어지는 regression 방지
+
+### 보존
+- current fusion
+- 0.32 s hold는 현재 유지
+- 현재 장거리 travel 방향
+- 현재 branching lightning / distortion 방향
 
 목표:
 **Purple이 단순히 맵을 통과하는 것이 아니라, 지나가는 공간 자체를 강제로 왜곡하고 상처 내는 느낌.**

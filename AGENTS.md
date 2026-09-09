@@ -40,6 +40,9 @@
 ## 고죠 Blue / Red / Purple을 수정할 때
 읽기: `docs/architecture/GOJO_VFX.md`
 
+## 사운드 / 음성 / 타격 beat 동기화를 수정할 때
+읽기: `docs/architecture/AUDIO_PRESENTATION.md`
+
 ## Unity 검증 전에
 읽기: `docs/workflows/UNITY_VALIDATION.md`
 
