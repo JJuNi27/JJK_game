@@ -1,11 +1,14 @@
 # 현재 작업 — 3차 폴리싱 실플레이 피드백 정리
 
-상태: **피드백 문서화 완료 — 아직 다음 Codex 구현 시작 금지**
+상태: **사용자 구현 승인 완료 — 다음 Codex 구현 pass 시작 가능**
 
-사용자가 추가 아이디어를 더 전달할 예정이므로,
-이 문서는 현재까지 합의된 피드백을 안전하게 보존하기 위한 중간 작업지다.
+사용자가 현재까지 정리된 실플레이 피드백과 Cosmic Eye 분석을 기준으로 다음 구현 pass 진행을 승인했다.
 
-Codex는 사용자가 명시적으로 "작업 시작"을 승인하기 전까지 이 문서를 구현 지시로 사용하지 않는다.
+이번 pass의 범위는 이 문서의 P0~P6 수정이다.
+`docs/design/GAME_VISION.md`와 `docs/architecture/COMBAT_DATA_DRIVEN.md`는 장기 방향 참고용이며,
+**이번 pass에서 전투 전체를 Data-driven 구조로 대규모 migration하지 않는다.**
+
+현재 USER VERIFIED인 Blue와 Unlimited Void 푸른 성운 배경은 잠금 상태로 보존한다.
 
 ---
 
@@ -304,6 +307,20 @@ Domain을 전개한 Gojo의 world position을 release center로 사용.
 - caster-centered Domain release
 
 ## 다음 단계
-사용자가 추가 아이디어를 더 전달한다.
-그 내용을 받은 뒤 이 문서를 최종 정리하고,
-사용자 승인 후에만 다음 Codex 구현 pass를 시작한다.
+**Codex 구현 시작 가능.**
+
+작업 순서 권장:
+1. P0 실제 평타 복구 버그를 먼저 원인 진단/수정
+2. Red
+3. Purple
+4. White Blood
+5. Cosmic Eye
+6. Domain release
+7. 관련 targeted validation
+8. 구현 안정 후 full regression 1회
+9. 사용자 Play Mode 시각 검토 대기
+
+사운드/음성은 이번 pass에서 새 audio asset을 만들지 않는다.
+White Blood timing과 기존 beat 구조가 향후 audio sync에 맞게 조절 가능한 상태만 유지한다.
+
+명시적 승인 없는 commit / push / merge 금지.
