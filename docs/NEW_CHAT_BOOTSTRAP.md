@@ -8,129 +8,176 @@
 
 ## Copy/Paste Prompt
 
-나는 GitHub 저장소 `JJuNi27/JJK_game`에서 Unity 6 URP 기반 주술회전 3D 아레나 액션 게임을 개발 중이야.
+나는 GitHub 저장소 `JJuNi27/JJK_game`에서 Unity 6 URP 기반 주술회전 3D 캐릭터 액션 격투게임을 개발 중이야.
 
 이전 채팅이 길어져 새 채팅으로 넘어왔다.
 내가 이전 내용을 다시 설명하게 하지 말고, 먼저 GitHub connector를 사용해서 아래 문서를 직접 읽고 현재 상태를 복구해줘.
 
-반드시 읽을 문서:
-1. `docs/CURRENT_HANDOFF.md`
-2. `docs/GATE5B_FIRST_PRODUCTION_SLICE.md`
-3. `docs/DEVELOPMENT_ROADMAP.md`
-4. `docs/JJK_VFX_REFERENCE_GOJO.md`
-5. `docs/JJK_VFX_EXTERNAL_IMPLEMENTATION_RESEARCH.md`
+반드시 읽을 문서 순서:
+1. `AGENTS.md`
+2. `docs/design/GAME_VISION.md`
+3. `docs/CURRENT_HANDOFF.md`
+4. `docs/active/CURRENT_TASK.md`
+5. `docs/locked/USER_VERIFIED_SETTINGS.md`
+6. 현재 작업과 관련된 `docs/architecture/*`
 
-현재 작업 branch는 우선 `feat/gojo-blue-screen-distortion`를 확인한다.
-master만 보고 현재 작업 상태를 추정하지 말 것.
+VFX 작업이면 추가로:
+- `docs/design/VFX_DIRECTION.md`
+- `docs/architecture/GOJO_VFX.md`
 
-현재 큰 단계:
-`Gate 5B First Production-Quality Vertical Slice`
+Domain이면:
+- `docs/architecture/DOMAIN_SYSTEM.md`
+- `docs/architecture/CAMERA_PRESENTATION.md`
 
-현재 확정 상태:
-- Pass 1~7: USER VERIFIED
-- Pass 8: USER VISUAL REVIEW FAILED / REWORK REQUIRED
-- Pass 8R-1: USER VISUAL PARTIAL / DETAIL REWORK REQUIRED
-- Pass 8R-2A Gojo Blue Production VFX Benchmark: USER VERIFIED / CLOSED
-- Gojo Blue 4-hit gameplay: accepted as part of Blue slice
-- Gojo Blue voice playback: USER VERIFIED LOCALLY
-- Gojo adult blindfold model + Humanoid pipeline: USER VERIFIED LOCALLY
-- Gojo custom Idle animation: USER VERIFIED LOCALLY
-- Gojo Run retarget/bake/export: USER VERIFIED LOCALLY
-- Gojo Idle ↔ Run PlanarSpeed locomotion: USER VERIFIED LOCALLY
-- Gojo face/jaw skin-weight repair: USER VERIFIED LOCALLY
-- 다음 작업: Blue casting motion + hand/anchor integration
+Data/Inspector면:
+- `docs/architecture/COMBAT_DATA_DRIVEN.md`
 
-중요: Blue는 더 이상 USER VISUAL TEST PENDING이 아니다.
-사용자가 최종적으로 합격 판정을 했으므로 Blue를 다시 pending으로 되돌리지 말 것.
+현재 작업 branch는 우선:
+`feat/gojo-blue-screen-distortion`
 
-현재 사용자 지시 작업 순서:
-1. Blue 완성 — DONE
-2. Blue voice — DONE
-3. Gojo model + animation integration — CURRENT
-4. Run locomotion — DONE
-5. 얼굴/jaw skin-weight repair — DONE
-6. Blue casting motion + hand/anchor integration — NEXT
-7. Basic Attack 1 / 2 / Finisher
-8. 그 뒤 Red
+master만 보고 현재 상태를 추정하지 말 것.
+`docs/CURRENT_HANDOFF.md`의 최신 날짜 섹션을 가장 우선한다.
+오래된 `DEVELOPMENT_ROADMAP.md` / Gate 문서와 충돌하면 최신 handoff / current task / locked settings가 우선한다.
 
-Gojo animation pipeline에서 매우 중요한 해결 사항:
-- 원본 Mixamo `Gojo_Blindfold_RiggedAvatar`와 Blender-export animation FBX를 섞었을 때
-  `Transform 'Armature' not found in HumanDescription` hierarchy mismatch가 발생했다.
-- 별도 Humanoid Avatar를 만들면 손목/짝다리 포즈가 Unity retarget 과정에서 달라졌다.
-- 해결은 Blender에서 Mesh + Armature를 animation 없이 `Gojo_Blender_Master.fbx`로 export하고,
-  Unity에서 `Gojo_Blender_MasterAvatar`를 기준 Avatar로 만든 것이다.
-- 이후 같은 Blender Armature에서 export한 animation FBX는
-  `Humanoid → Copy From Other Avatar → Gojo_Blender_MasterAvatar`를 사용한다.
-- VFXLab actual model도 `Gojo_Blender_Master`를 사용한다.
-- Animator는 `Gojo_Animator`, Avatar는 `Gojo_Blender_MasterAvatar`, Apply Root Motion은 OFF.
-- 이 구조로 바꾼 뒤 Blender의 손목/짝다리 포즈가 Unity에서도 정상 재생됨을 사용자가 직접 확인했다.
+## 프로젝트 핵심 방향
 
-현재 locomotion:
-- Idle: USER VERIFIED LOCALLY
-- Run: USER VERIFIED LOCALLY
-- Animator `PlanarSpeed` 기반 Idle ↔ Run 자동 전환: USER VERIFIED LOCALLY
-- 정지 → Idle / WASD → Run / 입력 해제 → Idle 복귀 정상
-- VFXLab Animator 바인딩 버그는 `751e3e4`에서 씬 `AuthoredModelRoot` 계층 Animator를 재탐색하도록 수정
-- 얼굴/jaw 늘어남은 얼굴 mesh를 Head 기준으로 재웨이트하고 Master FBX를 갱신해 크게 개선, USER VERIFIED LOCALLY
+- 1:1 중심 3D 액션 격투
+- 넓은 JJK 도시형 전투 맵
+- Gojo는 첫 production-quality 캐릭터일 뿐 고정 주인공이 아님
+- 팬텀 퍼레이드 + 애니/만화 원작 고증
+- Strikeborn급 이상의 타격감 / presentation density / aftermath
+- Trait / Passive / Domain rule 기반 재사용 가능한 시스템
+- Data-driven / Inspector tuning 우선
 
-현재 custom Idle:
-- Blender Action: `Gojo_Idle`
-- 30 fps
-- frame 1 / 30 / 60
-- 양손 주머니
-- 한쪽 다리 체중 이동
-- Head/Neck 중심의 아주 작은 breathing loop
-- Unity 실제 재생 USER VERIFIED LOCALLY
+## 영구 개발 규칙
 
-모델/음성 저작권성 자산은 local-only 정책.
-- `unity/Assets/Resources/LocalAudio/`는 gitignore됨
-- `사운드 모음/`도 gitignore됨
-- `unity/Assets/LocalModels/`와 `unity/Assets/LocalModels.meta`는 원격 `.gitignore`에 포함됨. 모델/텍스처/animation FBX는 계속 local-only로 유지할 것.
+- 하드코딩은 최소화한다.
+- 코드는 HOW, Data Asset은 WHAT을 담당한다.
+- 캐릭터/기술/밸런스 값을 바꾸기 위해 C#을 열어야 하면 Data ownership을 먼저 의심한다.
+- Character name / GameObject name string으로 gameplay rule을 몰래 결정하지 않는다.
+- C# identifier는 영어 유지.
+- **사용자가 직접 만지는 Unity Inspector / Data Asset / 설정 UI는 한국어 표시가 기본.**
+- 새 Profile / ScriptableObject는 생성 시점부터 한글 Inspector까지 같이 만든다.
+- Header만 한국어이고 field label이 영어면 미완성으로 본다.
+- 사용자 검증된 값은 명시적 요청 없이 변경하지 않는다.
 
-매우 중요:
-현재 Gojo model / textures / Animator / Blender-export FBX / VFXLab scene 변경은 사용자 PC 로컬에만 있을 수 있다.
-GitHub에 이미 존재한다고 가정하지 말고, 다음 Git 작업을 시작하기 전에 사용자 로컬 `git status` / diff를 확인한다.
-REMOTE IMPLEMENTED와 USER VERIFIED LOCALLY를 구분한다.
+## 현재 보호된 USER VERIFIED 기준
 
-Blue local voice:
-- `unity/Assets/Resources/LocalAudio/Gojo_Blue.ogg`
-- Unity에서 실제 재생 사용자 확인 완료
-- GitHub에는 올리지 않는 local asset
+- Walk 3 / Run 14
+- Idle 0 @1.00 / Walk 3 @1.15 / Run 14 @1.00
+- Space Dodge
+- P0 Unlimited Void ACTIVE 내부 basic attack / actual hit / damage / dodge
+- Domain 자연 종료 후 basic attack / dodge 복구
+- Domain ACTIVE 동안 Blue/Red/Purple/Domain technique lock
+- Gojo Blue 1차 baseline + 4-hit gameplay
+- Unlimited Void blue-black nebula background
+- Hollow Purple formation / fusion baseline
+- `Gojo_Blender_MasterAvatar` animation pipeline
 
-Unity Editor에서 반복되는:
-- `MissingReferenceException: m_Targets of GameObjectInspector...`
-- `SerializedObjectNotCreatableException: Object at index 0 is null`
+## 2026-09-13 LOCAL 최신 상태 — 매우 중요
 
-은 현재 작업을 막지 않는 Unity Editor Inspector stale-reference 계열로 취급 중이다.
-stack trace가 프로젝트 `Assets/Scripts`를 가리키거나 실제 기능을 막기 전에는 우선순위를 올리지 않는다.
+최신 remote production-code checkpoint는:
+`142606ea3fe7a7298bb2ea1c54bb80efcaf170c6`
+`feat: finalize Gojo P0-P6 presentation checkpoint`
 
-중요한 개발 규칙:
-- Purple 기존 timing `0.24 / 0.78 / 18m` 보존
-- Domain gameplay state/radius/duration/input 보존
-- Pass 7 camera/FOV/focus/flash/hit-stop ownership 침범 금지
-- 큰 작업은 feature branch → commit/push → GitHub 실제 diff 검토 → 사용자 Unity test 순서
-- master merge는 사용자 승인 전 하지 말 것
-- Codex static build 성공을 Unity Play Mode 성공이라고 말하지 말 것
-- 사용자 검수 전에는 USER VERIFIED로 닫지 말 것
-- 반대로 사용자가 이미 USER VERIFIED한 상태를 다시 pending으로 되돌리지 말 것
-- 전문 용어는 짧게 뜻도 설명할 것
-- 가능/불가능을 정확히 말하고 근거 없이 추측하지 말 것
+그 이후 사용자 PC LOCAL working tree에서:
 
-새 채팅에서는 문서를 읽고:
-1. 현재 branch/remote 상태와 local-only handoff를 5~10줄로 요약하고
-2. 사용자가 다음에 해야 할 행동은 Blue casting motion + hand/anchor integration 하나부터 제시하고
-3. 같은 `Gojo_Blender_MasterAvatar` pipeline을 유지하며 Blue 시전 포즈/타이밍/손 anchor를 Unity VFX와 맞추는 순서로 안내해줘.
+1. Combat Data-driven migration 완료
+2. Data Asset tuning이 실제 runtime damage에 반영되는 것을 사용자가 직접 확인
+3. 이동 / 평타 / Blue / Red / Purple / Domain 정상 확인
+4. 따라서 Data-driven migration은 LOCAL USER VERIFIED
+5. 새 Profile/Data Asset의 영어 Inspector label을 scoped CustomEditor/PropertyDrawer로 한글화
+6. localization compile 0 / focused test 24/24 / 13 asset hash 불변 확인
+
+단, 위 Data migration / localization은 이 bootstrap 갱신 시점에 아직 별도 code commit/push 전일 수 있다.
+GitHub에 이미 구현됐다고 단정하지 말고 같은 PC라면 먼저:
+
+```powershell
+git status -sb
+git log -1 --oneline
+```
+
+을 확인한다.
+
+LOCAL Data 구조 후보:
+- CharacterStatsProfile
+- CursedEnergyProfile
+- BasicAttackProfile + variable AttackStep[]
+- GojoTechniqueGameplayProfile
+- DomainGameplayProfile
+- BurnoutPolicyProfile
+- TargetingProfile
+- TrainingBotProfile
+- CharacterCombatDefinition
+- CharacterCombatCatalog
+- Trait / Passive seam
+
+## 현재 다음 작업 순서
+
+1. 사용자가 새 Data Asset Inspector 한글 표기를 실제로 확인
+2. local dirty tree 재확인
+3. Data migration + localization 관련 파일만 selective staging
+4. `git diff --cached --name-status` 검토
+5. 구조 checkpoint commit / push
+6. 이후 Astra visual track
+
+절대 `git add .`로 unrelated Scene/VFX/Audio/Model 작업을 섞지 않는다.
+reset / checkout / clean 금지.
+사용자 승인 전 commit / push / merge를 임의로 하지 않는다.
+
+## Astra visual track — 다음 큰 시각 작업
+
+- Blue: 1차 baseline 보호 + environment reaction / final collapse / aftermath 강화
+- Red: repulsion identity 기반 2차 enhancement
+- Purple: 아래로 살짝 나가는 실제 launch-axis 원인 수정 + 2차 enhancement
+- Cosmic Eye: 전체 heartbeat/breathing pulse 제거, cloud/rim/tail subtle flow 유지
+- Domain release: ceiling/dome/shell artifact 실제 원인 제거
+- White Blood: `퉁 → pause → 투둥 → pause → 퉁` 3-group beat, timing Data/Inspector 조절
+
+VFX는 원작 정체성을 우선하고 `기술 생성 → 이동 → 펑 → 끝`으로 완료 처리하지 않는다.
+Environment Reaction / Aftermath / Camera / Audio까지 포함해 평가한다.
+
+## Domain 핵심
+
+다음 3개는 절대 하나로 합치지 않는다.
+1. Gameplay Capture Radius
+2. Visual Barrier Radius / Diameter
+3. Domain Interior Space
+
+현재 same-scene isolated interior + participant safe restoration 구조를 유지한다.
+Barrier HP/destruction/outside rescue는 현재 범위 밖.
+
+## Local asset 안전
+
+다음은 local-only일 수 있음:
+- `unity/Assets/LocalModels/`
+- `unity/Assets/Resources/LocalAudio/`
+- `.blend`
+- imported FBX / texture / audio
+- `VFXLab.unity` 사용자 로컬 변경
+
+명시적 승인 없이 추가/덮어쓰기/reset/clean 하지 않는다.
+
+## 새 채팅의 첫 응답 요구
+
+문서를 읽은 뒤:
+1. 현재 REMOTE와 LOCAL-ONLY 상태를 구분해 5~10줄로 복구 요약
+2. USER VERIFIED 보호값을 다시 pending으로 되돌리지 않기
+3. 현재 immediate next action 하나만 명확히 제시
+4. 자동 테스트를 사용자 Play Mode 검증과 동일시하지 않기
+5. 전문 용어는 필요하면 짧게 뜻도 설명하기
 
 참고:
-무량공처 장인 인식(MediaPipe/RandomForest) 관련 별도 문서는 다른 실험/MVP 흐름이다.
-내가 명시적으로 연결하라고 하지 않는 한 현재 Unity `JJK_game` 전투/VFX/animation 작업과 섞지 마.
+무량공처 장인 인식(MediaPipe/RandomForest) 별도 MVP 문서는 다른 실험 흐름이다.
+명시적으로 연결하라고 하지 않는 한 현재 Unity `JJK_game` 전투/VFX/animation 작업과 섞지 않는다.
 
 ---
 
 ## Handoff policy
 
 - 새 중요 결정이 생기면 `docs/CURRENT_HANDOFF.md` 갱신
-- 사용자의 시각 판정을 status에 즉시 반영
-- REMOTE / LOCAL-ONLY / USER VERIFIED 상태를 명확히 구분
-- local proprietary/copyright-sensitive assets가 GitHub에 올라가지 않게 확인
-- 다음 새 채팅에서도 이 bootstrap + CURRENT_HANDOFF만으로 재개 가능해야 함
+- 현재 실행 작업은 `docs/active/CURRENT_TASK.md` 갱신
+- 사용자 직접 검증 항목은 `docs/locked/USER_VERIFIED_SETTINGS.md` 반영
+- 장기 철학은 `GAME_VISION.md` / architecture 문서에 남김
+- REMOTE / LOCAL / CODEX VALIDATED / USER VERIFIED를 구분
+- 다음 새 채팅에서도 이 bootstrap + 최신 canonical docs만으로 재개 가능해야 함
