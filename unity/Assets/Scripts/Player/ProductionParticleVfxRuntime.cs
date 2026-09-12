@@ -19,6 +19,9 @@ namespace JJKGame.Player
         private const string TargetSceneName = "CombatMVP";
         private const string DeveloperPreviewSceneName = "VFXLab";
         private static ProductionParticleVfxRuntime activeInstance;
+        [Header("Active Blue visual rubble (no gameplay collision)")]
+        [SerializeField, Range(6, 48)] private int blueTornChunkCount = 32;
+        public int BlueTornChunkCount => blueTornChunkCount;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
@@ -133,6 +136,7 @@ namespace JJKGame.Player
         public bool IsAlive => !destroying && this != null && gameObject != null;
         protected float CurrentTime => useUnscaledTime ? Time.unscaledTime : Time.time;
         protected float Duration => duration;
+        protected void ExtendDuration(float minimum) { duration = Mathf.Max(duration, minimum); }
 
         protected void Initialize(PresentationVfxSpawnRequest request)
         {
@@ -504,6 +508,7 @@ namespace JJKGame.Player
 
     internal sealed class GojoBlueVfxInstance : GojoSignatureVfxInstance
     {
+        private BlueTornDebris tornDebris;
         private enum BlueParticleMaskMode
         {
             SoftMote = 0,
@@ -834,9 +839,9 @@ namespace JJKGame.Player
                 orbDiameter * 0.74f,
                 40,
                 materialLibrary.EnergyMaterial,
-                new Color(0.004f, 0.028f, 0.18f, 1f),
-                new Color(0.008f, 0.16f, 0.82f, 1f),
-                new Color(0.055f, 0.62f, 1f, 1f),
+                new Color(0.001f, 0.008f, 0.035f, 1f),
+                new Color(0.015f, 0.32f, 1.05f, 1f),
+                new Color(0.14f, 0.88f, 1.4f, 1f),
                 0.99f,
                 0f,
                 3.8f,
@@ -923,6 +928,12 @@ namespace JJKGame.Player
             BuildCorona(orbDiameter, materialLibrary.ParticleMaterial);
             BuildSpiralFlow(boundaryRadius, materialLibrary.ParticleMaterial);
             BuildEnvironmentSuction(boundaryRadius, materialLibrary.ParticleMaterial);
+            if (!impactCue)
+            {
+                tornDebris = gameObject.AddComponent<BlueTornDebris>();
+                var host = GetComponentInParent<ProductionParticleVfxRuntime>();
+                tornDebris.Configure(boundaryRadius, host != null ? host.BlueTornChunkCount : 32);
+            }
             BuildSuctionWind(boundaryRadius, materialLibrary.ParticleMaterial);
             BuildConvergenceField(outer, boundaryRadius);
             BuildCompressionLight(orbDiameter);
@@ -1696,6 +1707,7 @@ namespace JJKGame.Player
         protected override void Tick(float elapsed, float normalized, float deltaTime)
         {
             UpdatePresentationTiming(normalized);
+            if (tornDebris != null) tornDebris.Render(elapsed, normalized);
             fieldPulseAccent = impactCue
                 ? 0f
                 : EvaluateFieldPulseAccent(normalized);
@@ -1957,6 +1969,10 @@ namespace JJKGame.Player
 
     internal sealed class GojoRedVfxInstance : GojoSignatureVfxInstance
     {
+        private float burstDuration;
+        private Transform followupPressure;
+        private Material airMaterial;
+        private Light pressureLight;
         private Transform coreRoot;
         private Transform pulseShell;
         private LineRenderer shockFront;
@@ -1982,21 +1998,31 @@ namespace JJKGame.Player
         protected override void Build(PresentationVfxSpawnRequest request)
         {
             impactCue = !request.FollowsTarget;
+            burstDuration = Mathf.Max(.2f, request.Duration);
+            if (impactCue) ExtendDuration(burstDuration + GojoPolishSettings.Current.redAftermathDuration);
             float inner = Mathf.Max(0.08f, request.StartRadius);
             float outer = Mathf.Max(inner * 2f, request.EndRadius);
             orbDiameter = Mathf.Clamp(inner * 1.8f, 0.72f, 1.18f);
             pulseDiameter = impactCue
-                ? Mathf.Clamp(outer * 1.55f, 2.8f, 7.2f)
+                ? Mathf.Clamp(outer * 1.55f, 2.8f, 7.2f) * GojoPolishSettings.Current.redShockRingScale
                 : Mathf.Clamp(outer * 0.95f, 1.8f, 3.6f);
 
             coreRoot = new GameObject("RedCoreRoot").transform;
             coreRoot.SetParent(transform, false);
-            ProductionSignatureVfxFactory.CreateSphere(
+            Transform hotCenter = ProductionSignatureVfxFactory.CreateSphere(
+                coreRoot, "WhiteHotPressurePoint", Vector3.zero, orbDiameter * 0.42f,
+                new Color(3.2f, 1.85f, 1.65f, 1f), RuntimeMaterials, MaterialColors, 2f
+            );
+            hotCenter.GetComponent<Renderer>().sharedMaterial.renderQueue = 3050;
+            Transform redBody = ProductionSignatureVfxFactory.CreateSphere(
                 coreRoot, "DenseRedSphere", Vector3.zero, orbDiameter * 0.74f,
                 new Color(0.54f, 0.008f, 0.018f, 0.99f), RuntimeMaterials,
                 MaterialColors, 1.55f
             );
-            ProductionSignatureVfxFactory.CreateSphere(
+            ProductionSignatureVfxFactory.ApplyEnergySurface(redBody,
+                new Color(0.20f, 0.001f, 0.006f), new Color(1.2f, 0.025f, 0.04f),
+                new Color(2.2f, 0.38f, 0.22f), false);
+            Transform redShell = ProductionSignatureVfxFactory.CreateSphere(
                 coreRoot, "CrimsonGlowShell", Vector3.zero, orbDiameter,
                 new Color(1f, 0.025f, 0.035f, 0.66f), RuntimeMaterials,
                 MaterialColors, 1.75f
@@ -2014,20 +2040,70 @@ namespace JJKGame.Player
             );
             shockFront = ProductionSignatureVfxFactory.CreateArc(
                 transform, "ThinShockFront", 0.5f, 0f, 360f,
-                impactCue ? 0.065f : 0.045f,
+                impactCue ? 0.14f : 0.045f,
                 new Color(1f, 0.10f, 0.08f, impactCue ? 0.78f : 0.58f),
                 true, RuntimeMaterials, MaterialColors
             );
+            if (impactCue)
+            {
+                Shader vaporShader = Resources.Load<Shader>("VFX/RepulsiveVapor");
+                if (vaporShader != null)
+                {
+                    Material vaporMaterial = new Material(vaporShader);
+                    RuntimeMaterials.Add(vaporMaterial);
+                    MaterialColors.Add(new Color(.65f,.68f,.76f,.65f));
+                    float residue = GojoPolishSettings.Current.redAftermathDuration;
+                    ParticleSystem vapor = ProductionSignatureVfxFactory.CreateParticleSystem(transform,
+                        "RepulsivePressureAftermath", Color.white, RuntimeMaterials, MaterialColors,
+                        false, Duration, residue*.65f, residue, 12f, 24f, .38f, .95f,
+                        ParticleSystemShapeType.Sphere, .7f, false, ParticleSystemSimulationSpace.World,
+                        GojoPolishSettings.Current.redAftermathDensity, 0f, vaporMaterial);
+                    var main = vapor.main; main.startDelay = .015f;
+                    var vaporShape = vapor.shape; vaporShape.scale = new Vector3(1f, .22f, 1f);
+                    var vaporRenderer = vapor.GetComponent<ParticleSystemRenderer>();
+                    vaporRenderer.renderMode = ParticleSystemRenderMode.Stretch;
+                    vaporRenderer.lengthScale = 4.5f;
+                    vaporRenderer.velocityScale = .16f;
+                    var size = vapor.sizeOverLifetime; size.enabled = true;
+                    size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0,.7f,1,1.25f));
+                    var limit = vapor.limitVelocityOverLifetime; limit.enabled = true;
+                    limit.limit = 5.5f; limit.dampen = .08f;
+                    Track(vapor);
+                }
+                followupPressure = ProductionSignatureVfxFactory.CreateSphere(transform,
+                    "DelayedRepulsiveAirFront", Vector3.zero, 0.01f,
+                    new Color(1f, 0.75f, 0.8f, 0.17f), RuntimeMaterials, MaterialColors, 1.2f);
+                Transform air = ProductionSignatureVfxFactory.CreateSphere(followupPressure,
+                    "DirectionalAirDistortion", Vector3.zero, 1f, Color.white, RuntimeMaterials, MaterialColors, 0f);
+                Shader shader = Resources.Load<Shader>("VFX/GojoBlueDistortion");
+                if (shader != null)
+                {
+                    airMaterial = RuntimeMaterials[RuntimeMaterials.Count - 1];
+                    airMaterial.shader = shader;
+                    airMaterial.SetFloat("_RadialSign", -1f);
+                    airMaterial.SetFloat("_Impact", 1f);
+                    airMaterial.SetFloat("_WorldRadius", pulseDiameter);
+                }
+                air.localScale = new Vector3(1f, 1f, 1.7f);
+            }
+            ProductionSignatureVfxFactory.ApplyEnergySurface(redShell,
+                new Color(0.40f, 0.002f, 0.008f), new Color(1.6f, 0.025f, 0.04f),
+                new Color(2.6f, 0.25f, 0.18f), true);
+            pressureLight = coreRoot.gameObject.AddComponent<Light>();
+            pressureLight.type = LightType.Point;
+            pressureLight.color = new Color(1f, 0.055f, 0.025f);
+            pressureLight.range = impactCue ? 7f : 4.5f;
+            pressureLight.shadows = LightShadows.None;
 
             ParticleSystem fragments = ProductionSignatureVfxFactory.CreateParticleSystem(
                 transform,
                 impactCue ? "ImpactOutwardStreaks" : "ShortTrailingFragments",
                 new Color(1f, 0.035f, 0.04f, 0.76f), RuntimeMaterials,
                 MaterialColors, !impactCue, Duration, 0.10f,
-                impactCue ? 0.18f : 0.22f, impactCue ? 6.5f : 1.0f,
-                impactCue ? 11f : 3.2f, 0.030f, 0.070f,
+                impactCue ? 0.25f : 0.22f, impactCue ? 12f : 1.0f,
+                impactCue ? 23f : 3.2f, 0.030f, 0.070f,
                 ParticleSystemShapeType.Sphere, orbDiameter * 0.48f, true,
-                ParticleSystemSimulationSpace.World, impactCue ? 22 : 8,
+                ParticleSystemSimulationSpace.World, impactCue ? 40 : 8,
                 impactCue ? 0f : 32f
             );
             ParticleSystem.ShapeModule fragmentShape = fragments.shape;
@@ -2039,7 +2115,7 @@ namespace JJKGame.Player
                 ParticleSystem trail = ProductionSignatureVfxFactory.CreateParticleSystem(
                     transform, "CompactResidualTrail",
                     new Color(0.72f, 0.008f, 0.018f, 0.58f), RuntimeMaterials,
-                    MaterialColors, true, Duration, 0.10f, 0.20f, 1.2f, 3.0f,
+                    MaterialColors, true, Duration, 0.22f, 0.42f, 1.2f, 3.0f,
                     0.035f, 0.070f, ParticleSystemShapeType.Cone,
                     orbDiameter * 0.16f, true, ParticleSystemSimulationSpace.World,
                     6, 24f
@@ -2060,11 +2136,23 @@ namespace JJKGame.Player
                 coreRoot.Rotate(Vector3.forward, 95f * deltaTime, Space.Self);
             }
 
-            float cycle = impactCue ? normalized : Mathf.Repeat(elapsed / 0.30f, 1f);
-            float expansion = Mathf.SmoothStep(0f, 1f, cycle);
+            float cycle = impactCue ? Mathf.Clamp01(elapsed / burstDuration) : Mathf.Repeat(elapsed / 0.30f, 1f);
+            if (impactCue) coreRoot.gameObject.SetActive(elapsed < burstDuration);
+            if (followupPressure != null)
+            {
+                float followup = Mathf.Clamp01((elapsed - 0.055f) / 0.23f);
+                followupPressure.gameObject.SetActive(elapsed >= 0.055f && elapsed < burstDuration);
+                followupPressure.localScale = Vector3.one * Mathf.Lerp(0.1f, pulseDiameter * 1.35f,
+                    1f - Mathf.Pow(1f - followup, 2f));
+                if (airMaterial != null) airMaterial.SetFloat("_Strength", 0.42f * (1f - followup));
+            }
+            // A sharp pressure front; Blue's inward acceleration remains distinct.
+            float expansion = 1f - Mathf.Pow(1f - cycle, 3f);
+            pressureLight.intensity = (impactCue ? 9f : 2.8f) * (1f - cycle * 0.95f);
             float diameter = Mathf.Lerp(orbDiameter * 0.92f, pulseDiameter, expansion);
             if (pulseShell != null)
             {
+                if (impactCue) pulseShell.gameObject.SetActive(elapsed < burstDuration);
                 pulseShell.localScale = Vector3.one * diameter;
             }
             if (shockFront != null)
@@ -2084,6 +2172,15 @@ namespace JJKGame.Player
                 shockFront.endColor = lineColor;
             }
         }
+
+        protected override void ApplyVisualFade(float fade)
+        {
+            base.ApplyVisualFade(fade);
+            if (pressureLight != null) pressureLight.intensity *= fade;
+            for (int i = 0; i < RuntimeMaterials.Count; i++)
+                if (RuntimeMaterials[i].HasProperty("_Opacity"))
+                    RuntimeMaterials[i].SetFloat("_Opacity", MaterialColors[i].a * fade);
+        }
     }
 
     /// <summary>
@@ -2092,6 +2189,34 @@ namespace JJKGame.Player
     /// </summary>
     internal static class ProductionSignatureVfxFactory
     {
+        /// <summary>Reuse the existing parameterized energy surface for other techniques.
+        /// Material ownership stays with CreateSphere's caller.</summary>
+        public static void ApplyEnergySurface(Transform surface, Color body, Color mid,
+            Color edge, bool shell)
+        {
+            Shader shader = Resources.Load<Shader>("VFX/GojoBlueEnergy");
+            if (shader == null || surface == null) return;
+            Material material = surface.GetComponent<Renderer>().sharedMaterial;
+            float opacity = material.color.a;
+            material.shader = shader;
+            material.renderQueue = shell ? 3030 : 3020;
+            material.SetColor("_BodyColor", body);
+            material.SetColor("_MidColor", mid);
+            material.SetColor("_EdgeColor", edge);
+            material.SetFloat("_Opacity", opacity);
+            material.SetFloat("_LayerMode", shell ? 1f : 0f);
+            material.SetFloat("_NoiseScale", 4.8f);
+            material.SetFloat("_NoiseSpeed", 0.65f);
+            material.SetFloat("_DetailScale", 16f);
+            material.SetFloat("_DetailSpeed", -0.8f);
+            material.SetFloat("_FresnelPower", 3.2f);
+            material.SetFloat("_Breakup", 0.48f);
+            material.SetFloat("_Emission", 1.55f);
+            material.SetFloat("_PulseSpeed", 12f);
+            material.SetFloat("_PulseAmount", 0.12f);
+            material.SetFloat("_Compression", 0.65f);
+        }
+
         public static Vector3 ResolvePosition(PresentationVfxSpawnRequest request)
         {
             return request.FollowsTarget && request.FollowTarget != null

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69d895286bed4408baa496148485163f, type: 3}
+  m_Name: GojoPolishSettings
+  m_EditorClassIdentifier:
+  blueCompressionEnabled: 0
+  blueCompressionStrength: 0.7
+  blueDebrisScale: 1.2
+  redFlashIntensity: 0.38
+  redShockRingScale: 1.65
+  redAftermathDuration: 1.25
+  redAftermathDensity: 48
+  purpleFusionHoldDuration: 0.32
+  purpleVisualScale: 1.65
+  purpleHoldOffset: {x: 0, y: 1.3, z: 2.2}
+  purpleScarWidthMultiplier: 1.15
+  purpleScarDuration: 1.8

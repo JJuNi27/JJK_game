@@ -1,5 +1,6 @@
 using JJKGame.Core;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace JJKGame.Player
 {
@@ -20,7 +21,33 @@ namespace JJKGame.Player
         private PrototypeCharacterId activeCharacterId;
         private int observedAttackStep;
         private float poseStartedAt;
+        private bool pendingAttackPoseFrame;
         private float entryStartedAt;
+
+        public static PrototypeFighterPresentationController GetOrCreate(GameObject owner)
+        {
+            if (owner == null)
+            {
+                return null;
+            }
+
+            PrototypeFighterPresentationController controller =
+                owner.GetComponent<PrototypeFighterPresentationController>();
+            return controller != null
+                ? controller
+                : owner.AddComponent<PrototypeFighterPresentationController>();
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void SubscribeSceneLoads()
+        {
+            // AfterSceneLoad runs only once at startup. Character Select -> CombatMVP
+            // must install the same pose consumer on the newly loaded fighters.
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => BootstrapAfterSceneLoad();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void BootstrapAfterSceneLoad()
@@ -33,7 +60,7 @@ namespace JJKGame.Player
                     continue;
                 }
 
-                attack.gameObject.AddComponent<PrototypeFighterPresentationController>();
+                GetOrCreate(attack.gameObject);
             }
         }
 
@@ -48,7 +75,30 @@ namespace JJKGame.Player
                 : PrototypeCharacterId.GojoModern);
         }
 
-        private void Update()
+        private void OnEnable()
+        {
+            BasicAttack attack = GetComponent<BasicAttack>();
+            attack.AttackStarted -= HandleAttackStarted;
+            attack.AttackStarted += HandleAttackStarted;
+        }
+
+        private void OnDisable()
+        {
+            BasicAttack attack = GetComponent<BasicAttack>();
+            if (attack != null)
+            {
+                attack.AttackStarted -= HandleAttackStarted;
+            }
+        }
+
+        private void HandleAttackStarted(int attackStep)
+        {
+            observedAttackStep = attackStep;
+            poseStartedAt = Time.time;
+            pendingAttackPoseFrame = true;
+        }
+
+        private void LateUpdate()
         {
             animationStateSource ??= FighterAnimationStateSource.GetOrCreate(gameObject);
             FighterAnimationStateSnapshot snapshot = animationStateSource != null
@@ -70,10 +120,12 @@ namespace JJKGame.Player
             {
                 observedAttackStep = attackStep;
                 poseStartedAt = Time.time;
+                pendingAttackPoseFrame = true;
             }
             else if (attackStep == 0)
             {
                 observedAttackStep = 0;
+                pendingAttackPoseFrame = false;
             }
 
             ApplyEntryPulse();
@@ -127,6 +179,7 @@ namespace JJKGame.Player
             rightArm = activeVisualRoot != null ? activeVisualRoot.Find("RightArm") : null;
             observedAttackStep = 0;
             poseStartedAt = 0f;
+            pendingAttackPoseFrame = false;
             entryStartedAt = Time.time;
         }
 
@@ -233,6 +286,13 @@ namespace JJKGame.Player
                 _ => 0.28f,
             };
             float progress = Mathf.Clamp01((Time.time - poseStartedAt) / duration);
+            if (pendingAttackPoseFrame)
+            {
+                // A domain teardown can produce a long transition frame. Do not let
+                // that single hitch skip the complete melee pose before it is rendered.
+                progress = Mathf.Clamp(progress, 0.12f, 0.88f);
+                pendingAttackPoseFrame = false;
+            }
             float envelope = Mathf.Sin(progress * Mathf.PI);
             if (envelope <= 0.001f)
             {

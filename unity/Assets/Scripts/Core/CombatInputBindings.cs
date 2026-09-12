@@ -36,13 +36,50 @@ namespace JJKGame.Core
     /// </summary>
     public static class ProductionCombatInput
     {
-        public static Vector2 Move => new Vector2(
-            Input.GetAxisRaw("Horizontal"),
-            Input.GetAxisRaw("Vertical")
-        );
+        public static Vector2 Move
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (MoveReplay != null) return MoveReplay();
+#endif
+                return new Vector2(
+                    Input.GetAxisRaw("Horizontal"),
+                    Input.GetAxisRaw("Vertical")
+                );
+            }
+        }
 
-        public static bool BasicAttackPressed => Input.GetMouseButtonDown(0);
-        public static bool DodgePressed => Input.GetKeyDown(CombatInputBindings.Dodge);
+#if UNITY_EDITOR
+        // Automated device-boundary replay; gameplay Update and all gates remain live.
+        public static System.Func<Vector2> MoveReplay;
+        public static System.Func<bool> BasicAttackReplay;
+        public static System.Func<bool> DodgeReplay;
+        public static System.Func<bool> DomainReplay;
+        public static System.Func<bool> DomainModifierPressedReplay;
+        public static System.Func<bool> DomainModifierHeldReplay;
+        public static System.Func<bool> DomainModifierReleasedReplay;
+#endif
+        public static bool BasicAttackPressed
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (BasicAttackReplay != null) return BasicAttackReplay();
+#endif
+                return Input.GetMouseButtonDown(0);
+            }
+        }
+        public static bool DodgePressed
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (DodgeReplay != null) return DodgeReplay();
+#endif
+                return Input.GetKeyDown(CombatInputBindings.Dodge);
+            }
+        }
         public static bool RunHeld => Input.GetKey(CombatInputBindings.Run)
             || Input.GetKey(CombatInputBindings.RunAlternate);
         public static bool TargetLockPressed =>
@@ -50,7 +87,16 @@ namespace JJKGame.Core
         public static bool Skill1Pressed => Input.GetKeyDown(CombatInputBindings.Skill1);
         public static bool Skill2Pressed => Input.GetKeyDown(CombatInputBindings.Skill2);
         public static bool UltimatePressed => Input.GetKeyDown(CombatInputBindings.Ultimate);
-        public static bool DomainPressed => Input.GetKeyDown(CombatInputBindings.Domain);
+        public static bool DomainPressed
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (DomainReplay != null) return DomainReplay();
+#endif
+                return Input.GetKeyDown(CombatInputBindings.Domain);
+            }
+        }
         public static bool CancelPressed =>
             Input.GetKeyDown(CombatInputBindings.CancelCommand);
         public static bool Reserve1TagPressed =>
@@ -59,9 +105,36 @@ namespace JJKGame.Core
             Input.GetKeyDown(CombatInputBindings.Reserve2Tag);
 
         // Gojo's existing domain gesture stays device-neutral at the gameplay call site.
-        public static bool DomainModifierPressed => Input.GetMouseButtonDown(1);
-        public static bool DomainModifierHeld => Input.GetMouseButton(1);
-        public static bool DomainModifierReleased => Input.GetMouseButtonUp(1);
+        public static bool DomainModifierPressed
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (DomainModifierPressedReplay != null) return DomainModifierPressedReplay();
+#endif
+                return Input.GetMouseButtonDown(1);
+            }
+        }
+        public static bool DomainModifierHeld
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (DomainModifierHeldReplay != null) return DomainModifierHeldReplay();
+#endif
+                return Input.GetMouseButton(1);
+            }
+        }
+        public static bool DomainModifierReleased
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (DomainModifierReleasedReplay != null) return DomainModifierReleasedReplay();
+#endif
+                return Input.GetMouseButtonUp(1);
+            }
+        }
     }
 
     /// <summary>
