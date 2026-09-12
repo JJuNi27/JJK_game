@@ -122,7 +122,7 @@ White Blood / Cosmic Eye / release를 수정해도 이 배경을 훼손하지 �
 
 단, 이 문서 갱신 시점에 해당 LOCAL 구조 작업이 GitHub remote에 code commit/push 되었는지는 별도 확인 필요.
 
-## Inspector 한글화 상태
+## Inspector 한글화 — LOCAL USER VERIFIED
 
 2026-09-13 Codex 검증:
 - compile error 0
@@ -130,10 +130,10 @@ White Blood / Cosmic Eye / release를 수정해도 이 배경을 훼손하지 �
 - 13개 Data Asset hash 불변
 - runtime / balance / reference 변경 없음
 
-하지만 사용자가 최종 한글 Inspector 화면을 직접 확인했다는 판정은 아직 기록 전이므로
-`CODEX VALIDATED / USER VISUAL CHECK PENDING`.
+그리고 사용자가 실제 Unity Inspector에서 한글화가 정상 적용된 것을 직접 확인함.
 
-USER VERIFIED로 올릴 때는 실제 Unity Inspector 확인 후 갱신한다.
+따라서 Inspector localization은 **LOCAL USER VERIFIED**.
+이 상태를 다시 `PENDING USER VISUAL REVIEW`로 되돌리지 않는다.
 
 ## 영구 사용자-facing UI 규칙
 
