@@ -88,6 +88,8 @@ master만 보고 현재 상태를 추정하지 말 것.
 4. 따라서 Data-driven migration은 LOCAL USER VERIFIED
 5. 새 Profile/Data Asset의 영어 Inspector label을 scoped CustomEditor/PropertyDrawer로 한글화
 6. localization compile 0 / focused test 24/24 / 13 asset hash 불변 확인
+7. 사용자가 실제 Unity Inspector에서 한글화가 정상임을 직접 확인
+8. 따라서 Inspector localization도 LOCAL USER VERIFIED
 
 단, 위 Data migration / localization은 이 bootstrap 갱신 시점에 아직 별도 code commit/push 전일 수 있다.
 GitHub에 이미 구현됐다고 단정하지 말고 같은 PC라면 먼저:
@@ -99,7 +101,7 @@ git log -1 --oneline
 
 을 확인한다.
 
-LOCAL Data 구조 후보:
+LOCAL Data 구조:
 - CharacterStatsProfile
 - CursedEnergyProfile
 - BasicAttackProfile + variable AttackStep[]
@@ -114,12 +116,11 @@ LOCAL Data 구조 후보:
 
 ## 현재 다음 작업 순서
 
-1. 사용자가 새 Data Asset Inspector 한글 표기를 실제로 확인
-2. local dirty tree 재확인
-3. Data migration + localization 관련 파일만 selective staging
-4. `git diff --cached --name-status` 검토
-5. 구조 checkpoint commit / push
-6. 이후 Astra visual track
+1. local dirty tree 재확인
+2. Data migration + localization 관련 파일만 selective staging
+3. `git diff --cached --name-status` 검토
+4. 구조 checkpoint commit / push
+5. 이후 Astra visual track
 
 절대 `git add .`로 unrelated Scene/VFX/Audio/Model 작업을 섞지 않는다.
 reset / checkout / clean 금지.
