@@ -1,13 +1,13 @@
 # 현재 작업 — Combat Data-driven 구조 checkpoint 마무리
 
-상태: **Combat Data-driven migration LOCAL USER VERIFIED / Inspector localization CODEX VALIDATED / 구조 checkpoint push 전**
+상태: **Combat Data-driven migration LOCAL USER VERIFIED / Inspector localization LOCAL USER VERIFIED / 구조 checkpoint push 전**
 
 작성 기준: 2026-09-13
 
 ## 현재 즉시 목표
 
 이번 단계의 목표는 새 기능 추가가 아니다.
-이미 완료된 Data-driven migration + Inspector 한글화를 사용자 시각 확인 후 안전하게 구조 checkpoint로 묶는 것이다.
+이미 완료된 Data-driven migration + Inspector 한글화를 안전하게 구조 checkpoint로 묶는 것이다.
 
 ## 완료된 LOCAL 구조 작업
 
@@ -47,12 +47,12 @@
 - full EditMode regression 50/50
 - 사용자 실제 gameplay 확인 완료
 
-### Inspector localization — CODEX VALIDATED
+### Inspector localization — USER VERIFIED
 
 목표:
 C# identifier는 영어로 유지하면서 사용자가 만지는 Inspector/Data label을 한국어로 표시.
 
-Codex 완료 보고:
+구현/검증:
 - 10개 신규 Data Profile scoped CustomEditor
 - BasicAttackStep / Blue / Red / Purple / Blue→Red PropertyDrawer
 - localization focused tests 24/24
@@ -60,9 +60,9 @@ Codex 완료 보고:
 - 13개 `.asset` SHA-256 전후 불일치 0
 - balance / reference / runtime / Scene / VFX / Audio 변경 없음
 - compile errors 0
+- 사용자가 실제 Unity Inspector에서 한글 표시 정상 확인
 
-현재 상태:
-**사용자의 최종 Inspector 시각 확인만 남음.**
+따라서 Inspector localization도 **LOCAL USER VERIFIED**.
 
 ## 영구 Inspector 규칙
 
@@ -98,28 +98,17 @@ Codex 완료 보고:
 
 ## 지금 해야 할 일
 
-1. 사용자가 다음 Data Asset Inspector를 실제 확인
-   - Character Stats
-   - Basic Attack
-   - Technique Gameplay
-   - Domain
-   - Burnout
-   - Targeting
-   - Combat Definition
+1. `git status -sb`
 
-2. 한글 label이 자연스럽고 실제 field가 모두 한국어인지 확인
-
-3. `git status -sb`
-
-4. Data migration + localization 관련 파일만 selective staging
+2. Data migration + localization 관련 파일만 selective staging
    - `git add .` 금지
    - Scene/VFX/Audio/Model/user-local unrelated work 제외
 
-5. `git diff --cached --name-status` 검토
+3. `git diff --cached --name-status` 검토
 
-6. 구조 checkpoint commit / push
+4. 구조 checkpoint commit / push
 
-7. 그 뒤 Astra visual track 시작
+5. 그 뒤 Astra visual track 시작
 
 ## 다음 Astra visual track
 
