@@ -100,6 +100,8 @@ namespace JJKGame.Player
                     prototypeAudio.PlayRedCastRuntime();
                     break;
                 case CombatAudioEventId.GojoRedImpact:
+                    prototypeAudio.PlayRedImpactRuntime(true);
+                    break;
                 case CombatAudioEventId.TechniqueImpact:
                     prototypeAudio.PlayRedImpactRuntime();
                     break;

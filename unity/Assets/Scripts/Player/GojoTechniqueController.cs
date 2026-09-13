@@ -19,6 +19,8 @@ namespace JJKGame.Player
         [SerializeField] private TechniqueAnimationBinding blueAnimation = new TechniqueAnimationBinding();
         [SerializeField] private TechniqueAnimationBinding redAnimation = new TechniqueAnimationBinding();
         private readonly TechniqueReleaseClock releaseClock = new TechniqueReleaseClock();
+        [SerializeField, InspectorName("Gojo 술식 게임플레이 프로필"), Tooltip("연결되면 Blue/Red 수치는 이 Data Asset에서 읽습니다.")]
+        private GojoTechniqueGameplayProfile gameplayProfile;
 
         [Header("Cursed Technique Lapse: Blue")]
         [SerializeField, Min(0.01f)] private float blueCastTime = 0.24f;
@@ -90,7 +92,6 @@ namespace JJKGame.Player
             domainController = GetComponent<GojoDomainController>();
             targetLock = GetComponent<TargetLockController>();
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             burnout = TechniqueBurnoutController.GetOrCreate(gameObject);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
         }
@@ -98,6 +99,21 @@ namespace JJKGame.Player
         private void Start()
         {
             RefreshCombatHealth();
+        }
+
+        public void ApplyProfile(GojoTechniqueGameplayProfile profile)
+        {
+            if (profile == null) return;
+            gameplayProfile = profile;
+            BlueGameplayData blue = profile.Blue;
+            blueCastTime = blue.CastTime; blueCastDistance = blue.CastDistance; blueRadius = blue.Radius;
+            blueFieldDuration = blue.FieldDuration; bluePulseInterval = blue.PulseInterval; blueDamage = blue.Damage;
+            bluePullSpeed = blue.PullSpeed; blueHitStun = blue.HitStun; blueCooldown = blue.Cooldown;
+            blueEnergyCost = blue.EnergyCost; lockedBluePointOffset = blue.LockedTargetOffset;
+            RedGameplayData red = profile.Red;
+            redCastTime = red.CastTime; redRange = red.Range; redProjectileSpeed = red.ProjectileSpeed;
+            redRadius = red.Radius; redDamage = red.Damage; redPushSpeed = red.PushSpeed;
+            redHitStun = red.HitStun; redCooldown = red.Cooldown; redEnergyCost = red.EnergyCost;
         }
 
         private void OnDisable()
@@ -149,7 +165,6 @@ namespace JJKGame.Player
             }
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (cursedEnergy != null && !cursedEnergy.TrySpend(cost, actionName))
             {
                 return;
@@ -256,8 +271,8 @@ namespace JJKGame.Player
         {
             Vector3 direction = pendingRedDirection.sqrMagnitude > 0.001f ? pendingRedDirection.normalized : transform.forward;
             Vector3 start = transform.position
-                + Vector3.up * GojoRedProductionDefaults.SpawnHeight
-                + direction * GojoRedProductionDefaults.SpawnForwardOffset;
+                + Vector3.up * (gameplayProfile != null ? gameplayProfile.Red.SpawnHeight : GojoRedProductionDefaults.SpawnHeight)
+                + direction * (gameplayProfile != null ? gameplayProfile.Red.SpawnForwardOffset : GojoRedProductionDefaults.SpawnForwardOffset);
             GameObject projectileObject = new GameObject("RedTechniqueProjectile");
             projectileObject.transform.position = start;
             RedTechniqueProjectile projectile = projectileObject.AddComponent<RedTechniqueProjectile>();

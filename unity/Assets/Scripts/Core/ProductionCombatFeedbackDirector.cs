@@ -259,8 +259,23 @@ namespace JJKGame.Core
 
             if (request.Phase == TechniquePresentationPhase.Active)
             {
+                // Gameplay activation begins the overwrite; arrival owns the payoff.
+                PlayFeedback(new Color(0.18f, 0.025f, 0.30f), 0.10f, 0.22f,
+                    0.08f, 0.12f, 0f, 1f);
+                PlayFovKick(-5f, 0.72f);
+                return;
+            }
+            if (request.Phase == TechniquePresentationPhase.Culmination)
+            {
+                PlayFeedback(new Color(0.78f, 0.72f, 1f), 0.09f, 0.18f,
+                    0.22f, 0.18f, 0f, 1f);
+                PlayFovKick(3f, 0.26f);
+                return;
+            }
+            if (request.Phase == TechniquePresentationPhase.Release)
+            {
                 PlayFeedback(
-                    new Color(0.42f, 0.62f, 1f),
+                    new Color(0.68f, 0.22f, 1f),
                     0.21f,
                     0.26f,
                     0.62f,

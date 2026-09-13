@@ -1,4 +1,5 @@
 using JJKGame.CameraSystem;
+using JJKGame.Player;
 using UnityEngine;
 
 namespace JJKGame.Core
@@ -6,26 +7,31 @@ namespace JJKGame.Core
     [DisallowMultipleComponent]
     public sealed class PrototypeCombatAudio : MonoBehaviour
     {
-        [Header("Optional Local Voice / Music Overrides")]
-        [SerializeField] private AudioClip backgroundMusic;
-        [SerializeField] private AudioClip blueVoice;
-        [SerializeField] private AudioClip redVoice;
-        [SerializeField] private AudioClip purpleVoice;
-        [SerializeField] private AudioClip domainVoice;
+        [Header("캐릭터 공통 오디오 프로필")]
+        [SerializeField, InspectorName("전투 오디오 프로필")]
+        [Tooltip("기술 1/2/필살기/영역 슬롯 기반 프로필입니다. 비워 두면 아래 기존 연결을 그대로 사용합니다.")]
+        private CombatAudioProfile presentationProfile;
 
-        [Header("Optional Local Combat SFX Overrides")]
-        [SerializeField] private AudioClip basicSwingSound;
-        [SerializeField] private AudioClip basicHitSound;
-        [SerializeField] private AudioClip basicFinisherSound;
-        [SerializeField] private AudioClip playerHitSound;
-        [SerializeField] private AudioClip dodgeSound;
-        [SerializeField] private AudioClip victorySound;
-        [SerializeField] private AudioClip defeatSound;
+        [Header("기존 로컬 음성 / 음악 연결")]
+        [SerializeField, InspectorName("전투 배경음악"), Tooltip("전투 배경음악입니다.")] private AudioClip backgroundMusic;
+        [SerializeField, InspectorName("아오 음성"), Tooltip("아오 시전 시 재생할 음성입니다.")] private AudioClip blueVoice;
+        [SerializeField, InspectorName("아카 음성"), Tooltip("아카 시전 시 재생할 음성입니다.")] private AudioClip redVoice;
+        [SerializeField, InspectorName("무라사키 음성"), Tooltip("무라사키 시전 시 재생할 음성입니다.")] private AudioClip purpleVoice;
+        [SerializeField, InspectorName("무량공처 음성"), Tooltip("무량공처 시전 시 재생할 음성입니다.")] private AudioClip domainVoice;
 
-        [Header("Volume")]
-        [SerializeField, Range(0f, 1f)] private float sfxVolume = 0.85f;
-        [SerializeField, Range(0f, 1f)] private float voiceVolume = 0.95f;
-        [SerializeField, Range(0f, 1f)] private float musicVolume = 0.32f;
+        [Header("기존 로컬 전투 효과음 연결")]
+        [SerializeField, InspectorName("평타 휘두르기 효과음")] private AudioClip basicSwingSound;
+        [SerializeField, InspectorName("평타 적중 효과음")] private AudioClip basicHitSound;
+        [SerializeField, InspectorName("평타 마무리 효과음")] private AudioClip basicFinisherSound;
+        [SerializeField, InspectorName("피격 효과음")] private AudioClip playerHitSound;
+        [SerializeField, InspectorName("회피 효과음")] private AudioClip dodgeSound;
+        [SerializeField, InspectorName("승리 효과음")] private AudioClip victorySound;
+        [SerializeField, InspectorName("패배 효과음")] private AudioClip defeatSound;
+
+        [Header("볼륨")]
+        [SerializeField, InspectorName("효과음 볼륨"), Range(0f, 1f), Tooltip("모든 전투 효과음의 기준 볼륨입니다.")] private float sfxVolume = 0.85f;
+        [SerializeField, InspectorName("음성 볼륨"), Range(0f, 1f), Tooltip("모든 음성의 기준 볼륨입니다.")] private float voiceVolume = 0.95f;
+        [SerializeField, InspectorName("음악 볼륨"), Range(0f, 1f), Tooltip("배경음악의 기준 볼륨입니다.")] private float musicVolume = 0.32f;
 
         private AudioSource sfxSource;
         private AudioSource voiceSource;
@@ -57,6 +63,11 @@ namespace JJKGame.Core
 
             PrototypeCombatAudio audio = owner.GetComponent<PrototypeCombatAudio>();
             return audio != null ? audio : owner.AddComponent<PrototypeCombatAudio>();
+        }
+
+        public void SetPresentationProfile(CombatAudioProfile profile)
+        {
+            presentationProfile = profile;
         }
 
         private void Awake()
@@ -139,61 +150,78 @@ namespace JJKGame.Core
         // Runtime-only playback entry points consumed by PrototypeCombatAudioEventBridge.
         public void PlayBlueCastRuntime()
         {
-            PlayVoice(blueVoice);
-            PlaySfx(blueCastFallback, 0.75f);
+            TechniqueAudioProfile cue = ResolveTechnique(CharacterPresentationSkillSlot.Skill1);
+            PlayVoice(cue != null && cue.voice != null ? cue.voice : blueVoice);
+            PlaySfx(cue != null && cue.castSfx != null ? cue.castSfx : blueCastFallback, 0.75f);
         }
 
         public void PlayBlueImpactRuntime()
         {
-            PlaySfx(blueImpactFallback, 1f);
+            TechniqueAudioProfile cue = ResolveTechnique(CharacterPresentationSkillSlot.Skill1);
+            PlaySfx(cue != null && cue.impactSfx != null ? cue.impactSfx : blueImpactFallback, 1f);
             ShakeAndFlash(0.18f, 0.18f, new Color(0.12f, 0.62f, 1f), 0.08f, 0.16f);
         }
 
         public void PlayRedCastRuntime()
         {
-            PlayVoice(redVoice);
-            PlaySfx(redCastFallback, 0.82f);
+            TechniqueAudioProfile cue = ResolveTechnique(CharacterPresentationSkillSlot.Skill2);
+            PlayVoice(cue != null && cue.voice != null ? cue.voice : redVoice);
+            PlaySfx(cue != null && cue.castSfx != null ? cue.castSfx : redCastFallback, 0.82f);
         }
 
-        public void PlayRedImpactRuntime()
+        public void PlayRedImpactRuntime(bool repulsivePressure = false)
         {
-            PlaySfx(redImpactFallback, 1f);
-            ShakeAndFlash(0.30f, 0.24f, new Color(1f, 0.12f, 0.08f), 0.13f, 0.20f);
+            TechniqueAudioProfile cue = ResolveTechnique(CharacterPresentationSkillSlot.Skill2);
+            PlaySfx(cue != null && cue.impactSfx != null ? cue.impactSfx : redImpactFallback, 1f);
+            if (repulsivePressure)
+                ShakeAndFlash(0.58f, 0.24f, new Color(1f, 0.88f, 0.84f),
+                    JJKGame.Player.GojoPolishSettings.Current.redFlashIntensity, 0.14f);
+            else ShakeAndFlash(0.30f, 0.24f, new Color(1f, 0.12f, 0.08f), 0.13f, 0.20f);
         }
 
         // Audio-only path for events whose camera/flash feedback is already owned by
         // ProductionCombatFeedbackDirector (for example Fuga impact).
         public void PlayRedImpactAudioOnlyRuntime()
         {
-            PlaySfx(redImpactFallback, 1f);
+            TechniqueAudioProfile cue = ResolveTechnique(CharacterPresentationSkillSlot.Skill2);
+            PlaySfx(cue != null && cue.impactSfx != null ? cue.impactSfx : redImpactFallback, 1f);
         }
 
         public void PlayPurpleRuntime()
         {
-            PlayVoice(purpleVoice);
-            PlaySfx(purpleFallback, 1f);
+            TechniqueAudioProfile cue = ResolveTechnique(CharacterPresentationSkillSlot.Ultimate);
+            PlayVoice(cue != null && cue.voice != null ? cue.voice : purpleVoice);
+            PlaySfx(ResolveReleaseOrCast(cue, purpleFallback), 1f);
         }
 
         public void PlayDomainRuntime()
         {
-            PlayVoice(domainVoice);
-            PlaySfx(domainFallback, 1f);
+            TechniqueAudioProfile cue = ResolveTechnique(CharacterPresentationSkillSlot.Domain);
+            PlayVoice(cue != null && cue.voice != null ? cue.voice : domainVoice);
+            PlaySfx(ResolveReleaseOrCast(cue, domainFallback), 1f);
         }
 
         public void PlayBasicSwingRuntime(int chainStep)
         {
             float volume = chainStep >= 3 ? 0.94f : 0.68f + chainStep * 0.08f;
-            PlaySfx(basicSwingSound != null ? basicSwingSound : basicSwingFallback, volume);
+            AudioClip clip = presentationProfile != null && presentationProfile.basicSwing != null
+                ? presentationProfile.basicSwing
+                : basicSwingSound != null ? basicSwingSound : basicSwingFallback;
+            PlaySfx(clip, volume);
         }
 
         public void PlayBasicHitRuntime(int chainStep)
         {
-            AudioClip regularHit = basicHitSound != null ? basicHitSound : basicHitFallback;
+            AudioClip regularHit = presentationProfile != null && presentationProfile.basicHit != null
+                ? presentationProfile.basicHit
+                : basicHitSound != null ? basicHitSound : basicHitFallback;
             if (chainStep >= 3)
             {
                 PlaySfx(regularHit, 0.78f);
                 PlaySfx(
-                    basicFinisherSound != null ? basicFinisherSound : basicFinisherFallback,
+                    presentationProfile != null && presentationProfile.basicFinisher != null
+                        ? presentationProfile.basicFinisher
+                        : basicFinisherSound != null ? basicFinisherSound : basicFinisherFallback,
                     1f
                 );
                 return;
@@ -204,7 +232,10 @@ namespace JJKGame.Core
 
         public void PlayDodgeRuntime()
         {
-            PlaySfx(dodgeSound != null ? dodgeSound : dodgeFallback, 0.90f);
+            AudioClip clip = presentationProfile != null && presentationProfile.dodge != null
+                ? presentationProfile.dodge
+                : dodgeSound != null ? dodgeSound : dodgeFallback;
+            PlaySfx(clip, 0.90f);
             GetCameraFeedback()?.AddShake(0.05f, 0.10f);
         }
 
@@ -262,6 +293,26 @@ namespace JJKGame.Core
             CombatAudioEvents.Raise(
                 CombatAudioEvent.ForOwner(ownerHealth, eventId, variant, amplified)
             );
+        }
+
+        private TechniqueAudioProfile ResolveTechnique(CharacterPresentationSkillSlot slot)
+        {
+            return presentationProfile != null ? presentationProfile.GetTechnique(slot) : null;
+        }
+
+        private static AudioClip ResolveReleaseOrCast(TechniqueAudioProfile cue, AudioClip fallback)
+        {
+            if (cue == null)
+            {
+                return fallback;
+            }
+
+            if (cue.releaseSfx != null)
+            {
+                return cue.releaseSfx;
+            }
+
+            return cue.castSfx != null ? cue.castSfx : fallback;
         }
 
         private void LoadLocalOverrides()

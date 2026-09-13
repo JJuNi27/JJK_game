@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95bb8e4de9d30994dab520443cb1ba80, type: 3}
+  m_Name: Gojo Technique Gameplay Profile
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Player.GojoTechniqueGameplayProfile
+  blue:
+    castTime: 0.24
+    castDistance: 10
+    radius: 4.5
+    fieldDuration: 0.95
+    pulseInterval: 0.1
+    damage: 8
+    pullSpeed: 16
+    hitStun: 0.42
+    cooldown: 3.2
+    energyCost: 16
+    lockedTargetOffset: 1.8
+  red:
+    castTime: 0.3
+    range: 26
+    projectileSpeed: 42
+    radius: 1.7
+    damage: 18
+    pushSpeed: 23
+    hitStun: 0.52
+    cooldown: 4.5
+    energyCost: 24
+    spawnHeight: 1
+    spawnForwardOffset: 0.9
+  purple:
+    preparationDuration: 8
+    cooldown: 10
+    range: 48
+    radius: 3.2
+    damage: 55
+    pushSpeed: 34
+    hitStun: 1
+    energyCost: 45
+  blueRedSynergy:
+    blueMarkDuration: 2.2
+    bonusDamage: 12
+    empoweredPushSpeed: 28
+    empoweredHitStun: 0.72
+    noticeDuration: 1.15

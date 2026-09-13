@@ -54,8 +54,7 @@ namespace JJKGame.Player
 
         private void Awake()
         {
-            CursedEnergyController.GetOrCreate(gameObject)
-                ?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
+            CursedEnergyController.GetOrCreate(gameObject);
             GojoInfinityDefense.GetOrCreate(gameObject);
             PrototypeCharacterController.GetOrCreate(gameObject);
         }

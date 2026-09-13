@@ -98,11 +98,28 @@ namespace JJKGame.Core
             }
         }
 
-        public bool CanStartBasicAttack => CurrentState == CombatActionState.Normal;
+        public bool CanStartBasicAttack => CanStartPhysicalAction;
         public bool CanStartTechnique => CurrentState == CombatActionState.Normal && !TechniqueBurnedOut;
         public bool CanStartUltimate => CurrentState == CombatActionState.Normal && !TechniqueBurnedOut;
-        public bool CanStartDodge => CurrentState == CombatActionState.Normal;
+        public bool CanStartDodge => CanStartPhysicalAction;
         public bool CanStartDomain => CurrentState == CombatActionState.Normal && !TechniqueBurnedOut;
+
+        private bool CanStartPhysicalAction
+        {
+            get
+            {
+                CombatActionState state = CurrentState;
+                if (state == CombatActionState.Normal)
+                {
+                    return true;
+                }
+
+                return state == CombatActionState.DomainActive
+                    && gojoDomain != null
+                    && gojoDomain.enabled
+                    && gojoDomain.AllowsPhysicalCombatActions;
+            }
+        }
 
         private void Awake()
         {

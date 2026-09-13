@@ -16,18 +16,31 @@ namespace JJKGame.Player
             Failed,
         }
 
-        [Header("Command Timing")]
-        [SerializeField, Min(0.1f)] private float domainReadyTimeout = 3f;
-        [SerializeField, Min(0.05f)] private float rightToLeftTimeout = 0.65f;
-        [SerializeField, Min(0.05f)] private float targetReleaseTime = 0.90f;
-        [SerializeField, Min(0.01f)] private float releaseTolerance = 0.22f;
-        [SerializeField, Min(0.1f)] private float failedDuration = 1.2f;
+        [SerializeField, InspectorName("영역 게임플레이 프로필"), Tooltip("연결되면 입력/지속/포획/주력 수치는 이 Data Asset에서 읽습니다.")]
+        private DomainGameplayProfile gameplayProfile;
 
-        [Header("Unlimited Void")]
-        [SerializeField, Min(0.1f)] private float domainDuration = 3f;
-        [SerializeField, Min(0.1f)] private float domainRadius = 30f;
-        [SerializeField, Min(0f)] private float domainEnergyCost = 60f;
-        [SerializeField] private GameObject domainVisualRoot;
+        [Header("영역 입력 타이밍")]
+        [SerializeField, InspectorName("준비 입력 제한시간"), Min(0.1f)] private float domainReadyTimeout = 3f;
+        [SerializeField, InspectorName("우클릭→좌클릭 제한시간"), Min(0.05f)] private float rightToLeftTimeout = 0.65f;
+        [SerializeField, InspectorName("목표 해제 시점"), Min(0.05f)] private float targetReleaseTime = 0.90f;
+        [SerializeField, InspectorName("해제 허용 오차"), Min(0.01f)] private float releaseTolerance = 0.22f;
+        [SerializeField, InspectorName("실패 표시시간"), Min(0.1f)] private float failedDuration = 1.2f;
+
+        [Header("무량공처")]
+        [Tooltip("도착 시네마틱이 끝난 뒤 영역 내부에서 유지되는 시간입니다.")]
+        [SerializeField, InspectorName("영역 지속시간"), Min(0.1f)] private float domainActiveDuration = 10f;
+        [Tooltip("포획 시점부터 계산하는 대상 경직 시간입니다. 시네마틱 시간도 포함합니다.")]
+        [SerializeField, InspectorName("대상 경직시간"), Min(0.1f)] private float domainVictimStunDuration = 16f;
+        private float activeLifetime;
+        public float DomainActiveDuration => domainActiveDuration;
+        public float DomainVictimStunDuration => domainVictimStunDuration;
+        [SerializeField, InspectorName("게임플레이 포획 반경"), Min(0.1f), Tooltip("영역 발동 시 대상을 포획하는 실제 게임플레이 반경입니다.")] private float domainRadius = 30f;
+        [SerializeField, InspectorName("영역 주력 소모량"), Min(0f), Tooltip("영역전개에 필요한 기본 주력입니다.")] private float domainEnergyCost = 60f;
+        [SerializeField, InspectorName("영역 시각 루트"), Tooltip("무량공처 런타임 시각 루트입니다. 비어 있으면 자동 생성합니다.")] private GameObject domainVisualRoot;
+        [SerializeField, InspectorName("영역 연출 설정"), Tooltip("포획 반경과 독립적인 결계/내부 공간/시네마틱 설정입니다.")] private DomainPresentationSettings domainPresentation = new DomainPresentationSettings();
+        private DomainPresentationSession domainSession;
+        private readonly List<Transform> capturedParticipants = new List<Transform>();
+        public float GameplayCaptureRadius => domainRadius;
 
         private GojoTechniqueController techniqueController;
         private CursedEnergyController cursedEnergy;
@@ -35,6 +48,10 @@ namespace JJKGame.Player
         private TechniqueBurnoutController burnout;
 
         public DomainState State { get; private set; } = DomainState.Normal;
+        public bool AllowsPhysicalCombatActions =>
+            State == DomainState.Active
+            && domainSession != null
+            && domainSession.IsActiveGameplay;
         public string StatusText { get; private set; } = "V 키로 영역전개를 준비하세요";
         public bool CapturesMouseInput =>
             State == DomainState.DomainReady
@@ -65,7 +82,6 @@ namespace JJKGame.Player
             EnsureTechniqueControllers();
             techniqueController = GetComponent<GojoTechniqueController>();
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             burnout = TechniqueBurnoutController.GetOrCreate(gameObject);
             actionGate = CombatActionGate.GetOrCreate(gameObject);
             EnsureRuntimeVisual();
@@ -75,6 +91,8 @@ namespace JJKGame.Player
 
         private void Update()
         {
+            Health health = GetComponent<Health>();
+            if (State == DomainState.Active && health != null && health.IsDead) ResetCommand();
             if (ProductionCombatInput.DomainPressed)
             {
                 RequestDomain();
@@ -106,7 +124,6 @@ namespace JJKGame.Player
             }
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (cursedEnergy != null && !cursedEnergy.CanSpend(domainEnergyCost))
             {
                 cursedEnergy.NotifyInsufficient("무량공처", domainEnergyCost);
@@ -122,7 +139,9 @@ namespace JJKGame.Player
 
         public void ResetCommand()
         {
+            bool wasActive = State == DomainState.Active;
             State = DomainState.Normal;
+            if (wasActive) burnout?.NotifyDomainEnded();
             stateStartedAt = Time.time;
             rightPressedAt = 0f;
             leftClickedAt = 0f;
@@ -214,9 +233,18 @@ namespace JJKGame.Player
             {
                 Fail("실패: 오른쪽 버튼을 너무 늦게 놓았습니다");
             }
-            else if (State == DomainState.Active && elapsed > domainDuration)
+            else if (State == DomainState.Active && elapsed > activeLifetime)
             {
-                ResetCommand();
+                // End the presentation transaction first. Its Ended callback commits burnout
+                // and Normal only after participant/camera restoration has completed.
+                if (domainSession != null && domainSession.IsRunning)
+                {
+                    domainSession.End();
+                }
+                else
+                {
+                    CompleteActiveDomain();
+                }
             }
             else if (State == DomainState.Failed && elapsed > failedDuration)
             {
@@ -227,7 +255,6 @@ namespace JJKGame.Player
         private void ActivateDomain()
         {
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (
                 cursedEnergy != null
                 && !cursedEnergy.TrySpend(domainEnergyCost, "무량공처")
@@ -238,10 +265,10 @@ namespace JJKGame.Player
             }
 
             ChangeState(DomainState.Active, "영역전개 · 무량공처");
-            SetDomainVisual(true);
 
             Collider[] colliders = Physics.OverlapSphere(transform.position, domainRadius);
             HashSet<IDomainStunnable> affectedTargets = new HashSet<IDomainStunnable>();
+            capturedParticipants.Clear();
 
             foreach (Collider hit in colliders)
             {
@@ -250,9 +277,68 @@ namespace JJKGame.Player
                 {
                     if (behaviour is IDomainStunnable target && affectedTargets.Add(target))
                     {
-                        target.ApplyDomainStun(domainDuration);
+                        target.ApplyDomainStun(domainVictimStunDuration);
+                        Health participantHealth = behaviour.GetComponentInParent<Health>();
+                        Transform participant = participantHealth != null ? participantHealth.transform : behaviour.transform;
+                        if (participant != transform && (participantHealth == null || !participantHealth.IsDead)
+                            && !capturedParticipants.Contains(participant)) capturedParticipants.Add(participant);
                     }
                 }
+            }
+            var locked = GetComponent<TargetLockController>();
+            bool hasVictim = DomainPresentationSession.SelectVictim(transform, capturedParticipants,
+                locked != null ? locked.CurrentTarget : null) != null;
+            activeLifetime = domainPresentation.ArrivalDuration(hasVictim) + domainActiveDuration;
+            SetDomainVisual(true);
+            UnlimitedVoidProductionVisual environment = domainVisualRoot != null
+                ? domainVisualRoot.GetComponent<UnlimitedVoidProductionVisual>() : null;
+            if (environment != null)
+            {
+                domainSession = domainVisualRoot.GetComponent<DomainPresentationSession>()
+                    ?? domainVisualRoot.AddComponent<DomainPresentationSession>();
+                domainSession.Ended -= HandleDomainPresentationEnded;
+                domainSession.Ended += HandleDomainPresentationEnded;
+                domainSession.Begin(transform, capturedParticipants, environment, domainPresentation, activeLifetime);
+            }
+        }
+
+        public void ApplyProfile(DomainGameplayProfile profile)
+        {
+            if (profile == null) return;
+            gameplayProfile = profile;
+            domainReadyTimeout = profile.ReadyTimeout; rightToLeftTimeout = profile.RightToLeftTimeout;
+            targetReleaseTime = profile.TargetReleaseTime; releaseTolerance = profile.ReleaseTolerance;
+            failedDuration = profile.FailedDuration; domainActiveDuration = profile.ActiveDuration;
+            domainVictimStunDuration = profile.VictimStunDuration; domainRadius = profile.CaptureRadius;
+            domainEnergyCost = profile.EnergyCost;
+        }
+
+        private void HandleDomainPresentationEnded()
+        {
+            CompleteActiveDomain();
+        }
+
+        private void CompleteActiveDomain()
+        {
+            if (State != DomainState.Active)
+            {
+                return;
+            }
+
+            // Burnout is technique-only. Commit it before exposing Normal so the action gate
+            // never observes a frame where techniques are available after Domain completion.
+            burnout ??= TechniqueBurnoutController.GetOrCreate(gameObject);
+            burnout?.NotifyDomainEnded();
+            State = DomainState.Normal;
+            stateStartedAt = Time.time;
+            rightPressedAt = 0f;
+            leftClickedAt = 0f;
+            StatusText =
+                $"{CombatInputBindings.DomainLabel} 키로 영역전개 준비 · 주력 {DomainEnergyCost:0} · "
+                + $"{CombatInputBindings.CancelCommandLabel} 입력 취소";
+            if (domainVisualRoot != null && domainVisualRoot.activeSelf)
+            {
+                domainVisualRoot.SetActive(false);
             }
         }
 
@@ -302,16 +388,27 @@ namespace JJKGame.Player
 
             UnlimitedVoidProductionVisual visual =
                 runtimeVisual.AddComponent<UnlimitedVoidProductionVisual>();
-            visual.Configure(domainRadius);
+            visual.Configure(domainPresentation);
             domainVisualRoot = runtimeVisual;
         }
 
         private void SetDomainVisual(bool visible)
         {
+            if (!visible && domainSession != null) domainSession.End();
             if (domainVisualRoot != null)
             {
                 domainVisualRoot.SetActive(visible);
             }
+        }
+
+        private void OnDisable()
+        {
+            ResetCommand();
+        }
+
+        private void OnDestroy()
+        {
+            if (domainSession != null) domainSession.End();
         }
 
         private void OnDrawGizmosSelected()

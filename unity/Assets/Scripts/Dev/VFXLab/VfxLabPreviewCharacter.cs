@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using JJKGame.Core;
+using JJKGame.Player;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -30,8 +31,13 @@ namespace JJKGame.Dev.VFXLab
         private const float RotationSpeed = 14f;
         private const float Gravity = -24f;
 
-        [Header("Movement")]
-        [SerializeField] private CharacterMovementProfile movementProfile = new CharacterMovementProfile();
+        [Header("캐릭터 프리뷰 프로필")]
+        [SerializeField, InspectorName("캐릭터 프리뷰 프로필"), Tooltip("비워 두면 현재 고죠 프리뷰 연결과 결과를 그대로 유지합니다.")]
+        private VfxLabCharacterProfile characterProfile;
+
+        [Header("이동")]
+        [SerializeField, InspectorName("이동 프로필"), Tooltip("걷기, 달리기, 회피 동작의 이동 설정입니다.")]
+        private CharacterMovementProfile movementProfile = new CharacterMovementProfile();
         private readonly EvadeMotion evadeMotion = new EvadeMotion();
         private bool recoveryCueRaised;
 
@@ -41,23 +47,37 @@ namespace JJKGame.Dev.VFXLab
         private Animator cachedAnimator;
         private RuntimeAnimatorController cachedAnimatorController;
 
-        [Header("Authored Character Hook")]
-        [SerializeField] private Transform authoredModelRoot;
-        [SerializeField] private Animator animator;
+        [Header("제작 캐릭터 연결")]
+        [SerializeField, InspectorName("캐릭터 모델 루트"), Tooltip("제작된 캐릭터 모델의 최상위 트랜스폼입니다.")]
+        private Transform authoredModelRoot;
+        [SerializeField, InspectorName("애니메이터"), Tooltip("캐릭터 프리뷰 애니메이션을 재생할 애니메이터입니다.")]
+        private Animator animator;
 
-        [Header("Optional Animator Parameters")]
-        [SerializeField] private string planarSpeedParameter = "PlanarSpeed";
-        [SerializeField] private string idleTrigger = "Idle";
-        [SerializeField] private string basicAttack1Trigger = "BasicAttack1";
-        [SerializeField] private string basicAttack2Trigger = "BasicAttack2";
-        [SerializeField] private string basicAttackFinisherTrigger = "BasicAttackFinisher";
-        [SerializeField] private string dodgeTrigger = "Dodge";
-        [SerializeField] private string anticipationTrigger = "TechniqueAnticipation";
-        [SerializeField] private string castTrigger = "TechniqueCast";
-        [SerializeField] private string releaseTrigger = "TechniqueRelease";
-        [SerializeField] private string recoverTrigger = "TechniqueRecover";
-        [SerializeField] private string domainAnticipationTrigger = "DomainAnticipation";
-        [SerializeField] private string domainReleaseTrigger = "DomainRelease";
+        [Header("선택적 애니메이터 파라미터")]
+        [SerializeField, InspectorName("평면 이동 속도 파라미터"), Tooltip("평면 이동 속도를 전달할 애니메이터 실수형 파라미터 이름입니다.")]
+        private string planarSpeedParameter = "PlanarSpeed";
+        [SerializeField, InspectorName("대기 트리거"), Tooltip("대기 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string idleTrigger = "Idle";
+        [SerializeField, InspectorName("평타 1타 트리거"), Tooltip("평타 1타를 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string basicAttack1Trigger = "BasicAttack1";
+        [SerializeField, InspectorName("평타 2타 트리거"), Tooltip("평타 2타를 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string basicAttack2Trigger = "BasicAttack2";
+        [SerializeField, InspectorName("평타 마무리 트리거"), Tooltip("평타 마무리 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string basicAttackFinisherTrigger = "BasicAttackFinisher";
+        [SerializeField, InspectorName("회피 트리거"), Tooltip("회피 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string dodgeTrigger = "Dodge";
+        [SerializeField, InspectorName("기술 준비 동작 트리거"), Tooltip("기술 준비 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string anticipationTrigger = "TechniqueAnticipation";
+        [SerializeField, InspectorName("기술 시전 트리거"), Tooltip("기술 시전 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string castTrigger = "TechniqueCast";
+        [SerializeField, InspectorName("기술 방출 트리거"), Tooltip("기술 방출 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string releaseTrigger = "TechniqueRelease";
+        [SerializeField, InspectorName("기술 회복 트리거"), Tooltip("기술 후딜레이 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string recoverTrigger = "TechniqueRecover";
+        [SerializeField, InspectorName("영역 준비 동작 트리거"), Tooltip("영역 준비 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string domainAnticipationTrigger = "DomainAnticipation";
+        [SerializeField, InspectorName("영역 방출 트리거"), Tooltip("영역 방출 동작을 재생할 애니메이터 트리거 파라미터 이름입니다.")]
+        private string domainReleaseTrigger = "DomainRelease";
 
         private CharacterController motor;
         private Transform cameraTransform;
@@ -81,6 +101,19 @@ namespace JJKGame.Dev.VFXLab
         public bool IsEvadeRecovering => evadeMotion.IsRecovering;
         public bool UsesAuthoredModel => usesAuthoredModel;
         public bool UsesAuthoredAnimator => usesAuthoredAnimator;
+        public PrototypeCharacterId CharacterId => characterProfile != null
+            ? characterProfile.CharacterId
+            : PrototypeCharacterId.GojoModern;
+        public CharacterPresentationProfile PresentationProfile => characterProfile != null
+            ? characterProfile.Presentation
+            : CharacterPresentationProfiles.Get(PrototypeCharacterId.GojoModern);
+        public CombatAudioProfile AudioProfile => characterProfile != null
+            ? characterProfile.CombatAudio
+            : null;
+        private CharacterMovementProfile ActiveMovementProfile =>
+            characterProfile != null && characterProfile.Movement != null
+                ? characterProfile.Movement
+                : movementProfile;
         public string AnimationSourceLabel => usesAuthoredAnimator
             ? "AUTHORED MODEL + ANIMATOR"
             : usesAuthoredModel
@@ -90,6 +123,12 @@ namespace JJKGame.Dev.VFXLab
         public void Configure(Transform newCameraTransform)
         {
             cameraTransform = newCameraTransform;
+        }
+
+        public void ConfigureCharacterProfile(VfxLabCharacterProfile profile)
+        {
+            characterProfile = profile;
+            ApplyProfileAnimatorController();
         }
 
         private void Awake()
@@ -108,6 +147,7 @@ namespace JJKGame.Dev.VFXLab
 
             authoredModelRoot ??= transform.Find("AuthoredModelRoot");
             RefreshAnimatorBinding();
+            ApplyProfileAnimatorController();
             usesAuthoredModel = HasAuthoredVisual();
             if (!usesAuthoredModel)
             {
@@ -131,7 +171,7 @@ namespace JJKGame.Dev.VFXLab
             {
                 // Use the existing relaxed Idle until an authored evade clip is available.
                 bool relaxedEvade = previewMotion == VfxLabPreviewMotion.Dodge
-                    && movementProfile.evade.styleId == "gojo-blue-burst";
+                    && ActiveMovementProfile.evade.styleId == "gojo-blue-burst";
                 SetAnimatorFloat(planarSpeedParameter, relaxedEvade ? 0f : planarSpeed);
             }
             else if (!usesAuthoredModel)
@@ -161,7 +201,7 @@ namespace JJKGame.Dev.VFXLab
             if (motion == VfxLabPreviewMotion.Dodge)
             {
                 CaptureDodgeDirection();
-                evadeMotion.Begin(movementProfile.evade);
+                evadeMotion.Begin(ActiveMovementProfile.evade);
                 recoveryCueRaised = false;
                 RaiseEvadeCue(EvadePresentationPhase.Started);
             }
@@ -176,8 +216,8 @@ namespace JJKGame.Dev.VFXLab
                 VfxLabPreviewMotion.BasicAttack1 => basicAttack1Trigger,
                 VfxLabPreviewMotion.BasicAttack2 => basicAttack2Trigger,
                 VfxLabPreviewMotion.BasicAttackFinisher => basicAttackFinisherTrigger,
-                VfxLabPreviewMotion.Dodge => string.IsNullOrEmpty(movementProfile.evade.animationTrigger)
-                    ? dodgeTrigger : movementProfile.evade.animationTrigger,
+                VfxLabPreviewMotion.Dodge => string.IsNullOrEmpty(ActiveMovementProfile.evade.animationTrigger)
+                    ? dodgeTrigger : ActiveMovementProfile.evade.animationTrigger,
                 VfxLabPreviewMotion.TechniqueAnticipation => anticipationTrigger,
                 VfxLabPreviewMotion.TechniqueCast => castTrigger,
                 VfxLabPreviewMotion.TechniqueRelease => releaseTrigger,
@@ -207,7 +247,7 @@ namespace JJKGame.Dev.VFXLab
             rawInput = Vector2.ClampMagnitude(rawInput, 1f);
             Vector3 direction = BuildCameraRelativeDirection(rawInput);
             float speed = Mathf.Max(0.1f, ProductionCombatInput.RunHeld
-                ? movementProfile.runSpeed : movementProfile.walkSpeed);
+                ? ActiveMovementProfile.runSpeed : ActiveMovementProfile.walkSpeed);
             bool evading = evadeMotion.IsActive;
             float evadeDisplacement = 0f;
             if (evading)
@@ -260,7 +300,7 @@ namespace JJKGame.Dev.VFXLab
         private void RaiseEvadeCue(EvadePresentationPhase phase)
         {
             EvadePresentationCues.Raise(new EvadePresentationCue(
-                transform, dodgeDirection, movementProfile.evade, phase));
+                transform, dodgeDirection, ActiveMovementProfile.evade, phase));
         }
 
         private void OnDisable()
@@ -343,9 +383,9 @@ namespace JJKGame.Dev.VFXLab
             }
 
             bool relaxedEvade = previewMotion == VfxLabPreviewMotion.Dodge
-                && movementProfile.evade.styleId == "gojo-blue-burst";
+                && ActiveMovementProfile.evade.styleId == "gojo-blue-burst";
             float movementWeight = relaxedEvade ? 0f
-                : Mathf.Clamp01(planarSpeed / Mathf.Max(0.1f, movementProfile.runSpeed));
+                : Mathf.Clamp01(planarSpeed / Mathf.Max(0.1f, ActiveMovementProfile.runSpeed));
             float walkPhase = Time.time * 8f;
             float armSwing = Mathf.Sin(walkPhase) * 24f * movementWeight;
             float legSwing = -armSwing * 0.75f;
@@ -613,6 +653,21 @@ namespace JJKGame.Dev.VFXLab
             Material material = new Material(shader) { color = color };
             runtimeMaterials.Add(material);
             return material;
+        }
+
+        private void ApplyProfileAnimatorController()
+        {
+            if (characterProfile == null || characterProfile.AnimatorController == null)
+            {
+                return;
+            }
+
+            RefreshAnimatorBinding();
+            if (animator != null && animator.runtimeAnimatorController != characterProfile.AnimatorController)
+            {
+                animator.runtimeAnimatorController = characterProfile.AnimatorController;
+                RefreshAnimatorBinding();
+            }
         }
 
         private void RefreshAnimatorBinding()

@@ -636,6 +636,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82ff4a7839d4c3a40906b1102c931394, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Enemy.CurseBotController
+  profile: {fileID: 11400000, guid: 74fb8d0e38f24364aa31208f02e87c5f, type: 2}
   target: {fileID: 0}
   moveSpeed: 3.2
   rotationSpeed: 10

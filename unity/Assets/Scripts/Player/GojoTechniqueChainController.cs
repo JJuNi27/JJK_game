@@ -10,6 +10,8 @@ namespace JJKGame.Player
     [RequireComponent(typeof(TargetLockController))]
     public sealed class GojoTechniqueChainController : MonoBehaviour
     {
+        [SerializeField, InspectorName("Gojo 술식 게임플레이 프로필"), Tooltip("연결되면 Purple과 Blue→Red 연계 수치는 이 Data Asset에서 읽습니다.")]
+        private GojoTechniqueGameplayProfile gameplayProfile;
         [Header("Blue To Red Hit Chain")]
         [SerializeField, Min(0.1f)] private float blueMarkDuration = 2.2f;
         [SerializeField, Min(0f)] private float chainBonusDamage = 12f;
@@ -20,8 +22,14 @@ namespace JJKGame.Player
         [Header("Hollow Purple")]
         [SerializeField, Min(0.1f)] private float purplePreparationDuration = 8f;
         [SerializeField, Min(0.1f)] private float purpleCooldown = 10f;
-        [SerializeField, Min(0.1f)] private float purpleRange = 18f;
-        [SerializeField, Min(0.1f)] private float purpleRadius = 2.2f;
+        public const float DefaultPurpleRange = 48f;
+        public const float DefaultPurpleLaunchDuration = 1.6f;
+        [SerializeField, Min(0.1f)] private float purpleRange = DefaultPurpleRange;
+        public float PurpleRange => purpleRange;
+        public float PurpleLaunchDuration => purpleLaunchDuration;
+        [Tooltip("Gameplay capsule radius in metres; independent of visual scale in GojoPolishSettings.")]
+        [SerializeField, Min(0.1f)] private float purpleRadius = 3.2f;
+        public float PurpleGameplayRadius => purpleRadius;
         [SerializeField, Min(0f)] private float purpleDamage = 55f;
         [SerializeField, Min(0f)] private float purplePushSpeed = 34f;
         [SerializeField, Min(0f)] private float purpleHitStun = 1f;
@@ -31,7 +39,7 @@ namespace JJKGame.Player
         [Header("Hollow Purple · Presentation / Damage Sync")]
         [SerializeField, Min(0f)] private float purplePresentationStartSlack = 0.08f;
         [SerializeField, Min(0f)] private float purpleMergeDuration = 0.24f;
-        [SerializeField, Min(0.01f)] private float purpleLaunchDuration = 0.78f;
+        [SerializeField, Min(0.01f)] private float purpleLaunchDuration = DefaultPurpleLaunchDuration;
 
         private sealed class PendingPurpleHit
         {
@@ -86,7 +94,6 @@ namespace JJKGame.Player
             techniqueController = GetComponent<GojoTechniqueController>();
             targetLock = GetComponent<TargetLockController>();
             cursedEnergy = CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             burnout = TechniqueBurnoutController.GetOrCreate(gameObject);
             blueWasReady = techniqueController != null && techniqueController.BlueReady;
             redWasReady = techniqueController != null && techniqueController.RedReady;
@@ -98,7 +105,6 @@ namespace JJKGame.Player
             techniqueController ??= GetComponent<GojoTechniqueController>();
             targetLock ??= GetComponent<TargetLockController>();
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             burnout ??= TechniqueBurnoutController.GetOrCreate(gameObject);
 
             if (techniqueController != null)
@@ -124,6 +130,20 @@ namespace JJKGame.Player
             }
         }
 
+        public void ApplyProfile(GojoTechniqueGameplayProfile profile)
+        {
+            if (profile == null) return;
+            gameplayProfile = profile;
+            BlueRedSynergyData synergy = profile.BlueRedSynergy;
+            blueMarkDuration = synergy.BlueMarkDuration; chainBonusDamage = synergy.BonusDamage;
+            empoweredPushSpeed = synergy.EmpoweredPushSpeed; empoweredHitStun = synergy.EmpoweredHitStun;
+            chainNoticeDuration = synergy.NoticeDuration;
+            PurpleGameplayData purple = profile.Purple;
+            purplePreparationDuration = purple.PreparationDuration; purpleCooldown = purple.Cooldown;
+            purpleRange = purple.Range; purpleRadius = purple.Radius; purpleDamage = purple.Damage;
+            purplePushSpeed = purple.PushSpeed; purpleHitStun = purple.HitStun; purpleEnergyCost = purple.EnergyCost;
+        }
+
         private void Update()
         {
             RemoveExpiredMarks();
@@ -136,7 +156,6 @@ namespace JJKGame.Player
             }
 
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (PurpleReady)
             {
                 ActivatePurple();
@@ -223,7 +242,6 @@ namespace JJKGame.Player
         private void ActivatePurple()
         {
             cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency);
             if (
                 cursedEnergy != null
                 && !cursedEnergy.TrySpend(purpleEnergyCost, "허식 자")
@@ -282,6 +300,7 @@ namespace JJKGame.Player
                             sequenceStartedAt
                             + purplePresentationStartSlack
                             + purpleMergeDuration
+                            + GojoPolishSettings.Current.purpleFusionHoldDuration
                             + purpleLaunchDuration * travelProgress,
                     }
                 );
@@ -493,7 +512,7 @@ namespace JJKGame.Player
             if (Time.time <= chainNoticeUntil)
             {
                 DrawCenterNotice(
-                    "BLUE → RED · BONUS +12",
+                    $"BLUE → RED · BONUS +{chainBonusDamage:0.##}",
                     new Color(0.82f, 0.28f, 1f)
                 );
                 return;

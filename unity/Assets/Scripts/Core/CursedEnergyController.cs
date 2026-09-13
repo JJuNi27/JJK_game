@@ -17,6 +17,8 @@ namespace JJKGame.Core
     public sealed class CursedEnergyController : MonoBehaviour
     {
         [Header("GAME_ORIGINAL Cursed Energy")]
+        [SerializeField, InspectorName("주력 프로필"), Tooltip("연결되면 이 Data Asset이 모든 주력 수치의 원본입니다.")]
+        private CursedEnergyProfile profile;
         [SerializeField] private CursedEnergyProfileId activeProfile = CursedEnergyProfileId.Standard;
         [SerializeField, Min(1f)] private float maxEnergy = 100f;
         [SerializeField, Min(0f)] private float startingEnergy = 100f;
@@ -36,6 +38,7 @@ namespace JJKGame.Core
         public event Action<CursedEnergyController, float> EnergyChanged;
 
         public CursedEnergyProfileId ActiveProfile => activeProfile;
+        public CursedEnergyProfile Profile => profile;
         public string ProfileLabel => profileLabel;
         public float MaxEnergy => maxEnergy;
         public float CurrentEnergy { get; private set; }
@@ -58,7 +61,31 @@ namespace JJKGame.Core
         private void Awake()
         {
             health = GetComponent<Health>();
-            ApplyProfile(activeProfile, true);
+            if (profile != null) ApplyProfile(profile, true);
+            else ApplyProfile(activeProfile, true);
+        }
+
+        public void ApplyProfile(CursedEnergyProfile nextProfile, bool refill = true)
+        {
+            if (nextProfile == null) return;
+            if (profileApplied && profile == nextProfile)
+            {
+                if (refill) ResetEnergy();
+                return;
+            }
+
+            profile = nextProfile;
+            ConfigureValues(nextProfile.MaxEnergy, nextProfile.StartingEnergy,
+                nextProfile.RegenerationPerSecond, nextProfile.RegenerationDelayAfterSpend,
+                nextProfile.CostMultiplier, nextProfile.MinimumTechniqueCost, nextProfile.ProfileLabel);
+            noticeDuration = nextProfile.NoticeDuration;
+            profileApplied = true;
+            if (refill)
+            {
+                CurrentEnergy = startingEnergy;
+                EnergyChanged?.Invoke(this, CurrentEnergy);
+            }
+            else SetEnergy(CurrentEnergy);
         }
 
         private void Update()
@@ -79,6 +106,8 @@ namespace JJKGame.Core
 
         public void ApplyProfile(CursedEnergyProfileId profileId, bool refill = true)
         {
+            // Legacy scene/API fallback. New character definitions inject a CursedEnergyProfile.
+            profile = null;
             if (profileApplied && activeProfile == profileId)
             {
                 if (refill)

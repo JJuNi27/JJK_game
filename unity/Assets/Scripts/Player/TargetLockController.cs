@@ -7,6 +7,8 @@ namespace JJKGame.Player
     [RequireComponent(typeof(Health))]
     public sealed class TargetLockController : MonoBehaviour
     {
+        [SerializeField, InspectorName("타겟팅 프로필"), Tooltip("연결되면 최대 락온 거리는 이 Data Asset에서 읽습니다.")]
+        private TargetingProfile profile;
         [Header("Target Lock")]
         [SerializeField, Min(1f)] private float maxLockDistance = 30f;
         [SerializeField, Min(0.1f)] private float indicatorRadius = 0.95f;
@@ -25,8 +27,16 @@ namespace JJKGame.Player
         public Health CurrentTarget => IsValidTarget(currentTarget) ? currentTarget : null;
         public bool HasTarget => CurrentTarget != null;
 
+        public void ApplyProfile(TargetingProfile nextProfile)
+        {
+            if (nextProfile == null) return;
+            profile = nextProfile;
+            maxLockDistance = nextProfile.MaxLockDistance;
+        }
+
         private void Awake()
         {
+            if (profile != null) maxLockDistance = profile.MaxLockDistance;
             ownHealth = GetComponent<Health>();
             BuildIndicator();
             ClearTarget();

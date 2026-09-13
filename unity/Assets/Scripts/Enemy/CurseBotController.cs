@@ -25,6 +25,9 @@ namespace JJKGame.Enemy
             Dead,
         }
 
+        [SerializeField, InspectorName("훈련 봇 프로필"), Tooltip("연결되면 이동과 공격 모드는 GameObject 이름이 아니라 이 Data Asset으로 결정됩니다.")]
+        private TrainingBotProfile profile;
+
         [Header("Movement")]
         [SerializeField] private Transform target;
         [SerializeField, Min(0.1f)] private float moveSpeed = 3.2f;
@@ -84,6 +87,7 @@ namespace JJKGame.Enemy
 
         private void Awake()
         {
+            if (profile != null) ApplyProfile(profile);
             controller = GetComponent<CharacterController>();
             health = GetComponent<Health>();
             health.Died += HandleDeath;
@@ -107,15 +111,19 @@ namespace JJKGame.Enemy
                 }
             }
 
-            // Prototype encounter convention: the runtime clone named CurseBot_B
-            // tests an explicit Infinity bypass. Other bots remain normal strikes.
-            ConfigureTrainingAttackMode(
-                name.Contains("_B")
-                    ? TrainingAttackMode.DomainAmplification
-                    : TrainingAttackMode.NormalStrike
-            );
-
             AssignEngagementSlot();
+        }
+
+        public void ApplyProfile(TrainingBotProfile nextProfile)
+        {
+            if (nextProfile == null) return;
+            profile = nextProfile;
+            moveSpeed = nextProfile.MoveSpeed; rotationSpeed = nextProfile.RotationSpeed; gravity = nextProfile.Gravity;
+            engagementRadius = nextProfile.EngagementRadius; engagementSlotTolerance = nextProfile.EngagementSlotTolerance;
+            trainingAttackMode = nextProfile.AttackMode; attackRange = nextProfile.AttackRange;
+            attackDamage = nextProfile.AttackDamage; attackCooldown = nextProfile.AttackCooldown;
+            attackWindupDuration = nextProfile.AttackWindupDuration; attackReachBuffer = nextProfile.AttackReachBuffer;
+            knockbackDamping = nextProfile.KnockbackDamping;
         }
 
         private void OnDestroy()

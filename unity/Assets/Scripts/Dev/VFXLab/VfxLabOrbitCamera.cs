@@ -31,6 +31,7 @@ namespace JJKGame.Dev.VFXLab
 
         private void LateUpdate()
         {
+            if (JJKGame.CameraSystem.DomainCameraOverride.IsOwned(GetComponent<Camera>())) return;
             if (Input.GetMouseButton(2))
             {
                 yaw += Input.GetAxis("Mouse X") * 4.2f;
@@ -64,6 +65,11 @@ namespace JJKGame.Dev.VFXLab
                 smoothedFocus - transform.position,
                 Vector3.up
             );
+        }
+
+        public void TranslatePresentationSpace(Vector3 delta)
+        {
+            smoothedFocus += delta;
         }
 
         private Vector3 ResolveFocus()

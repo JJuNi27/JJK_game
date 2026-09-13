@@ -7,15 +7,19 @@ namespace JJKGame.Dev.VFXLab
 {
     public enum VfxLabPreviewAction
     {
-        None,
-        BasicAttack,
-        Dodge,
-        Blue,
-        Red,
-        HollowPurple,
-        UnlimitedVoid,
-        BlueFieldDebug,
-        BlueImpactDebug,
+        None = 0,
+        [InspectorName("평타")] BasicAttack = 1,
+        [InspectorName("회피")] Dodge = 2,
+        [InspectorName("기술 1")] Skill1 = 3,
+        Blue = Skill1,
+        [InspectorName("기술 2")] Skill2 = 4,
+        Red = Skill2,
+        [InspectorName("필살기")] Ultimate = 5,
+        HollowPurple = Ultimate,
+        [InspectorName("영역")] Domain = 6,
+        UnlimitedVoid = Domain,
+        BlueFieldDebug = 7,
+        BlueImpactDebug = 8,
     }
 
     [DisallowMultipleComponent]
@@ -28,7 +32,9 @@ namespace JJKGame.Dev.VFXLab
         private const float PreviewAnchorHeight = 1f;
         private const float LoopDelay = 0.34f;
         private const float DomainAnticipationDuration = 0.34f;
-        private const float DomainPreviewDuration = 3.2f;
+        [SerializeField, InspectorName("영역 유지시간"), Min(.1f), Tooltip("도착 연출 뒤 영역 프리뷰가 유지되는 시간입니다.")]
+        private float domainActiveDuration = 10f;
+        private float DomainPreviewDuration => domainPresentation.ArrivalDuration(false) + domainActiveDuration;
 
         private readonly List<PresentationVfxHandle> activeHandles =
             new List<PresentationVfxHandle>(8);
@@ -36,7 +42,7 @@ namespace JJKGame.Dev.VFXLab
         private Transform previewPoint;
         private VfxLabPreviewCharacter previewCharacter;
         private PrototypeCombatAudio previewAudio;
-        private VfxLabPreviewAction selectedAction = VfxLabPreviewAction.Blue;
+        private VfxLabPreviewAction selectedAction = VfxLabPreviewAction.Skill1;
         private VfxLabPreviewAction activeAction;
         private PrototypeHollowPurplePresentationRuntime.OrbSequence hollowPurpleSequence;
         private Transform travelAnchor;
@@ -44,6 +50,10 @@ namespace JJKGame.Dev.VFXLab
         private Vector3 travelEnd;
         private GameObject domainPreviewRoot;
         private UnlimitedVoidProductionVisual domainVisual;
+        [SerializeField, InspectorName("영역 연출 설정"), Tooltip("VFXLab 영역 프리뷰의 결계/내부 공간/시네마틱 설정입니다.")]
+        private DomainPresentationSettings domainPresentation = new DomainPresentationSettings();
+        private DomainPresentationSession domainSession;
+        private TechniqueChargeVisual chargeVisual;
         private float sequenceElapsed;
         private float hollowPurpleClock;
         private float basicComboExpiresAt;
@@ -61,23 +71,14 @@ namespace JJKGame.Dev.VFXLab
         private int nextBasicAttackStep = 1;
         private string phaseBeforePause = "IDLE";
 
-        public string SelectedActionLabel => selectedAction switch
-        {
-            VfxLabPreviewAction.BasicAttack => $"BASIC ATTACK · NEXT {nextBasicAttackStep}",
-            VfxLabPreviewAction.Dodge => "DODGE",
-            VfxLabPreviewAction.Red => "CURSED TECHNIQUE REVERSAL: RED",
-            VfxLabPreviewAction.HollowPurple => "HOLLOW PURPLE",
-            VfxLabPreviewAction.UnlimitedVoid => "UNLIMITED VOID",
-            VfxLabPreviewAction.BlueFieldDebug => "BLUE · FIELD ONLY [DEBUG]",
-            VfxLabPreviewAction.BlueImpactDebug => "BLUE · IMPACT ONLY [DEBUG]",
-            _ => "CURSED TECHNIQUE LAPSE: BLUE",
-        };
+        public string SelectedActionLabel => GetSelectedActionLabel();
 
         public string CurrentPhaseLabel { get; private set; } = "IDLE";
         public bool LoopEnabled => loopEnabled;
         public bool Paused => paused;
         public float PlaybackSpeed => playbackSpeed;
         public bool RuntimeReady => PresentationVfxRuntime.HasRuntime;
+        public bool IsInsideDomain => domainSession != null && domainSession.IsEntered;
 
         public void Configure(
             Transform newPreviewPoint,
@@ -86,7 +87,51 @@ namespace JJKGame.Dev.VFXLab
         {
             previewPoint = newPreviewPoint;
             previewCharacter = newPreviewCharacter;
-            GetPreviewAudio();
+            GetPreviewAudio()?.SetPresentationProfile(previewCharacter != null
+                ? previewCharacter.AudioProfile
+                : null);
+        }
+
+        private string GetSelectedActionLabel()
+        {
+            if (selectedAction == VfxLabPreviewAction.BasicAttack)
+                return $"BASIC ATTACK · NEXT {nextBasicAttackStep}";
+            if (selectedAction == VfxLabPreviewAction.Dodge) return "DODGE";
+            if (selectedAction == VfxLabPreviewAction.BlueFieldDebug) return "BLUE · FIELD ONLY [DEBUG]";
+            if (selectedAction == VfxLabPreviewAction.BlueImpactDebug) return "BLUE · IMPACT ONLY [DEBUG]";
+
+            CharacterPresentationProfile profile = previewCharacter != null
+                ? previewCharacter.PresentationProfile
+                : CharacterPresentationProfiles.Get(PrototypeCharacterId.GojoModern);
+            if (profile.CharacterId == PrototypeCharacterId.GojoModern)
+            {
+                return selectedAction switch
+                {
+                    VfxLabPreviewAction.Skill2 => "CURSED TECHNIQUE REVERSAL: RED",
+                    VfxLabPreviewAction.Ultimate => "HOLLOW PURPLE",
+                    VfxLabPreviewAction.Domain => "UNLIMITED VOID",
+                    _ => "CURSED TECHNIQUE LAPSE: BLUE",
+                };
+            }
+
+            return selectedAction switch
+            {
+                VfxLabPreviewAction.Skill2 => $"SKILL 2 · {profile.Skill2.Label}",
+                VfxLabPreviewAction.Ultimate => $"ULTIMATE · {profile.Ultimate.Label}",
+                VfxLabPreviewAction.Domain => $"DOMAIN · {profile.Domain.Label}",
+                _ => $"SKILL 1 · {profile.Skill1.Label}",
+            };
+        }
+
+        private bool SupportsBuiltInTechniquePreview => previewCharacter == null
+            || previewCharacter.CharacterId == PrototypeCharacterId.GojoModern;
+
+        private static bool IsTechniqueSlot(VfxLabPreviewAction action)
+        {
+            return action == VfxLabPreviewAction.Skill1
+                || action == VfxLabPreviewAction.Skill2
+                || action == VfxLabPreviewAction.Ultimate
+                || action == VfxLabPreviewAction.Domain;
         }
 
         private void OnEnable()
@@ -136,16 +181,16 @@ namespace JJKGame.Dev.VFXLab
                 case VfxLabPreviewAction.Dodge:
                     TickDodge();
                     break;
-                case VfxLabPreviewAction.Blue:
+                case VfxLabPreviewAction.Skill1:
                     TickBlue();
                     break;
-                case VfxLabPreviewAction.Red:
+                case VfxLabPreviewAction.Skill2:
                     TickRed();
                     break;
-                case VfxLabPreviewAction.HollowPurple:
+                case VfxLabPreviewAction.Ultimate:
                     TickHollowPurple();
                     break;
-                case VfxLabPreviewAction.UnlimitedVoid:
+                case VfxLabPreviewAction.Domain:
                     TickUnlimitedVoid();
                     break;
                 case VfxLabPreviewAction.BlueFieldDebug:
@@ -221,19 +266,19 @@ namespace JJKGame.Dev.VFXLab
             }
             else if (ProductionCombatInput.Skill1Pressed)
             {
-                Begin(VfxLabPreviewAction.Blue);
+                Begin(VfxLabPreviewAction.Skill1);
             }
             else if (ProductionCombatInput.Skill2Pressed)
             {
-                Begin(VfxLabPreviewAction.Red);
+                Begin(VfxLabPreviewAction.Skill2);
             }
             else if (ProductionCombatInput.UltimatePressed)
             {
-                Begin(VfxLabPreviewAction.HollowPurple);
+                Begin(VfxLabPreviewAction.Ultimate);
             }
             else if (ProductionCombatInput.DomainPressed)
             {
-                Begin(VfxLabPreviewAction.UnlimitedVoid);
+                Begin(VfxLabPreviewAction.Domain);
             }
         }
 
@@ -266,6 +311,16 @@ namespace JJKGame.Dev.VFXLab
 
         private void Begin(VfxLabPreviewAction action)
         {
+            if (IsTechniqueSlot(action) && !SupportsBuiltInTechniquePreview)
+            {
+                StopPreviewContent();
+                selectedAction = action;
+                activeAction = VfxLabPreviewAction.None;
+                running = false;
+                CurrentPhaseLabel = "PREVIEW ADAPTER REQUIRED";
+                return;
+            }
+
             StopPreviewContent();
             previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.Idle);
             selectedAction = action;
@@ -302,7 +357,8 @@ namespace JJKGame.Dev.VFXLab
                     GetPreviewAudio()?.PlayBlueImpactRuntime();
                     SpawnBlueImpact();
                     break;
-                case VfxLabPreviewAction.Red:
+                case VfxLabPreviewAction.Skill2:
+                    chargeVisual = TechniqueChargeVisual.Spawn(previewCharacter != null ? previewCharacter.transform : transform, false, 0.44f);
                     PositionPreviewAnchorFromCharacter(
                         GojoRedProductionDefaults.PreviewEndForwardDistance
                     );
@@ -310,16 +366,18 @@ namespace JJKGame.Dev.VFXLab
                     CurrentPhaseLabel = "ANTICIPATION";
                     previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueAnticipation);
                     break;
-                case VfxLabPreviewAction.HollowPurple:
+                case VfxLabPreviewAction.Ultimate:
                     PositionPreviewAnchorFromCharacter(7f);
                     CurrentPhaseLabel = "ANTICIPATION";
                     previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueAnticipation);
                     break;
-                case VfxLabPreviewAction.UnlimitedVoid:
+                case VfxLabPreviewAction.Domain:
                     PositionPreviewAnchorFromCharacter(PreviewAnchorForwardDistance);
                     BeginUnlimitedVoid();
                     break;
                 default:
+                    if (action == VfxLabPreviewAction.Skill1)
+                        chargeVisual = TechniqueChargeVisual.Spawn(previewCharacter != null ? previewCharacter.transform : transform, true, 0.58f);
                     PositionPreviewAnchorFromCharacter(PreviewAnchorForwardDistance);
                     CurrentPhaseLabel = "ANTICIPATION";
                     previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueAnticipation);
@@ -413,7 +471,7 @@ namespace JJKGame.Dev.VFXLab
         {
             const float releaseAt = 0.44f;
             const float recoverDelayAfterImpact = 0.19f;
-            const float completeDelayAfterImpact = 0.50f;
+            float completeDelayAfterImpact = .35f + GojoPolishSettings.Current.redAftermathDuration;
             float travelDuration = GojoRedProductionDefaults.TravelDuration;
             float impactAt = releaseAt + travelDuration;
 
@@ -427,6 +485,8 @@ namespace JJKGame.Dev.VFXLab
             if (sequenceStep == 1 && sequenceElapsed >= releaseAt)
             {
                 CurrentPhaseLabel = "RED RELEASE";
+                if (chargeVisual != null) chargeVisual.Consume();
+                chargeVisual = null;
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRelease);
                 SpawnRedRelease();
                 sequenceStep = 2;
@@ -438,7 +498,7 @@ namespace JJKGame.Dev.VFXLab
             if (sequenceStep == 2 && sequenceElapsed >= impactAt)
             {
                 CurrentPhaseLabel = "RED IMPACT";
-                GetPreviewAudio()?.PlayRedImpactRuntime();
+                GetPreviewAudio()?.PlayRedImpactRuntime(true);
                 SpawnRedImpact();
                 sequenceStep = 3;
             }
@@ -475,6 +535,9 @@ namespace JJKGame.Dev.VFXLab
             {
                 float deltaTime = Time.deltaTime;
                 hollowPurpleClock += deltaTime;
+                CurrentPhaseLabel = hollowPurpleClock < .24f ? "HOLLOW PURPLE · MERGE"
+                    : hollowPurpleClock < .24f + GojoPolishSettings.Current.purpleFusionHoldDuration
+                        ? "FUSION COMPLETE · HOLD" : "HOLLOW PURPLE · TRAVEL / RESIDUE";
                 if (!hollowPurpleSequence.Update(hollowPurpleClock, deltaTime))
                 {
                     hollowPurpleSequence.Dispose();
@@ -492,6 +555,7 @@ namespace JJKGame.Dev.VFXLab
 
         private void TickUnlimitedVoid()
         {
+            if (domainVisual != null) CurrentPhaseLabel = domainVisual.PhaseLabel;
             if (sequenceStep == 0 && sequenceElapsed >= DomainAnticipationDuration)
             {
                 ActivateUnlimitedVoid();
@@ -528,9 +592,13 @@ namespace JJKGame.Dev.VFXLab
                 );
             }
             domainVisual = domainPreviewRoot.AddComponent<UnlimitedVoidProductionVisual>();
-            domainVisual.Configure(30f);
+            domainVisual.Configure(domainPresentation);
             domainPreviewRoot.SetActive(true);
-            domainVisual.enabled = !paused;
+            domainVisual.Paused = paused;
+            domainSession = domainPreviewRoot.AddComponent<DomainPresentationSession>();
+            domainSession.Begin(previewCharacter != null ? previewCharacter.transform : transform,
+                System.Array.Empty<Transform>(), domainVisual, domainPresentation, DomainPreviewDuration, previewPoint);
+            domainSession.Paused = paused;
         }
 
         private void PositionPreviewAnchorFromCharacter(float forwardDistance)
@@ -764,6 +832,8 @@ namespace JJKGame.Dev.VFXLab
             }
             if (domainPreviewRoot != null)
             {
+                if (domainSession != null) domainSession.End();
+                domainSession = null;
                 domainPreviewRoot.SetActive(false);
                 Destroy(domainPreviewRoot);
                 domainPreviewRoot = null;
@@ -773,6 +843,8 @@ namespace JJKGame.Dev.VFXLab
 
         private void StopHandles()
         {
+            if (chargeVisual != null) Destroy(chargeVisual.gameObject);
+            chargeVisual = null;
             foreach (PresentationVfxHandle handle in activeHandles)
             {
                 handle.Stop(PresentationVfxStopMode.Immediate);
@@ -793,8 +865,9 @@ namespace JJKGame.Dev.VFXLab
             }
             if (domainVisual != null)
             {
-                domainVisual.enabled = !paused;
+                domainVisual.Paused = paused;
             }
+            if (domainSession != null) domainSession.Paused = paused;
             ApplyTimeScale();
             CurrentPhaseLabel = paused ? "PAUSED" : CurrentPhaseLabel;
         }

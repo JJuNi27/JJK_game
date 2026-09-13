@@ -5,6 +5,8 @@ namespace JJKGame.Core
 {
     public sealed class Health : MonoBehaviour
     {
+        [SerializeField, InspectorName("캐릭터 능력치 프로필"), Tooltip("연결되면 최대 체력은 이 Data Asset에서 읽습니다.")]
+        private CharacterStatsProfile statsProfile;
         [SerializeField, Min(1f)] private float maxHealth = 100f;
 
         [Header("Out Of Bounds")]
@@ -24,7 +26,17 @@ namespace JJKGame.Core
 
         private void Awake()
         {
+            if (statsProfile != null) maxHealth = statsProfile.MaxHealth;
             CurrentHealth = maxHealth;
+        }
+
+        public void ApplyProfile(CharacterStatsProfile profile, bool resetCurrent = true)
+        {
+            if (profile == null) return;
+            statsProfile = profile;
+            maxHealth = profile.MaxHealth;
+            if (resetCurrent) ResetHealth();
+            else SetCurrentHealth(CurrentHealth);
         }
 
         private void Update()

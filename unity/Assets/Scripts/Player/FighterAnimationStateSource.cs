@@ -80,6 +80,11 @@ namespace JJKGame.Player
         private void OnEnable()
         {
             RefreshReferences();
+            if (basicAttack != null)
+            {
+                basicAttack.AttackStarted -= HandleBasicAttackStarted;
+                basicAttack.AttackStarted += HandleBasicAttackStarted;
+            }
             TechniquePresentationRequests.Requested -= HandleTechniquePresentation;
             TechniquePresentationRequests.Requested += HandleTechniquePresentation;
 
@@ -92,11 +97,32 @@ namespace JJKGame.Player
 
         private void OnDisable()
         {
+            if (basicAttack != null)
+            {
+                basicAttack.AttackStarted -= HandleBasicAttackStarted;
+            }
             TechniquePresentationRequests.Requested -= HandleTechniquePresentation;
             if (health != null)
             {
                 health.Died -= HandleDied;
             }
+        }
+
+        private void HandleBasicAttackStarted(int attackStep)
+        {
+            RefreshReferences();
+            PrototypeCharacterId characterId = characterController != null
+                ? characterController.ActiveCharacter
+                : PrototypeCharacterId.GojoModern;
+            previousAttackStep = attackStep;
+            FighterAnimationCues.Raise(
+                FighterAnimationCue.Simple(
+                    health,
+                    characterId,
+                    FighterAnimationCueKind.BasicAttackStarted,
+                    attackStep
+                )
+            );
         }
 
         private void Update()

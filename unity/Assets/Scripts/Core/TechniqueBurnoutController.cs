@@ -6,8 +6,18 @@ namespace JJKGame.Core
     [DisallowMultipleComponent]
     public sealed class TechniqueBurnoutController : MonoBehaviour
     {
-        [Header("OFFICIAL_CONCEPT / GAME_ORIGINAL Duration")]
-        [SerializeField, Min(0.1f)] private float burnoutDuration = 5f;
+        [SerializeField, InspectorName("번아웃 정책"), Tooltip("연결되면 번아웃 수치는 이 Data Asset에서 읽습니다.")]
+        private BurnoutPolicyProfile profile;
+        [Header("술식 번아웃")]
+        [SerializeField, InspectorName("번아웃 지속시간"), Min(0.1f), Tooltip("영역 종료 뒤 기술/필살기/영역만 봉인되는 시간입니다. 평타와 물리 공격은 봉인하지 않습니다.")]
+        private float burnoutDuration = 5f;
+
+        public void ApplyProfile(BurnoutPolicyProfile nextProfile)
+        {
+            if (nextProfile == null) return;
+            profile = nextProfile;
+            burnoutDuration = nextProfile.Duration;
+        }
 
         private GojoDomainController domain;
         private GojoVariantController variant;
@@ -67,8 +77,17 @@ namespace JJKGame.Core
             burnoutEndsAt = Mathf.Max(burnoutEndsAt, Time.time + burnoutDuration);
         }
 
+        public void NotifyDomainEnded()
+        {
+            // The Domain's terminal transaction is authoritative even when disabled
+            // before this component's next Update. Do not reset any physical attack state.
+            previousDomainState = GojoDomainController.DomainState.Normal;
+            if (profile == null || profile.OccursAfterDomain) BeginBurnout();
+        }
+
         public bool TryRestoreTechniqueEarly()
         {
+            if (profile != null && !profile.AllowEarlyRecovery) return false;
             variant ??= GojoVariantController.GetOrCreate(gameObject);
             if (variant == null || !variant.CanManuallyRestoreTechniqueBurnout)
             {

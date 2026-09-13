@@ -360,7 +360,7 @@ namespace JJKGame.EditorTools
             yield return WaitScaled(.4f);
             Assert.That(GameObject.Find("RepulsivePressureAftermath"), Is.Not.Null);
             yield return Capture("Combat_Red_aftermath", bot.transform.position + Vector3.up);
-            yield return WaitScaled(1.1f);
+            yield return WaitScaled(GojoPolishSettings.Current.redAftermathDuration + .2f);
             Assert.That(GameObject.Find("RepulsivePressureAftermath"), Is.Null);
 
             // Lock a centre-line target, then place the real enemy outside the old 2.2m capsule.

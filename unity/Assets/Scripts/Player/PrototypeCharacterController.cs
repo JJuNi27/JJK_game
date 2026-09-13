@@ -18,8 +18,11 @@ namespace JJKGame.Player
     {
         private static PrototypeCharacterId selectedCharacter = PrototypeCharacterId.GojoModern;
 
-        [Header("Character Movement")]
-        [SerializeField] private CharacterMovementProfile gojoMovement = new CharacterMovementProfile();
+        [Header("캐릭터 이동 프로필")]
+        [SerializeField, Tooltip("현재 고죠 구현에 사용하는 이동/회피 튜닝입니다.")]
+        private CharacterMovementProfile gojoMovement = new CharacterMovementProfile();
+        [SerializeField, InspectorName("전투 데이터 카탈로그"), Tooltip("비어 있으면 Resources/CombatData의 기본 카탈로그를 사용합니다.")]
+        private CharacterCombatCatalog combatCatalog;
 
         private Health health;
         private CursedEnergyController cursedEnergy;
@@ -62,6 +65,10 @@ namespace JJKGame.Player
         private void Start()
         {
             ApplyCharacter(selectedCharacter, true);
+            // Character Select -> CombatMVP creates this character lifecycle after the
+            // one-shot runtime bootstrap. Bind the attack pose consumer from the owner
+            // itself so real input never depends on scene-load callback ordering.
+            PrototypeFighterPresentationController.GetOrCreate(gameObject);
             PrototypePlayerTeamController.GetOrCreate(gameObject);
         }
 
@@ -102,8 +109,11 @@ namespace JJKGame.Player
             selectedCharacter = nextCharacter;
             activeCharacter = nextCharacter;
             showSukunaHelp = false;
-            GetComponent<ThirdPersonPlayerController>()?.ConfigureMovement(
-                nextCharacter == PrototypeCharacterId.GojoModern ? gojoMovement : null);
+            CharacterCombatDefinition definition = ResolveDefinition(nextCharacter);
+            CharacterMovementProfile movement = definition != null
+                ? definition.Movement
+                : nextCharacter == PrototypeCharacterId.GojoModern ? gojoMovement : null;
+            GetComponent<ThirdPersonPlayerController>()?.ConfigureMovement(movement);
 
             switch (nextCharacter)
             {
@@ -118,10 +128,32 @@ namespace JJKGame.Player
                     break;
             }
 
+            ApplyCombatData(definition, resetVitals);
+
             if (resetVitals)
             {
                 health?.ResetHealth();
             }
+        }
+
+        private CharacterCombatDefinition ResolveDefinition(PrototypeCharacterId characterId)
+        {
+            combatCatalog ??= CharacterCombatCatalog.Load();
+            return combatCatalog != null ? combatCatalog.Find(characterId) : null;
+        }
+
+        private void ApplyCombatData(CharacterCombatDefinition definition, bool refillEnergy)
+        {
+            if (definition == null) return;
+            health?.ApplyProfile(definition.Stats, false);
+            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+            cursedEnergy?.ApplyProfile(definition.CursedEnergy, refillEnergy);
+            GetComponent<BasicAttack>()?.ApplyProfile(definition.BasicAttack);
+            GetComponent<TargetLockController>()?.ApplyProfile(definition.Targeting);
+            GetComponent<TechniqueBurnoutController>()?.ApplyProfile(definition.Burnout);
+            GetComponent<GojoTechniqueController>()?.ApplyProfile(definition.GojoTechniques);
+            GetComponent<GojoTechniqueChainController>()?.ApplyProfile(definition.GojoTechniques);
+            GetComponent<GojoDomainController>()?.ApplyProfile(definition.Domain);
         }
 
         private void SelectAndReload(PrototypeCharacterId nextCharacter)
@@ -145,8 +177,11 @@ namespace JJKGame.Player
             gojoAvatar.enabled = true;
             SetChildActive("PrototypeGojoAvatar", true);
 
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency, refillEnergy);
+            if (ResolveDefinition(PrototypeCharacterId.GojoModern) == null)
+            {
+                cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+                cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SixEyesEfficiency, refillEnergy);
+            }
         }
 
         private void ApplySukuna(bool refillEnergy)
@@ -174,8 +209,11 @@ namespace JJKGame.Player
             sukunaAvatar.enabled = true;
             SetChildActive("PrototypeSukunaAvatar", true);
 
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, refillEnergy);
+            if (ResolveDefinition(PrototypeCharacterId.SukunaShibuyaYujiBody) == null)
+            {
+                cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+                cursedEnergy?.ApplyProfile(CursedEnergyProfileId.SukunaShibuyaReserve, refillEnergy);
+            }
         }
 
         private void ApplyMegumi(bool refillEnergy)
@@ -196,8 +234,11 @@ namespace JJKGame.Player
             megumiAvatar.enabled = true;
             SetChildActive(MegumiPrototypeAvatar.VisualRootName, true);
 
-            cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
-            cursedEnergy?.ApplyProfile(CursedEnergyProfileId.Standard, refillEnergy);
+            if (ResolveDefinition(PrototypeCharacterId.MegumiStudent) == null)
+            {
+                cursedEnergy ??= CursedEnergyController.GetOrCreate(gameObject);
+                cursedEnergy?.ApplyProfile(CursedEnergyProfileId.Standard, refillEnergy);
+            }
         }
 
         private void DisableSukunaComponents()

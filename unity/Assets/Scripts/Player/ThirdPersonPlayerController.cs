@@ -7,18 +7,18 @@ namespace JJKGame.Player
     [RequireComponent(typeof(Health))]
     public sealed class ThirdPersonPlayerController : MonoBehaviour
     {
-        [Header("Movement")]
-        [SerializeField, Min(0.1f)] private float moveSpeed = 5.5f;
-        [SerializeField, Min(0.1f)] private float rotationSpeed = 14f;
-        [SerializeField] private float gravity = -24f;
-        [SerializeField] private Transform cameraTransform;
-        [SerializeField, Range(0f, 1f)] private float techniqueCastMoveMultiplier = 0.35f;
+        [Header("이동")]
+        [SerializeField, InspectorName("기본 이동 속도"), Min(0.1f), Tooltip("캐릭터 이동 프로필이 없을 때 사용하는 기본 이동 속도입니다.")] private float moveSpeed = 5.5f;
+        [SerializeField, InspectorName("회전 속도"), Min(0.1f), Tooltip("이동 방향으로 회전하는 속도입니다.")] private float rotationSpeed = 14f;
+        [SerializeField, InspectorName("중력"), Tooltip("수직 이동에 적용하는 중력 가속도입니다.")] private float gravity = -24f;
+        [SerializeField, InspectorName("카메라 기준점"), Tooltip("카메라 기준 이동 방향을 계산할 Transform입니다.")] private Transform cameraTransform;
+        [SerializeField, InspectorName("술식 시전 이동 배율"), Range(0f, 1f), Tooltip("술식 시전 중 적용하는 이동 속도 배율입니다.")] private float techniqueCastMoveMultiplier = 0.35f;
 
-        [Header("Dodge")]
-        [SerializeField, Min(0.1f)] private float dodgeSpeed = 12f;
-        [SerializeField, Min(0.05f)] private float dodgeDuration = 0.24f;
-        [SerializeField, Min(0.05f)] private float dodgeCooldown = 0.75f;
-        [SerializeField, Min(0.05f)] private float dodgeInvulnerabilityDuration = 0.30f;
+        [Header("회피 기본값")]
+        [SerializeField, InspectorName("회피 속도"), Min(0.1f), Tooltip("프로필이 없을 때 사용하는 회피 이동 속도입니다.")] private float dodgeSpeed = 12f;
+        [SerializeField, InspectorName("회피 이동 시간"), Min(0.05f), Tooltip("프로필이 없을 때 사용하는 회피 이동 시간입니다.")] private float dodgeDuration = 0.24f;
+        [SerializeField, InspectorName("회피 재사용 대기시간"), Min(0.05f), Tooltip("프로필이 없을 때 사용하는 회피 재사용 대기시간입니다.")] private float dodgeCooldown = 0.75f;
+        [SerializeField, InspectorName("회피 무적 시간"), Min(0.05f), Tooltip("프로필이 없을 때 사용하는 회피 무적 시간입니다.")] private float dodgeInvulnerabilityDuration = 0.30f;
 
         private CharacterController controller;
         private Health health;

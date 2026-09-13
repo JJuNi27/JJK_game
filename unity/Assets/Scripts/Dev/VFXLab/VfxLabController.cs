@@ -19,6 +19,7 @@ namespace JJKGame.Dev.VFXLab
         private Transform previewStage;
         private Transform previewCharacterRoot;
         private Transform previewPoint;
+        private Transform previewMarkerVisual;
         private Transform lightingRoot;
         private Camera previewCamera;
         private VfxLabPreviewCharacter previewCharacter;
@@ -91,6 +92,8 @@ namespace JJKGame.Dev.VFXLab
 
         private void Update()
         {
+            if (previewMarkerVisual != null)
+                previewMarkerVisual.gameObject.SetActive(sequence == null || !sequence.IsInsideDomain);
             if (Input.GetKeyDown(KeyCode.F1))
             {
                 expandedHelp = !expandedHelp;
@@ -135,6 +138,7 @@ namespace JJKGame.Dev.VFXLab
             CreateRing(previewStage, "CharacterGuide", new Vector3(0f, 0.020f, 0f), 1.25f, 0.020f, accentMaterial, 48);
 
             Transform markerRoot = new GameObject("PreviewMarkerVisual").transform;
+            previewMarkerVisual = markerRoot;
             markerRoot.SetParent(previewPoint, false);
             CreateRing(markerRoot, "BlueRadiusGuide", new Vector3(0f, -0.98f, 0f), 4.5f, 0.018f, markerMaterial, 96);
             CreateRing(markerRoot, "CoreGuide", Vector3.up * 0.35f, 0.34f, 0.024f, markerMaterial, 48);

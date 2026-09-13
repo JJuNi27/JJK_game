@@ -149,8 +149,9 @@ namespace JJKGame.CameraSystem
 
         private void LateUpdate()
         {
-            ApplyFovKick();
             UpdateFlashOverlay();
+            if (DomainCameraOverride.IsOwned(controlledCamera)) return;
+            ApplyFovKick();
 
             if (target == null)
             {
@@ -173,6 +174,11 @@ namespace JJKGame.CameraSystem
             {
                 transform.rotation = Quaternion.LookRotation(lookDirection, Vector3.up);
             }
+        }
+
+        public void TranslatePresentationSpace(Vector3 delta)
+        {
+            focusWorldPoint += delta;
         }
 
         private Vector3 BuildLookPoint()

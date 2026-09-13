@@ -9,6 +9,11 @@ namespace JJKGame.Player
     public sealed class ProductionSignatureVfxDirector : MonoBehaviour
     {
         private Health ownHealth;
+        [Header("Optional authored casting socket")]
+        [SerializeField] private Transform techniqueCastingPoint;
+        [SerializeField] private Vector3 techniqueCastingOffset = new Vector3(0.35f, 1.25f, 0.8f);
+        private TechniqueChargeVisual chargeVisual;
+        private int chargeToken;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void BootstrapAfterSceneLoad()
@@ -37,11 +42,37 @@ namespace JJKGame.Player
         {
             TechniquePresentationRequests.Requested -= HandlePresentationRequest;
             TechniquePresentationRequests.Requested += HandlePresentationRequest;
+            TechniqueChoreographyCues.Raised += HandleChoreographyCue;
         }
 
         private void OnDisable()
         {
             TechniquePresentationRequests.Requested -= HandlePresentationRequest;
+            TechniqueChoreographyCues.Raised -= HandleChoreographyCue;
+            ClearCharge();
+        }
+
+        private void HandleChoreographyCue(TechniqueChoreographyCue cue)
+        {
+            if (cue.Owner != ownHealth || ownHealth == null) return;
+            if (cue.Technique != TechniquePresentationId.GojoBlue
+                && cue.Technique != TechniquePresentationId.GojoRed) return;
+            if (cue.Phase == TechniqueChoreographyPhase.Began)
+            {
+                ClearCharge();
+                chargeToken = cue.CastToken;
+                chargeVisual = TechniqueChargeVisual.Spawn(
+                    techniqueCastingPoint != null ? techniqueCastingPoint : transform,
+                    cue.Technique == TechniquePresentationId.GojoBlue, cue.FallbackDuration,
+                    techniqueCastingPoint != null ? Vector3.zero : techniqueCastingOffset);
+            }
+            else if (cue.CastToken == chargeToken) ClearCharge();
+        }
+
+        private void ClearCharge()
+        {
+            if (chargeVisual != null) chargeVisual.Consume();
+            chargeVisual = null;
         }
 
         private void HandlePresentationRequest(TechniquePresentationRequest request)
