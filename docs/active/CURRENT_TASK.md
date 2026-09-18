@@ -1,179 +1,47 @@
-# 현재 작업 — Combat Data-driven 구조 checkpoint 마무리
+# 현재 작업 — Production Purple 사용자 시각 승인 대기
 
-상태: **Combat Data-driven migration LOCAL USER VERIFIED / Inspector localization LOCAL USER VERIFIED / 구조 checkpoint push 전**
+작성 기준: **2026-09-18**
 
-작성 기준: 2026-09-13
+Branch: `feat/gojo-blue-screen-distortion`
 
-## 현재 즉시 목표
+Remote code checkpoint: `d2ee74e8c20da795c500971c393ac097b22a2e5a`
 
-이번 단계의 목표는 새 기능 추가가 아니다.
-이미 완료된 Data-driven migration + Inspector 한글화를 안전하게 구조 checkpoint로 묶는 것이다.
+상태: **CODEX VALIDATED / USER VISUAL APPROVAL PENDING**
 
-## 완료된 LOCAL 구조 작업
+현재 immediate task는 새 Purple 기능 구현이 아니다. Production 후보는 **D2-R3 Body + OuterR2 + Release→Travel refinement**이며, charge/travel에만 적용된다. Terminal explosion은 기존 Production visual을 유지한다.
 
-### Combat Data-driven migration — USER VERIFIED
+## 다음 순서
 
-사용자가 Unity에서 직접 확인:
-- Data Asset damage 변경 → 실제 runtime damage 반영
-- 이동 정상
-- basic attack 정상
-- Blue / Red / Purple 정상
-- Domain 정상
+1. 최신 Travel refinement 영상에 대한 Gemini feedback을 받는다.
+2. 사용자와 ChatGPT가 실제 Caster/Side 영상을 검수한다.
+3. Unity Play Mode에서 최종 visual을 확인한다.
+4. 승인되면 Purple visual R&D를 종료한다.
+5. 이후 사용자 선택에 따라 Blue distortion/particle/environment reaction, Red pressure/range/residual pressure, Domain visual/camera 중 다음 track으로 이동한다.
 
-주요 Profile / Definition:
-- CharacterStatsProfile
-- CursedEnergyProfile
-- BasicAttackProfile + variable BasicAttackStep[]
-- GojoTechniqueGameplayProfile
-- DomainGameplayProfile
-- BurnoutPolicyProfile
-- TargetingProfile
-- TrainingBotProfile
-- CharacterCombatDefinition
-- CharacterCombatCatalog
-- Trait / Passive seam
+Purple 승인 전에는 새 visual track을 임의로 시작하지 않는다.
 
-제거/일반화한 주요 hardcoding:
-- 3타 고정 basic chain 전제
-- `ATTACK CHAIN n / 3` 고정 표시
-- 반복 Six Eyes profile 강제 적용
-- `name.Contains("_B")` gameplay ability convention
-- `BONUS +12` 중복 숫자
-- Red spawn gameplay constant 직접 의존
+## 검증 기준
 
-검증:
-- Unity compile errors 0
-- data smoke 3/3
-- full EditMode regression 50/50
-- 사용자 실제 gameplay 확인 완료
+- Production integration: **3 PASS / 0 FAIL**, C#·shader error 0.
+- Travel refinement: **2 PASS / 0 FAIL**, C#·shader error 0.
+- Charge pixel difference 0.
+- first target hit 종료, behind-target damage 없음, no-hit max-range terminal, cancel/cleanup/camera restore, repeated lifecycle cleanup 유지.
+- Caster/Side readability 확인. 고정 observer는 장면 가림 때문에 시각 합격 근거에서 제외.
+- 자동 테스트와 Codex 렌더 검토는 사용자 Play Mode 승인과 같지 않다.
 
-### Inspector localization — USER VERIFIED
+## 보호 범위
 
-목표:
-C# identifier는 영어로 유지하면서 사용자가 만지는 Inspector/Data label을 한국어로 표시.
+- D2-R3 Body, OuterR2 Charge, gameplay 수치와 semantics, canonical timing, camera architecture, terminal explosion.
+- `Purple_UserPrototype`, 사용자 Scene/Animator/FBX, LocalModels, LocalAudio, local reference, QA output.
+- USER VERIFIED 설정은 `docs/locked/USER_VERIFIED_SETTINGS.md`를 따른다.
 
-구현/검증:
-- 10개 신규 Data Profile scoped CustomEditor
-- BasicAttackStep / Blue / Red / Purple / Blue→Red PropertyDrawer
-- localization focused tests 24/24
-- 실제 13개 asset Editor/SerializedObject 검증
-- 13개 `.asset` SHA-256 전후 불일치 0
-- balance / reference / runtime / Scene / VFX / Audio 변경 없음
-- compile errors 0
-- 사용자가 실제 Unity Inspector에서 한글 표시 정상 확인
+결과 문서:
 
-따라서 Inspector localization도 **LOCAL USER VERIFIED**.
+- `docs/PURPLE_PRODUCTION_INTEGRATION_REVIEW.md`
+- `docs/PURPLE_TRAVEL_REFINEMENT_REVIEW.md`
+- `docs/PURPLE_D2_R3_REVIEW.md`
+- `docs/PURPLE_D2_R3_OUTER_R2_REVIEW.md`
 
-## 영구 Inspector 규칙
+## Domain future queue
 
-앞으로 새 Profile / ScriptableObject 작성 시:
-- 내부 C# identifier = 영어
-- 사용자-facing Inspector / Data UI = 한국어
-- Header만 한글이고 field label이 영어면 미완성
-- 생성 시점부터 localization 포함
-- 기존 SerializedProperty + scoped CustomEditor/PropertyDrawer 방식 재사용
-- Undo / array / foldout / object reference / enum / Range/Min 보존
-
-## 보호 대상 — 이번 checkpoint에서도 변경 금지
-
-### Movement USER VERIFIED
-- Walk 3
-- Run 14
-- Idle 0 @1.00
-- Walk 3 @1.15
-- Run 14 @1.00
-- Space Dodge
-
-### P0 Domain physical gameplay USER VERIFIED
-- ACTIVE 내부 basic attack / hit / damage / dodge
-- Domain ACTIVE 유지
-- technique lock 유지
-- natural end 뒤 basic/dodge 복구
-
-### Presentation baseline
-- Blue 1차 baseline + 4-hit
-- Unlimited Void blue-black nebula
-- Purple formation/fusion
-- current Domain capture/barrier/interior/restoration architecture
-
-## 지금 해야 할 일
-
-1. `git status -sb`
-
-2. Data migration + localization 관련 파일만 selective staging
-   - `git add .` 금지
-   - Scene/VFX/Audio/Model/user-local unrelated work 제외
-
-3. `git diff --cached --name-status` 검토
-
-4. 구조 checkpoint commit / push
-
-5. 그 뒤 Astra visual track 시작
-
-## 다음 Astra visual track
-
-### Blue
-1차 baseline 보호 + 2차 enhancement:
-- environment inward reaction
-- 4-hit presentation beat
-- stronger final collapse
-- restrained camera/screen FX
-- residual spatial shimmer / dust pull
-
-### Red
-repulsion identity:
-compressed anticipation → violent release → pressure travel → impact → outward debris/dust → gray-white pressure vapor → aftermath
-
-### Purple
-- actual launch-axis bug fix: 약간 아래로 발사되는 원인 수정
-- formation/fusion 보호
-- release compression / distortion / branching lightning / scar / aftermath
-
-### Cosmic Eye
-- whole-eye heartbeat/breathing pulse 제거
-- pupil/silhouette 안정
-- cloud/rim/right-tail subtle flow 유지
-
-### Domain release
-- ceiling/dome/shell artifact 제거
-- caster-centered world-space release 유지
-- nebula / participant restore / camera safety 보호
-
-### White Blood
-- 3 spatial groups
-- `퉁 → pause → 투둥 → pause → 퉁`
-- timing은 Data/Inspector 조절 가능
-
-## Hardcoding debt 분류
-
-### Astra / Presentation 이후
-- camera shake / FOV / hit-stop / flash
-- technique feedback tuning
-- Infinity ripple presentation
-- Target Lock indicator presentation
-- visual presentation colors/multipliers
-
-### 별도 architecture 후보
-- `worldDeathY` → ArenaRules
-- roster/team sorting `_B` convention
-- prototype component enable/disable switch
-- legacy non-Gojo CE fallback
-
-### 코드에 유지 가능
-- epsilon
-- clamp
-- state-machine mechanics
-- collection/event plumbing
-
-## Git 안전
-
-현재 LOCAL working tree에는 기존 사용자 작업이 섞여 있을 수 있다.
-절대:
-- reset
-- clean
-- checkout으로 덮기
-- `git add .`
-- 임의 commit/push/merge
-하지 않는다.
-
-`docs/CURRENT_HANDOFF.md`의 REMOTE / LOCAL 구분을 항상 따른다.
+Barrier 크기의 Inspector/Data 조절, barrier destruction 보류, Gojo hand sign/blindfold lowering와 trapped opponent reaction cinematic camera 후보를 기록만 한다. Purple 승인 작업과 섞지 않는다.

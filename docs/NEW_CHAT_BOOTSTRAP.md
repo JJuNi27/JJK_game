@@ -1,184 +1,50 @@
 # New Chat Bootstrap — JJK_game
 
-새 ChatGPT 채팅에서 이 프로젝트를 바로 이어가기 위한 시작 지시문.
-
-아래 블록을 새 채팅 첫 메시지로 붙여넣는다.
+아래 블록을 새 ChatGPT 채팅의 첫 메시지로 붙여넣는다.
 
 ---
 
-## Copy/Paste Prompt
-
 나는 GitHub 저장소 `JJuNi27/JJK_game`에서 Unity 6 URP 기반 주술회전 3D 캐릭터 액션 격투게임을 개발 중이야.
 
-이전 채팅이 길어져 새 채팅으로 넘어왔다.
-내가 이전 내용을 다시 설명하게 하지 말고, 먼저 GitHub connector를 사용해서 아래 문서를 직접 읽고 현재 상태를 복구해줘.
+현재 branch는 `feat/gojo-blue-screen-distortion`이고, 2026-09-18 Production Purple code checkpoint는 `d2ee74e8c20da795c500971c393ac097b22a2e5a`다. master만 보고 상태를 추정하지 마라.
 
-반드시 읽을 문서 순서:
+먼저 아래 순서로 읽고 상태를 복구해줘.
+
 1. `AGENTS.md`
 2. `docs/design/GAME_VISION.md`
 3. `docs/CURRENT_HANDOFF.md`
 4. `docs/active/CURRENT_TASK.md`
 5. `docs/locked/USER_VERIFIED_SETTINGS.md`
-6. 현재 작업과 관련된 `docs/architecture/*`
+6. `docs/design/VFX_DIRECTION.md`
+7. `docs/architecture/GOJO_VFX.md`
+8. 작업에 따라 `docs/architecture/CAMERA_PRESENTATION.md`, `DOMAIN_SYSTEM.md`, `COMBAT_DATA_DRIVEN.md`
 
-VFX 작업이면 추가로:
-- `docs/design/VFX_DIRECTION.md`
-- `docs/architecture/GOJO_VFX.md`
+최신 handoff/current task/locked settings가 오래된 roadmap·Gate 기록보다 우선한다. 같은 PC라면 먼저 `git status -sb`와 `git log -3 --oneline`을 확인하고, REMOTE·LOCAL-ONLY·CODEX VALIDATED·USER VERIFIED를 구분해라.
 
-Domain이면:
-- `docs/architecture/DOMAIN_SYSTEM.md`
-- `docs/architecture/CAMERA_PRESENTATION.md`
+프로젝트 방향은 팬텀 퍼레이드의 기술 연출과 애니/만화 원작의 술식·영역·패시브 규칙을 최대한 고증하고, Strikeborn급 이상의 타격감·presentation density·environment reaction·aftermath를 지향하는 넓은 도시형 1:1 캐릭터 액션 격투게임이다. Gojo는 첫 production-quality 캐릭터일 뿐 고정 주인공이 아니다.
 
-Data/Inspector면:
-- `docs/architecture/COMBAT_DATA_DRIVEN.md`
+현재 Production Purple 후보는 **D2-R3 Body + OuterR2 + Release→Travel refinement**다. D2-R3/OuterR2는 charge와 travel에 적용되고 terminal explosion은 기존 Production 표현을 유지한다. Travel은 짧은 world-space residue, 굵고 짧은 magenta wake, release peak, rear-biased outer response를 사용하며 Body의 구형 정체성을 유지한다.
 
-현재 작업 branch는 우선:
-`feat/gojo-blue-screen-distortion`
+Production integration은 targeted 3 PASS / 0 FAIL, Travel refinement는 2 PASS / 0 FAIL, C#·shader error 0, Charge pixel difference 0이다. First-hit 종료, 뒤 target 피해 차단, no-hit max range terminal, cancel/cleanup/camera restore, repeated cleanup을 유지한다. 고정 observer 영상은 장면 가림으로 시각 합격 근거에서 제외했다.
 
-master만 보고 현재 상태를 추정하지 말 것.
-`docs/CURRENT_HANDOFF.md`의 최신 날짜 섹션을 가장 우선한다.
-오래된 `DEVELOPMENT_ROADMAP.md` / Gate 문서와 충돌하면 최신 handoff / current task / locked settings가 우선한다.
+이 상태는 **CODEX VALIDATED / USER VISUAL APPROVAL PENDING**이다. USER VERIFIED로 올리지 마라. 다음 즉시 작업은 최신 Travel refinement에 대한 Gemini feedback과 사용자/ChatGPT 영상 검수, Unity Play Mode 최종 시각 확인이다. 사용자가 Purple을 승인하기 전 새 Blue/Red/Domain visual track을 임의로 시작하지 마라.
 
-## 프로젝트 핵심 방향
+Purple lineage는 A/B/C exploration → dark Hybrid D → bright D2 → R1 surface/internal 분리 → R2 depth/hairball 문제 → R3 chunky plasma/fused core → OuterR1 shield 문제 → OuterR2 irregular corona → reference-driven Travel refinement다.
 
-- 1:1 중심 3D 액션 격투
-- 넓은 JJK 도시형 전투 맵
-- Gojo는 첫 production-quality 캐릭터일 뿐 고정 주인공이 아님
-- 팬텀 퍼레이드 + 애니/만화 원작 고증
-- Strikeborn급 이상의 타격감 / presentation density / aftermath
-- Trait / Passive / Domain rule 기반 재사용 가능한 시스템
-- Data-driven / Inspector tuning 우선
+영구 규칙:
 
-## 영구 개발 규칙
+- 코드는 HOW, Data Asset은 WHAT. 사용자-facing Inspector/Data UI는 한글이 기본.
+- USER VERIFIED 값은 `docs/locked/USER_VERIFIED_SETTINGS.md`를 따르고 되돌리지 않는다.
+- 큰 미적 선택이 여러 개면 2~4개 후보를 제시하고 사용자 선택을 기다린다. 사용자는 Art/VFX Director, AI는 production translation/implementation/validation 역할이다.
+- 자동 테스트는 사용자 Play Mode 시각 승인을 대신하지 않는다.
+- `Purple_UserPrototype`, 사용자 Scene/Animator/FBX, `unity/Assets/LocalModels/`, `unity/Assets/Resources/LocalAudio/`, `.blend`, local reference와 QA output을 보존한다.
+- `_local_refs/videos/`의 reference는 local-only이며 Git에 올리지 않는다.
+- reset/clean/restore와 dirty tree의 `git add .`를 사용하지 않는다. 사용자 승인 없이 commit/push/merge하지 않는다.
 
-- 하드코딩은 최소화한다.
-- 코드는 HOW, Data Asset은 WHAT을 담당한다.
-- 캐릭터/기술/밸런스 값을 바꾸기 위해 C#을 열어야 하면 Data ownership을 먼저 의심한다.
-- Character name / GameObject name string으로 gameplay rule을 몰래 결정하지 않는다.
-- C# identifier는 영어 유지.
-- **사용자가 직접 만지는 Unity Inspector / Data Asset / 설정 UI는 한국어 표시가 기본.**
-- 새 Profile / ScriptableObject는 생성 시점부터 한글 Inspector까지 같이 만든다.
-- Header만 한국어이고 field label이 영어면 미완성으로 본다.
-- 사용자 검증된 값은 명시적 요청 없이 변경하지 않는다.
+향후 Domain 아이디어는 barrier size의 Inspector/Data 조절, destruction 보류, Gojo hand sign/blindfold lowering와 trapped opponent reaction cinematic camera다. 현재 Purple 승인 작업과 섞지 않는다.
 
-## 현재 보호된 USER VERIFIED 기준
-
-- Walk 3 / Run 14
-- Idle 0 @1.00 / Walk 3 @1.15 / Run 14 @1.00
-- Space Dodge
-- P0 Unlimited Void ACTIVE 내부 basic attack / actual hit / damage / dodge
-- Domain 자연 종료 후 basic attack / dodge 복구
-- Domain ACTIVE 동안 Blue/Red/Purple/Domain technique lock
-- Gojo Blue 1차 baseline + 4-hit gameplay
-- Unlimited Void blue-black nebula background
-- Hollow Purple formation / fusion baseline
-- `Gojo_Blender_MasterAvatar` animation pipeline
-
-## 2026-09-13 LOCAL 최신 상태 — 매우 중요
-
-최신 remote production-code checkpoint는:
-`142606ea3fe7a7298bb2ea1c54bb80efcaf170c6`
-`feat: finalize Gojo P0-P6 presentation checkpoint`
-
-그 이후 사용자 PC LOCAL working tree에서:
-
-1. Combat Data-driven migration 완료
-2. Data Asset tuning이 실제 runtime damage에 반영되는 것을 사용자가 직접 확인
-3. 이동 / 평타 / Blue / Red / Purple / Domain 정상 확인
-4. 따라서 Data-driven migration은 LOCAL USER VERIFIED
-5. 새 Profile/Data Asset의 영어 Inspector label을 scoped CustomEditor/PropertyDrawer로 한글화
-6. localization compile 0 / focused test 24/24 / 13 asset hash 불변 확인
-7. 사용자가 실제 Unity Inspector에서 한글화가 정상임을 직접 확인
-8. 따라서 Inspector localization도 LOCAL USER VERIFIED
-
-단, 위 Data migration / localization은 이 bootstrap 갱신 시점에 아직 별도 code commit/push 전일 수 있다.
-GitHub에 이미 구현됐다고 단정하지 말고 같은 PC라면 먼저:
-
-```powershell
-git status -sb
-git log -1 --oneline
-```
-
-을 확인한다.
-
-LOCAL Data 구조:
-- CharacterStatsProfile
-- CursedEnergyProfile
-- BasicAttackProfile + variable AttackStep[]
-- GojoTechniqueGameplayProfile
-- DomainGameplayProfile
-- BurnoutPolicyProfile
-- TargetingProfile
-- TrainingBotProfile
-- CharacterCombatDefinition
-- CharacterCombatCatalog
-- Trait / Passive seam
-
-## 현재 다음 작업 순서
-
-1. local dirty tree 재확인
-2. Data migration + localization 관련 파일만 selective staging
-3. `git diff --cached --name-status` 검토
-4. 구조 checkpoint commit / push
-5. 이후 Astra visual track
-
-절대 `git add .`로 unrelated Scene/VFX/Audio/Model 작업을 섞지 않는다.
-reset / checkout / clean 금지.
-사용자 승인 전 commit / push / merge를 임의로 하지 않는다.
-
-## Astra visual track — 다음 큰 시각 작업
-
-- Blue: 1차 baseline 보호 + environment reaction / final collapse / aftermath 강화
-- Red: repulsion identity 기반 2차 enhancement
-- Purple: 아래로 살짝 나가는 실제 launch-axis 원인 수정 + 2차 enhancement
-- Cosmic Eye: 전체 heartbeat/breathing pulse 제거, cloud/rim/tail subtle flow 유지
-- Domain release: ceiling/dome/shell artifact 실제 원인 제거
-- White Blood: `퉁 → pause → 투둥 → pause → 퉁` 3-group beat, timing Data/Inspector 조절
-
-VFX는 원작 정체성을 우선하고 `기술 생성 → 이동 → 펑 → 끝`으로 완료 처리하지 않는다.
-Environment Reaction / Aftermath / Camera / Audio까지 포함해 평가한다.
-
-## Domain 핵심
-
-다음 3개는 절대 하나로 합치지 않는다.
-1. Gameplay Capture Radius
-2. Visual Barrier Radius / Diameter
-3. Domain Interior Space
-
-현재 same-scene isolated interior + participant safe restoration 구조를 유지한다.
-Barrier HP/destruction/outside rescue는 현재 범위 밖.
-
-## Local asset 안전
-
-다음은 local-only일 수 있음:
-- `unity/Assets/LocalModels/`
-- `unity/Assets/Resources/LocalAudio/`
-- `.blend`
-- imported FBX / texture / audio
-- `VFXLab.unity` 사용자 로컬 변경
-
-명시적 승인 없이 추가/덮어쓰기/reset/clean 하지 않는다.
-
-## 새 채팅의 첫 응답 요구
-
-문서를 읽은 뒤:
-1. 현재 REMOTE와 LOCAL-ONLY 상태를 구분해 5~10줄로 복구 요약
-2. USER VERIFIED 보호값을 다시 pending으로 되돌리지 않기
-3. 현재 immediate next action 하나만 명확히 제시
-4. 자동 테스트를 사용자 Play Mode 검증과 동일시하지 않기
-5. 전문 용어는 필요하면 짧게 뜻도 설명하기
-
-참고:
-무량공처 장인 인식(MediaPipe/RandomForest) 별도 MVP 문서는 다른 실험 흐름이다.
-명시적으로 연결하라고 하지 않는 한 현재 Unity `JJK_game` 전투/VFX/animation 작업과 섞지 않는다.
+첫 응답에서는 현재 REMOTE와 LOCAL-ONLY 상태를 5~10줄로 요약하고, 보호값과 validation 수준을 구분하고, immediate next action 하나만 제시해라.
 
 ---
 
-## Handoff policy
-
-- 새 중요 결정이 생기면 `docs/CURRENT_HANDOFF.md` 갱신
-- 현재 실행 작업은 `docs/active/CURRENT_TASK.md` 갱신
-- 사용자 직접 검증 항목은 `docs/locked/USER_VERIFIED_SETTINGS.md` 반영
-- 장기 철학은 `GAME_VISION.md` / architecture 문서에 남김
-- REMOTE / LOCAL / CODEX VALIDATED / USER VERIFIED를 구분
-- 다음 새 채팅에서도 이 bootstrap + 최신 canonical docs만으로 재개 가능해야 함
+중요 결정이 바뀌면 `docs/CURRENT_HANDOFF.md`, 실행 작업은 `docs/active/CURRENT_TASK.md`, 실제 사용자 검증만 `docs/locked/USER_VERIFIED_SETTINGS.md`에 반영한다.
