@@ -114,13 +114,20 @@ namespace JJKGame.EditorTools
             var aftermath = host.GetComponent<PurpleTravelAftermath>();
             aftermath.Configure(Vector3.up, Vector3.forward, 4f);
             Physics.SyncTransforms();
-            aftermath.Render(Vector3.up + Vector3.forward * .1f, 0f, 1f, true, 4f);
-            float small = host.transform.Find("GroundSpaceWound_0").GetComponent<LineRenderer>().widthMultiplier;
-            aftermath.Render(Vector3.up + Vector3.forward * 1f, .1f, 1f, true, 8f);
-            float large = host.transform.Find("GroundSpaceWound_1").GetComponent<LineRenderer>().widthMultiplier;
-            Assert.That(small, Is.GreaterThanOrEqualTo(4f * .9f));
-            Assert.That(large / small, Is.InRange(1.95f,2.1f), "Doubling the visible orb must double the scar width");
-            Object.Destroy(host); Object.Destroy(ground);
+            aftermath.Render(Vector3.up + Vector3.forward, 0f, 1f, true, 4f);
+            float small = host.transform.Find("PurpleBrokenScar_0").localScale.x;
+            var second = new GameObject("LargerPurpleAftermath",typeof(PurpleTravelAftermath));
+            var larger = second.GetComponent<PurpleTravelAftermath>();
+            larger.Configure(Vector3.up,Vector3.forward,4f);
+            larger.Render(Vector3.up+Vector3.forward,0f,1f,true,8f);
+            float large = second.transform.Find("PurpleBrokenScar_0").localScale.x;
+            Assert.That(small, Is.GreaterThan(1.5f));
+            Assert.That(large / small, Is.EqualTo(2f).Within(.001f), "The same irregular patch must scale with the current visible diameter");
+            aftermath.Render(Vector3.up+Vector3.forward*48f, .5f,1f,true,4f);
+            Assert.That(host.transform.Find("PurpleBrokenScar_20").GetComponent<MeshRenderer>().enabled,Is.True);
+            aftermath.Render(Vector3.up+Vector3.forward*48f, 4f,0f,false);
+            foreach(var patch in host.GetComponentsInChildren<MeshRenderer>()) Assert.That(patch.enabled,Is.False,"Each wound must expire");
+            Object.Destroy(host); Object.Destroy(second); Object.Destroy(ground);
             yield return new ExitPlayMode();
         }
 

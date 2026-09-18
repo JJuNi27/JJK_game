@@ -27,6 +27,9 @@ namespace JJKGame.Player
         [SerializeField, Min(0.1f)] private float purpleRange = DefaultPurpleRange;
         public float PurpleRange => purpleRange;
         public float PurpleLaunchDuration => purpleLaunchDuration;
+        public float PurplePresentationStartedAt { get; private set; }
+        public event System.Action<Vector3, float, float> PurpleTerminated;
+        private Coroutine purpleDamageRoutine;
         [Tooltip("Gameplay capsule radius in metres; independent of visual scale in GojoPolishSettings.")]
         [SerializeField, Min(0.1f)] private float purpleRadius = 3.2f;
         public float PurpleGameplayRadius => purpleRadius;
@@ -38,13 +41,13 @@ namespace JJKGame.Player
 
         [Header("Hollow Purple · Presentation / Damage Sync")]
         [SerializeField, Min(0f)] private float purplePresentationStartSlack = 0.08f;
-        [SerializeField, Min(0f)] private float purpleMergeDuration = 0.24f;
         [SerializeField, Min(0.01f)] private float purpleLaunchDuration = DefaultPurpleLaunchDuration;
 
         private sealed class PendingPurpleHit
         {
             public Health Target;
             public float ImpactAt;
+            public Vector3 PathPosition;
         }
 
         private readonly Dictionary<Health, float> blueMarkedUntil =
@@ -118,6 +121,8 @@ namespace JJKGame.Player
 
         private void OnDisable()
         {
+            if (purpleDamageRoutine != null) StopCoroutine(purpleDamageRoutine);
+            purpleDamageRoutine = null;
             if (techniqueController != null)
             {
                 techniqueController.BlueHit -= HandleBlueHit;
@@ -251,6 +256,8 @@ namespace JJKGame.Player
             }
 
             Vector3 direction = FindPurpleAimDirection();
+            direction.y = 0f;
+            direction = direction.sqrMagnitude > .001f ? direction.normalized : Vector3.forward;
             transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
             bluePreparedUntil = 0f;
             redPreparedUntil = 0f;
@@ -262,12 +269,13 @@ namespace JJKGame.Player
 
         private void QueuePurpleDamage(Vector3 direction)
         {
-            Vector3 start = transform.position + Vector3.up * 1.0f + direction * 0.8f;
+            Vector3 start = PrototypeHollowPurplePresentationRuntime.ReleaseOrigin(transform.position, direction);
             Vector3 end = start + direction * purpleRange;
             Collider[] hits = Physics.OverlapCapsule(start, end, purpleRadius);
             HashSet<Health> affected = new HashSet<Health>();
             List<PendingPurpleHit> pendingHits = new List<PendingPurpleHit>();
             float sequenceStartedAt = Time.unscaledTime;
+            PurplePresentationStartedAt = sequenceStartedAt + purplePresentationStartSlack;
 
             foreach (Collider hit in hits)
             {
@@ -296,37 +304,40 @@ namespace JJKGame.Player
                     new PendingPurpleHit
                     {
                         Target = target,
+                        PathPosition = start + direction * forwardDistance,
                         ImpactAt =
                             sequenceStartedAt
                             + purplePresentationStartSlack
-                            + purpleMergeDuration
-                            + GojoPolishSettings.Current.purpleFusionHoldDuration
+                            + GojoPolishSettings.Current.PurpleReleaseTime
                             + purpleLaunchDuration * travelProgress,
                     }
                 );
             }
 
+            if (purpleDamageRoutine != null) StopCoroutine(purpleDamageRoutine);
+            purpleDamageRoutine = null;
             if (pendingHits.Count > 0)
             {
-                StartCoroutine(ResolvePurpleHits(pendingHits, direction));
+                pendingHits.Sort((a, b) => a.ImpactAt.CompareTo(b.ImpactAt));
+                purpleDamageRoutine = StartCoroutine(ResolvePurpleHits(pendingHits, direction, PurplePresentationStartedAt));
             }
         }
 
         private IEnumerator ResolvePurpleHits(
             List<PendingPurpleHit> pendingHits,
-            Vector3 direction
+            Vector3 direction,
+            float castStartedAt
         )
         {
             while (pendingHits.Count > 0)
             {
                 float now = Time.unscaledTime;
-                for (int index = pendingHits.Count - 1; index >= 0; index--)
+                for (int index = 0; index < pendingHits.Count;)
                 {
                     PendingPurpleHit pending = pendingHits[index];
-                    if (pending == null || now < pending.ImpactAt)
-                    {
-                        continue;
-                    }
+                    if (ownHealth != null && ownHealth.IsDead) yield break;
+                    if (pending == null) { pendingHits.RemoveAt(index); continue; }
+                    if (now < pending.ImpactAt) break;
 
                     pendingHits.RemoveAt(index);
                     Health target = pending.Target;
@@ -343,12 +354,12 @@ namespace JJKGame.Player
                         "HOLLOW PURPLE · 허식 「자」",
                         target.transform.position + Vector3.up * 0.8f
                     );
-                    if (target.ReceiveDamage(purpleContext) != DamageResolution.Applied)
-                    {
-                        continue;
-                    }
-
-                    ApplyHitReaction(target, direction, purplePushSpeed, purpleHitStun);
+                    // First living contact terminates the projectile even if a defensive rule blocks damage.
+                    if (target.ReceiveDamage(purpleContext) == DamageResolution.Applied)
+                        ApplyHitReaction(target, direction, purplePushSpeed, purpleHitStun);
+                    PurpleTerminated?.Invoke(pending.PathPosition, pending.ImpactAt, castStartedAt);
+                    purpleDamageRoutine = null;
+                    yield break;
                 }
 
                 if (pendingHits.Count > 0)

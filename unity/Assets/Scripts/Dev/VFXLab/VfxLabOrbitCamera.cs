@@ -22,6 +22,9 @@ namespace JJKGame.Dev.VFXLab
         private Vector3 smoothedFocus;
         private bool hasFocus;
 
+        public bool Presents(Transform actor) => characterTarget != null && actor != null
+            && (characterTarget == actor || characterTarget.IsChildOf(actor));
+
         public void Configure(Transform character, Transform previewPoint)
         {
             characterTarget = character;

@@ -26,7 +26,10 @@ namespace JJKGame.Dev.VFXLab
     public sealed class VfxLabPreviewSequence : MonoBehaviour
     {
         private const float BlueRadius = 4.5f;
-        private const float BlueFieldDuration = 2.20f;
+        private readonly BlueGameplayData bluePreviewFallback = new BlueGameplayData();
+        private float BlueFieldDuration => bluePreviewProfile != null
+            ? bluePreviewProfile.Blue.FieldDuration : bluePreviewFallback.FieldDuration;
+        private GojoTechniqueGameplayProfile bluePreviewProfile;
         private const float BasicComboResetDelay = 0.9f;
         private const float PreviewAnchorForwardDistance = 4.2f;
         private const float PreviewAnchorHeight = 1f;
@@ -87,6 +90,8 @@ namespace JJKGame.Dev.VFXLab
         {
             previewPoint = newPreviewPoint;
             previewCharacter = newPreviewCharacter;
+            bluePreviewProfile = CharacterCombatCatalog.FindDefault(previewCharacter != null
+                ? previewCharacter.CharacterId : PrototypeCharacterId.GojoModern)?.GojoTechniques;
             GetPreviewAudio()?.SetPresentationProfile(previewCharacter != null
                 ? previewCharacter.AudioProfile
                 : null);
@@ -194,7 +199,7 @@ namespace JJKGame.Dev.VFXLab
                     TickUnlimitedVoid();
                     break;
                 case VfxLabPreviewAction.BlueFieldDebug:
-                    if (sequenceElapsed >= BlueFieldDuration + 0.12f)
+                    if (sequenceElapsed >= BlueFieldDuration + GojoPolishSettings.Current.blueAftermathDuration + .12f)
                     {
                         CompletePreview();
                     }
@@ -431,7 +436,7 @@ namespace JJKGame.Dev.VFXLab
             const float releaseAt = 0.58f;
             const float recoverDelayAfterImpact = 0.28f;
             const float completeDelayAfterImpact = 0.62f;
-            float impactAt = releaseAt + BlueFieldDuration;
+            float impactAt = releaseAt + BlueFieldDuration * GojoBluePulseSchedule.GetNormalizedTime(3);
 
             if (sequenceStep == 0 && sequenceElapsed >= castAt)
             {
@@ -451,7 +456,6 @@ namespace JJKGame.Dev.VFXLab
             {
                 CurrentPhaseLabel = "IMPACT COLLAPSE";
                 GetPreviewAudio()?.PlayBlueImpactRuntime();
-                SpawnBlueImpact();
                 sequenceStep = 3;
             }
             if (sequenceStep == 3
@@ -461,7 +465,8 @@ namespace JJKGame.Dev.VFXLab
                 previewCharacter?.SetPreviewMotion(VfxLabPreviewMotion.TechniqueRecover);
                 sequenceStep = 4;
             }
-            if (sequenceElapsed >= impactAt + completeDelayAfterImpact)
+            if (sequenceElapsed >= Mathf.Max(impactAt + completeDelayAfterImpact,
+                releaseAt + BlueFieldDuration + GojoPolishSettings.Current.blueAftermathDuration + .05f))
             {
                 CompletePreview();
             }
@@ -535,9 +540,16 @@ namespace JJKGame.Dev.VFXLab
             {
                 float deltaTime = Time.deltaTime;
                 hollowPurpleClock += deltaTime;
-                CurrentPhaseLabel = hollowPurpleClock < .24f ? "HOLLOW PURPLE · MERGE"
-                    : hollowPurpleClock < .24f + GojoPolishSettings.Current.purpleFusionHoldDuration
-                        ? "FUSION COMPLETE · HOLD" : "HOLLOW PURPLE · TRAVEL / RESIDUE";
+                var purpleTiming = GojoPolishSettings.Current;
+                CurrentPhaseLabel = hollowPurpleClock < purpleTiming.purpleBlueLeadDuration ? "창 · 등장"
+                    : hollowPurpleClock < purpleTiming.PurpleFusionStart ? "혁 · 등장 / 대치"
+                    : hollowPurpleClock < purpleTiming.PurpleHoldStart ? "창 + 혁 · 융합"
+                    : hollowPurpleClock < purpleTiming.PurpleHoldStart + purpleTiming.purpleFusionHoldDuration * (.8f/3f) ? "자 완성 · 안정화"
+                    : hollowPurpleClock < purpleTiming.PurpleHoldStart + purpleTiming.purpleFusionHoldDuration * (1.8f/3f) ? "자 충전 · 방전 상승"
+                    : hollowPurpleClock < purpleTiming.PurpleHoldStart + purpleTiming.purpleFusionHoldDuration * (2.6f/3f) ? "자 충전 · 압축"
+                    : hollowPurpleClock < purpleTiming.PurpleImpactStart ? "자 충전 · 방출 직전"
+                    : hollowPurpleClock < purpleTiming.PurpleReleaseTime ? "자 · 임팩트 프레임"
+                    : "자 · 발사 / 잔류";
                 if (!hollowPurpleSequence.Update(hollowPurpleClock, deltaTime))
                 {
                     hollowPurpleSequence.Dispose();

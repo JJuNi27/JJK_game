@@ -122,8 +122,17 @@ namespace JJKGame.Core
         {
             switch (request.TechniqueId)
             {
+                case TechniquePresentationId.GojoBlue:
+                    if (request.Phase == TechniquePresentationPhase.Culmination)
+                    {
+                        var camera = GetCombatCamera();
+                        if (camera != null)
+                            camera.AddShake(JJKGame.Player.GojoPolishSettings.Current.blueFinalShake, .12f);
+                    }
+                    break;
                 case TechniquePresentationId.HollowPurple:
-                    HandleHollowPurple(request);
+                    // The canonical Purple sequence owns its exact release frame and camera lease.
+                    // Legacy source activation happens during fusion, too early for release feedback.
                     break;
                 case TechniquePresentationId.Fuga:
                     HandleFuga(request);
@@ -137,39 +146,6 @@ namespace JJKGame.Core
                 case TechniquePresentationId.DivineDog:
                     HandleDivineDog(request);
                     break;
-            }
-        }
-
-        private void HandleHollowPurple(TechniquePresentationRequest request)
-        {
-            if (request.Phase == TechniquePresentationPhase.Release)
-            {
-                PlayFeedback(
-                    new Color(0.72f, 0.28f, 1f),
-                    0.18f,
-                    0.18f,
-                    0.42f,
-                    0.20f,
-                    0.065f,
-                    0.10f
-                );
-                PlayFovKick(6.5f, 0.26f);
-                PlayWorldFocus(request, ResolveCameraFocusPoint(request), 0.34f, 0.42f);
-                return;
-            }
-
-            if (request.Phase == TechniquePresentationPhase.Culmination)
-            {
-                PlayFeedback(
-                    new Color(0.86f, 0.62f, 1f),
-                    0.10f,
-                    0.12f,
-                    0.24f,
-                    0.12f,
-                    0.020f,
-                    0.16f
-                );
-                PlayFovKick(3f, 0.15f);
             }
         }
 

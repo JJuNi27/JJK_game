@@ -15,12 +15,44 @@ MonoBehaviour:
   blueCompressionEnabled: 0
   blueCompressionStrength: 0.7
   blueDebrisScale: 1.2
+  blueHitAccents: {x: 0.85, y: 1, z: 1.18, w: 1.65}
+  blueDustLeadTime: 0.1
+  blueAftermathDuration: 0.35
+  blueFinalCoreScale: 0.58
+  blueFinalShake: 0.14
   redFlashIntensity: 0.38
   redShockRingScale: 1.65
   redAftermathDuration: 1.25
   redAftermathDensity: 48
-  purpleFusionHoldDuration: 0.32
+  redFrontIrregularity: 0.16
+  redSurfaceDebrisCount: 14
+  redSurfaceReactionScale: 1
+  purpleFusionHoldDuration: 3
+  purpleFormationScale: 1.35
+  purpleFormationSeparation: 2.25
+  purpleTerminalDuration: 0.95
+  purpleTerminalScale: 1
+  purpleBlueLeadDuration: 0.45
+  purpleRedOppositionDuration: 0.65
+  purpleFusionDuration: 0.9
+  purpleImpactFrameCount: 8
   purpleVisualScale: 1.65
   purpleHoldOffset: {x: 0, y: 1.3, z: 2.2}
   purpleScarWidthMultiplier: 1.15
   purpleScarDuration: 1.8
+  purpleVolumeDensity: 1.8
+  purpleEmission: 0.65
+  purpleTurbulence: 1.3
+  purpleFlowSpeed: 1.1
+  purpleHazeOpacity: 0.06
+  purpleRibbonWidth: 1.2
+  purpleLightningWidth: 1
+  purpleLightningIntensity: 1
+  purpleReleaseEmission: 2.5
+  purpleCameraChoreography: 1
+  purpleImpactFrames: 1
+  purpleCameraSideOffset: 5.5
+  purpleCameraTensionFov: 5
+  purpleReleaseFov: 9
+  purpleCameraImpulse: 0.42
+  purpleCameraFollowThrough: 0.65

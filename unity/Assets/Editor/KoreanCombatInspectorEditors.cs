@@ -18,6 +18,50 @@ namespace JJKGame.EditorTools
         private static readonly IReadOnlyDictionary<string, string> Labels =
             new Dictionary<string, string>
             {
+                ["blueCompressionEnabled"] = "창 준비 압축 연출 사용",
+                ["blueCompressionStrength"] = "창 준비 압축 강도",
+                ["blueDebrisScale"] = "창 파편 크기",
+                ["blueHitAccents"] = "창 타격별 강조 (X=1타, Y=2타, Z=3타, W=4타)",
+                ["blueDustLeadTime"] = "창 먼지 예고 선행 시간",
+                ["blueAftermathDuration"] = "창 종료 후 잔류 시간",
+                ["blueFinalCoreScale"] = "창 마지막 압축 중심 크기 배율",
+                ["blueFinalShake"] = "창 마지막 타격 카메라 진동",
+                ["redFlashIntensity"] = "혁 섬광 강도",
+                ["redShockRingScale"] = "혁 압력 전면 크기",
+                ["redAftermathDuration"] = "혁 압력 잔류 시간",
+                ["redAftermathDensity"] = "혁 압력 증기 밀도",
+                ["redFrontIrregularity"] = "혁 압력 전면 불규칙도",
+                ["redSurfaceDebrisCount"] = "혁 표면 파편 수",
+                ["redSurfaceReactionScale"] = "혁 표면 반응 크기",
+                ["purpleFusionHoldDuration"] = "자 완성 후 충전 시간",
+                ["purpleFormationScale"] = "자 소환용 창·혁 크기",
+                ["purpleFormationSeparation"] = "자 소환용 창·혁 중심 간격 (편측)",
+                ["purpleTerminalDuration"] = "자 종점 폭발 시간",
+                ["purpleTerminalScale"] = "자 종점 폭발 크기",
+                ["purpleVisualScale"] = "자 시각 크기",
+                ["purpleHoldOffset"] = "자 완성 위치 보정 (Y 높이, Z 전방)",
+                ["purpleScarWidthMultiplier"] = "자 지름 대비 상흔 폭 배율",
+                ["purpleScarDuration"] = "자 상흔 잔류 시간",
+                ["purpleBlueLeadDuration"] = "자 · 창 단독 등장 시간",
+                ["purpleRedOppositionDuration"] = "자 · 혁 등장과 대치 시간",
+                ["purpleFusionDuration"] = "자 · 두 힘의 융합 시간",
+                ["purpleImpactFrameCount"] = "자 · 흑백 연출 프레임 수 (60fps 기준)",
+                ["purpleVolumeDensity"] = "자 내부 에너지 밀도",
+                ["purpleEmission"] = "자 기본 발광 강도",
+                ["purpleTurbulence"] = "자 에너지 난류 강도",
+                ["purpleFlowSpeed"] = "자 내부 흐름 속도",
+                ["purpleHazeOpacity"] = "자 외곽 공간 안개",
+                ["purpleRibbonWidth"] = "자 곡면 리본 굵기",
+                ["purpleLightningWidth"] = "자 번개 굵기",
+                ["purpleLightningIntensity"] = "자 번개 발광 강도",
+                ["purpleReleaseEmission"] = "자 방출 순간 발광 배율",
+                ["purpleCameraChoreography"] = "자 짧은 카메라 연출 사용",
+                ["purpleImpactFrames"] = "자 흑백 임팩트 프레임 사용",
+                ["purpleCameraSideOffset"] = "자 카메라 측면 거리",
+                ["purpleCameraTensionFov"] = "자 방출 직전 시야각 압축",
+                ["purpleReleaseFov"] = "자 방출 시야각 충격",
+                ["purpleCameraImpulse"] = "자 방출 카메라 진동",
+                ["purpleCameraFollowThrough"] = "자 방출 후 카메라 복귀 시간",
                 ["characterProfile"] = "캐릭터 프로필",
                 ["profile"] = "데이터 프로필",
                 ["profileLabel"] = "표시 이름",
@@ -442,4 +486,7 @@ namespace JJKGame.EditorTools
 
     [CustomEditor(typeof(TrainingBotProfile)), CanEditMultipleObjects]
     internal sealed class TrainingBotProfileEditor : KoreanSerializedObjectEditor { }
+
+    [CustomEditor(typeof(GojoPolishSettings)), CanEditMultipleObjects]
+    internal sealed class GojoPolishSettingsEditor : KoreanSerializedObjectEditor { }
 }

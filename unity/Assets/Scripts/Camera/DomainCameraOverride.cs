@@ -13,6 +13,7 @@ namespace JJKGame.CameraSystem
         private float savedFov;
         private bool held;
         public bool IsActive => held;
+        public bool IsOwnedBy(Object requester) => held && owner == requester;
         public Vector3 ReturnPosition => savedPosition;
         public Quaternion ReturnRotation => savedRotation;
         public float ReturnFov => savedFov;

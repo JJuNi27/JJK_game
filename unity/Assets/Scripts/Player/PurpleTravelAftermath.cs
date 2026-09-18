@@ -1,114 +1,108 @@
-using System.Collections.Generic;
 using JJKGame.Core;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace JJKGame.Player
 {
-    /// <summary>Bounded travel-only lightning and sampled ground scars; the sequence owns lifetime.</summary>
+    /// <summary>Bounded, individually ageing surface wounds. No uniform strip or damage.</summary>
     public sealed class PurpleTravelAftermath : MonoBehaviour
     {
-        private readonly List<Material> materials = new List<Material>();
-        private readonly List<Color> colors = new List<Color>();
-        private readonly List<LineRenderer> lightning = new List<LineRenderer>();
-        private readonly List<LineRenderer> scars = new List<LineRenderer>();
-        private Vector3 start, forward, right;
+        private const int Capacity=64;
+        private const float Spacing=.9f;
+        private readonly RaycastHit[] surfaceHits=new RaycastHit[32];
+        private readonly MeshRenderer[] patches=new MeshRenderer[Capacity];
+        private readonly MaterialPropertyBlock[] properties=new MaterialPropertyBlock[Capacity];
+        private readonly float[] born=new float[Capacity];
+        private readonly Vector3[] centres=new Vector3[Capacity];
+        private readonly LineRenderer[] arcs=new LineRenderer[8];
+        private Material scarMaterial, filamentMaterial;
+        private Mesh patchMesh;
+        private Vector3 start,forward,right;
+        private float scarWidth, life;
         private int sampled;
-        private float scarWidth, visualScale;
 
-        public void Configure(Vector3 origin, Vector3 direction, float visualDiameter)
+        public void Configure(Vector3 origin,Vector3 direction,float visualDiameter)
         {
-            start = origin;
-            scarWidth = visualDiameter * GojoPolishSettings.Current.purpleScarWidthMultiplier;
-            visualScale = GojoPolishSettings.Current.purpleVisualScale;
-            forward = direction.normalized;
-            right = Vector3.Cross(Vector3.up, forward).normalized;
-            for (int i = 0; i < 24; i++)
+            start=origin; forward=direction.normalized; right=Vector3.Cross(Vector3.up,forward).normalized;
+            scarWidth=visualDiameter*GojoPolishSettings.Current.purpleScarWidthMultiplier;
+            life=GojoPolishSettings.Current.purpleScarDuration;
+            scarMaterial=new Material(Resources.Load<Shader>("VFX/HollowPurpleScar")) { name="PurpleScar_Runtime" };
+            filamentMaterial=new Material(Resources.Load<Shader>("VFX/HollowPurpleFilament")) { name="PurpleScarDischarge_Runtime" };
+            patchMesh=new Mesh { name="PurpleScarPatch_Runtime" };
+            patchMesh.vertices=new[]{new Vector3(-.5f,0,-.5f),new Vector3(.5f,0,-.5f),new Vector3(-.5f,0,.5f),new Vector3(.5f,0,.5f)};
+            patchMesh.uv=new[]{Vector2.zero,Vector2.right,Vector2.up,Vector2.one};
+            patchMesh.triangles=new[]{0,2,1,1,2,3}; patchMesh.RecalculateBounds();
+            for(int i=0;i<Capacity;i++)
             {
-                var arc = ProductionSignatureVfxFactory.CreateArc(transform, "TravelBranch_" + i,
-                    1f, 0f, 45f, i % 3 == 0 ? .055f : .025f,
-                    i % 2 == 0 ? new Color(1.8f,.22f,2.5f,.85f) : new Color(.8f,.3f,2f,.9f),
-                    true, materials, colors);
-                arc.useWorldSpace = true;
-                arc.positionCount = 7;
-                lightning.Add(arc);
-                arc.gameObject.SetActive(false);
+                var go=new GameObject("PurpleBrokenScar_"+i,typeof(MeshFilter),typeof(MeshRenderer));
+                go.transform.SetParent(transform,false); go.GetComponent<MeshFilter>().sharedMesh=patchMesh;
+                var mr=go.GetComponent<MeshRenderer>(); mr.sharedMaterial=scarMaterial;
+                mr.shadowCastingMode=ShadowCastingMode.Off; mr.receiveShadows=false; mr.enabled=false;
+                patches[i]=mr; properties[i]=new MaterialPropertyBlock();
+            }
+            for(int i=0;i<arcs.Length;i++)
+            {
+                var go=new GameObject("PurpleResidualDischarge_"+i); go.transform.SetParent(transform,false);
+                var line=go.AddComponent<LineRenderer>(); arcs[i]=line; line.sharedMaterial=filamentMaterial;
+                line.positionCount=6; line.useWorldSpace=true; line.startWidth=.04f; line.endWidth=.004f;
+                line.shadowCastingMode=ShadowCastingMode.Off; line.receiveShadows=false; line.enabled=false;
             }
         }
+        private static float Hash(float v)=>Mathf.Repeat(Mathf.Sin(v*127.1f)*43758.5453f,1f);
 
-        public void Render(Vector3 orb, float elapsed, float fade, bool travelling, float visualDiameter = 0f)
+        public void Render(Vector3 orb,float elapsed,float fade,bool travelling,float visualDiameter=0)
         {
-            if (travelling && visualDiameter > 0f)
-                scarWidth = visualDiameter * GojoPolishSettings.Current.purpleScarWidthMultiplier;
-            int frame = Mathf.FloorToInt(elapsed * 24f);
-            for (int i = 0; i < lightning.Count; i++)
+            if(travelling && visualDiameter>0) scarWidth=visualDiameter*GojoPolishSettings.Current.purpleScarWidthMultiplier;
+            float distance=Vector3.Dot(orb-start,forward);
+            while(travelling && sampled<Capacity && (sampled+.5f)*Spacing<distance)
             {
-                var arc = lightning[i];
-                bool visible = travelling && (frame + i * 7) % 5 < 3;
-                arc.gameObject.SetActive(visible);
-                if (!visible) continue;
-                int trunk = i / 2;
-                float angle = trunk * 2.399963f + frame * .71f;
-                Vector3 radial = right * Mathf.Cos(angle) + Vector3.up * Mathf.Sin(angle);
-                for (int j = 0; j < 7; j++)
-                {
-                    float t = j / 6f;
-                    float fork = i % 2 == 1 ? Mathf.Max(0f, t - .33f) : 0f;
-                    float jag = Mathf.Sin(j * 17.3f + frame * 7.1f + trunk) * .38f;
-                    arc.SetPosition(j, orb + radial * (1.2f + t * (trunk % 3 == 0 ? 2.8f : 1.5f)) * visualScale
-                        - forward * (t * 4.5f + jag) + Vector3.up * jag
-                        + (right * Mathf.Sin(angle) - Vector3.up * Mathf.Cos(angle)) * fork * 3.4f);
-                }
+                AddScar(sampled,elapsed); sampled++;
             }
-            float travelled = Vector3.Dot(orb - start, forward);
-            while (travelling && sampled < 96 && sampled * .65f < travelled)
-            { AddScar(sampled); sampled++; }
-            for (int i = 0; i < scars.Count; i++)
+            for(int i=0;i<sampled;i++)
             {
-                Color tint = Color.white; tint.a = fade;
-                scars[i].startColor = scars[i].endColor = tint;
+                float age=elapsed-born[i];
+                patches[i].enabled=age<life;
+                if(!patches[i].enabled) continue;
+                properties[i].SetFloat("_Age",age); patches[i].SetPropertyBlock(properties[i]);
+            }
+            for(int i=0;i<arcs.Length;i++)
+            {
+                int index=sampled-1-i*3;
+                bool visible=index>=0 && elapsed-born[Mathf.Max(0,index)]<life*.7f && Hash(Mathf.Floor(elapsed*9)+i*7)>.72f;
+                arcs[i].enabled=visible;
+                if(!visible) continue;
+                float age=elapsed-born[index];
+                Color tint=new Color(.5f,.09f,1.1f,(1-age/life)*.45f);
+                arcs[i].startColor=tint; tint.a=0; arcs[i].endColor=tint;
+                for(int j=0;j<6;j++)
+                    arcs[i].SetPosition(j,centres[index]+right*((j/5f-.5f)*scarWidth*.35f)
+                        +forward*(Hash(index*13+j*7)-.5f)*.5f+Vector3.up*(.04f+Mathf.Sin(j/5f*Mathf.PI)*.20f));
             }
         }
-
-        private void AddScar(int index)
+        private void AddScar(int index,float elapsed)
         {
-            Vector3 sample = start + forward * (index * .65f);
-            Vector3 surface = sample - Vector3.up * .8f;
-            bool ground = false;
-            float closest = float.PositiveInfinity;
-            foreach (RaycastHit hit in Physics.RaycastAll(sample + Vector3.up * 2f, Vector3.down, 8f,
-                ~0, QueryTriggerInteraction.Ignore))
+            Vector3 sample=start+forward*((index+.5f)*Spacing),normal=Vector3.up;
+            Vector3 surface=sample-Vector3.up*.7f; bool ground=false; float nearest=float.PositiveInfinity;
+            int count=Physics.RaycastNonAlloc(sample+Vector3.up*2,Vector3.down,surfaceHits,8,~0,QueryTriggerInteraction.Ignore);
+            for(int i=0;i<count;i++)
             {
-                if (hit.collider.GetComponentInParent<Health>() != null || hit.distance >= closest) continue;
-                closest = hit.distance; surface = hit.point + hit.normal * .035f; ground = true;
+                var hit=surfaceHits[i];
+                if(hit.collider.GetComponentInParent<Health>()!=null || hit.distance>=nearest) continue;
+                nearest=hit.distance; surface=hit.point+hit.normal*.045f; normal=hit.normal; ground=true;
             }
-            var scar = ProductionSignatureVfxFactory.CreateArc(transform,
-                ground ? "GroundSpaceWound_" + index : "SuspendedSpaceResidue_" + index,
-                1f, 0f, 45f, scarWidth * (.94f + (index % 5) * .015f),
-                ground ? new Color(.075f,.007f,.14f,.82f) : new Color(.5f,.04f,1f,.45f),
-                false, materials, colors);
-            scar.useWorldSpace = true;
-            scar.widthCurve = new AnimationCurve(new Keyframe(0,.92f), new Keyframe(.28f,1f),
-                new Keyframe(.66f,.98f), new Keyframe(1,.9f));
-            // Assigning a normalized widthCurve replaces the factory's start/end widths.
-            // Keep metre width in the multiplier so the curve cannot collapse it to 1 m.
-            scar.widthMultiplier = scarWidth * (.94f + (index % 5) * .015f);
-            scar.positionCount = 5;
-            if (ground) { scar.alignment = LineAlignment.TransformZ; scar.transform.rotation = Quaternion.Euler(90f,0f,0f); }
-            for (int j = 0; j < 5; j++) scar.SetPosition(j, surface + forward * (j * .19f)
-                + right * Mathf.Sin(index * 7.1f + j * 3.4f) * .12f);
-            scars.Add(scar);
-            var seam = ProductionSignatureVfxFactory.CreateArc(transform, "ResidualVioletSeam_" + index,
-                1f, 0f, 45f, .025f, new Color(.68f,.06f,1.4f,.7f), true, materials, colors);
-            seam.useWorldSpace = true; seam.positionCount = 5;
-            for (int j = 0; j < 5; j++) seam.SetPosition(j, scar.GetPosition(j) + Vector3.up * .01f
-                + right * scarWidth * (index % 2 == 0 ? .4f : -.4f));
-            scars.Add(seam);
+            centres[index]=surface; born[index]=elapsed;
+            var patch=patches[index].transform;
+            patch.SetPositionAndRotation(surface+right*(Hash(index*3)-.5f)*scarWidth*.18f,
+                Quaternion.LookRotation(Vector3.ProjectOnPlane(forward,normal).normalized,normal));
+            patch.localScale=new Vector3(scarWidth*(.42f+Hash(index*11)*.58f),1,Spacing*(.75f+Hash(index*17)*.60f));
+            properties[index].SetFloat("_Seed",index*13.17f); properties[index].SetFloat("_Life",life);
+            properties[index].SetFloat("_Ground",ground?1:0);
         }
-
         private void OnDestroy()
         {
-            foreach (Material material in materials) if (material != null) Destroy(material);
+            if(scarMaterial!=null) Destroy(scarMaterial);
+            if(filamentMaterial!=null) Destroy(filamentMaterial);
+            if(patchMesh!=null) Destroy(patchMesh);
         }
     }
 }

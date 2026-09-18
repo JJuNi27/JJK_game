@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d31eafb2a9ba41bb998b40fcefc1b2d7, type: 3}
+  m_Name: PurpleTravelVisualProfile
+  m_EditorClassIdentifier:
+  travelRefinementEnabled: 1
+  referenceSpeed: 30
+  residueLifetime: 0.14
+  partialInheritance: 0.15
+  residueRadiusLimit: 1.3
+  wakeLengthRadii: 1.35
+  wakeWidthRadii: 1.12
+  wakeEmission: 1.15
+  releaseBoost: 0.8
+  releasePeakSeconds: 0.18
+  haloRearStretch: 0.35
+  rearDistortion: 0.8

@@ -63,6 +63,9 @@ namespace JJKGame.CameraSystem
             BuildFlashOverlay();
         }
 
+        public bool Follows(Transform actor) => target != null && actor != null
+            && (target == actor || target.IsChildOf(actor));
+
         public void SetTarget(Transform newTarget)
         {
             target = newTarget;

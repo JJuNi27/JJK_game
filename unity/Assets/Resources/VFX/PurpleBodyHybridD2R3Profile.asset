@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b584eb8e15364ec9af43b64ea27ece75, type: 3}
+  m_Name: PurpleBodyHybridD2R3Profile
+  m_EditorClassIdentifier:
+  frozenR2: {fileID: 11400000, guid: f21f23478b914556abffc0a89957c384, type: 2}
+  shellEmission: 1.8
+  shellDensity: 0.8
+  internalEnergy: 22
+  inwardSpeed: 0.58
+  turbulenceSpeed: 0.8
+  arcRadius: 0.10
+  plasmaScale: 11
+  arcLifetime: 0.105
+  outerReach: 1.4
+  instability: 1
+  voidContrast: 1
