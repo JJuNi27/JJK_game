@@ -281,6 +281,9 @@ namespace JJKGame.Player
             private readonly List<Material> runtimeMaterials = new List<Material>();
             private readonly List<Color> materialColors = new List<Color>();
             private readonly PurpleFusionIngredient blueField, redField;
+            private readonly PurpleFusionBirthAccent birthAccent;
+            private readonly PurpleIngredientReboot2Profile ingredientPass2;
+            private readonly PurpleIngredientCollisionAccent ingredientContact;
             private readonly float formationScale, formationSeparation;
             private PurpleTerminalBurst terminal;
             private float terminalAt = float.PositiveInfinity;
@@ -332,17 +335,36 @@ namespace JJKGame.Player
 
                 root = new GameObject("HollowPurpleCanonicalOrbSequence");
                 root.transform.SetParent(runtimeRoot, true);
+                var pass2=PurpleIngredientReboot2Profile.Current;
+                ingredientPass2=pass2!=null && pass2.candidateEnabled?pass2:null;
+                if(ingredientPass2!=null)
+                {
+                    float contact=PurpleIngredientCollisionAccent.FindContactNormalized(formationSeparation,formationScale,ingredientPass2.fusionVerticalArc);
+                    var contactRoot=new GameObject("PurpleIngredientCollisionAccent");contactRoot.transform.SetParent(root.transform,false);
+                    contactRoot.transform.position=start+Vector3.Lerp(Vector3.up*.4f,holdOffset,Mathf.SmoothStep(0,1,contact));
+                    ingredientContact=contactRoot.AddComponent<PurpleIngredientCollisionAccent>();
+                    ingredientContact.Configure(fusionStart+contact*MergeDuration,formationScale*1.5f,ingredientPass2);
+                }
                 aftermath = root.AddComponent<PurpleTravelAftermath>();
                 aftermath.Configure(start + holdOffset, direction, GojoPolishSettings.PurpleShellDiameter * visualScale);
+                var polish=PurpleFinalPolishProfile.Current;
+                float compression=polish!=null && polish.fusionBirthEnabled?polish.compressionStrength:0;
+                if(polish!=null && polish.fusionBirthEnabled)
+                {
+                    var accentRoot=new GameObject("PurplePolish_FusionBirthAccent");accentRoot.transform.SetParent(root.transform,false);
+                    accentRoot.transform.position=start+holdOffset;
+                    birthAccent=accentRoot.AddComponent<PurpleFusionBirthAccent>();
+                    birthAccent.Configure(GojoPolishSettings.PurpleShellDiameter*visualScale*1.12f*.5f,polish);
+                }
 
                 blueOrb = new GameObject("HollowPurpleBlueOrbRoot").transform;
                 blueOrb.SetParent(root.transform, true);
                 blueField = blueOrb.gameObject.AddComponent<PurpleFusionIngredient>();
-                blueField.Configure(false);
+                blueField.Configure(false,compression);
                 redOrb = new GameObject("HollowPurpleRedOrbRoot").transform;
                 redOrb.SetParent(root.transform, true);
                 redField = redOrb.gameObject.AddComponent<PurpleFusionIngredient>();
-                redField.Configure(true);
+                redField.Configure(true,compression);
 
                 purpleOrb = new GameObject("HollowPurpleDenseBody").transform;
                 purpleOrb.SetParent(root.transform, true);
@@ -435,6 +457,8 @@ namespace JJKGame.Player
 
                 float elapsed = Mathf.Max(0, now - startedAt);
                 releasePresentation.Sample(elapsed);
+                if(ingredientContact!=null)ingredientContact.Sample(elapsed);
+                if(birthAccent!=null)birthAccent.Sample(elapsed-holdStart);
                 if (elapsed < fusionStart)
                 {
                     UpdateFormation(elapsed);
@@ -539,9 +563,10 @@ namespace JJKGame.Player
                 float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(normalized));
                 float separation = Mathf.Lerp(formationSeparation, 0.03f, t);
                 float arc = Mathf.Sin(t * Mathf.PI) * 0.45f;
+                if(ingredientPass2!=null)arc=Mathf.Sin(t*Mathf.PI)*ingredientPass2.fusionVerticalArc;
 
                 blueOrb.position = start - right * separation + Vector3.up * arc;
-                redOrb.position = start + right * separation - Vector3.up * arc * 0.35f;
+                redOrb.position = start + right * separation - Vector3.up * arc * (ingredientPass2!=null?1f:0.35f);
                 Vector3 completedOffset = Vector3.Lerp(Vector3.up*.4f, holdOffset, t);
                 blueOrb.position += completedOffset;
                 redOrb.position += completedOffset;

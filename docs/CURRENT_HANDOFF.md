@@ -1,5 +1,70 @@
 # Current Project Handoff
 
+## Checkpoint 상태 — Purple Ingredient Final2 누적 체인 / 2026-09-22
+
+**CODEX VALIDATED / USER VISUAL REVIEW INCOMPLETE / NOT USER VERIFIED**.
+
+이번 checkpoint는 Final2 단독 제출물이 아니라 Polish → Macro → Reboot → Reboot2 → Final → Final2 누적 Purple Ingredient exploration chain을 재현하기 위한 technical checkpoint다. 현재 Final2는 최종 visual baseline이 아니다. Blue/Red dark mass 방향, fusion trajectory ±0.08m, fusion/collision timing과 production Purple regression protection을 보존한다.
+
+Known visual issues: outer energy가 reference와 아직 충분히 일치하지 않고, Red burst가 일부 시점에서 glowing mesh/plastic shard처럼 읽히며, 주변 에너지가 reference의 violent/unstable cursed-energy motion에 아직 미치지 않는다. Skills/MCP/Reference Breakdown 체계 도입 후 시각 재검토한다. unity/Logs/의 영상·QA 산출물은 gitignored local evidence이며 repository checkpoint에는 포함하지 않는다.
+
+## 최신 로컬 작업 — Ingredient 최종 파열·충돌 후보 / 2026-09-20
+
+**CODEX VALIDATED / PENDING USER VISUAL REVIEW.** Pass 2의 dark mass·±0.08m 궤적·첫 접촉 시점/2프레임을 보존하고, 긴 연속 band를 짧은 jagged rupture로 교체했다. 충돌은 부드러운 반투명 원형 accent 대신 강한 흑백 radial graphic을 사용한다. `PurpleIngredientFinalProfile` 기본 OFF, Pass 2와 함께 켤 때 적용. 본체/확정 Purple 및 기존 후보 자산은 보존했다.
+
+고유 targeted 7종 PASS, 마지막 flow 보정 후 비교/방향·cleanup **2 PASS / 0 FAIL**, C#/shader 오류 0. 81 pose 동일, 2초 이후 Side/Caster 각 115프레임 RGB 차이 0. Runtime material/mesh 누수 검사 통과. [최종 보고서](PURPLE_INGREDIENT_FINAL_REVIEW.md), [필수 6개 영상](../unity/Logs/PurpleIngredientFinalQA/Review/20260920_110915_481/index.html).
+
+긴 리본은 크게 줄고 충돌 대비는 강해졌다. 다만 전체 외곽 발광 면적이 줄었고 일부 조각의 평면적 인상·먼 Caster의 Red 방향성은 남는다. 다음은 사용자 visual approval이다. 과거 QA 로그 `purple-ingredient-final-02.log/xml` 한 쌍은 이름 충돌로 덮어써진 예외가 있으며 이전 요약/영상은 보존했다(보고서 참조). Commit/push/merge 없음. 아래는 이전 이력이다.
+
+## 최신 로컬 작업 — Ingredient Direction Reboot Pass 2 / 2026-09-20
+
+**CODEX VALIDATED / PENDING USER VISUAL REVIEW.** 중단된 Pass 2 구현을 보존하고 검수/보고를 완료했다. Reboot dark body 그대로, 외곽 broken collapse/pressure band와 짧은 방전 강화, fusion arc를 Blue +0.08m / Red -0.08m로 대칭화, 약 1.444초 첫 접촉에 2/60초 국소 흑백 accent를 추가했다. 기존 Birth/카메라 소유권은 그대로다. `PurpleIngredientReboot2Profile` 기본 OFF, 이전 후보 모두 보존.
+
+최종 실행 **5 PASS / 0 FAIL**, 기존 유효 contact/direction 검사 포함 고유 7종 통과, C#/shader 오류 0. 초기 inactive-pose 검사 기대값 실패 1건을 수정했고 60Hz detail의 QA actor 위치 초기화도 수정했다. 재개 후 runtime visual 추가 변경 없음. 2초 이후 Side/Caster 각각 115프레임 RGB 차이 0, 반복 cleanup material/mesh 증가 0. [보고서](PURPLE_INGREDIENT_REBOOT2_REVIEW.md), [영상 6개](../unity/Logs/PurpleIngredientReboot2QA/Review/20260920_100823_323/index.html).
+
+다음은 사용자 visual approval이다. 남은 ribbon 인상, 먼 시점의 방향 구분, 매우 짧은 접촉 accent 강도를 확인받는다. **Purple Outer Lightning-Storm Re-evaluation은 후속 메모만 기록했고 구현하지 않았다.** Commit/push/merge 없음. 아래는 이전 후보 이력이다.
+
+## 최신 로컬 작업 — Ingredient Direction Reboot / 2026-09-19
+
+**CODEX VALIDATED / PENDING USER VISUAL REVIEW.** 사용자가 기존 bright magical orb 방향을 대체하도록 요청하여, 별도 `PurpleIngredientRebootProfile`(기본 OFF)을 추가했다. Blue는 Deep Navy 수축 질량, Red는 white-sun core 없는 적흑색 압력 질량이다. 불규칙한 rim/균열, 수축·팽창 partial band와 보조 흐름을 사용한다. 기존 baseline/Polish/Macro는 보존했다.
+
+관련 고유 targeted 6종 PASS, 최종 band/Blue 명도 build 재검사 **3 PASS / 0 FAIL**, C#/shader 오류 0. 2초 이후 Side/Caster 각각 115프레임 RGB 차이 0, pose 81개 차이 0, 반복 material/mesh cleanup 통과. [보고서](PURPLE_INGREDIENT_REBOOT_REVIEW.md), [Current Macro / Reboot 비교 영상](../unity/Logs/PurpleIngredientRebootQA/Review/20260919_114110_831/index.html).
+
+어두운 재질 방향은 요청에 가까워졌으나, 일부 고리/공전 인상과 먼 시점의 낮은 흐름 명도는 남는다. 사용자 시각 판단 전 Production 기본 적용·추가 polish를 하지 않는다. Commit/push/merge 없음. 아래는 이전 후보 기록이다.
+
+## 최신 로컬 작업 — Ingredient Macro-aggression 후보 / 2026-09-19
+
+**CODEX VALIDATED / PENDING USER VISUAL REVIEW.** 기존 Ingredient 후보를 보존하고 `PurpleIngredientMacroProfile`(기본 OFF) / shader / 기존 line을 재사용하는 흐름 후보를 추가했다. Blue는 굵고 긴 회전 흡인, Red는 밝은 선두의 짧은 외향 pressure burst를 강화했다. 중단 전 Red 보강 및 최종 Unity 실행이 이미 끝나 있었으며 재개 후에는 결과 확인·영상 정리·문서만 완료했다.
+
+최종 targeted **6 PASS / 0 FAIL**, C#/shader 오류 0. 81개 pose 차이 0, 2초 이후 Side/Caster 각각 115프레임 RGB 차이 0, 반복 cleanup material/mesh 증가 0. 확정 Purple·독립 Blue/Red 및 기존 Ingredient 자산은 작업 시작 snapshot과 동일하다. [보고서](PURPLE_INGREDIENT_MACRO_REVIEW.md), [Side/Caster 전체 및 흑백 반속 비교](../unity/Logs/PurpleIngredientMacroQA/Review/20260918_161849_981/index.html).
+
+다음은 기존 Ingredient 대비 Macro의 강도와 리본형 잔상에 대한 사용자 visual approval이다. 기본 ON 변경이나 추가 polish를 임의 진행하지 않는다. Commit/push/merge 없음. 아래는 이전 후보 이력이다.
+
+## 최신 로컬 작업 — Purple Formation Ingredient Polish / 2026-09-19
+
+**CODEX VALIDATED / PENDING USER VISUAL REVIEW.** 독립 Blue/Red가 아닌 `PurpleFusionIngredient` 전용 후보다. 원본 shader를 보존하고 별도 `PurpleIngredientPolishProfile`(기본 OFF)과 후보 shader를 추가했다. 미세한 silhouette 변화, Blue dark sink/흡인 흐름, Red soft pressure core/외향 burst를 보강한다. 기존 late-fusion Birth compression과 tension bridge는 보존했다.
+
+최종 targeted 5 PASS / 0 FAIL, C#/shader error 0. 81개 pose 값 차이 0, 2초 이후 115프레임 Side/Caster RGB 차이 0. 반복 Ingredient cleanup 및 기존 Purple 피해/카메라 검사 통과. [보고서](PURPLE_INGREDIENT_POLISH_REVIEW.md), [동일 조건 Side/Caster 및 흑백 비교](../unity/Logs/PurpleIngredientPolishQA/Review/20260918_154439_532/index.html).
+
+다음은 Ingredient 후보에 대한 사용자 시각 확인이다. 확정된 Body/Outer/Birth/Travel/gameplay/timing/formation path·scale/camera/terminal을 다시 손대지 않는다. Commit/push 없음. 아래는 이전 shell 및 전체 Polish 이력이다.
+
+## 최신 로컬 작업 — Birth shell 최소 수정 / 2026-09-19
+
+사용자는 Outer Polish와 Birth compression/flash/debris/electric accent를 유지하고 shell만 수정하도록 결정했다. `PurpleFusionBirth.shader`의 shell만 최대 0.11초, 방향별로 끊어진 partial shockwave로 조정했다. 기존 2.1~2.2초 dome 인상은 Side/Caster에서 크게 줄었다. Body/Outer/C#/Profile/timing/gameplay/camera 보존, 후보 저장 toggle OFF도 유지한다.
+
+**CODEX VALIDATED / PENDING USER VISUAL REVIEW**. 비교 targeted 1 PASS / 0 FAIL, C#/shader error 0. 다음은 수정 shell의 사용자 시각 확인이며 Outer/Birth의 나머지 방향을 다시 선택하는 작업이 아니다. [보고서](PURPLE_BIRTH_SHELL_REFINEMENT_REVIEW.md), [Baseline / Outer / Outer+Birth 영상](../unity/Logs/PurpleBirthShellQA/Review/index.html). Commit/push 없음. 아래 9월 18일 기록은 이전 비교 이력이다.
+
+## 최신 로컬 작업 — Final Purple Polish 비교 후보 / 2026-09-18
+
+**CODEX VALIDATED / PENDING USER VISUAL REVIEW.** Remote HEAD `7f5c6979e893f3a79a291934403f7cc28cc232af` 이후의 로컬 후보이며 commit/push하지 않았다. 아래 checkpoint는 보존된 Production baseline이다.
+
+- Outer micro-polish와 Fusion Birth Accent를 독립 toggle/profile로 추가했다. `PurpleFinalPolishProfile.asset`의 **두 toggle은 저장 상태 OFF**다. 기존 Production profile/Body/Travel/terminal/gameplay/camera/timing을 유지한다.
+- Outer는 Halo diffuse 감소와 modest arc/fragment tuning. Birth는 기존 mote 압축 재사용 + 짧은 국소 flash/outward shell. 새 body 방향은 아니다.
+- 최종 관련 targeted 6종 PASS / 0 FAIL, C#/shader 오류 0. 후보 ON lifecycle 4회 material/mesh 증가 0. Pose 81개 차이 0. Birth OFF/ON은 2.3초 이후 Side/Caster 모든 프레임 RGB 차이 0.
+- 실제 화면에서는 Outer 개선은 유효하나 먼 Caster에서 미세하다. Birth peak는 강해졌지만 팽창 shell의 짧은 보호막 인상이 남아 별도 선택이 필요하다.
+- [최종 비교 보고서](PURPLE_FINAL_POLISH_REVIEW.md), [영상 모음](../unity/Logs/PurpleFinalPolishQA/Review/20260918_093348_763/index.html).
+- 다음 작업은 사용자 영상/Play Mode 검토 후 **baseline 유지 / Outer만 / Outer+Birth** 중 선택이다. 사용자 승인 없이 후보를 기본 ON으로 바꾸거나 새 polish를 시작하지 않는다. 기존 local-only/user art/refs/QA와 unrelated dirty tree는 보존했다.
+
 ## Canonical checkpoint — 2026-09-18
 
 - Branch: `feat/gojo-blue-screen-distortion`

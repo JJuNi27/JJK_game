@@ -28,6 +28,7 @@ namespace JJKGame.Player
         private GameObject travelWake;
         private Material wakeMaterial;
         private float travelWeight;
+        private float coronaContrast;
         public bool TravelResponseActive=>travelWeight>0;
         public float WakeMaximumLength=>radius*transform.lossyScale.x*(travelProfile!=null?travelProfile.wakeLengthRadii:0);
         public float MaxResidualDistance {get;private set;}
@@ -48,9 +49,13 @@ namespace JJKGame.Player
         public void Configure(ProductionPurpleOuterSettings settings,float diameter)
         {
             profile=settings;radius=diameter*.5f;
+            var candidate=PurpleFinalPolishProfile.Current;
+            bool polish=candidate!=null && candidate.outerPolishEnabled;
+            if(polish){profile=candidate.outer;coronaContrast=candidate.coronaContrast;}
             travelProfile=Resources.Load<PurpleTravelVisualProfile>("VFX/PurpleTravelVisualProfile");
             chargeHaloShader=Resources.Load<Shader>("VFX/PurpleOuterR2Halo");chargeDistortionShader=Resources.Load<Shader>("VFX/PurpleOuterR2Distortion");
             travelHaloShader=Resources.Load<Shader>("VFX/PurpleTravelHalo");travelDistortionShader=Resources.Load<Shader>("VFX/PurpleTravelDistortion");
+            if(polish)chargeHaloShader=travelHaloShader=Resources.Load<Shader>("VFX/PurplePolishHalo");
             halo=GameObject.CreatePrimitive(PrimitiveType.Cube);halo.name="OuterR2_VolumetricHalo";halo.transform.SetParent(transform,false);
             halo.transform.localScale=Vector3.one*diameter*profile.haloRatio*1.23f;
             var collider=halo.GetComponent<Collider>();collider.enabled=false;Destroy(collider);
@@ -193,6 +198,7 @@ namespace JJKGame.Player
             travelVelocity=velocity;travelAge=Mathf.Max(0,ageSinceRelease);MaxResidualDistance=0;
             travelWeight=travelProfile!=null && travelProfile.travelRefinementEnabled && travelAge>0?Mathf.Clamp01(velocity.magnitude/travelProfile.referenceSpeed)*Mathf.SmoothStep(0,1,travelAge/.035f):0;
             haloMaterial.shader=TravelResponseActive?travelHaloShader:chargeHaloShader;
+            if(coronaContrast>0)haloMaterial.SetFloat("_CoronaContrast",coronaContrast);
             distortionMaterial.shader=TravelResponseActive?travelDistortionShader:chargeDistortionShader;
             float boost=TravelResponseActive?1+travelProfile.releaseBoost*Mathf.Exp(-travelAge/travelProfile.releasePeakSeconds):1;
             Vector3 direction=velocity.sqrMagnitude>.001f?velocity.normalized:Vector3.forward;
