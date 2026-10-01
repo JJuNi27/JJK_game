@@ -1,85 +1,188 @@
-# 현재 작업 — Purple Ingredient Final2 technical checkpoint / 시각 검토 미완료
+# 현재 작업 — Purple Tempest polish 시각 refinement
 
-## Checkpoint 상태
-
-**CODEX VALIDATED / USER VISUAL REVIEW INCOMPLETE / NOT USER VERIFIED**.
-
-Final2와 그 선행 Purple Ingredient exploration chain을 재현 가능한 technical checkpoint로 보존한다. Final2는 최종 visual baseline이 아니다. Blue/Red dark mass, fusion trajectory ±0.08m, fusion/collision timing 및 production Purple regression protection은 유지한다.
-
-Known issues: outer energy가 reference와 충분히 일치하지 않음, Red burst가 일부 화면에서 glowing mesh/plastic shard처럼 읽힘, surrounding energy가 reference의 violent/unstable cursed-energy motion보다 약함. Skills/MCP/Reference Breakdown 도입 후 재검토한다. 사용자 시각 승인 전 기본 적용이나 Production 반영은 하지 않는다.
-
-작성 기준: **2026-09-20**
+작성 기준: **2026-10-02**
 
 Branch: `feat/gojo-blue-screen-distortion`
 
-Remote code checkpoint: `d2ee74e8c20da795c500971c393ac097b22a2e5a`
+Purple code checkpoint: `22cea8ed60ecafdf83ccc76860cd6bd87f7c4df4`
 
-상태: **CODEX VALIDATED / PENDING USER VISUAL REVIEW**
+Checkpoint message: `chore(vfx): checkpoint Purple tempest candidates pending visual review`
 
-최신 작업은 **Pass 2 최종 파열·충돌 후보**다. `PurpleIngredientFinalProfile` 기본 OFF. 기존 dark mass, ±0.08m trajectory, contact 약 1.444초와 2/60초 길이를 보존하고, 외곽 긴 ribbon만 짧은 불규칙 파열로, collision graphic만 강한 흑백 집중선으로 교체했다. 확정 Purple/standalone Blue·Red는 수정하지 않았다.
+상태: **CODEX VALIDATED / PENDING USER VISUAL REVIEW / NOT USER VERIFIED**
 
-고유 targeted 7종 통과, 최종 flow 보정 후 2 PASS / 0 FAIL, C#/shader 0. Pose 81개 동일, 2초 이후 각 시점 115프레임 RGB 차이 0. [최종 보고서](../PURPLE_INGREDIENT_FINAL_REVIEW.md), [필수 6개 비교 영상](../../unity/Logs/PurpleIngredientFinalQA/Review/20260920_110915_481/index.html). 외곽 지속 발광 면적 감소와 일부 flat shard, Caster의 Red 방향성은 사용자 검토 항목이다. 과거 QA 로그 이름 충돌 예외도 보고서에 기록했다. 아래 완료 결과는 보존 이력이다.
+## 현재 핵심
 
-최신 완료 결과는 **Direction Reboot Pass 2**다. Dark mass를 보존하고 외곽 broken energy 강화, Blue/Red fusion vertical arc를 ±0.08m로 정리, 첫 접촉 약 1.444초에 2/60초 국소 흑백 accent를 추가했다. 기존 후보/확정 Purple은 보존했고 새 profile 기본 OFF다.
+현재 최신 후보는 **`PurpleTempestPolish`**다.
 
-재개 후 QA 기대값·상세 캡처 초기화만 수정했다. 최종 실행 5 PASS / 0 FAIL, 고유 관련 7종 유효 PASS, C#/shader 오류 0. 2초 이후 두 시점 각각 115프레임 RGB 차이 0. [최신 보고서](../PURPLE_INGREDIENT_REBOOT2_REVIEW.md), [필수 6개 비교 영상](../../unity/Logs/PurpleIngredientReboot2QA/Review/20260920_100823_323/index.html). 아래 Reboot/Macro 설명은 이전 이력이다.
+- saved default OFF
+- Production/기존 후보/구체 본체 보존
+- historical full-image equality는 **INCONCLUSIVE**
+- targeted validation은 checked scope에서 **7 PASS / 0 FAIL**
+- C#/shader/final console error 0
+- cleanup material/mesh 0/0
+- A/B의 위치·크기·활성 상태 385 sample 동일
+- terminal pixel diff 0
+- full regression / real gameplay damage test는 이 pass에서 재실행하지 않음
 
-최신 결과는 **Direction Reboot / Material-Language Rework**다. 사용자가 Red bright core 해석을 폐기하도록 명시하여, Blue/Red 모두 dark mass + rim/cracked energy로 전환한 별도 후보를 만들었다. 기존 baseline/Polish/Macro는 보존했고 `PurpleIngredientRebootProfile.asset` 기본 OFF다. Blue 수축 band / Red 팽창 pressure band와 보조 흐름을 사용한다. 확정 Purple 및 독립 Blue/Red는 그대로다.
+자세한 기술 보고서:
+- `docs/PURPLE_TEMPEST_POLISH_REVIEW.md`
 
-[최신 Reboot 보고서](../PURPLE_INGREDIENT_REBOOT_REVIEW.md), [Macro/Reboot Side·Caster·흑백 반속 비교](../../unity/Logs/PurpleIngredientRebootQA/Review/20260919_114110_831/index.html). 고유 관련 targeted 6종 PASS, 최종 visual 변경 뒤 3종 재검사 PASS, C#/shader 오류 0. 두 시점 모두 2초 이후 115프레임 RGB 차이 0. 남은 고리 인상과 원거리 흐름 가독성을 사용자에게 확인받는다. 아래 Macro/Polish 설명은 보존 이력이다.
+## 현재 visual 판단 — 사용자 피드백
 
-최신 완료 작업은 **Macro-aggression 2차 후보**다. 기존 Ingredient 후보를 보존하고 별도 `PurpleIngredientMacroProfile.asset` 기본 OFF로 저장했다. Blue의 굵은 회전 흡인과 Red의 밝은 외향 pressure 선두를 강화했다. 재개 시 마지막 보강과 최종 검증 완료를 확인했고 추가 visual 수정 없이 영상/보고서를 마무리했다.
+이 평가는 USER VERIFIED 승격이 아니다.
 
-최종 targeted **6 PASS / 0 FAIL**, C#/shader 오류 0, pose 81개 차이 0, 2초 이후 두 시점 각각 115프레임 RGB 차이 0. 반복 cast 및 Ingredient cleanup 통과. [최신 Macro 보고서](../PURPLE_INGREDIENT_MACRO_REVIEW.md), [필수 비교 영상 4개](../../unity/Logs/PurpleIngredientMacroQA/Review/20260918_161849_981/index.html). 기존 후보보다 존재감은 커졌으나 일부 리본형 flare/공전 인상과 fusion 밀도는 사용자 확인이 필요하다. 아래 Ingredient 기록은 이전 패스 이력이다.
+### 전체
 
-보존된 Production baseline은 **D2-R3 Body + OuterR2 + Release→Travel refinement**이며 charge/travel에만 적용된다. Terminal explosion은 기존 Production visual을 유지한다. 최신 로컬 작업은 **Purple Formation Blue/Red Ingredient 후보**다. `PurpleIngredientPolishProfile.asset` 기본 OFF이며 새 시전에 적용된다. 기존 Outer/Birth는 `PurpleFinalPolishProfile.asset`에 그대로 보존했고 저장 toggle도 변경하지 않았다. Remote HEAD는 `7f5c6979e893f3a79a291934403f7cc28cc232af` 그대로이고 새 commit/push는 없다.
+**CLOSER. 방향은 맞지만 아직 부족.**
 
-이전 사용자 결정: Outer Polish 및 Birth compression/flash/debris/electric accent 유지. Birth shell은 최대 0.11초의 broken partial shockwave로 수정되어 이번 Ingredient 작업에서 그대로 보존한다. 이전 shell [보고서](../PURPLE_BIRTH_SHELL_REFINEMENT_REVIEW.md)와 [영상](../../unity/Logs/PurpleBirthShellQA/Review/index.html)도 보존한다.
+### Sphere / body
 
-## 다음 순서
+**KEEP.**
 
-1. 최신 [최종 파열·충돌 보고서](../PURPLE_INGREDIENT_FINAL_REVIEW.md)와 [Pass 2 / 최종 비교 영상](../../unity/Logs/PurpleIngredientFinalQA/Review/20260920_110915_481/index.html)를 검수한다. 이전 후보/보고서도 보존한다.
-2. Ribbon 감소, 짧은 파열의 밀도, 강화된 첫 접촉 graphic을 사용자에게 확인받는다. 확정된 본체·궤적·Body/Outer/Birth/Travel/gameplay/camera는 다시 작업하지 않는다.
-3. Unity Play Mode에서 최종 visual을 확인한다. 사용자 승인 전 toggle 기본값을 ON으로 바꾸지 않는다.
-4. 승인되면 Purple visual R&D를 종료한다.
-5. 이후 사용자 선택에 따라 Blue distortion/particle/environment reaction, Red pressure/range/residual pressure, Domain visual/camera 중 다음 track으로 이동한다.
+Purple body는 안정적인 보라 구체가 맞다. 구체 자체를 irregular/jelly 형태로 다시 찢는 방향으로 돌아가지 않는다.
 
-Purple 승인 전에는 새 visual track을 임의로 시작하지 않는다.
+목표는:
 
-후속 메모: **Purple Outer Lightning-Storm Re-evaluation**은 별도 후보 작업이다. 현재 halo/aura의 부드러움·규칙적인 pulse를 레퍼런스와 비교하고 필요하면 broken lightning/irregular fragments/storm motion을 검토한다. 이번 Pass 2에서는 구현하지 않았으며 사용자 요청 전 착수하지 않는다.
+> Stable Purple sphere + surrounding space unable to withstand it.
 
-## 검증 기준
+### Dark cursed energy / 검보라 주력
 
-- 최신 Ingredient 후보: 최종 targeted **5 PASS / 0 FAIL**, C#/shader 오류 0. Pose 81개 차이 0, 2초 이후 Side/Caster 115프레임 RGB 차이 0. `PurpleIngredientPolishProfile` 기본 OFF, 원본 Ingredient shader 보존. 아래는 이전 작업의 검증 이력이다.
+이번 polish에서 이전의 `보라 굵은 띠 + 일정한 검은 stroke` 인상은 줄었다.
 
-- 9월 19일 shell-only: `PurpleFinalPolishTests.FullComparison` **1 PASS / 0 FAIL**, C#/shader 오류 0. Spawn/render/dispose/material cleanup/camera restore 확인. Gameplay와 timing source는 동일하므로 기존 regression 반복 없음.
+하지만 trade-off로:
+- 검보라의 무게감이 너무 약해짐
+- 작은 검보라 조각/연기 조각처럼 흩어지는 순간이 있음
+- 먼 시점에서 lethal mass가 약해질 수 있음
 
-- 최신 Polish 관련 targeted **6종 PASS / 0 FAIL**, C#/shader 오류 0. 초기 Outer preview 별도 1 PASS. Full regression 없음.
-- 두 후보 ON lifecycle 4회, first/behind/max-range/birth cancel/travel cancel/legacy terminal, material/mesh 증가 0.
-- canonical transform 81개 차이 0, Production/timing profile 변화 0. Outer hold 중심 11,000픽셀 차이 0. Birth OFF/ON은 2.3초 이후 전 프레임 차이 0.
-- 세부 로그 및 비용/시각 한계는 최신 비교 보고서 참조. 아래는 보존된 baseline의 이전 검증 이력이다.
+다음 방향:
+- 검정 외곽선을 다시 두르지 않는다.
+- dark layer의 공간 점유/두께/무게감은 다시 키운다.
+- 검정은 stroke가 아니라 내부 암부, 먹힌 영역, 찢어진 면, 깊이로 존재한다.
+- 선/국수로 돌아가지 않으면서 굵은 cursed-energy mass가 되도록 한다.
 
-- Production integration: **3 PASS / 0 FAIL**, C#·shader error 0.
-- Travel refinement: **2 PASS / 0 FAIL**, C#·shader error 0.
-- Charge pixel difference 0.
-- first target hit 종료, behind-target damage 없음, no-hit max-range terminal, cancel/cleanup/camera restore, repeated lifecycle cleanup 유지.
-- Caster/Side readability 확인. 고정 observer는 장면 가림 때문에 시각 합격 근거에서 제외.
-- 자동 테스트와 Codex 렌더 검토는 사용자 Play Mode 승인과 같지 않다.
+### Wind / pressure
+
+이번 pass의 중요한 성과:
+- Charge 회오리가 projectile에 그대로 붙어서 Travel하는 문제를 줄임
+- Charge와 Travel의 역할을 분리함
+
+아직 남은 문제:
+- 흰/회백 풍압이 깨끗한 원호/리본처럼 보임
+- 공간 자체가 압력으로 밀려나는 질량감이 부족함
+- Charge → Release → Travel 전환이 하나의 흐름이 변형되는 것보다 효과 교체처럼 보일 수 있음
+
+다음 방향:
+
+```text
+Charge/Fusion
+- 캐릭터/구체 하단/주변 공간을 크게 휘감는 white/gray hurricane pressure
+
+Release
+- 회전 흐름이 압축/파열되며 진행 방향으로 전환
+
+Travel
+- 동일 cyclone 유지 금지
+- directional pressure / lateral shear / wake 언어
+```
+
+새로운 travel effect 종류를 무조건 추가하라는 뜻은 아니다. 기존 요소를 먼저 재구성한다.
+
+### Neon discharge
+
+현재 세 outer layer 중 가장 가능성이 높다.
+
+**KEEP + POLISH.**
+
+다음 방향:
+- 기존 white + neon purple/pink 정체성 유지
+- 모든 arc가 같은 길이/굵기/방사형이 되지 않게 함
+- 일부가 body bloom/dark current/wind에 묻혔다 다시 드러나게 함
+- front/back depth와 spatial overlap 강화
+- 너무 긴 clean cable처럼 보이는 arc는 줄임
+
+## 현재 가장 중요한 문제
+
+세 layer의 존재 여부가 아니라 **관계**다.
+
+이미 발생 주기와 움직임 속도 차이는 어느 정도 구현돼 있다.
+
+다음에는:
+- 같은 공간에서 서로 가림
+- 다른 layer를 침범
+- 밝기/암부가 서로 연결
+- 일부가 묻혔다 나타남
+- Charge/Release/Travel에서 역할이 바뀜
+
+이 필요하다.
+
+`풍압 ON + 검보라 ON + 네온 ON`처럼 세 시스템이 분리되어 읽히지 않고 하나의 Purple storm으로 보여야 한다.
+
+## 다음 구현 우선순위
+
+1. **Dark cursed energy 무게감 복구**
+   - stroke/closed noodle 없이 더 크고 무거운 mass
+2. **Wind visual quality + Release transition**
+   - 깨끗한 리본 감소
+   - Charge 흐름이 발사 순간 방향을 바꾸는 연결감
+3. **Neon과 두 layer의 중첩/가림/연결 polish**
+4. Bright Side/Caster + 필요 시 distant Observer에서 재검토
+
+새 시스템을 무작정 추가하기 전에 현재 `PurpleTempestPolish`의 세 layer를 polish한다.
+
+## QA 환경
+
+Purple 시각 QA 기본:
+- 밝은 neutral 환경
+- pure white 배경 금지
+- daylight-like lighting
+- QA 환경 때문에 Purple emission/bloom/color를 별도로 보정하지 않음
+- Side/Caster를 기본 비교
+- 큰 맵에서의 위협감을 보기 위한 distant/Observer를 보조 사용
+
+목표 원거리 인상:
+
+> "와 맞으면 뒤질뻔 했겠네;; 저게 뭐냐.."
+
+안전성과 가독성이 유지된다면 지나치게 소심하게 시작하지 않는다. 큰 wrapper/space occupation을 허용하고 사용자 review에서 줄이는 쪽을 선호한다.
+
+## Reference 해석 잠금
+
+- Purple **body는 sphere가 맞다**.
+- 레퍼런스에서 edge가 불규칙해 보이는 주된 이유는 외부 storm/energy가 겹치고 가리기 때문이다.
+- sphere를 jelly/deformed body로 만드는 방식으로 해결하지 않는다.
+- bright discharge와 dark cursed-energy shape는 역할이 다르지만 spatially overlap한다.
+- dark shape를 전부 lightning으로 해석하지 않는다.
+- white/gray lower wind는 purple ribbon이 아니다.
+- 모든 layer를 같은 방향으로 계속 orbit시키지 않는다.
+
+최종 움직임/presentation authority는 현재 프로젝트의 Gojo Hollow Purple 발사 영상 reference를 따른다. repository의 reference media가 local-only일 수 있으므로 작업 전에 실제 로컬 reference를 확인한다.
 
 ## 보호 범위
 
-- D2-R3 Body, OuterR2 Charge, gameplay 수치와 semantics, canonical timing, camera architecture, terminal explosion.
-- `Purple_UserPrototype`, 사용자 Scene/Animator/FBX, LocalModels, LocalAudio, local reference, QA output.
-- USER VERIFIED 설정은 `docs/locked/USER_VERIFIED_SETTINGS.md`를 따른다.
+- 기존 USER VERIFIED 값: `docs/locked/USER_VERIFIED_SETTINGS.md`
+- Production Purple / 이전 후보
+- sphere/body identity 및 크기/궤적
+- fusion/contact/release timing
+- gameplay semantics
+- camera architecture
+- terminal explosion
+- 사용자 Scene / Animator / FBX / LocalModels / LocalAudio
+- unrelated dirty working tree
 
-결과 문서:
+후보의 technical validation을 USER VERIFIED로 표현하지 않는다.
 
-- `docs/PURPLE_FINAL_POLISH_REVIEW.md`
-- `docs/PURPLE_PRODUCTION_INTEGRATION_REVIEW.md`
-- `docs/PURPLE_TRAVEL_REFINEMENT_REVIEW.md`
-- `docs/PURPLE_D2_R3_REVIEW.md`
-- `docs/PURPLE_D2_R3_OUTER_R2_REVIEW.md`
+## Git 상태 주의
 
-## Domain future queue
+2026-10-02 checkpoint에서 Purple 관련 파일만 selective commit/push했다.
 
-Barrier 크기의 Inspector/Data 조절, barrier destruction 보류, Gojo hand sign/blindfold lowering와 trapped opponent reaction cinematic camera 후보를 기록만 한다. Purple 승인 작업과 섞지 않는다.
+원래 로컬에는 checkpoint에서 제외한 tracked/untracked 작업이 남아 있었다. 이후 작업자는 실제 working tree를 먼저 확인하며 이 파일들을 reset/clean/restore하지 않는다. `git add .` 금지.
+
+## Future queue — 현재 작업과 섞지 않음
+
+Gojo 장기 완성 계획:
+- `docs/GOJO_FINALIZATION_PLAN.md`
+
+캐릭터 모델/리깅/평타/양산 문제를 해결하기 위한 zero-budget 3D pipeline:
+- `docs/architecture/CHARACTER_PRODUCTION_PIPELINE.md`
+
+각성/blindfold/model pipeline 구현은 현재 Purple 작업과 동시에 시작하지 않는다.
