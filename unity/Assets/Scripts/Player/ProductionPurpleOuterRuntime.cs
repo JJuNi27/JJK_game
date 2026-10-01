@@ -15,6 +15,7 @@ namespace JJKGame.Player
         private ParticleSystem lightning;
         private readonly ParticleSystem.Particle[] arcParticles=new ParticleSystem.Particle[256];
         private readonly Vector3[] arcPoints=new Vector3[17];
+        private readonly Vector4[] coupledEvents=new Vector4[3];
         public float ArcPreviewPower {get;private set;}
         public float HeroPreviewPower {get;private set;}
         private readonly ParticleSystem.Particle[] sparks=new ParticleSystem.Particle[64];
@@ -24,7 +25,12 @@ namespace JJKGame.Player
         private GameObject distortion;
         private Vector3 travelVelocity; private float travelAge;
         private PurpleTravelVisualProfile travelProfile;
-        private Shader chargeHaloShader,chargeDistortionShader,travelHaloShader,travelDistortionShader;
+        private Shader chargeHaloShader,identityHaloShader,massHaloShader,coupledHaloShader,wrappedHaloShader,chargeDistortionShader,travelHaloShader,travelDistortionShader;
+        private bool ruptureCandidate;
+        private PurpleIdentityWrappedProfile wrappedCandidate;
+        private PurplePressureStormRuntime pressureStorm;
+        private PurpleTempestLayersRuntime tempestLayers;
+        private PurpleTempestPolishRuntime tempestPolish;
         private GameObject travelWake;
         private Material wakeMaterial;
         private float travelWeight;
@@ -54,6 +60,16 @@ namespace JJKGame.Player
             if(polish){profile=candidate.outer;coronaContrast=candidate.coronaContrast;}
             travelProfile=Resources.Load<PurpleTravelVisualProfile>("VFX/PurpleTravelVisualProfile");
             chargeHaloShader=Resources.Load<Shader>("VFX/PurpleOuterR2Halo");chargeDistortionShader=Resources.Load<Shader>("VFX/PurpleOuterR2Distortion");
+            if(PurpleIdentityCoreProfile.Current!=null && PurpleIdentityCoreProfile.Current.candidateEnabled)
+                identityHaloShader=Resources.Load<Shader>("VFX/PurpleIdentityCorona");
+            if(PurpleIdentityMassProfile.Current!=null && PurpleIdentityMassProfile.Current.candidateEnabled)
+                massHaloShader=Resources.Load<Shader>("VFX/PurpleIdentityMassCorona");
+            if(PurpleIdentityCoupledProfile.Current!=null && PurpleIdentityCoupledProfile.Current.candidateEnabled)
+                coupledHaloShader=Resources.Load<Shader>("VFX/PurpleIdentityCoupledCorona");
+            ruptureCandidate=PurpleIdentityRuptureProfile.Current!=null && PurpleIdentityRuptureProfile.Current.candidateEnabled;
+            wrappedCandidate=PurpleIdentityWrappedProfile.Current;
+            if(wrappedCandidate!=null && wrappedCandidate.candidateEnabled)
+                wrappedHaloShader=Resources.Load<Shader>("VFX/PurpleIdentityWrappedCorona");
             travelHaloShader=Resources.Load<Shader>("VFX/PurpleTravelHalo");travelDistortionShader=Resources.Load<Shader>("VFX/PurpleTravelDistortion");
             if(polish)chargeHaloShader=travelHaloShader=Resources.Load<Shader>("VFX/PurplePolishHalo");
             halo=GameObject.CreatePrimitive(PrimitiveType.Cube);halo.name="OuterR2_VolumetricHalo";halo.transform.SetParent(transform,false);
@@ -65,6 +81,8 @@ namespace JJKGame.Player
             shardMesh=CreateShard();debris=CreateParticles("OuterR2_PlasmaShards",64);
             segmentMesh=CreateSegment();lightning=CreateParticles("OuterR2_OutwardLightning",256);
             arcMaterial=new Material(particleMaterial){name="PurpleProduction_ArcParticles_Runtime"};
+            if(wrappedHaloShader!=null)
+                arcMaterial.shader=Resources.Load<Shader>("VFX/PurpleIdentityWrappedArc");
             lightning.GetComponent<ParticleSystemRenderer>().sharedMaterial=arcMaterial;
             lightning.GetComponent<ParticleSystemRenderer>().mesh=segmentMesh;
             distortion=GameObject.CreatePrimitive(PrimitiveType.Cube);distortion.name="OuterR2_BackgroundDistortionShell";distortion.transform.SetParent(transform,false);
@@ -72,6 +90,24 @@ namespace JJKGame.Player
             var distortionCollider=distortion.GetComponent<Collider>();distortionCollider.enabled=false;Destroy(distortionCollider);
             distortionMaterial=new Material(Resources.Load<Shader>("VFX/PurpleOuterR2Distortion")){name="PurpleProduction_Distortion_Runtime"};
             var distortionRenderer=distortion.GetComponent<Renderer>();distortionRenderer.sharedMaterial=distortionMaterial;distortionRenderer.shadowCastingMode=ShadowCastingMode.Off;distortionRenderer.receiveShadows=false;
+            var tempest=PurpleTempestLayersProfile.Current;
+            var tempestPolishProfile=PurpleTempestPolishProfile.Current;
+            var storm=PurplePressureStormProfile.Current;
+            if(tempestPolishProfile!=null && tempestPolishProfile.candidateEnabled)
+            {
+                var go=new GameObject("PurpleTempestPolish_Candidate");go.transform.SetParent(transform,false);
+                tempestPolish=go.AddComponent<PurpleTempestPolishRuntime>();tempestPolish.Configure(tempestPolishProfile,radius);
+            }
+            else if(tempest!=null && tempest.candidateEnabled)
+            {
+                var go=new GameObject("PurpleTempestLayers_Candidate");go.transform.SetParent(transform,false);
+                tempestLayers=go.AddComponent<PurpleTempestLayersRuntime>();tempestLayers.Configure(tempest,radius);
+            }
+            else if(storm!=null && storm.candidateEnabled)
+            {
+                var go=new GameObject("PurplePressureStorm_Candidate");go.transform.SetParent(transform,false);
+                pressureStorm=go.AddComponent<PurplePressureStormRuntime>();pressureStorm.Configure(storm,radius);
+            }
             Sample(1.5f);
         }
         private static float Hash(float x)=>Mathf.Repeat(Mathf.Sin(x*127.1f+31.7f)*43758.5453f,1);
@@ -119,10 +155,50 @@ namespace JJKGame.Player
                     startLifetime=life,remainingLifetime=Mathf.Max(.001f,life-age),randomSeed=(uint)count};
             }
         }
-        private void SampleLightning(float time)
+        private void SampleWrappedLightning(float time,ref int count)
+        {
+            for(int lane=0;lane<24;lane++)
+            {
+                float cycle=(.24f+Hash(lane*19+4)*.16f)/wrappedCandidate.eventRate;
+                float clock=time+lane*.117f;
+                int epoch=Mathf.FloorToInt(clock/cycle);
+                float age=Mathf.Repeat(clock,cycle);
+                float life=cycle*(.36f+Hash(epoch*23+lane*31)*.20f);
+                if(age>life)continue;
+                float seed=epoch*59+lane*137;
+                float pulse=Mathf.Clamp01(age/.018f)*Mathf.Pow(1-age/life,.48f);
+                float growth=Mathf.Clamp01(age/.025f);
+                Vector3 axis=Direction(seed+2);
+                Vector3 tangent=Vector3.Cross(axis,Mathf.Abs(axis.y)<.8f?Vector3.up:Vector3.right).normalized;
+                Vector3 binormal=Vector3.Cross(axis,tangent).normalized;
+                float reach=(1.16f+Hash(seed+13)*.94f)*(wrappedCandidate.reach/1.72f);
+                int revision=Mathf.FloorToInt(age*48);
+                Vector3 previous=axis*radius*(.83f+Hash(seed+5)*.15f);
+                for(int n=1;n<=8;n++)
+                {
+                    float u=n/8f;
+                    Vector3 next=axis*radius*(.88f+(reach-.88f)*u*growth)
+                        +tangent*radius*((Hash(seed+n*17+revision*7)-.5f)*.50f*u)
+                        +binormal*radius*((Hash(seed+n*29+revision*11)-.5f)*.42f*u);
+                    bool gap=n>1 && n<8 && Hash(seed+n*37+revision*43)<.20f;
+                    if(!gap)
+                    {
+                        float flicker=.52f+.48f*Hash(seed+n*41+revision*13);
+                        Segment(previous,next,profile.arcWidth*(.75f+.38f*Hash(seed+n*5))*(1-u*.55f),pulse*flicker,life,age,ref count);
+                    }
+                    if(n==4 && Hash(seed+revision*31)>.52f)
+                    {
+                        Vector3 fork=next+(axis*.48f+tangent*(Hash(seed+91)>.5f?1:-1)+binormal*.3f).normalized*radius*.26f*growth;
+                        Segment(next,fork,profile.arcWidth*.48f,pulse*.72f,life,age,ref count);
+                    }
+                    previous=next;
+                }
+            }
+        }
+        private void SampleLightning(float time,bool coupled,bool wrapped)
         {
             int count=0;ArcPreviewPower=0;
-            for(int lane=0;lane<2;lane++)
+            for(int lane=0;lane<(wrapped?0:2);lane++)
             {
                 float birth=.04f+lane*.13f;int epoch=0;
                 while(epoch<64){float next=birth+.25f+Hash(epoch*17+lane*51+9)*.22f;if(next>time)break;birth=next;epoch++;}
@@ -151,7 +227,43 @@ namespace JJKGame.Player
                     Segment(branch,next,profile.arcWidth*(.5f*Mathf.Pow(1-s,1.3f)+.02f),pulse*.65f,life,age,ref count);branch=next;
                 }
             }
+            if(coupled)SampleCoupledDischarge(time,ref count);
+            if(wrapped)SampleWrappedLightning(time,ref count);
             lightning.SetParticles(arcParticles,count);lightning.Pause();
+        }
+        private void SampleCoupledDischarge(float time,ref int count)
+        {
+            var candidate=PurpleIdentityCoupledProfile.Current;
+            PurpleIdentityCoupledProfile.SampleEvents(time,coupledEvents);
+            for(int lane=0;lane<3;lane++)
+            {
+                Vector4 e=coupledEvents[lane];
+                if(e.w<.04f)continue;
+                float clock=time*(2.5f+lane*.58f)+lane*.37f;
+                float epoch=Mathf.Floor(clock),age=Mathf.Repeat(clock,1)/(2.5f+lane*.58f);
+                int revision=Mathf.FloorToInt(time*29+lane*1.7f);
+                float seed=epoch*73+lane*117;
+                Vector3 axis=transform.InverseTransformDirection(new Vector3(e.x,e.y,e.z)).normalized;
+                Vector3 tangent=Vector3.Cross(axis,Mathf.Abs(axis.y)<.8f?Vector3.up:Vector3.right).normalized;
+                Vector3 bitangent=Vector3.Cross(axis,tangent).normalized;
+                float reach=candidate.dischargeReach*(.77f+Hash(seed+12)*.32f);
+                float growth=Mathf.Clamp01(age/.045f);
+                Vector3 previous=axis*radius*.98f;
+                for(int n=1;n<=11;n++)
+                {
+                    float u=n/11f;
+                    float lateral=(Hash(seed+n*13+revision*3)-.5f)*.24f*u;
+                    float vertical=(Hash(seed+n*31+revision*7)-.5f)*.19f*u;
+                    Vector3 next=axis*radius*(.98f+(reach-.98f)*u*growth)
+                        +tangent*radius*(Mathf.Sin(u*14+seed)*.10f*u+lateral)
+                        +bitangent*radius*vertical;
+                    // Real geometry gaps and per-revision rerouting prevent a continuous neon tube.
+                    bool gap=n>2 && (Hash(seed+n*19+revision*41)<.31f || (n+revision+lane)%7==0);
+                    float fade=e.w*candidate.dischargeEmission*(1-u*.48f)*(.52f+Hash(seed+n*7+revision*5)*.48f);
+                    if(!gap)Segment(previous,next,profile.arcWidth*(.34f+.23f*Hash(seed+n*5))*(1-u*.6f),fade,.45f,age,ref count);
+                    previous=next;
+                }
+            }
         }
         private void SampleDebris(float time)
         {
@@ -192,12 +304,25 @@ namespace JJKGame.Player
             }
             debris.SetParticles(sparks,count);debris.Pause();
         }
-        public void Sample(float time,Vector3 velocity=default,float ageSinceRelease=0)
+        public void Sample(float time,Vector3 velocity=default,float ageSinceRelease=0,bool allowIdentity=true)
         {
             if(haloMaterial==null)return;
             travelVelocity=velocity;travelAge=Mathf.Max(0,ageSinceRelease);MaxResidualDistance=0;
             travelWeight=travelProfile!=null && travelProfile.travelRefinementEnabled && travelAge>0?Mathf.Clamp01(velocity.magnitude/travelProfile.referenceSpeed)*Mathf.SmoothStep(0,1,travelAge/.035f):0;
-            haloMaterial.shader=TravelResponseActive?travelHaloShader:chargeHaloShader;
+            haloMaterial.shader=TravelResponseActive?travelHaloShader:
+                allowIdentity && wrappedHaloShader!=null?wrappedHaloShader:
+                allowIdentity && coupledHaloShader!=null?coupledHaloShader:
+                allowIdentity && massHaloShader!=null?massHaloShader:
+                allowIdentity && identityHaloShader!=null?identityHaloShader:chargeHaloShader;
+            if(allowIdentity && coupledHaloShader!=null)
+            {
+                var coupled=PurpleIdentityCoupledProfile.Current;
+                haloMaterial.SetVector("_Coupling",new Vector4(coupled.frontInterruption,coupled.dischargeReach,coupled.dischargeEmission,0));
+            }
+            bool wrappedActive=wrappedHaloShader!=null && (allowIdentity || TravelResponseActive);
+            bool wrappedCharge=wrappedActive && !TravelResponseActive;
+            if(wrappedCharge)
+                haloMaterial.SetVector("_Wrapper",new Vector4(wrappedCandidate.rimGain,wrappedCandidate.plumeGain,wrappedCandidate.reach,wrappedCandidate.eventRate));
             if(coronaContrast>0)haloMaterial.SetFloat("_CoronaContrast",coronaContrast);
             distortionMaterial.shader=TravelResponseActive?travelDistortionShader:chargeDistortionShader;
             float boost=TravelResponseActive?1+travelProfile.releaseBoost*Mathf.Exp(-travelAge/travelProfile.releasePeakSeconds):1;
@@ -221,16 +346,22 @@ namespace JJKGame.Player
                 wakeMaterial.SetVector("_Wake",new Vector4(travelProfile.wakeLengthRadii,travelProfile.wakeWidthRadii,time,travelProfile.wakeEmission));
             }
             else if(travelWake!=null)travelWake.SetActive(false);
-            halo.SetActive(profile.haloEnabled);
+            // This opt-in body candidate draws its charge discharge in the same
+            // volume as the mass; the separate charge halo would split them again.
+            bool integratedRupture=allowIdentity && ruptureCandidate && !TravelResponseActive;
+            halo.SetActive(profile.haloEnabled && !integratedRupture);
             haloMaterial.SetVector("_Centre",new Vector4(transform.position.x,transform.position.y,transform.position.z,radius*transform.lossyScale.x));
             haloMaterial.SetVector("_Halo",new Vector4(profile.haloRatio,profile.haloIntensity,time,0));
             particleMaterial.SetVector("_Centre",new Vector4(transform.position.x,transform.position.y,transform.position.z,radius*transform.lossyScale.x));
-            particleMaterial.SetFloat("_Emission",profile.sparkEmission);
-            debris.gameObject.SetActive(profile.debrisEnabled);
+            particleMaterial.SetFloat("_Emission",profile.sparkEmission*(wrappedActive?wrappedCandidate.sparkGain:1));
+            debris.gameObject.SetActive(profile.debrisEnabled && !integratedRupture);
             if(debris.gameObject.activeSelf)SampleDebris(time);
-            arcMaterial.SetVector("_Centre",new Vector4(transform.position.x,transform.position.y,transform.position.z,radius*transform.lossyScale.x));arcMaterial.SetFloat("_Emission",profile.arcEmission);
-            lightning.gameObject.SetActive(profile.lightningEnabled);
-            if(lightning.gameObject.activeSelf)SampleLightning(time);
+            arcMaterial.SetVector("_Centre",new Vector4(transform.position.x,transform.position.y,transform.position.z,radius*transform.lossyScale.x));arcMaterial.SetFloat("_Emission",profile.arcEmission*(wrappedActive?wrappedCandidate.arcGain:1));
+            lightning.gameObject.SetActive(profile.lightningEnabled && !integratedRupture && pressureStorm==null && tempestLayers==null && tempestPolish==null);
+            if(lightning.gameObject.activeSelf)SampleLightning(time,allowIdentity && !TravelResponseActive && coupledHaloShader!=null,wrappedActive);
+            if(pressureStorm!=null)pressureStorm.Sample(time,velocity);
+            if(tempestLayers!=null)tempestLayers.Sample(time,velocity);
+            if(tempestPolish!=null)tempestPolish.Sample(time,velocity,ageSinceRelease);
             distortion.SetActive(profile.distortionEnabled);
             distortionMaterial.SetVector("_Centre",new Vector4(transform.position.x,transform.position.y,transform.position.z,radius*transform.lossyScale.x));
             distortionMaterial.SetVector("_Field",new Vector4(profile.distortionRatio,profile.distortionStrength,time,0));

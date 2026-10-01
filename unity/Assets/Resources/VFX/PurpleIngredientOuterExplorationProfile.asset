@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f6f812d8e542859136ca24e1c61ebb, type: 3}
+  m_Name: PurpleIngredientOuterExplorationProfile
+  m_EditorClassIdentifier:
+  candidateEnabled: 0
+  violence: 1.45
+  energyReach: 2.65
+  frontBackDepth: 1.15
+  eventRate: 4.6

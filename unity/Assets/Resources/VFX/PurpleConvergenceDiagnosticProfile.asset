@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75d2419bf3684591b140ac9dc00683ad, type: 3}
+  m_Name: PurpleConvergenceDiagnosticProfile
+  m_EditorClassIdentifier:
+  candidateEnabled: 0
+  flashFrames: 8
+  peakFrames: 2
+  flashStrength: 2.3
+  radialRadius: 0.42
+  hotCoreRadius: 0.035
+  holdDuration: 0.14
+  hitStopScale: 0.01
+  catchupDuration: 0.18
+  impulseDuration: 0.11
+  impulseDistance: 0.45
+  impulseRoll: 1.75
+  pulseDuration: 0.15
+  bloomIntensity: 8
+  exposure: 1.5

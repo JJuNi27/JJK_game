@@ -7,9 +7,14 @@ namespace JJKGame.Player
         private const int ArcCount=8,Rings=32,Sides=7;
         private ProductionPurpleBodySettings profile;
         private Material bodyMaterial,arcMaterial;
+        private Material explorationMaterial, identityMaterial, massMaterial, coupledMaterial, ruptureMaterial, wrappedMaterial;
+        private Renderer bodyRenderer;
+        private MeshRenderer arcRenderer;
         private Mesh arcMesh;
         private float diameter,unit;
         private readonly Vector4[] sources=new Vector4[6];
+        private readonly Vector4[] coupledEvents=new Vector4[3];
+        private readonly Vector4[] ruptureEvents=new Vector4[3];
         private static readonly Vector3[] Anchors={new Vector3(-.105f,.075f,-.075f),new Vector3(.11f,-.065f,.055f),new Vector3(.045f,.11f,.13f)};
         private readonly Vector3[][] paths=new Vector3[ArcCount][];
         private readonly Vector3[] guide=new Vector3[6];
@@ -21,13 +26,55 @@ namespace JJKGame.Player
             var proxy=GameObject.CreatePrimitive(PrimitiveType.Cube);proxy.name="R3_TornPlasmaVolume";proxy.transform.SetParent(transform,false);proxy.transform.localScale=Vector3.one*unit;
             var collider=proxy.GetComponent<Collider>();collider.enabled=false;Destroy(collider);
             bodyMaterial=new Material(Resources.Load<Shader>("VFX/HollowPurpleHybridD2R3")){name="PurpleProduction_Body_Runtime"};
-            var renderer=proxy.GetComponent<Renderer>();renderer.sharedMaterial=bodyMaterial;renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;
+            var renderer=proxy.GetComponent<Renderer>();bodyRenderer=renderer;renderer.sharedMaterial=bodyMaterial;renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;
             bodyMaterial.SetVector("_R3Settings",new Vector4(settings.shellEmission,settings.shellDensity,settings.internalEnergy,settings.instability));
             bodyMaterial.SetVector("_R3Flow",new Vector4(settings.inwardSpeed,settings.turbulenceSpeed,settings.voidContrast,settings.plasmaScale));
+            var candidate=PurpleExplosionTurbulenceProfile.Current;
+            if(candidate!=null && candidate.candidateEnabled)
+            {
+                explorationMaterial=new Material(Resources.Load<Shader>("VFX/PurpleExplosionTurbulence")){name="PurpleExplosionTurbulence_Runtime"};
+                explorationMaterial.SetVector("_Turbulence",new Vector4(candidate.energyGain,candidate.flowSpeed,candidate.silhouetteBreakup,candidate.domainWarp));
+                explorationMaterial.SetVector("_DepthCore",new Vector4(candidate.darkDepth,candidate.coreRadiance,candidate.coreRadius,candidate.density));
+            }
+            var identity=PurpleIdentityCoreProfile.Current;
+            if(identity!=null && identity.candidateEnabled)
+            {
+                identityMaterial=new Material(Resources.Load<Shader>("VFX/PurpleIdentityCore")){name="PurpleIdentityCore_Runtime"};
+                identityMaterial.SetVector("_Identity",new Vector4(identity.coreRadiance,identity.edgeBreakup,identity.fissureContrast,identity.energyChurn));
+            }
+            var mass=PurpleIdentityMassProfile.Current;
+            if(mass!=null && mass.candidateEnabled)
+            {
+                massMaterial=new Material(Resources.Load<Shader>("VFX/PurpleIdentityMass")){name="PurpleIdentityMass_Runtime"};
+                massMaterial.SetVector("_Identity",new Vector4(mass.coreRadiance,mass.edgeBreakup,mass.fissureContrast,mass.energyChurn));
+            }
+            var coupled=PurpleIdentityCoupledProfile.Current;
+            if(coupled!=null && coupled.candidateEnabled)
+            {
+                coupledMaterial=new Material(Resources.Load<Shader>("VFX/PurpleIdentityCoupled")){name="PurpleIdentityCoupled_Runtime"};
+                coupledMaterial.SetVector("_Identity",new Vector4(coupled.coreRadiance,coupled.edgeBreakup,coupled.fissureContrast,coupled.energyChurn));
+                coupledMaterial.SetVector("_Coupling",new Vector4(coupled.frontInterruption,coupled.dischargeReach,coupled.dischargeEmission,0));
+            }
+            var rupture=PurpleIdentityRuptureProfile.Current;
+            if(rupture!=null && rupture.candidateEnabled)
+            {
+                ruptureMaterial=new Material(Resources.Load<Shader>("VFX/PurpleIdentityRupture")){name="PurpleIdentityRupture_Runtime"};
+                ruptureMaterial.SetVector("_Identity",new Vector4(rupture.coreRadiance,rupture.edgeBreakup,rupture.fissureContrast,rupture.energyChurn));
+                ruptureMaterial.SetVector("_Rupture",new Vector4(rupture.frontOpening,rupture.tearWidth,rupture.dischargeReach,rupture.dischargeEmission));
+                ruptureMaterial.SetFloat("_ProxyScale",1.8f);
+            }
+            var wrapped=PurpleIdentityWrappedProfile.Current;
+            if(wrapped!=null && wrapped.candidateEnabled)
+            {
+                var baseMass=PurpleIdentityMassProfile.Current;
+                wrappedMaterial=new Material(Resources.Load<Shader>("VFX/PurpleIdentityWrappedBody")){name="PurpleIdentityWrapped_Runtime"};
+                wrappedMaterial.SetVector("_Identity",new Vector4(baseMass.coreRadiance,baseMass.edgeBreakup,baseMass.fissureContrast,baseMass.energyChurn));
+                wrappedMaterial.SetFloat("_EdgeMotionScale",wrapped.edgeMotionScale);
+            }
             var arcs=new GameObject("R3_VolumetricArcMesh");arcs.transform.SetParent(transform,false);
             arcMaterial=new Material(Resources.Load<Shader>("VFX/HollowPurpleHybridD2R3Arc")){name="PurpleProduction_Arc_Runtime"};
             arcMesh=new Mesh{name="PurpleProduction_TubeArcs_Runtime"};arcMesh.MarkDynamic();arcs.AddComponent<MeshFilter>().sharedMesh=arcMesh;
-            var meshRenderer=arcs.AddComponent<MeshRenderer>();meshRenderer.sharedMaterial=arcMaterial;meshRenderer.shadowCastingMode=ShadowCastingMode.Off;meshRenderer.receiveShadows=false;
+            var meshRenderer=arcs.AddComponent<MeshRenderer>();arcRenderer=meshRenderer;meshRenderer.sharedMaterial=arcMaterial;meshRenderer.shadowCastingMode=ShadowCastingMode.Off;meshRenderer.receiveShadows=false;
             var uv=new Vector2[vertices.Length];var indices=new int[ArcCount*(Rings-1)*Sides*6];int at=0;
             for(int arc=0;arc<ArcCount;arc++)
             {
@@ -83,9 +130,18 @@ namespace JJKGame.Player
             }
             seed=index*41+lane*67;life=profile.arcLifetime*(.75f+Hash(seed+8)*.65f);age=time-birth;
         }
-        public void Render(float t)
+        public void Render(float t,bool allowBodyExploration=true)
         {
             if(bodyMaterial==null)return;
+            var surface=allowBodyExploration && wrappedMaterial!=null?wrappedMaterial:
+                allowBodyExploration && ruptureMaterial!=null?ruptureMaterial:
+                allowBodyExploration && coupledMaterial!=null?coupledMaterial:
+                allowBodyExploration && massMaterial!=null?massMaterial:
+                allowBodyExploration && identityMaterial!=null?identityMaterial:
+                allowBodyExploration && explorationMaterial!=null?explorationMaterial:bodyMaterial;
+            bodyRenderer.transform.localScale=Vector3.one*unit*(surface==ruptureMaterial?1.8f:1);
+            arcRenderer.enabled=surface!=ruptureMaterial;
+            bodyRenderer.sharedMaterial=surface;
             sources[0]=new Vector4(-.023f,.008f+.018f*Mathf.Sin(t*2.7f),-.025f,.063f);
             sources[1]=new Vector4(.038f*Mathf.Cos(t*2.3f),-.023f,.027f,.052f);
             sources[2]=new Vector4(.015f,.042f*Mathf.Cos(t*3.1f),.002f,.042f);
@@ -97,7 +153,17 @@ namespace JJKGame.Player
                 float power=(i<3?.8f:.22f)+profile.instability*(spike*(i<3?1.1f:1.4f)+.15f*Mathf.Sin(t*(2.7f+i*.71f)+i*1.8f));
                 if(i<3)primary[i]=power;else secondary[i-3]=power;
             }
-            bodyMaterial.SetVectorArray("_Sources",sources);bodyMaterial.SetVector("_PrimaryPower",primary);bodyMaterial.SetVector("_SecondaryPower",secondary);bodyMaterial.SetFloat("_PhaseTime",t);
+            surface.SetVectorArray("_Sources",sources);surface.SetVector("_PrimaryPower",primary);surface.SetVector("_SecondaryPower",secondary);surface.SetFloat("_PhaseTime",t);
+            if(surface==coupledMaterial)
+            {
+                PurpleIdentityCoupledProfile.SampleEvents(t,coupledEvents);
+                surface.SetVectorArray("_CouplingEvents",coupledEvents);
+            }
+            if(surface==ruptureMaterial)
+            {
+                PurpleIdentityRuptureProfile.SampleEvents(t,ruptureEvents);
+                surface.SetVectorArray("_RuptureEvents",ruptureEvents);
+            }
             arcMaterial.SetVector("_BodyCentre",new Vector4(transform.position.x,transform.position.y,transform.position.z,diameter*.5f*transform.lossyScale.x));arcMaterial.SetFloat("_PhaseTime",t);
             for(int lane=0;lane<3;lane++)
             {
@@ -125,6 +191,6 @@ namespace JJKGame.Player
             }
             arcMesh.vertices=vertices;arcMesh.normals=normals;arcMesh.colors=colours;arcMesh.RecalculateBounds();
         }
-        private void OnDestroy(){if(bodyMaterial!=null)Destroy(bodyMaterial);if(arcMaterial!=null)Destroy(arcMaterial);if(arcMesh!=null)Destroy(arcMesh);}
+        private void OnDestroy(){if(bodyMaterial!=null)Destroy(bodyMaterial);if(explorationMaterial!=null)Destroy(explorationMaterial);if(identityMaterial!=null)Destroy(identityMaterial);if(massMaterial!=null)Destroy(massMaterial);if(coupledMaterial!=null)Destroy(coupledMaterial);if(ruptureMaterial!=null)Destroy(ruptureMaterial);if(wrappedMaterial!=null)Destroy(wrappedMaterial);if(arcMaterial!=null)Destroy(arcMaterial);if(arcMesh!=null)Destroy(arcMesh);}
     }
 }

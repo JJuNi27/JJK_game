@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eec51453a2fb46409c888a6dae8aa839, type: 3}
+  m_Name: PurpleExplosionTurbulenceProfile
+  m_EditorClassIdentifier:
+  candidateEnabled: 0
+  energyGain: 1.25
+  flowSpeed: 1.8
+  silhouetteBreakup: 0.095
+  domainWarp: 0.072
+  darkDepth: 1.45
+  coreRadiance: 34
+  coreRadius: 0.105
+  density: 1.15

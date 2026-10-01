@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13e7d5d74cd74585b0aae4bd1dae1c1d, type: 3}
+  m_Name: PurpleIdentityWrappedProfile
+  m_EditorClassIdentifier:
+  candidateEnabled: 0
+  edgeMotionScale: 0.25
+  rimGain: 1.1
+  plumeGain: 0.55
+  reach: 1.72
+  eventRate: 1
+  sparkGain: 1.8
+  arcGain: 2.3

@@ -20,6 +20,11 @@ namespace JJKGame.Player
         private Material pressure;
         private bool finalRupture;
         private PurpleIngredientBurstVolume bulkBursts;
+        private PurpleIngredientOuterExplorationVolume outerExploration;
+        private PurpleIngredientOuterDischargeVolume outerDischarge;
+        private PurpleIngredientExpandedDischargeVolume expandedDischarge;
+        private PurpleIngredientElectricArcVolume electricArcs;
+        private PurpleIngredientFlowFirstVolume flowFirst;
 
         public void Configure(bool red, float compression=0)
         {
@@ -33,6 +38,17 @@ namespace JJKGame.Player
             var second=PurpleIngredientReboot2Profile.Current;
             reboot2=second!=null && second.candidateEnabled?second:null;
             finalRupture=reboot2!=null && PurpleIngredientFinalProfile.Current!=null && PurpleIngredientFinalProfile.Current.candidateEnabled;
+            var final2=PurpleIngredientFinal2Profile.Current;
+            var exploration=PurpleIngredientOuterExplorationProfile.Current;
+            bool explorationCandidate=finalRupture && final2!=null && final2.candidateEnabled && exploration!=null && exploration.candidateEnabled;
+            var hybrid=PurpleIngredientHybridProfile.Current;
+            bool hybridCandidate=explorationCandidate && hybrid!=null && hybrid.candidateEnabled;
+            var expandedProfile=PurpleIngredientExpandedDischargeProfile.Current;
+            bool expandedCandidate=explorationCandidate && expandedProfile!=null && expandedProfile.candidateEnabled;
+            var electricProfile=PurpleIngredientElectricArcProfile.Current;
+            bool electricCandidate=finalRupture && final2!=null && final2.candidateEnabled && electricProfile!=null && electricProfile.candidateEnabled;
+            var flowProfile=PurpleIngredientFlowFirstProfile.Current;
+            bool flowCandidate=finalRupture && final2!=null && final2.candidateEnabled && flowProfile!=null && flowProfile.candidateEnabled;
             reboot=dense!=null && (dense.candidateEnabled || reboot2!=null)?dense:null;
             surface=new Material(Resources.Load<Shader>(reboot!=null?"VFX/HollowPurpleIngredientReboot":macro!=null?"VFX/HollowPurpleIngredientMacro":polish!=null?"VFX/HollowPurpleIngredientPolish":"VFX/HollowPurpleIngredient")) { name="PurpleIngredient_Runtime" };
             surface.SetFloat("_Polarity",polarity);
@@ -48,12 +64,41 @@ namespace JJKGame.Player
             var sphere=GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.name=red?"RedRepulsionMass":"BlueAttractionMass";
             sphere.transform.SetParent(transform,false); sphere.transform.localScale=Vector3.one*2.05f;
-            var col=sphere.GetComponent<Collider>(); col.enabled=false; Destroy(col);
+            var col=sphere.GetComponent<Collider>(); col.enabled=false; Release(col);
             var mr=sphere.GetComponent<Renderer>(); mr.sharedMaterial=surface; mr.shadowCastingMode=ShadowCastingMode.Off; mr.receiveShadows=false;
             for(int i=0;i<curves.Length;i++) curves[i]=Line((red?"OutwardPressureArc_":"InwardSpiral_")+i,32);
             for(int i=0;i<motes.Length;i++) motes[i]=Line((red?"OutwardFragment_":"CapturedMote_")+i,2);
             bridge=Line("OpposedFieldTensionBridge",32); bridge.enabled=false;
-            if(finalRupture && PurpleIngredientFinal2Profile.Current!=null && PurpleIngredientFinal2Profile.Current.candidateEnabled)
+            if(flowCandidate)
+            {
+                flowFirst=gameObject.AddComponent<PurpleIngredientFlowFirstVolume>();
+                flowFirst.Configure(!red,flowProfile);
+            }
+            else if(electricCandidate)
+            {
+                electricArcs=gameObject.AddComponent<PurpleIngredientElectricArcVolume>();
+                electricArcs.Configure(!red,electricProfile);
+            }
+            else if(expandedCandidate)
+            {
+                outerExploration=gameObject.AddComponent<PurpleIngredientOuterExplorationVolume>();
+                outerExploration.Configure(!red,exploration.energyReach,exploration.frontBackDepth,exploration.violence,exploration.eventRate);
+                expandedDischarge=gameObject.AddComponent<PurpleIngredientExpandedDischargeVolume>();
+                expandedDischarge.Configure(!red,exploration.energyReach,expandedProfile);
+            }
+            else if(hybridCandidate)
+            {
+                outerExploration=gameObject.AddComponent<PurpleIngredientOuterExplorationVolume>();
+                outerExploration.Configure(!red,exploration.energyReach,exploration.frontBackDepth,exploration.violence,exploration.eventRate);
+                outerDischarge=gameObject.AddComponent<PurpleIngredientOuterDischargeVolume>();
+                outerDischarge.Configure(!red,exploration.energyReach,hybrid.reachMultiplier,hybrid.depth,hybrid.eventRate,hybrid.eventIntensity);
+            }
+            else if(explorationCandidate)
+            {
+                outerExploration=gameObject.AddComponent<PurpleIngredientOuterExplorationVolume>();
+                outerExploration.Configure(!red,exploration.energyReach,exploration.frontBackDepth,exploration.violence,exploration.eventRate);
+            }
+            else if(finalRupture && final2!=null && final2.candidateEnabled)
             {bulkBursts=gameObject.AddComponent<PurpleIngredientBurstVolume>();bulkBursts.Configure(!red,reboot2.energyReach);}
         }
 
@@ -69,6 +114,21 @@ namespace JJKGame.Player
         {
             surface.SetFloat("_PhaseTime",clock); surface.SetFloat("_Fusion",fusion);
             if(bulkBursts!=null)bulkBursts.Sample(clock,fusion);
+            if(electricArcs!=null)electricArcs.Sample(clock,fusion);
+            if(flowFirst!=null)flowFirst.Sample(clock,fusion,opposite);
+            if(expandedDischarge!=null)
+            {
+                var signal=expandedDischarge.Sample(clock,fusion);
+                outerExploration?.Sample(clock,fusion,signal.strength,signal.localDirection);
+                surface.SetFloat("_DischargeAmount",signal.strength);
+                surface.SetVector("_DischargeDir",signal.localDirection);
+            }
+            else
+            {
+            float dischargeCoupling=outerDischarge!=null?outerDischarge.Sample(clock,fusion):0;
+            if(outerExploration!=null)outerExploration.Sample(clock,fusion,dischargeCoupling);
+            if(outerDischarge!=null)surface.SetFloat("_Discharge",dischargeCoupling);
+            }
             if(pressure!=null){pressure.SetFloat("_PhaseTime",clock);pressure.SetFloat("_Blend",1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(.55f,.72f,fusion)));}
             Color tint=polarity<0?new Color(.035f,.7f,2.4f,1):new Color(2.4f,.02f,.065f,1);
             tint=Color.Lerp(tint,new Color(1.7f,.035f,2.5f,1),fusion*.6f);
@@ -176,12 +236,18 @@ namespace JJKGame.Player
 
         private void FadeLegacyLine(LineRenderer line,float fusion)
         {
-            if(bulkBursts==null)return;
-            float visible=1-PurpleIngredientBurstVolume.Weight(fusion);
+            if(bulkBursts==null && outerExploration==null && electricArcs==null && flowFirst==null)return;
+            float visible=1-(outerExploration!=null?PurpleIngredientOuterExplorationVolume.Weight(fusion):PurpleIngredientBurstVolume.Weight(fusion));
             line.enabled=visible>.001f;
             Color a=line.startColor,b=line.endColor;a.a*=visible;b.a*=visible;line.startColor=a;line.endColor=b;
         }
 
-        private void OnDestroy() { if(surface!=null) Destroy(surface); if(filament!=null) Destroy(filament); if(pressure!=null)Destroy(pressure); }
+        private static void Release(UnityEngine.Object asset)
+        {
+            if(asset==null)return;
+            if(Application.isPlaying)Destroy(asset);else DestroyImmediate(asset);
+        }
+
+        private void OnDestroy() { Release(surface); Release(filament); Release(pressure); }
     }
 }

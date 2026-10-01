@@ -1,6 +1,6 @@
 Shader "JJKGame/Candidate/Hollow Purple Ingredient Reboot"
 {
-    Properties { _PhaseTime("Clock",Float)=0 _Polarity("Polarity",Float)=-1 _Fusion("Fusion",Float)=0 _Breakup("Silhouette",Float)=.085 _Emission("Cracks",Float)=2.8 }
+    Properties { _PhaseTime("Clock",Float)=0 _Polarity("Polarity",Float)=-1 _Fusion("Fusion",Float)=0 _Breakup("Silhouette",Float)=.085 _Emission("Cracks",Float)=2.8 _Discharge("Hybrid discharge coupling",Float)=0 _DischargeAmount("Expanded discharge coupling",Float)=0 _DischargeDir("Expanded discharge direction",Vector)=(0,0,0,0) }
     SubShader
     {
         Tags { "RenderPipeline"="UniversalPipeline" "RenderType"="Opaque" "Queue"="Geometry+10" }
@@ -12,7 +12,7 @@ Shader "JJKGame/Candidate/Hollow Purple Ingredient Reboot"
             #pragma fragment Frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             CBUFFER_START(UnityPerMaterial)
-            float _PhaseTime,_Polarity,_Fusion,_Breakup,_Emission;
+            float _PhaseTime,_Polarity,_Fusion,_Breakup,_Emission,_Discharge,_DischargeAmount;float4 _DischargeDir;
             CBUFFER_END
             struct A { float4 positionOS:POSITION; float3 normalOS:NORMAL; };
             struct V { float4 positionCS:SV_POSITION; float3 p:TEXCOORD0; float3 world:TEXCOORD1; float3 normal:TEXCOORD2; };
@@ -47,7 +47,11 @@ Shader "JJKGame/Candidate/Hollow Purple Ingredient Reboot"
                 float edgeBreak=.12+.88*smoothstep(.28,.7,N(p*6.3+t*.6));
                 float centreWeight=lerp(.14,1,smoothstep(.03,.38,1-facing));
                 float pressurePulse=1+red*.2*sin(_PhaseTime*11+warp*3);
+                float dischargePatch=smoothstep(.48,.92,sin(dot(p,float3(13,-7,11))+warp*6+_PhaseTime*39)*.5+.5);
+                float spatialDischarge=pow(saturate(dot(normalize(p),normalize(_DischargeDir.xyz+.0001))),12)*_DischargeAmount;
                 float3 result=base*skin+energy*_Emission*(cracks*centreWeight*.65+rim*edgeBreak*.45)*pressurePulse;
+                result+=energy*_Emission*_Discharge*dischargePatch*(cracks*.7+rim*.42);
+                result+=energy*_Emission*spatialDischarge*(rim*.8+cracks*.55);
                 // Both centres remain dense. There is deliberately no view-facing white light.
                 return half4(result,1);
             }

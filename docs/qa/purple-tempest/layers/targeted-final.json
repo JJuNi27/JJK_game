@@ -1,0 +1,64 @@
+{
+  "method": "Direct Editor Pipeline assertion harness; not a Unity Test Runner suite",
+  "executed_check_groups": 7,
+  "pass": 7,
+  "fail": 0,
+  "results": [
+    {
+      "diagnostics": [],
+      "compileMs": 112,
+      "executeMs": 7,
+      "assemblyName": "PipelineRunScript_Validation_73f73cd8a14640518c1302aac985b19a",
+      "success": true,
+      "result": "PASS: saved OFF; shaders supported/errors 0; scoped inspector; baseline resources 0 / 0"
+    },
+    {
+      "diagnostics": [],
+      "compileMs": 55,
+      "executeMs": 240,
+      "assemblyName": "PipelineRunScript_Validation_5453ac34ccfd4c73a737d680bc6c889f",
+      "success": true,
+      "result": "PASS: OFF gate, charge/travel body identity, 120 samples without material/mesh growth, terminal exclusion"
+    },
+    {
+      "diagnostics": [],
+      "compileMs": 54,
+      "executeMs": 4,
+      "assemblyName": "PipelineRunScript_Validation_c5066d22c11c4da98581031a5e9a86b0",
+      "success": true,
+      "result": "PASS: deferred cleanup; material/mesh return to baseline 0 / 0; candidate OFF"
+    },
+    {
+      "diagnostics": [],
+      "compileMs": 50,
+      "executeMs": 226,
+      "assemblyName": "PipelineRunScript_Validation_8e626350371445b9aaaa247bad90ab0b",
+      "success": true,
+      "result": "PASS: OFF gate, charge/travel body identity, 120 samples without material/mesh growth, terminal exclusion"
+    },
+    {
+      "diagnostics": [],
+      "compileMs": 48,
+      "executeMs": 2,
+      "assemblyName": "PipelineRunScript_Validation_af8e393be1db47c5a1c7fe078137dd1f",
+      "success": true,
+      "result": "PASS: deferred cleanup; material/mesh return to baseline 0 / 0; candidate OFF"
+    },
+    {
+      "diagnostics": [],
+      "compileMs": 50,
+      "executeMs": 234,
+      "assemblyName": "PipelineRunScript_Validation_520562656bdb41bc9dd68ea400cf4683",
+      "success": true,
+      "result": "PASS: OFF gate, charge/travel body identity, 120 samples without material/mesh growth, terminal exclusion"
+    },
+    {
+      "diagnostics": [],
+      "compileMs": 56,
+      "executeMs": 2,
+      "assemblyName": "PipelineRunScript_Validation_f1918672334c43f1856697d66a616459",
+      "success": true,
+      "result": "PASS: deferred cleanup; material/mesh return to baseline 0 / 0; candidate OFF"
+    }
+  ]
+}

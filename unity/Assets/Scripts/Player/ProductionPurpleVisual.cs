@@ -19,8 +19,8 @@ namespace JJKGame.Player
         public void Render(float clock,float releaseAge,bool travel)
         {
             body.gameObject.SetActive(profile.bodyEnabled);outer.gameObject.SetActive(profile.outerEnabled);
-            if(profile.bodyEnabled)body.Render(clock);
-            if(profile.outerEnabled)outer.Sample(clock,travel?travelVelocity:Vector3.zero,travel?releaseAge:0);
+            if(profile.bodyEnabled)body.Render(clock,!travel);
+            if(profile.outerEnabled)outer.Sample(clock,travel?travelVelocity:Vector3.zero,travel?releaseAge:0,!travel);
         }
     }
 }

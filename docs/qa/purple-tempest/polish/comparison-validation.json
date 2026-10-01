@@ -1,0 +1,94 @@
+{
+  "Side": {
+    "frames": 385,
+    "fps": 60,
+    "first_changed_frame": 104,
+    "poses_identical": true,
+    "terminal_rgb_maxdiff": 0,
+    "old_tempest_changed_frames": 321,
+    "old_tempest_first_changed": 0,
+    "phase_transitions": [
+      {
+        "wall": "1.683333",
+        "phase": "Charge",
+        "chargeWeight": "1",
+        "travelWeight": "0",
+        "anchorX": "512",
+        "anchorZ": "514.2747",
+        "darkSegments": "284"
+      },
+      {
+        "wall": "5.133333",
+        "phase": "Release",
+        "chargeWeight": "1",
+        "travelWeight": "0",
+        "anchorX": "512",
+        "anchorZ": "515.3",
+        "darkSegments": "287"
+      },
+      {
+        "wall": "5.383333",
+        "phase": "Travel",
+        "chargeWeight": "0",
+        "travelWeight": "0.48",
+        "anchorX": "512",
+        "anchorZ": "515.3",
+        "darkSegments": "344"
+      }
+    ],
+    "current_original_harness_pixel_maxdiff": {
+      "162": 235,
+      "210": 244,
+      "340": 60
+    }
+  },
+  "Caster": {
+    "frames": 385,
+    "fps": 60,
+    "first_changed_frame": 104,
+    "poses_identical": true,
+    "terminal_rgb_maxdiff": 0,
+    "old_tempest_changed_frames": 385,
+    "old_tempest_first_changed": 0,
+    "phase_transitions": [
+      {
+        "wall": "1.683333",
+        "phase": "Charge",
+        "chargeWeight": "1",
+        "travelWeight": "0",
+        "anchorX": "512",
+        "anchorZ": "514.2747",
+        "darkSegments": "284"
+      },
+      {
+        "wall": "5.133333",
+        "phase": "Release",
+        "chargeWeight": "1",
+        "travelWeight": "0",
+        "anchorX": "512",
+        "anchorZ": "515.3",
+        "darkSegments": "287"
+      },
+      {
+        "wall": "5.383333",
+        "phase": "Travel",
+        "chargeWeight": "0",
+        "travelWeight": "0.48",
+        "anchorX": "512",
+        "anchorZ": "515.3",
+        "darkSegments": "344"
+      }
+    ],
+    "current_original_harness_pixel_maxdiff": {
+      "162": 233,
+      "210": 253,
+      "340": 248
+    }
+  },
+  "protected_files_checked": 978,
+  "snapshot_changes": [
+    "unity/Assets/Scripts/Player/ProductionPurpleOuterRuntime.cs"
+  ],
+  "labels": "LEFT BASELINE Tempest Layers / RIGHT CANDIDATE Tempest Polish",
+  "historical_full_pixel_comparison_status": "INCONCLUSIVE: cross-session differences present from frame zero; not used as regression PASS"
+}

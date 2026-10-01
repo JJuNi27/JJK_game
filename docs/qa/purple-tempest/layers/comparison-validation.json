@@ -1,0 +1,30 @@
+{
+  "Side": {
+    "frames": 385,
+    "fps": 60,
+    "first_changed_frame": 104,
+    "unchanged_before_seconds": 1.7333333333333334,
+    "poses_identical": true,
+    "terminal_rgb_maxdiff": 0
+  },
+  "Caster": {
+    "frames": 385,
+    "fps": 60,
+    "first_changed_frame": 104,
+    "unchanged_before_seconds": 1.7333333333333334,
+    "poses_identical": true,
+    "terminal_rgb_maxdiff": 0
+  },
+  "Observer": {
+    "frames": 385,
+    "fps": 60,
+    "first_changed_frame": 104,
+    "unchanged_before_seconds": 1.7333333333333334,
+    "poses_identical": true,
+    "terminal_rgb_maxdiff": 0
+  },
+  "snapshot_changes": [
+    "unity/Assets/Scripts/Player/ProductionPurpleOuterRuntime.cs"
+  ],
+  "protected_files_checked": 362
+}

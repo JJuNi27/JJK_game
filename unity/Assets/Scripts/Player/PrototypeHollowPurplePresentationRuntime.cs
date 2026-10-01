@@ -281,6 +281,9 @@ namespace JJKGame.Player
             private readonly List<Material> runtimeMaterials = new List<Material>();
             private readonly List<Color> materialColors = new List<Color>();
             private readonly PurpleFusionIngredient blueField, redField;
+            private readonly PurpleIngredientFlowFirstFusion flowFirstFusion;
+            private readonly PurpleConvergenceImpact convergenceImpact;
+            private readonly PurpleConvergenceDiagnostic convergenceDiagnostic;
             private readonly PurpleFusionBirthAccent birthAccent;
             private readonly PurpleIngredientReboot2Profile ingredientPass2;
             private readonly PurpleIngredientCollisionAccent ingredientContact;
@@ -337,6 +340,23 @@ namespace JJKGame.Player
                 root.transform.SetParent(runtimeRoot, true);
                 var pass2=PurpleIngredientReboot2Profile.Current;
                 ingredientPass2=pass2!=null && pass2.candidateEnabled?pass2:null;
+                var convergenceProfile=PurpleConvergenceImpactProfile.Current;
+                var diagnosticProfile=PurpleConvergenceDiagnosticProfile.Current;
+                if(diagnosticProfile!=null && diagnosticProfile.candidateEnabled)
+                {
+                    float contact=PurpleIngredientCollisionAccent.FindContactNormalized(formationSeparation,formationScale,ingredientPass2!=null?ingredientPass2.fusionVerticalArc:.45f);
+                    var diagnosticRoot=new GameObject("PurpleConvergenceDiagnosticCandidate");diagnosticRoot.transform.SetParent(root.transform,false);
+                    convergenceDiagnostic=diagnosticRoot.AddComponent<PurpleConvergenceDiagnostic>();
+                    Vector3 centre=start+Vector3.Lerp(Vector3.up*.4f,holdOffset,Mathf.SmoothStep(0,1,contact));
+                    convergenceDiagnostic.Configure(fusionStart+contact*MergeDuration,centre,presentationCamera!=null?presentationCamera:Camera.main,diagnosticProfile);
+                }
+                else if(convergenceProfile!=null && convergenceProfile.candidateEnabled)
+                {
+                    float contact=PurpleIngredientCollisionAccent.FindContactNormalized(formationSeparation,formationScale,ingredientPass2!=null?ingredientPass2.fusionVerticalArc:.45f);
+                    var impactRoot=new GameObject("PurpleConvergenceImpactCandidate");impactRoot.transform.SetParent(root.transform,false);
+                    convergenceImpact=impactRoot.AddComponent<PurpleConvergenceImpact>();
+                    convergenceImpact.Configure(fusionStart+contact*MergeDuration,presentationCamera!=null?presentationCamera:Camera.main,convergenceProfile);
+                }
                 if(ingredientPass2!=null)
                 {
                     float contact=PurpleIngredientCollisionAccent.FindContactNormalized(formationSeparation,formationScale,ingredientPass2.fusionVerticalArc);
@@ -365,6 +385,12 @@ namespace JJKGame.Player
                 redOrb.SetParent(root.transform, true);
                 redField = redOrb.gameObject.AddComponent<PurpleFusionIngredient>();
                 redField.Configure(true,compression);
+                if(blueField.GetComponent<PurpleIngredientFlowFirstVolume>()!=null)
+                {
+                    var flowFusionRoot=new GameObject("PurpleIngredientFlowFirstFusion");flowFusionRoot.transform.SetParent(root.transform,false);
+                    flowFirstFusion=flowFusionRoot.AddComponent<PurpleIngredientFlowFirstFusion>();
+                    flowFirstFusion.Configure(PurpleIngredientFlowFirstProfile.Current,blueField,redField,fusionStart,holdStart);
+                }
 
                 purpleOrb = new GameObject("HollowPurpleDenseBody").transform;
                 purpleOrb.SetParent(root.transform, true);
@@ -455,10 +481,14 @@ namespace JJKGame.Player
                     return false;
                 }
 
-                float elapsed = Mathf.Max(0, now - startedAt);
-                releasePresentation.Sample(elapsed);
-                if(ingredientContact!=null)ingredientContact.Sample(elapsed);
-                if(birthAccent!=null)birthAccent.Sample(elapsed-holdStart);
+                float rawElapsed = Mathf.Max(0, now - startedAt);
+                convergenceDiagnostic?.Sample(rawElapsed);
+                float elapsed = convergenceDiagnostic!=null?convergenceDiagnostic.MapPresentationTime(rawElapsed):rawElapsed;
+                flowFirstFusion?.EndIfFinished(elapsed);
+                releasePresentation.Sample(rawElapsed);
+                convergenceImpact?.Sample(elapsed);
+                if(ingredientContact!=null)ingredientContact.Sample(rawElapsed);
+                if(birthAccent!=null)birthAccent.Sample(rawElapsed-holdStart);
                 if (elapsed < fusionStart)
                 {
                     UpdateFormation(elapsed);
@@ -554,6 +584,7 @@ namespace JJKGame.Player
                         Mathf.SmoothStep(0f, 1f, (elapsed - blueLeadDuration) / Mathf.Max(.01f, (fusionStart-blueLeadDuration)*.65f)));
                 blueField.Render(elapsed, 0, redOrb.position);
                 if (showRed) redField.Render(elapsed-blueLeadDuration, 0, blueOrb.position);
+                flowFirstFusion?.Sample(elapsed);
             }
 
             private void UpdateMerge(float normalized, float unscaledDeltaTime)
@@ -586,6 +617,7 @@ namespace JJKGame.Player
                 }
                 blueField.Render(fusionStart + normalized * MergeDuration, t, redOrb.position);
                 redField.Render(fusionStart + normalized * MergeDuration - blueLeadDuration, t, blueOrb.position);
+                flowFirstFusion?.Sample(fusionStart + normalized * MergeDuration);
             }
 
             private void UpdateLaunch(float normalized, float launchElapsed, float unscaledDeltaTime)
@@ -649,6 +681,8 @@ namespace JJKGame.Player
 
             public void Dispose()
             {
+                convergenceImpact?.Dispose();
+                convergenceDiagnostic?.Dispose();
                 if (casterChain != null) casterChain.PurpleTerminated -= OnTerminated;
                 if (releasePresentation != null) releasePresentation.Restore();
                 if (root != null)
