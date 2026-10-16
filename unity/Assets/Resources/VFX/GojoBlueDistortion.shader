@@ -5,6 +5,7 @@ Shader "JJKGame/VFX/Gojo Blue Distortion"
         _Strength("Normalized Strength", Range(0, 1)) = 0.15
         _WorldRadius("World Radius", Float) = 1
         _Impact("Impact Cue", Range(0, 1)) = 0
+        _RadialSign("Radial Direction", Float) = 1
     }
 
     SubShader
@@ -43,6 +44,7 @@ Shader "JJKGame/VFX/Gojo Blue Distortion"
                 float _Strength;
                 float _WorldRadius;
                 float _Impact;
+                float _RadialSign;
             CBUFFER_END
 
             struct Attributes
@@ -165,7 +167,7 @@ Shader "JJKGame/VFX/Gojo Blue Distortion"
                     * localizedFalloff
                     * radialCompression;
                 float2 warpedUv = screenUv
-                    + inwardDirection * offsetAmount * (1.0 + animatedNoise * 0.10)
+                    + inwardDirection * _RadialSign * offsetAmount * (1.0 + animatedNoise * 0.10)
                     + tangentDirection * offsetAmount * animatedNoise * 0.045;
 
                 half3 warpedSceneColor = SampleSceneColor(warpedUv);

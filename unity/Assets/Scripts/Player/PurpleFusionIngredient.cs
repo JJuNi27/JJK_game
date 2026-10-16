@@ -25,6 +25,7 @@ namespace JJKGame.Player
         private PurpleIngredientExpandedDischargeVolume expandedDischarge;
         private PurpleIngredientElectricArcVolume electricArcs;
         private PurpleIngredientFlowFirstVolume flowFirst;
+        private PurpleIngredientPairPressureVolume pairPressure;
 
         public void Configure(bool red, float compression=0)
         {
@@ -71,8 +72,17 @@ namespace JJKGame.Player
             bridge=Line("OpposedFieldTensionBridge",32); bridge.enabled=false;
             if(flowCandidate)
             {
-                flowFirst=gameObject.AddComponent<PurpleIngredientFlowFirstVolume>();
+                var pair=PurpleIngredientPairPolishProfile.Current;
+                flowFirst=pair!=null && pair.candidateEnabled
+                    ? gameObject.AddComponent<PurpleIngredientPairPolishVolume>()
+                    : gameObject.AddComponent<PurpleIngredientFlowFirstVolume>();
                 flowFirst.Configure(!red,flowProfile);
+                var macroPressure=PurpleIngredientPairPressureProfile.Current;
+                if(pair!=null && pair.candidateEnabled && macroPressure!=null && macroPressure.candidateEnabled)
+                {
+                    pairPressure=gameObject.AddComponent<PurpleIngredientPairPressureVolume>();
+                    pairPressure.Configure(!red);
+                }
             }
             else if(electricCandidate)
             {
@@ -116,6 +126,7 @@ namespace JJKGame.Player
             if(bulkBursts!=null)bulkBursts.Sample(clock,fusion);
             if(electricArcs!=null)electricArcs.Sample(clock,fusion);
             if(flowFirst!=null)flowFirst.Sample(clock,fusion,opposite);
+            if(pairPressure!=null)pairPressure.Sample(clock,fusion,opposite);
             if(expandedDischarge!=null)
             {
                 var signal=expandedDischarge.Sample(clock,fusion);

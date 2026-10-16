@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bee513c044cc419d8638e15593eab2b8, type: 3}
+  m_Name: PurpleIngredientPairPressureProfile
+  m_EditorClassIdentifier:
+  candidateEnabled: 0
+  pressureReach: 2.7
+  pressureWidth: 1.15
+  pressureDepth: 0.72
+  density: 0.72
+  diffuseEmission: 1.55
+  crestEmission: 4.2
+  blueSpan: 0.38
+  redSpread: 1.15
+  gapBend: 0.32
+  erosion: 0.62

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a912b865492943bc8d3536a4e023de17, type: 3}
+  m_Name: PurpleTempestFinalCleanupProfile
+  m_EditorClassIdentifier:
+  candidateEnabled: 0
+  windReach: 3
+  windWidth: 2.25
+  windSpeed: 1.25
+  windOpacity: 0.88
+  brightWidth: 0.095
+  brightEmission: 7
+  darkWidth: 0.82
+  darkEmission: 3.2
+  stormSpeed: 1.2
+  dischargeReach: 1.65
+  releaseWindSeconds: 0.24
+  travelWindStrength: 0.82
+  spatialCoupling: 0.8
+  windCoverageBreakup: 0.8
+  darkDepth: 0.16
+  arcSpread: 0.65
+  layerOcclusion: 0.85

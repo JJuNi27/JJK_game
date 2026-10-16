@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9865907e1a24c42b6c49f8fffcfdb42, type: 3}
+  m_Name: PurpleIngredientPairPolishProfile
+  m_EditorClassIdentifier:
+  candidateEnabled: 0
+  reachMultiplier: 1.28
+  blueRate: 1.55
+  redRate: 1.45
+  flowWidth: 0.27
+  emission: 3.1
+  blueTrailSpan: 0.24
+  redTension: 0.23
+  pressureSpread: 0.72
+  relationshipBend: 0.38
+  groundResponse: 0.32
+  moteSize: 0.17
+  arrivalFlare: 0.58
+  coverageBreakup: 0.72

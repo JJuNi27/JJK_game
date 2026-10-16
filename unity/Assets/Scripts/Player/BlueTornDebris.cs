@@ -54,7 +54,7 @@ namespace JJKGame.Player
             Render(0f, 0f);
         }
 
-        public void Render(float elapsed, float progress)
+        public void Render(float elapsed, float progress, float accent = 0f, float preparation = 0f)
         {
             float collapse = Mathf.SmoothStep(0f, 1f, (progress - .76f) / .24f);
             for (int i = 0; i < chunks.Count; i++)
@@ -63,11 +63,13 @@ namespace JJKGame.Player
                 float rate = tier == 0 ? .42f : tier == 1 ? .72f : 1.15f;
                 float cycle = Mathf.Repeat(i * .381966f + elapsed * rate, 1f);
                 float distance = radius * (tier == 0 ? 1.15f : 1f) * (1f - cycle * cycle) * (1f - collapse);
+                distance *= 1f - Mathf.Clamp01(accent * .20f);
                 float angle = i * 2.399963f + elapsed * (tier == 0 ? 1.9f : 3.2f + tier) + cycle * cycle * 4f;
+                if (tier == 0) angle = i * 2.399963f + elapsed * .55f + cycle * cycle * .55f;
                 Quaternion plane = Quaternion.Euler(i * 43.7f, i * 79.1f, i * 17.3f);
                 Vector3 orbit = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle) * (.45f + (i % 5) * .12f),
                     Mathf.Sin(angle * 1.7f + i) * .22f);
-                chunks[i].localPosition = plane * orbit * distance;
+                chunks[i].localPosition = plane * orbit * distance + Vector3.up * preparation * .10f;
                 chunks[i].localRotation = Quaternion.Euler(elapsed * (40f + i * 7f), i * 47f + elapsed * 81f, i * 53f);
                 float size = (tier == 0 ? .68f : tier == 1 ? .37f : .12f + (i % 5) * .046f) * (1f - collapse)
                     * Mathf.SmoothStep(0f, 1f, (1f-cycle) / .16f) * Mathf.SmoothStep(0f, 1f, cycle / .08f);

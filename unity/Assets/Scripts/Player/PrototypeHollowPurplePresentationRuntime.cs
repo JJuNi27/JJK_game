@@ -284,6 +284,9 @@ namespace JJKGame.Player
             private readonly PurpleIngredientFlowFirstFusion flowFirstFusion;
             private readonly PurpleConvergenceImpact convergenceImpact;
             private readonly PurpleConvergenceDiagnostic convergenceDiagnostic;
+            private PurpleIngredientCasterPressure casterPressure;
+            private CasterPressure3DFlowPrototype pressure3DFlow;
+            private CasterPressureGroundedFlow groundedPressureFlow;
             private readonly PurpleFusionBirthAccent birthAccent;
             private readonly PurpleIngredientReboot2Profile ingredientPass2;
             private readonly PurpleIngredientCollisionAccent ingredientContact;
@@ -463,6 +466,27 @@ namespace JJKGame.Player
                 casterChain = owner != null ? owner.GetComponent<GojoTechniqueChainController>() : null;
                 casterHealth = owner != null ? owner.GetComponent<JJKGame.Core.Health>() : null;
                 if (casterChain != null) casterChain.PurpleTerminated += OnTerminated;
+                var pressureProfile=PurpleIngredientCasterPressureProfile.Current;
+                if(owner!=null && casterPressure==null && pressureProfile!=null && pressureProfile.candidateEnabled)
+                {
+                    var pressureRoot=new GameObject("PurpleIngredientCasterPressureCandidate");pressureRoot.transform.SetParent(root.transform,true);
+                    casterPressure=pressureRoot.AddComponent<PurpleIngredientCasterPressure>();
+                    casterPressure.Configure(owner,direction,fusionStart,holdStart,releaseTime,pressureProfile);
+                }
+                var flowProfile=CasterPressure3DFlowProfile.Current;
+                if(owner!=null && pressure3DFlow==null && flowProfile!=null && flowProfile.candidateEnabled)
+                {
+                    var flowRoot=new GameObject("CasterPressure3DFlowPrototypeCandidate");flowRoot.transform.SetParent(root.transform,true);
+                    pressure3DFlow=flowRoot.AddComponent<CasterPressure3DFlowPrototype>();
+                    pressure3DFlow.Configure(owner,direction,releaseTime,flowProfile);
+                }
+                var groundedProfile=CasterPressureGroundedFlowProfile.Current;
+                if(owner!=null && groundedPressureFlow==null && groundedProfile!=null && groundedProfile.candidateEnabled)
+                {
+                    var groundedRoot=new GameObject("CasterPressureGroundedFlowCandidate");groundedRoot.transform.SetParent(root.transform,true);
+                    groundedPressureFlow=groundedRoot.AddComponent<CasterPressureGroundedFlow>();
+                    groundedPressureFlow.Configure(owner,direction,fusionStart,holdStart,releaseTime,groundedProfile);
+                }
             }
 
             private void OnTerminated(Vector3 position, float at, float castStartedAt)
@@ -484,6 +508,9 @@ namespace JJKGame.Player
                 float rawElapsed = Mathf.Max(0, now - startedAt);
                 convergenceDiagnostic?.Sample(rawElapsed);
                 float elapsed = convergenceDiagnostic!=null?convergenceDiagnostic.MapPresentationTime(rawElapsed):rawElapsed;
+                casterPressure?.Sample(elapsed,blueOrb.position,redOrb.position);
+                pressure3DFlow?.Sample(elapsed);
+                groundedPressureFlow?.Sample(elapsed);
                 flowFirstFusion?.EndIfFinished(elapsed);
                 releasePresentation.Sample(rawElapsed);
                 convergenceImpact?.Sample(elapsed);
@@ -683,6 +710,9 @@ namespace JJKGame.Player
             {
                 convergenceImpact?.Dispose();
                 convergenceDiagnostic?.Dispose();
+                casterPressure?.Dispose();
+                pressure3DFlow?.Dispose();
+                groundedPressureFlow?.Dispose();
                 if (casterChain != null) casterChain.PurpleTerminated -= OnTerminated;
                 if (releasePresentation != null) releasePresentation.Restore();
                 if (root != null)

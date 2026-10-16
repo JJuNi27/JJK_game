@@ -31,6 +31,9 @@ namespace JJKGame.Player
         private PurplePressureStormRuntime pressureStorm;
         private PurpleTempestLayersRuntime tempestLayers;
         private PurpleTempestPolishRuntime tempestPolish;
+        private PurpleTempestFinalRuntime tempestFinal;
+        private PurpleTempestFinalCleanupRuntime tempestFinalCleanup;
+        private PurpleWrapperTextureLayersRuntime wrapperTextureLayers;
         private GameObject travelWake;
         private Material wakeMaterial;
         private float travelWeight;
@@ -93,7 +96,25 @@ namespace JJKGame.Player
             var tempest=PurpleTempestLayersProfile.Current;
             var tempestPolishProfile=PurpleTempestPolishProfile.Current;
             var storm=PurplePressureStormProfile.Current;
-            if(tempestPolishProfile!=null && tempestPolishProfile.candidateEnabled)
+            var cleanupProfile=PurpleTempestFinalCleanupProfile.Current;
+            var tempestFinalProfile=PurpleTempestFinalProfile.Current;
+            var wrapperProfile=PurpleWrapperTextureLayersProfile.Current;
+            if(wrapperProfile!=null && wrapperProfile.candidateEnabled)
+            {
+                var go=new GameObject("PurpleWrapperTextureLayers_Candidate");go.transform.SetParent(transform,false);
+                wrapperTextureLayers=go.AddComponent<PurpleWrapperTextureLayersRuntime>();wrapperTextureLayers.Configure(wrapperProfile,radius);
+            }
+            else if(cleanupProfile!=null && cleanupProfile.candidateEnabled)
+            {
+                var go=new GameObject("PurpleTempestFinalCleanup_Candidate");go.transform.SetParent(transform,false);
+                tempestFinalCleanup=go.AddComponent<PurpleTempestFinalCleanupRuntime>();tempestFinalCleanup.Configure(cleanupProfile,radius);
+            }
+            else if(tempestFinalProfile!=null && tempestFinalProfile.candidateEnabled)
+            {
+                var go=new GameObject("PurpleTempestFinal_Candidate");go.transform.SetParent(transform,false);
+                tempestFinal=go.AddComponent<PurpleTempestFinalRuntime>();tempestFinal.Configure(tempestFinalProfile,radius);
+            }
+            else if(tempestPolishProfile!=null && tempestPolishProfile.candidateEnabled)
             {
                 var go=new GameObject("PurpleTempestPolish_Candidate");go.transform.SetParent(transform,false);
                 tempestPolish=go.AddComponent<PurpleTempestPolishRuntime>();tempestPolish.Configure(tempestPolishProfile,radius);
@@ -357,11 +378,14 @@ namespace JJKGame.Player
             debris.gameObject.SetActive(profile.debrisEnabled && !integratedRupture);
             if(debris.gameObject.activeSelf)SampleDebris(time);
             arcMaterial.SetVector("_Centre",new Vector4(transform.position.x,transform.position.y,transform.position.z,radius*transform.lossyScale.x));arcMaterial.SetFloat("_Emission",profile.arcEmission*(wrappedActive?wrappedCandidate.arcGain:1));
-            lightning.gameObject.SetActive(profile.lightningEnabled && !integratedRupture && pressureStorm==null && tempestLayers==null && tempestPolish==null);
+            lightning.gameObject.SetActive(profile.lightningEnabled && !integratedRupture && pressureStorm==null && tempestLayers==null && tempestPolish==null && tempestFinal==null && tempestFinalCleanup==null && wrapperTextureLayers==null);
             if(lightning.gameObject.activeSelf)SampleLightning(time,allowIdentity && !TravelResponseActive && coupledHaloShader!=null,wrappedActive);
             if(pressureStorm!=null)pressureStorm.Sample(time,velocity);
             if(tempestLayers!=null)tempestLayers.Sample(time,velocity);
             if(tempestPolish!=null)tempestPolish.Sample(time,velocity,ageSinceRelease);
+            if(tempestFinalCleanup!=null)tempestFinalCleanup.Sample(time,velocity,ageSinceRelease);
+            if(wrapperTextureLayers!=null)wrapperTextureLayers.Sample(time,velocity,ageSinceRelease);
+            if(tempestFinal!=null)tempestFinal.Sample(time,velocity,ageSinceRelease);
             distortion.SetActive(profile.distortionEnabled);
             distortionMaterial.SetVector("_Centre",new Vector4(transform.position.x,transform.position.y,transform.position.z,radius*transform.lossyScale.x));
             distortionMaterial.SetVector("_Field",new Vector4(profile.distortionRatio,profile.distortionStrength,time,0));

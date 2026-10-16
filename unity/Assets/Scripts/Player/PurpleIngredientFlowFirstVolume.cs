@@ -3,7 +3,7 @@ using UnityEngine.Rendering;
 namespace JJKGame.Player
 {
     /// <summary>Short brush strokes advect through a force field; no orbiting solid geometry.</summary>
-    public sealed class PurpleIngredientFlowFirstVolume : MonoBehaviour
+    public class PurpleIngredientFlowFirstVolume : MonoBehaviour
     {
         private const int Nodes=20;
         private PurpleIngredientFlowFirstProfile profile;
@@ -13,10 +13,10 @@ namespace JJKGame.Player
         private Material orbMaterial,flareMaterial;
         private ParticleSystem orbs,flares;
         private ParticleSystem.Particle[] orbParticles,flareParticles;
-        public Vector3[] OrbWorldPositions { get; private set; }
+        public Vector3[] OrbWorldPositions { get; protected set; }
         private readonly Vector3[] points=new Vector3[Nodes];
         public static float H(float x)=>Mathf.Repeat(Mathf.Sin(x*127.1f+19.3f)*43758.5453f,1);
-        public void Configure(bool inward,PurpleIngredientFlowFirstProfile settings)
+        public virtual void Configure(bool inward,PurpleIngredientFlowFirstProfile settings)
         {
             blue=inward;profile=settings;
             brush=new Material(Resources.Load<Shader>("VFX/PurpleIngredientFlowBrush")){name="PurpleIngredientFlowFirst_Brush"};
@@ -39,7 +39,7 @@ namespace JJKGame.Player
             line.widthCurve=new AnimationCurve(new Keyframe(0,.22f),new Keyframe(.23f,1),new Keyframe(.72f,.65f),new Keyframe(1,0));
             line.enabled=false;return line;
         }
-        public void Sample(float clock,float fusion,Vector3 opposite)
+        public virtual void Sample(float clock,float fusion,Vector3 opposite)
         {
             bool on=blue?profile.blueFlowEnabled:profile.redFlowEnabled;
             float weight=on?PurpleIngredientBurstVolume.Weight(fusion):0;
@@ -129,7 +129,7 @@ namespace JJKGame.Player
             }
             flares.SetParticles(flareParticles,flareParticles.Length);
         }
-        private void OnDestroy(){Release(brush);Release(orbMaterial);Release(flareMaterial);}
+        protected virtual void OnDestroy(){Release(brush);Release(orbMaterial);Release(flareMaterial);}
         private static void Release(Object obj){if(obj==null)return;if(Application.isPlaying)Destroy(obj);else DestroyImmediate(obj);}
     }
 }

@@ -41,6 +41,7 @@ namespace JJKGame.Player
         private Action<Health> onTargetHit;
         private Action onFirstImpact;
         private bool impactPlayed;
+        private bool completedNaturally;
         private PresentationVfxHandle presentationHandle;
 
         public void Configure(
@@ -77,6 +78,7 @@ namespace JJKGame.Player
             float elapsed = Time.time - startedAt;
             if (elapsed >= duration)
             {
+                completedNaturally = true;
                 Destroy(gameObject);
                 return;
             }
@@ -90,7 +92,7 @@ namespace JJKGame.Player
 
         private void OnDestroy()
         {
-            presentationHandle.Stop(PresentationVfxStopMode.Immediate);
+            if (!completedNaturally) presentationHandle.Stop(PresentationVfxStopMode.Immediate);
         }
 
         private void ApplyPulse()
@@ -100,6 +102,10 @@ namespace JJKGame.Player
             if (damagePulse)
             {
                 nextDamagePulseIndex++;
+                if (nextDamagePulseIndex == GojoBluePulseSchedule.HitCount)
+                    TechniquePresentationRequests.Raise(TechniquePresentationRequest.AtWorldPoint(
+                        owner, TechniquePresentationId.GojoBlue, TechniquePresentationPhase.Culmination,
+                        transform.position));
             }
             pulseTargets.Clear();
 

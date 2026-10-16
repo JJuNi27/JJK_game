@@ -793,6 +793,11 @@ namespace JJKGame.Player
         private float distortionWeight;
         private float lightWeight;
         private float fieldPulseAccent;
+        private float fieldDuration;
+        private float fieldPreparation;
+        private bool residueStarted;
+        private int nextAnticipation;
+        private readonly ParticleSystem.Particle[] residueParticles = new ParticleSystem.Particle[180];
 
         public static GojoBlueVfxInstance Spawn(
             PresentationVfxSpawnRequest request,
@@ -812,6 +817,7 @@ namespace JJKGame.Player
         protected override void Build(PresentationVfxSpawnRequest request)
         {
             impactCue = !request.FollowsTarget;
+            fieldDuration = request.Duration;
             UpdatePresentationTiming(0f);
             float inner = Mathf.Max(0.08f, request.StartRadius);
             float outer = Mathf.Max(inner * 2f, request.EndRadius);
@@ -949,6 +955,7 @@ namespace JJKGame.Player
             ApplyParticleLayers(1f);
             ApplyConvergenceArcFade(1f);
             ApplyEnvironmentEmissionRates();
+            if (!impactCue) ExtendDuration(fieldDuration + GojoPolishSettings.Current.blueAftermathDuration);
         }
 
         private Renderer CreateDistortionShell(
@@ -1706,11 +1713,28 @@ namespace JJKGame.Player
 
         protected override void Tick(float elapsed, float normalized, float deltaTime)
         {
+            if (!impactCue)
+            {
+                normalized = Mathf.Clamp01(elapsed / fieldDuration);
+                if (elapsed >= fieldDuration)
+                {
+                    TickResidue(elapsed, deltaTime);
+                    return;
+                }
+            }
             UpdatePresentationTiming(normalized);
-            if (tornDebris != null) tornDebris.Render(elapsed, normalized);
             fieldPulseAccent = impactCue
                 ? 0f
                 : EvaluateFieldPulseAccent(normalized);
+            fieldPreparation = impactCue ? 0f : EvaluateFieldPreparation(elapsed);
+            if (!impactCue && nextAnticipation < GojoBluePulseSchedule.HitCount
+                && elapsed >= GojoBluePulseSchedule.GetNormalizedTime(nextAnticipation) * fieldDuration
+                    - Mathf.Min(GojoPolishSettings.Current.blueDustLeadTime, fieldDuration * .13f))
+            {
+                groundDustSuction.Emit(3 + nextAnticipation * 2);
+                nextAnticipation++;
+            }
+            if (tornDebris != null) tornDebris.Render(elapsed, normalized, fieldPulseAccent, fieldPreparation);
             shaderCompression = impactCue
                 ? Mathf.Lerp(0.25f, 1f, impactCollapse)
                 : 0.42f
@@ -1722,7 +1746,7 @@ namespace JJKGame.Player
                 ? Mathf.Lerp(1.05f, 1.65f, impactCollapse)
                 : 1f
                     + SmoothRamp(0.76f, 1f, normalized) * 0.24f
-                    + fieldPulseAccent * 0.62f;
+                    + fieldPulseAccent * 0.62f + fieldPreparation * .20f;
             SetSimulationSpeed(groundDustSuction, environmentSimulationSpeed);
             SetSimulationSpeed(darkDebrisFragments, environmentSimulationSpeed);
             SetSimulationSpeed(tidalDebrisTrails, environmentSimulationSpeed);
@@ -1738,6 +1762,9 @@ namespace JJKGame.Player
                         + Mathf.Sin(elapsed * 8.6f) * 0.018f
                         - fieldPulseAccent * 0.18f;
                 coreRoot.localScale = Vector3.one * scale;
+                if (!impactCue && normalized >= GojoBluePulseSchedule.GetNormalizedTime(3))
+                    coreRoot.localScale = Vector3.one * Mathf.Lerp(GojoPolishSettings.Current.blueFinalCoreScale,
+                        .06f, SmoothRamp(.78f, 1f, normalized));
                 coreRoot.Rotate(Vector3.up, (impactCue ? 95f : 42f) * deltaTime, Space.Self);
             }
 
@@ -1816,9 +1843,10 @@ namespace JJKGame.Player
 
         private void ApplyEnvironmentEmissionRates()
         {
+            if (residueStarted) return;
             SetEmissionRateMultiplier(
                 groundDustSuction,
-                impactCue ? 0f : groundDustWeight
+                impactCue ? 0f : groundDustWeight * (.65f + fieldPreparation * .35f)
             );
             SetEmissionRateMultiplier(
                 darkDebrisFragments,
@@ -1943,9 +1971,59 @@ namespace JJKGame.Player
                     pulseTime + 0.105f,
                     normalized
                 );
-                accent = Mathf.Max(accent, attack * release);
+                accent = Mathf.Max(accent, attack * release * Mathf.Max(0f,
+                    GojoPolishSettings.Current.blueHitAccents[pulseIndex]));
             }
             return accent;
+        }
+
+        private float EvaluateFieldPreparation(float elapsed)
+        {
+            float lead = Mathf.Min(GojoPolishSettings.Current.blueDustLeadTime, fieldDuration * .13f);
+            float preparation = 0f;
+            for (int i = 0; i < GojoBluePulseSchedule.HitCount; i++)
+            {
+                float until = GojoBluePulseSchedule.GetNormalizedTime(i) * fieldDuration - elapsed;
+                if (until > 0f && until < lead)
+                    preparation = Mathf.Max(preparation, Mathf.Sin((1f - until / lead) * Mathf.PI)
+                        * (.55f + i * .15f));
+            }
+            return preparation;
+        }
+
+        private void TickResidue(float elapsed, float deltaTime)
+        {
+            if (!residueStarted)
+            {
+                residueStarted = true;
+                foreach (ParticleSystem system in ParticleSystems)
+                    if (system != null) system.Stop(false, ParticleSystemStopBehavior.StopEmitting);
+                var velocity = groundDustSuction.velocityOverLifetime;
+                velocity.enabled = false;
+                var noise = groundDustSuction.noise;
+                noise.enabled = false;
+                SetSimulationSpeed(groundDustSuction, 1f);
+                coreRoot.gameObject.SetActive(false);
+                if (tornDebris != null) tornDebris.Render(elapsed, 1f);
+            }
+            float remaining = 1f - Mathf.Clamp01((elapsed - fieldDuration)
+                / Mathf.Max(.01f, Duration - fieldDuration));
+            denseEnergyWeight = fresnelEnergyWeight = outerEnergyWeight = coronaWeight = 0f;
+            fastSpiralWeight = slowSpiralWeight = darkDebrisWeight = tidalDebrisWeight = 0f;
+            windRibbonWeight = convergenceArcWeight = lightWeight = fieldPulseAccent = 0f;
+            groundDustWeight = remaining * .42f;
+            airflowWispWeight = remaining * .12f;
+            distortionWeight = remaining * .16f;
+            int count = groundDustSuction.GetParticles(residueParticles);
+            for (int i = 0; i < count; i++)
+            {
+                var particle = residueParticles[i];
+                particle.position = Vector3.MoveTowards(particle.position, Vector3.zero, deltaTime * 9f);
+                particle.velocity = Vector3.zero;
+                if (particle.position.sqrMagnitude < .01f) particle.remainingLifetime = 0f;
+                residueParticles[i] = particle;
+            }
+            groundDustSuction.SetParticles(residueParticles, count);
         }
 
         private static float EarlyPresence(
@@ -1969,6 +2047,13 @@ namespace JJKGame.Player
 
     internal sealed class GojoRedVfxInstance : GojoSignatureVfxInstance
     {
+        private readonly LineRenderer[] brokenFronts = new LineRenderer[3];
+        private readonly RaycastHit[] surfaceHits = new RaycastHit[32];
+        private RedSurfaceReaction surfaceReaction;
+        private Transform travelAir;
+        private Material travelAirMaterial;
+        private ParticleSystem pathDust;
+        private float nextDustSample;
         private float burstDuration;
         private Transform followupPressure;
         private Material airMaterial;
@@ -2039,11 +2124,20 @@ namespace JJKGame.Player
                 RuntimeMaterials, MaterialColors, 1.25f
             );
             shockFront = ProductionSignatureVfxFactory.CreateArc(
-                transform, "ThinShockFront", 0.5f, 0f, 360f,
+                transform, "ThinShockFront", 0.5f, 12f, 244f,
                 impactCue ? 0.14f : 0.045f,
                 new Color(1f, 0.10f, 0.08f, impactCue ? 0.78f : 0.58f),
                 true, RuntimeMaterials, MaterialColors
             );
+            BreakPressureFront(shockFront, 0);
+            if (impactCue)
+                for (int i = 0; i < brokenFronts.Length; i++)
+                {
+                    brokenFronts[i] = ProductionSignatureVfxFactory.CreateArc(transform,
+                        "BrokenPressureArc_" + i, .5f, 72f + i * 112f, 62f + i * 7f,
+                        .065f, new Color(.86f,.82f,.86f,.55f), true, RuntimeMaterials, MaterialColors);
+                    BreakPressureFront(brokenFronts[i], i + 1);
+                }
             if (impactCue)
             {
                 Shader vaporShader = Resources.Load<Shader>("VFX/RepulsiveVapor");
@@ -2059,7 +2153,10 @@ namespace JJKGame.Player
                         ParticleSystemShapeType.Sphere, .7f, false, ParticleSystemSimulationSpace.World,
                         GojoPolishSettings.Current.redAftermathDensity, 0f, vaporMaterial);
                     var main = vapor.main; main.startDelay = .015f;
-                    var vaporShape = vapor.shape; vaporShape.scale = new Vector3(1f, .22f, 1f);
+                    var vaporShape = vapor.shape;
+                    vaporShape.shapeType = ParticleSystemShapeType.Circle;
+                    vaporShape.rotation = new Vector3(90f, 0f, 0f);
+                    vaporShape.scale = Vector3.one;
                     var vaporRenderer = vapor.GetComponent<ParticleSystemRenderer>();
                     vaporRenderer.renderMode = ParticleSystemRenderMode.Stretch;
                     vaporRenderer.lengthScale = 4.5f;
@@ -2069,6 +2166,10 @@ namespace JJKGame.Player
                     var limit = vapor.limitVelocityOverLifetime; limit.enabled = true;
                     limit.limit = 5.5f; limit.dampen = .08f;
                     Track(vapor);
+                    var surfaceHost = new GameObject("RedSurfaceReaction");
+                    surfaceHost.transform.SetParent(transform, false);
+                    surfaceReaction = surfaceHost.AddComponent<RedSurfaceReaction>();
+                    surfaceReaction.Configure(transform.position, transform.forward, residue, vaporMaterial);
                 }
                 followupPressure = ProductionSignatureVfxFactory.CreateSphere(transform,
                     "DelayedRepulsiveAirFront", Vector3.zero, 0.01f,
@@ -2112,6 +2213,30 @@ namespace JJKGame.Player
 
             if (!impactCue)
             {
+                travelAir = ProductionSignatureVfxFactory.CreateSphere(transform, "TravelAirDisplacement",
+                    Vector3.forward * .25f, 1f, Color.white, RuntimeMaterials, MaterialColors, 0f);
+                travelAirMaterial = travelAir.GetComponent<Renderer>().sharedMaterial;
+                Shader distortion = Resources.Load<Shader>("VFX/GojoBlueDistortion");
+                if (distortion != null)
+                {
+                    travelAirMaterial.shader = distortion;
+                    travelAirMaterial.SetFloat("_RadialSign", -1f);
+                    travelAirMaterial.SetFloat("_Impact", .2f);
+                    travelAirMaterial.SetFloat("_WorldRadius", orbDiameter * 1.6f);
+                }
+                travelAir.localScale = new Vector3(orbDiameter * 2.5f, orbDiameter * 2.5f, orbDiameter * 1.3f);
+                Material dustMaterial = null;
+                Shader dustShader = Resources.Load<Shader>("VFX/RepulsiveVapor");
+                if (dustShader != null)
+                {
+                    dustMaterial = new Material(dustShader);
+                    RuntimeMaterials.Add(dustMaterial); MaterialColors.Add(new Color(.64f,.67f,.7f,.35f));
+                }
+                pathDust = ProductionSignatureVfxFactory.CreateParticleSystem(transform, "TravelDustSeparation",
+                    new Color(.64f,.67f,.7f,.35f), RuntimeMaterials, MaterialColors, true, Duration,
+                    .14f, .28f, 0f, 0f, .18f, .32f, ParticleSystemShapeType.Sphere, .1f,
+                    false, ParticleSystemSimulationSpace.World, 0, 0f, dustMaterial);
+                Track(pathDust);
                 ParticleSystem trail = ProductionSignatureVfxFactory.CreateParticleSystem(
                     transform, "CompactResidualTrail",
                     new Color(0.72f, 0.008f, 0.018f, 0.58f), RuntimeMaterials,
@@ -2130,6 +2255,24 @@ namespace JJKGame.Player
 
         protected override void Tick(float elapsed, float normalized, float deltaTime)
         {
+            if (surfaceReaction != null) surfaceReaction.Render(elapsed);
+            if (travelAirMaterial != null)
+                travelAirMaterial.SetFloat("_Strength", .08f + .13f * (1f - Mathf.Clamp01(elapsed / .10f)));
+            if (pathDust != null && elapsed >= nextDustSample)
+            {
+                nextDustSample = elapsed + .065f;
+                if (RedSurfaceReaction.TrySurface(transform.position, transform.forward, surfaceHits,
+                    out Vector3 surface, out Vector3 normal) && normal.y > .5f)
+                {
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        var emit = new ParticleSystem.EmitParams();
+                        emit.position = surface + normal * .06f + transform.right * side * .35f;
+                        emit.velocity = transform.right * side * 4f + normal * .12f;
+                        pathDust.Emit(emit, 2);
+                    }
+                }
+            }
             if (coreRoot != null)
             {
                 coreRoot.localScale = Vector3.one * (1f + Mathf.Sin(elapsed * 24f) * 0.035f);
@@ -2170,6 +2313,29 @@ namespace JJKGame.Player
                 );
                 shockFront.startColor = lineColor;
                 shockFront.endColor = lineColor;
+            }
+            for (int i = 0; i < brokenFronts.Length; i++)
+            {
+                var front = brokenFronts[i];
+                if (front == null) continue;
+                float age = Mathf.Clamp01((elapsed - .025f * (i + 1)) / burstDuration);
+                front.gameObject.SetActive(elapsed >= .025f * (i + 1) && age < 1f);
+                front.transform.localScale = Vector3.one * Mathf.Lerp(orbDiameter, pulseDiameter * (1.05f + i * .06f),
+                    1f - Mathf.Pow(1f - age, 3f));
+                Color tint = Color.white; tint.a = (1f - age) * .65f;
+                front.startColor = front.endColor = tint;
+            }
+        }
+
+        private static void BreakPressureFront(LineRenderer front, int seed)
+        {
+            float roughness = GojoPolishSettings.Current.redFrontIrregularity;
+            for (int i = 0; i < front.positionCount; i++)
+            {
+                Vector3 p = front.GetPosition(i);
+                p *= 1f + roughness * (Mathf.Sin(i * 1.73f + seed) * .65f + Mathf.Sin(i * .43f + seed * 2f) * .35f);
+                p.z = roughness * Mathf.Sin(i * .7f + seed) * .3f;
+                front.SetPosition(i, p);
             }
         }
 
