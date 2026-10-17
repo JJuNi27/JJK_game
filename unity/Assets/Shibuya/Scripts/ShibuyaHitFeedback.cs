@@ -27,16 +27,20 @@ namespace JJKGame.Shibuya
             clip.SetData(data, 0);
             source.HitConfirmed += OnHit;
         }
-        private void OnHit(Vector3 point)
+        private void OnHit(Vector3 point, float intensity)
         {
             audioSource.transform.position = point;
-            audioSource.PlayOneShot(clip, source.Profile.hitSoundVolume);
+            audioSource.pitch = Mathf.Clamp(source.LastHitSoundPitch, 0.5f, 1.5f);
+            audioSource.PlayOneShot(clip, Mathf.Clamp01(source.Profile.hitSoundVolume * intensity));
             GameObject flash = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             flash.name = "ShibuyaHitAccent";
             flash.transform.SetParent(transform, false);
             flash.transform.position = point;
-            flash.transform.localScale = new Vector3(0.24f, 0.24f, 0.10f);
-            Destroy(flash.GetComponent<Collider>());
+            flash.transform.localScale = new Vector3(0.24f, 0.24f, 0.10f) * intensity;
+            // Destroy is deferred; disable immediately so the visual cannot depenetrate a fighter this frame.
+            Collider accentCollider = flash.GetComponent<Collider>();
+            accentCollider.enabled = false;
+            Destroy(accentCollider);
             flash.GetComponent<Renderer>().sharedMaterial = impactMaterial;
             Destroy(flash, 0.08f);
         }

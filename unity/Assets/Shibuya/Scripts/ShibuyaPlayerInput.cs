@@ -14,6 +14,8 @@ namespace JJKGame.Shibuya
         [SerializeField] private ShibuyaOrbitCamera orbitCamera;
         private ShibuyaFighter fighter;
         private bool captured;
+        private bool previousAttack;
+        public Vector2 MoveAxes { get; private set; }
 #if UNITY_EDITOR
         public System.Func<ShibuyaInputFrame> TestInput;
 #endif
@@ -24,6 +26,7 @@ namespace JJKGame.Shibuya
         {
             if (fighter.State == ShibuyaFighterState.Dead || fighter.State == ShibuyaFighterState.Finished)
             {
+                MoveAxes = Vector2.zero;
                 Capture(false);
                 fighter.SetIntent(Vector3.zero, false, false);
                 return;
@@ -37,6 +40,7 @@ namespace JJKGame.Shibuya
                 if (Input.GetKeyDown(KeyCode.Escape)) Capture(false);
                 if (!captured)
                 {
+                    MoveAxes = Vector2.zero;
                     if (Input.GetMouseButtonDown(0)) Capture(true);
                     fighter.SetIntent(Vector3.zero, false, false);
                     return;
@@ -48,11 +52,14 @@ namespace JJKGame.Shibuya
                     jump = Input.GetKeyDown(KeyCode.Space), attack = Input.GetMouseButtonDown(0)
                 };
             }
+            MoveAxes = frame.move; // Keep command intent separate from attack locomotion filtering.
             orbitCamera.ApplyLook(frame.look);
             Vector3 forward = orbitCamera.transform.forward; forward.y = 0f; forward.Normalize();
             Vector3 right = orbitCamera.transform.right; right.y = 0f; right.Normalize();
             fighter.SetIntent(forward * frame.move.y + right * frame.move.x, frame.run, frame.jump);
-            if (frame.attack) fighter.TryAttack();
+            // The input boundary consumes presses, never a held button as auto-combo.
+            if (frame.attack && !previousAttack) fighter.TryAttack();
+            previousAttack = frame.attack;
         }
         private void Capture(bool value)
         {
@@ -61,6 +68,6 @@ namespace JJKGame.Shibuya
             Cursor.visible = !value;
         }
         private void OnApplicationFocus(bool focus) { if (!focus) Capture(false); }
-        private void OnDisable() => Capture(false);
+        private void OnDisable() { MoveAxes = Vector2.zero; previousAttack = false; Capture(false); }
     }
 }

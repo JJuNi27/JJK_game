@@ -18,16 +18,110 @@ MonoBehaviour:
   jumpHeight: 1.4
   gravity: 25
   attackMoveMultiplier: 0.25
-  damage: 20
-  attackRadius: 0.85
-  attackForwardOffset: 1.1
-  attackHeight: 1
-  startup: 0.1
-  activeTime: 0.08
-  recovery: 0.22
-  knockbackSpeed: 6
-  hitStun: 0.25
+  attackLateralInputMultiplier: 0
+  attackBackwardInputMultiplier: 0
+  strikes:
+  - damage: 20
+    startup: 0.1
+    activeTime: 0.08
+    recovery: 0.22
+    attackRadius: 0.85
+    attackForwardOffset: 1.1
+    attackHeight: 1
+    hitStun: 0.25
+    knockbackSpeed: 6
+    knockbackDirection: 1
+    alignVictimOnHit: 1
+    motion: 0
+    presentationIntensity: 1
+    advanceDistance: 0.7
+    advanceSpeed: 5
+    advanceStartTime: 0.02
+    advanceDuration: 0.18
+    powerWindupTime: 0
+    windupMoveMultiplier: 0.2
+    hitStopDuration: 0
+    soundPitch: 1.05
+  - damage: 20
+    startup: 0.09
+    activeTime: 0.07
+    recovery: 0.18
+    attackRadius: 0.85
+    attackForwardOffset: 1.1
+    attackHeight: 1
+    hitStun: 0.25
+    knockbackSpeed: 4
+    knockbackDirection: 1
+    alignVictimOnHit: 1
+    motion: 1
+    presentationIntensity: 1
+    advanceDistance: 0.55
+    advanceSpeed: 4
+    advanceStartTime: 0.02
+    advanceDuration: 0.16
+    powerWindupTime: 0
+    windupMoveMultiplier: 0.2
+    hitStopDuration: 0
+    soundPitch: 1.05
+  - damage: 20
+    startup: 0.1
+    activeTime: 0.07
+    recovery: 0.18
+    attackRadius: 0.85
+    attackForwardOffset: 1.1
+    attackHeight: 1
+    hitStun: 0.25
+    knockbackSpeed: 4
+    knockbackDirection: 1
+    alignVictimOnHit: 1
+    motion: 2
+    presentationIntensity: 1.1
+    advanceDistance: 0.55
+    advanceSpeed: 4
+    advanceStartTime: 0.02
+    advanceDuration: 0.16
+    powerWindupTime: 0
+    windupMoveMultiplier: 0.2
+    hitStopDuration: 0
+    soundPitch: 1.05
+  - damage: 25
+    startup: 0.18
+    activeTime: 0.1
+    recovery: 0.32
+    attackRadius: 0.85
+    attackForwardOffset: 1.1
+    attackHeight: 1
+    hitStun: 0.45
+    knockbackSpeed: 11
+    knockbackDirection: 1
+    alignVictimOnHit: 0
+    motion: 3
+    presentationIntensity: 1.5
+    advanceDistance: 0.55
+    advanceSpeed: 5
+    advanceStartTime: 0.1
+    advanceDuration: 0.16
+    powerWindupTime: 0.1
+    windupMoveMultiplier: 0.2
+    hitStopDuration: 0.065
+    soundPitch: 0.72
+  inputBufferTime: 0.16
+  comboResetTime: 0.6
   knockbackDamping: 22
+  trackingEnabled: 1
+  trackingTargetRange: 2.7
+  trackingConeAngle: 35
+  trackingMaxTurnAngle: 18
+  trackingTurnSpeed: 180
+  trackingAdvanceDistance: 0.16
+  trackingAdvanceSpeed: 3
+  trackingDuration: 0.07
+  directionalInputOverrideAngle: 60
+  victimAlignmentEnabled: 1
+  victimAlignmentMaxLateralOffset: 0.65
+  victimAlignmentMaxDistance: 0.2
+  victimAlignmentSpeed: 2
+  victimAlignmentDuration: 0.1
   cameraDistance: 6.5
   cameraHeight: 1.25
   mouseSensitivity: 3
@@ -35,5 +129,16 @@ MonoBehaviour:
   maximumPitch: 70
   cameraCollisionRadius: 0.2
   cameraFollowSharpness: 16
+  hitReactionEnabled: 1
+  frontHitReactionStrength: 1
+  leftHitReactionStrength: 1
+  rightHitReactionStrength: 1
+  backHitReactionStrength: 1
+  hitReactionLeanAngle: 18
+  hitReactionTwistAngle: 20
+  hitReactionStartTime: 0.035
+  hitReactionRecoveryTime: 0.18
+  normalHitReactionMultiplier: 1
+  heavyHitReactionMultiplier: 1.8
   hitFlashDuration: 0.09
   hitSoundVolume: 0.35

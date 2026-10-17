@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 285f199fe8ceb72448589766669d6b9a, type: 3}
   m_Name: Dummy Stats
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Core.CharacterStatsProfile
-  maxHealth: 80
+  maxHealth: 1000
   baseAttackMultiplier: 1
   defenseMultiplier: 1

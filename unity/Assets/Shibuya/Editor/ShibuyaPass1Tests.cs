@@ -17,8 +17,8 @@ namespace JJKGame.Shibuya.EditorTools
         {
             Assert.That(AssetDatabase.LoadAssetAtPath<SceneAsset>(ShibuyaSceneBuilder.ScenePath), Is.Not.Null);
             var profile = AssetDatabase.LoadAssetAtPath<ShibuyaCombatProfile>(ShibuyaSceneBuilder.Root + "/Data/Shibuya Combat Profile.asset");
-            Assert.That(profile.damage, Is.GreaterThan(0));
-            Assert.That(profile.AttackDuration, Is.GreaterThan(profile.startup + profile.activeTime));
+            Assert.That(profile.strikes[0].damage, Is.GreaterThan(0));
+            Assert.That(profile.strikes[0].Duration, Is.GreaterThan(profile.strikes[0].startup + profile.strikes[0].activeTime));
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShibuyaSceneBuilder.Root + "/Prefabs/ShibuyaPlayer.prefab");
             Assert.That(prefab.GetComponent<Health>(), Is.Not.Null);
             Assert.That(prefab.GetComponent<ShibuyaFighter>().Profile, Is.SameAs(profile));
@@ -38,6 +38,7 @@ namespace JJKGame.Shibuya.EditorTools
             Assert.That(match, Is.Not.Null);
             var player = match.Player;
             var dummy = match.Dummy;
+            dummy.Health.SetCurrentHealth(80f); // Runtime fixture only; preserve user HP asset.
             var input = player.GetComponent<ShibuyaPlayerInput>();
             var camera = Object.FindFirstObjectByType<ShibuyaOrbitCamera>();
             input.TestInput = () => default;
@@ -115,7 +116,7 @@ namespace JJKGame.Shibuya.EditorTools
             input.TestInput = () => new ShibuyaInputFrame { attack = true };
             yield return null;
             input.TestInput = () => default;
-            yield return Wait(player.Profile.startup + 0.03f);
+            yield return Wait(player.Profile.strikes[0].startup + 0.03f);
             Assert.That(dummy.Health.CurrentHealth, Is.EqualTo(60f).Within(0.01f));
             Assert.That(dummy.State, Is.EqualTo(ShibuyaFighterState.Hitstunned));
             Assert.That(dummy.TryAttack(), Is.False, "hitstun blocks actions on the common fighter");
@@ -170,7 +171,7 @@ namespace JJKGame.Shibuya.EditorTools
             match = Object.FindFirstObjectByType<ShibuyaMatch>();
             Assert.That(match.Finished, Is.False);
             Assert.That(match.Player.Health.CurrentHealth, Is.EqualTo(100));
-            Assert.That(match.Dummy.Health.CurrentHealth, Is.EqualTo(80));
+            Assert.That(match.Dummy.Health.CurrentHealth, Is.EqualTo(match.Dummy.Health.MaxHealth));
             match.Player.GetComponent<ShibuyaPlayerInput>().TestInput = () => default;
             match.EditorDefeatPlayer();
             yield return null;
