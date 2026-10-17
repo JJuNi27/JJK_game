@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: adc8d60e4cb8cbd44a223bab4d2ab737, type: 3}
+  m_Name: Shibuya Combat Profile
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaCombatProfile
+  walkSpeed: 4.8
+  runSpeed: 8.5
+  turnSpeed: 720
+  jumpHeight: 1.4
+  gravity: 25
+  attackMoveMultiplier: 0.25
+  damage: 20
+  attackRadius: 0.85
+  attackForwardOffset: 1.1
+  attackHeight: 1
+  startup: 0.1
+  activeTime: 0.08
+  recovery: 0.22
+  knockbackSpeed: 6
+  hitStun: 0.25
+  knockbackDamping: 22
+  cameraDistance: 6.5
+  cameraHeight: 1.25
+  mouseSensitivity: 3
+  minimumPitch: -25
+  maximumPitch: 70
+  cameraCollisionRadius: 0.2
+  cameraFollowSharpness: 16
+  hitFlashDuration: 0.09
+  hitSoundVolume: 0.35
