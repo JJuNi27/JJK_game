@@ -9,15 +9,29 @@ namespace JJKGame.Shibuya.EditorTools
         public override void OnInspectorGUI()
         {
             base.OnInspectorGUI();
-            EditorGUILayout.HelpBox("기본 4타는 전투 설정에 보존됩니다. 이 자산을 Fighter에 연결한 경우에만 사용합니다. 타격 발동 시간은 준비 시작이며 실제 판정은 발동+준비 시간입니다. 타격은 실제 활성 시작 순서로 입력하세요. 새 무브셋의 실제 전진은 이동 클립만 사용합니다.", MessageType.Info);
+            EditorGUILayout.HelpBox("기본 4타는 전투 설정에 보존됩니다. 이 자산을 Fighter에 연결한 경우에만 사용합니다. 타격 발동 시간은 준비 시작이며 실제 판정은 발동+준비 시간입니다. 타격은 실제 활성 시작 순서로 입력하세요. 작성 전진은 이동 클립, 자동 접근 보정은 공통/타격별 추적 설정을 사용합니다. 도착 필수 접근과 자동 보정 예산은 중복되지 않습니다.", MessageType.Info);
             if (!((ShibuyaMovesetDefinition)target).IsValid)
                 EditorGUILayout.HelpBox("비어 있는 단계, 잘못된 시간순서 또는 이동 참조가 있습니다. 실행할 수 없습니다.", MessageType.Error);
+        }
+    }
+
+    [CustomEditor(typeof(ShibuyaFinisherSet)), CanEditMultipleObjects]
+    public sealed class ShibuyaFinisherSetInspector : ShibuyaInspector
+    {
+        public override void OnInspectorGUI() {
+            base.OnInspectorGUI();
+            EditorGUILayout.HelpBox("기본 마무리는 기존 4타 설정을 사용합니다. 이 자산은 어퍼컷과 다운의 대체 마지막 단계만 소유합니다. 입력 선택은 클릭 접수 시 고정되며, 자연 기상은 최소 다운 시간보다 빠르지 않습니다.", MessageType.Info);
+            EditorGUILayout.HelpBox("띄우기의 기본 수평 운동은 공중 상태의 발사 거리·시간·낙하 속도가 소유합니다. 이 경우 감쇠 넉백 속도는 사용하지 않아 감춥니다. 거리·시간 넉백을 별도로 작성하면 추가 이동 예산으로 적용됩니다.", MessageType.Info);
+            if (!((ShibuyaFinisherSet)target).IsValid) EditorGUILayout.HelpBox("타격/이동/상태 설정이 유효하지 않습니다.", MessageType.Error);
         }
     }
 
     [CustomPropertyDrawer(typeof(ShibuyaMovesetStep))]
     [CustomPropertyDrawer(typeof(ShibuyaMovementDefinition))]
     [CustomPropertyDrawer(typeof(ShibuyaHitEvent))]
+    [CustomPropertyDrawer(typeof(ShibuyaAirSettings))]
+    [CustomPropertyDrawer(typeof(ShibuyaDownSettings))]
+    [CustomPropertyDrawer(typeof(ShibuyaTargetingSettings))]
     public sealed class ShibuyaMovesetDrawer : PropertyDrawer
     {
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)

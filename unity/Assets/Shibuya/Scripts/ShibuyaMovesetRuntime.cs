@@ -18,6 +18,9 @@ namespace JJKGame.Shibuya
         private float linkUntilSourceTime;
         private float distanceKnockbackRemaining, distanceKnockbackSpeed;
         private Vector3 distanceKnockbackDirection;
+        private ShibuyaFinisher bufferedFinisher;
+        public ShibuyaFinisher CurrentFinisher { get; private set; }
+        public ShibuyaFinisher BufferedFinisher => HasBufferedAttack ? bufferedFinisher : ShibuyaFinisher.Default;
 
         public event Action<int> HitEventStarted;
         public ShibuyaMovesetDefinition Moveset => moveset;
@@ -41,11 +44,24 @@ namespace JJKGame.Shibuya
             CancelCombo(); moveset = value; return true;
         }
 
-        private void PrepareStep(int index)
+        private ShibuyaMovesetStep ResolveStep(int index, ShibuyaFinisher selection, out ShibuyaFinisher resolved)
         {
-            activeStep = moveset == null ? new ShibuyaMovesetStep {
+            resolved = ShibuyaFinisher.Default;
+            var set = moveset == null ? profile.finishers : moveset.finishers;
+            int finalIndex = moveset == null ? profile.strikes.Length - 1 : moveset.finisherStepIndex;
+            if (index == finalIndex && set != null && set.IsValid && selection != ShibuyaFinisher.Default) {
+                resolved = selection;
+                return selection == ShibuyaFinisher.Uppercut ? set.uppercut : set.downFinisher;
+            }
+            return moveset == null ? new ShibuyaMovesetStep {
                 hits = new[] { new ShibuyaHitEvent { strike = profile.strikes[index] } }
             } : moveset.steps[index];
+        }
+
+        private void PrepareStep(int index, ShibuyaFinisher selection)
+        {
+            activeStep = ResolveStep(index, selection, out var resolved);
+            CurrentFinisher = resolved;
             presentationEvent = 0;
             eventVisited = new bool[activeStep.hits.Length];
             eventTargets = new HashSet<JJKGame.Core.Health>[activeStep.hits.Length];
@@ -58,9 +74,7 @@ namespace JJKGame.Shibuya
         private void ReserveNextInput()
         {
             if (lastHitTarget == null || strikeIndex + 1 >= StepCount) return;
-            var next = moveset == null ? new ShibuyaMovesetStep {
-                hits = new[] { new ShibuyaHitEvent { strike = profile.strikes[strikeIndex + 1] } }
-            } : moveset.steps[strikeIndex + 1];
+            var next = ResolveStep(strikeIndex + 1, bufferedFinisher, out _);
             ReserveLink(lastHitTarget, AttackDuration - AttackElapsed + next.hits[0].ActiveStart + .05f);
         }
 
@@ -89,12 +103,13 @@ namespace JJKGame.Shibuya
         private void ApplyEventPolicies(ShibuyaFighter victim, Vector3 direction)
         {
             var evt = activeStep.hits[resolvingEvent];
-            if (moveset != null && evt.knockbackKind == ShibuyaKnockbackKind.Distance) {
+            if (evt.knockbackKind == ShibuyaKnockbackKind.Distance) {
                 victim.knockback = Vector3.zero;
                 victim.distanceKnockbackRemaining = Mathf.Max(0f, evt.knockbackDistance);
                 victim.distanceKnockbackSpeed = victim.distanceKnockbackRemaining / Mathf.Max(.01f, evt.knockbackDuration);
                 victim.distanceKnockbackDirection = direction.normalized;
             }
+            victim.ApplyHitOutcome(evt, direction);
             if (resolvingEvent + 1 < activeStep.hits.Length)
                 ReserveLink(victim, activeStep.hits[resolvingEvent + 1].ActiveStart - AttackElapsed + .05f);
             else if (HasBufferedAttack) ReserveNextInput();

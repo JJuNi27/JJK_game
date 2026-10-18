@@ -8,6 +8,29 @@ namespace JJKGame.Shibuya.EditorTools
     public abstract class ShibuyaInspector : UnityEditor.Editor
     {
         private static readonly Dictionary<string, string> Labels = new Dictionary<string, string> {
+            {"overrideTargeting", "이 타격의 추적 설정 개별 사용"}, {"targeting", "타격별 추적 보정"},
+            {"acquisitionAngle", "첫 대상 선정 정면 각도"}, {"retentionAngle", "콤보 대상 유지 각도"},
+            {"approachDistance", "추가 접근 최대 거리"}, {"approachSpeed", "추가 접근 속도"},
+            {"preparationTime", "준비 중 추적 허용 시간"}, {"retentionTime", "마지막 적중 후 대상 유지 시간"},
+            {"maxHeightDifference", "추적 허용 높이 차"}, {"firstTargetCone", "첫 대상 선정 정면 각도"},
+            {"targetRetentionTime", "마지막 적중 후 대상 유지 시간"},
+            {"trackingMaxHeightDifference", "추적 허용 높이 차"}, {"trackingPredictionTime", "넉백 속도 예측 시간"},
+            {"showCombatGizmos", "선택 시 전투 진단 표시 (기본 꺼짐)"},
+            {"usePeakHeight", "상승 속도 대신 목표 높이 사용"}, {"peakHeight", "발사 위치 기준 상승 목표 높이"},
+            {"launchHorizontalDistance", "상승 중 수평 발사 거리"}, {"launchHorizontalDuration", "수평 발사 시간"},
+            {"descendingHorizontalSpeed", "낙하 중 수평 속도"}, {"landingSeparationSpeed", "착지 캡슐 분리 속도"},
+            {"groundCrackEnabled", "실제 바닥 충돌 균열 사용"}, {"crackRadius", "바닥 균열 반경"},
+            {"crackHoldTime", "바닥 균열 유지 시간"}, {"crackFadeTime", "바닥 균열 사라지는 시간"},
+            {"crackDarkness", "바닥 균열 진하기"},
+            {"finishers", "방향별 마무리 설정"}, {"finisherStepIndex", "방향 마무리 입력 단계 (0부터)"},
+            {"uppercut", "W 어퍼컷 마무리"}, {"down", "다운 상태 설정"},
+            {"downFinisher", "S 다운 마무리"},
+            {"outcome", "유효 적중 후 상태"}, {"air", "공중 상태 설정"},
+            {"launchSpeed", "어퍼컷 상승 속도"}, {"airGravity", "공중 피격 중력"},
+            {"apexHoldTime", "정점 체공 시간"}, {"airReactionLean", "공중 피격 외형 기울기"},
+            {"fallSpeed", "다운 타격 낙하 속도"}, {"minimumDownTime", "최소 다운 유지 시간"},
+            {"naturalRecoveryTime", "착지 후 자연 기상 시작 시간"}, {"getUpDuration", "기상 동작 시간"},
+            {"downPoseAngle", "다운 외형 기울기"},
             {"confirmedLinkEnabled", "유효 예약 입력의 확정 연계 사용"},
             {"confirmedLinkInputWindow", "확정 연계 후속 입력 허용 시간"},
             {"confirmedLinkMaxHold", "한 연결의 최대 추가 구속 시간"},
@@ -25,7 +48,7 @@ namespace JJKGame.Shibuya.EditorTools
             {"advanceStartTime", "타격 전진 시작 시간"}, {"advanceDuration", "타격 전진 지속 시간"},
             {"powerWindupTime", "힘 모으기 시간 (준비 시간에 포함)"}, {"windupMoveMultiplier", "힘 모으기 중 이동 배율"},
             {"hitStopDuration", "적중 시 국소 히트스톱 시간"}, {"soundPitch", "타격음 높낮이"},
-            {"trackingEnabled", "직전 적중 대상 보정 사용"}, {"trackingTargetRange", "보정 대상 최대 거리"},
+            {"trackingEnabled", "준비 구간 타깃 보정 사용"}, {"trackingTargetRange", "보정 대상 최대 거리"},
             {"trackingConeAngle", "보정 대상 허용 각도"}, {"trackingMaxTurnAngle", "한 타격의 최대 회전 보정 각도"},
             {"trackingTurnSpeed", "방향 보정 속도 (도/초)"}, {"trackingAdvanceDistance", "추가 전진 보정 최대 거리"},
             {"trackingAdvanceSpeed", "추가 전진 보정 속도"}, {"trackingDuration", "준비 구간 보정 적용 시간"},
@@ -110,11 +133,23 @@ namespace JJKGame.Shibuya.EditorTools
         private static readonly string[] Fields = { "damage", "startup", "activeTime", "recovery", "attackRadius",
             "attackForwardOffset", "attackHeight", "hitStun", "knockbackSpeed", "knockbackDirection", "motion", "presentationIntensity",
             "advanceDistance", "advanceSpeed", "advanceStartTime", "advanceDuration", "powerWindupTime", "windupMoveMultiplier",
-            "hitStopDuration", "soundPitch", "alignVictimOnHit" };
-        private static string[] VisibleFields(SerializedProperty property) => property.propertyPath.Contains(".hits.")
-            ? System.Array.FindAll(Fields, field => !field.StartsWith("advance")) : Fields;
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) =>
-            (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing) * (property.isExpanded ? VisibleFields(property).Length + 1 : 1);
+            "hitStopDuration", "soundPitch", "alignVictimOnHit", "overrideTargeting", "targeting" };
+        private static string[] VisibleFields(SerializedProperty property) => System.Array.FindAll(Fields,
+            field => (!property.propertyPath.Contains(".hits.") || !field.StartsWith("advance"))
+                && (field!="knockbackSpeed" || !IsLaunchEvent(property))
+                && (field!="targeting" || property.FindPropertyRelative("overrideTargeting").boolValue));
+        private static bool IsLaunchEvent(SerializedProperty property) {
+            int index=property.propertyPath.LastIndexOf(".strike",System.StringComparison.Ordinal);
+            if(index<0) return false;
+            var outcome=property.serializedObject.FindProperty(property.propertyPath.Substring(0,index)+".outcome");
+            return outcome!=null && outcome.enumValueIndex==(int)ShibuyaHitOutcome.Launch;
+        }
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
+            float height=EditorGUIUtility.singleLineHeight;
+            if(property.isExpanded) foreach(string field in VisibleFields(property))
+                height+=EditorGUIUtility.standardVerticalSpacing+EditorGUI.GetPropertyHeight(property.FindPropertyRelative(field),true);
+            return height;
+        }
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
@@ -125,8 +160,9 @@ namespace JJKGame.Shibuya.EditorTools
                 using (new EditorGUI.IndentLevelScope())
                     foreach (string field in VisibleFields(property))
                     {
-                        position.y += EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
-                        EditorGUI.PropertyField(position, property.FindPropertyRelative(field), new GUIContent(ShibuyaInspector.KoreanLabel(field)));
+                        position.y += position.height + EditorGUIUtility.standardVerticalSpacing;
+                        position.height=EditorGUI.GetPropertyHeight(property.FindPropertyRelative(field),true);
+                        EditorGUI.PropertyField(position, property.FindPropertyRelative(field), new GUIContent(ShibuyaInspector.KoreanLabel(field)),true);
                     }
             }
             EditorGUI.EndProperty();

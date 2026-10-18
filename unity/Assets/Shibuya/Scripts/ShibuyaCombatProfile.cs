@@ -8,7 +8,8 @@ namespace JJKGame.Shibuya
     }
     public enum ShibuyaStrikeMotion {
         [InspectorName("오른 주먹 직선타")] RightJab, [InspectorName("왼 주먹 직선타")] LeftJab,
-        [InspectorName("오른 주먹 회전타")] RightHook, [InspectorName("왼 주먹 마무리 강타")] HeavyCross
+        [InspectorName("오른 주먹 회전타")] RightHook, [InspectorName("왼 주먹 마무리 강타")] HeavyCross,
+        [InspectorName("올려치는 어퍼컷")] Uppercut, [InspectorName("내려치는 다운 강타")] DownSlam
     }
 
     [System.Serializable]
@@ -36,6 +37,8 @@ namespace JJKGame.Shibuya
         [Range(0f, 1f)] public float windupMoveMultiplier = 0.2f;
         [Min(0f)] public float hitStopDuration;
         [Range(0.5f, 1.5f)] public float soundPitch = 1.05f;
+        public bool overrideTargeting;
+        public ShibuyaTargetingSettings targeting = new ShibuyaTargetingSettings();
         public float PowerWindup => Mathf.Clamp(powerWindupTime, 0f, Startup);
         public float Startup => Mathf.Max(0.01f, startup);
         public float ActiveEnd => Startup + Mathf.Max(0.01f, activeTime);
@@ -71,21 +74,27 @@ namespace JJKGame.Shibuya
         };
         [Min(0.01f)] public float inputBufferTime = 0.16f;
         [Min(0.01f)] public float comboResetTime = 0.60f;
+        public ShibuyaFinisherSet finishers;
         [Header("예약된 유효 연계만 확정")]
         public bool confirmedLinkEnabled = true;
         [Min(0.01f)] public float confirmedLinkInputWindow = 0.24f;
         [Min(0.01f)] public float confirmedLinkMaxHold = 0.75f;
         [Min(0.01f)] public float confirmedLinkMaxSequence = 3f;
         [Min(0.1f)] public float knockbackDamping = 22f;
-        [Header("직전 적중 대상 준비 구간 보정")]
+        [Header("공통 근접 타깃 준비 구간 보정")]
         public bool trackingEnabled = true;
         [Min(0f)] public float trackingTargetRange = 2.7f;
-        [Range(0f, 90f)] public float trackingConeAngle = 35f;
-        [Range(0f, 90f)] public float trackingMaxTurnAngle = 18f;
-        [Min(0f)] public float trackingTurnSpeed = 180f;
-        [Min(0f)] public float trackingAdvanceDistance = 0.16f;
-        [Min(0f)] public float trackingAdvanceSpeed = 3f;
-        [Min(0f)] public float trackingDuration = 0.07f;
+        [Range(0f, 90f)] public float trackingConeAngle = 70f;
+        [Range(0f, 90f)] public float trackingMaxTurnAngle = 45f;
+        [Min(0f)] public float trackingTurnSpeed = 540f;
+        [Min(0f)] public float trackingAdvanceDistance = 0.30f;
+        [Min(0f)] public float trackingAdvanceSpeed = 4f;
+        [Min(0f)] public float trackingDuration = 0.16f;
+        [Range(0f, 89f)] public float firstTargetCone = 50f;
+        [Min(0f)] public float targetRetentionTime = 1.2f;
+        [Min(0f)] public float trackingMaxHeightDifference = 1.4f;
+        [Min(0f)] public float trackingPredictionTime = .05f;
+        public bool showCombatGizmos;
         [Range(0f, 180f)] public float directionalInputOverrideAngle = 60f;
         [Header("유효 적중 후 피격자 측면 정렬")]
         public bool victimAlignmentEnabled = true;
@@ -118,6 +127,6 @@ namespace JJKGame.Shibuya
         [Range(0f, 1f)] public float hitSoundVolume = 0.35f;
 
         public bool HasValidCombo => strikes != null && strikes.Length == 4
-            && System.Array.TrueForAll(strikes, strike => strike != null);
+            && System.Array.TrueForAll(strikes, strike => strike != null && ShibuyaMovesetDefinition.ValidTargeting(strike));
     }
 }

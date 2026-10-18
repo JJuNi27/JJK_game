@@ -97,6 +97,8 @@ namespace JJKGame.Shibuya.EditorTools
             Application.runInBackground=true; yield return Wait(.1f);
             var m=Object.FindFirstObjectByType<ShibuyaMatch>(); var p=m.Player; var d=m.Dummy;
             p.GetComponent<ShibuyaPlayerInput>().TestInput=()=>default;
+            // Isolate victim alignment from the separately tested PASS3B.1 first-contact aim.
+            Clone(p).trackingEnabled=false;
             Place(p,new Vector3(0,.03f,-1.7f)); p.transform.rotation=Quaternion.identity;
             Place(d,new Vector3(.5f,.03f,0)); d.transform.rotation=Quaternion.Euler(0,90,0);
             Assert.That(p.TryAttack(),Is.True); yield return Until(()=>p.ConfirmedHitCount==1);
@@ -171,6 +173,8 @@ namespace JJKGame.Shibuya.EditorTools
             Application.runInBackground=true; yield return Wait(.1f);
             var m=Object.FindFirstObjectByType<ShibuyaMatch>(); var p=m.Player; var d=m.Dummy;
             p.GetComponent<ShibuyaPlayerInput>().TestInput=()=>default;
+            // Isolate victim alignment from the separately tested PASS3B.1 first-contact aim.
+            Clone(p).trackingEnabled=false;
             for(int trial=0;trial<4;trial++) {
                 yield return Until(()=>d.State==ShibuyaFighterState.Ready);
                 p.ApplyHitReaction(Vector3.zero,0); Place(p,new Vector3(0,.03f,-1.7f)); p.transform.rotation=Quaternion.identity;
@@ -242,6 +246,8 @@ namespace JJKGame.Shibuya.EditorTools
             Application.runInBackground=true; yield return Wait(.1f);
             var m=Object.FindFirstObjectByType<ShibuyaMatch>(); var p=m.Player; var d=m.Dummy;
             p.GetComponent<ShibuyaPlayerInput>().TestInput=()=>default;
+            // Isolate victim alignment from the separately tested PASS3B.1 first-contact aim.
+            Clone(p).trackingEnabled=false;
             var third=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(ShibuyaSceneBuilder.Root+"/Prefabs/ShibuyaDummy.prefab"))
                 .GetComponent<ShibuyaFighter>();
             var copy=Clone(third); copy.strikes[0].startup=.01f; copy.strikes[0].advanceDistance=0;
@@ -262,7 +268,8 @@ namespace JJKGame.Shibuya.EditorTools
 
         private static ShibuyaCombatProfile Clone(ShibuyaFighter p) {
             var copy=Object.Instantiate(p.Profile); copy.name="Shibuya PASS22 QA Profile";
-            p.Configure(copy,AssetDatabase.LoadAssetAtPath<CharacterStatsProfile>(ShibuyaSceneBuilder.Root+"/Data/Dummy Stats.asset")); return copy;
+            var original=new SerializedObject(p).FindProperty("stats").objectReferenceValue as CharacterStatsProfile;
+            p.Configure(copy,original); return copy;
         }
         private static void Record(Metric value) {
             System.IO.Directory.CreateDirectory("Logs/ShibuyaPass22QA");

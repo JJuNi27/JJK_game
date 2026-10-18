@@ -170,10 +170,12 @@ namespace JJKGame.Shibuya.EditorTools
                 if(wall!=null) Object.Destroy(wall);
                 yield return Until(()=>p.State==ShibuyaFighterState.Ready);
             }
-            // No target acquisition from proximity alone, even if another actor is nearby.
+            // PASS 3B.1: first-contact acquisition is now explicitly approved, still bounded to preparation.
             p.ApplyHitReaction(Vector3.zero,0); Place(d,new Vector3(.6f,.03f,p.transform.position.z+1.7f));
             Assert.That(p.TryAttack(),Is.True); yield return Wait(.075f);
-            Assert.That(p.TrackingTurnApplied,Is.Zero); Assert.That(p.TrackingAdvanceRequested,Is.Zero);
+            Assert.That(p.TrackingTurnApplied,Is.GreaterThan(0f));
+            Assert.That(p.TrackingTurnApplied,Is.LessThanOrEqualTo(profile.trackingMaxTurnAngle+.01f));
+            Assert.That(p.TrackingAdvanceRequested,Is.LessThanOrEqualTo(profile.trackingAdvanceDistance+.001f));
         }
 
         [UnityTest] public IEnumerator LocalHitStopPreservesOneBufferedSuccessor()

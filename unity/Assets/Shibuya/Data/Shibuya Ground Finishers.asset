@@ -1,0 +1,168 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1227c6510eecf894795ddf38b4b44c9d, type: 3}
+  m_Name: Shibuya Ground Finishers
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaFinisherSet
+  uppercut:
+    hits:
+    - startTime: 0
+      strike:
+        damage: 25
+        startup: 0.18
+        activeTime: 0.1
+        recovery: 0.32
+        attackRadius: 0.85
+        attackForwardOffset: 1.1
+        attackHeight: 1
+        hitStun: 0.45
+        knockbackSpeed: 2.5
+        knockbackDirection: 1
+        alignVictimOnHit: 0
+        motion: 4
+        presentationIntensity: 1.5
+        advanceDistance: 0.7
+        advanceSpeed: 5
+        advanceStartTime: 0.02
+        advanceDuration: 0.18
+        powerWindupTime: 0.1
+        windupMoveMultiplier: 0.2
+        hitStopDuration: 0.065
+        soundPitch: 0.8
+        overrideTargeting: 0
+        targeting:
+          targetRange: 2.7
+          acquisitionAngle: 50
+          retentionAngle: 70
+          maxTurnAngle: 45
+          turnSpeed: 540
+          approachDistance: 0.3
+          approachSpeed: 4
+          preparationTime: 0.16
+          retentionTime: 1.2
+          maxHeightDifference: 1.4
+          predictionTime: 0.05
+      requiredMovement: -1
+      heavyReaction: 1
+      knockbackKind: 0
+      knockbackDistance: 4
+      knockbackDuration: 0.4
+      outcome: 1
+      air:
+        launchSpeed: 11
+        airGravity: 25
+        apexHoldTime: 0.12
+        airReactionLean: 28
+        usePeakHeight: 1
+        peakHeight: 5.5
+        launchHorizontalDistance: 2.4
+        launchHorizontalDuration: 0.55
+        descendingHorizontalSpeed: 1.2
+        landingSeparationSpeed: 8
+      down:
+        fallSpeed: 12
+        minimumDownTime: 0.45
+        naturalRecoveryTime: 0.85
+        getUpDuration: 0.22
+        downPoseAngle: 85
+        groundCrackEnabled: 1
+        crackRadius: 1.8
+        crackHoldTime: 0.65
+        crackFadeTime: 0.65
+        crackDarkness: 0.85
+    movements:
+    - kind: 0
+      startTime: 0.1
+      duration: 0.16
+      maxDistance: 0.55
+      speed: 5
+      targetRange: 8
+      arrivalDistance: 1.3
+      maxTurnAngle: 50
+      turnSpeed: 360
+      predictionTime: 0.04
+  downFinisher:
+    hits:
+    - startTime: 0
+      strike:
+        damage: 25
+        startup: 0.18
+        activeTime: 0.1
+        recovery: 0.32
+        attackRadius: 0.85
+        attackForwardOffset: 1.1
+        attackHeight: 1
+        hitStun: 0.45
+        knockbackSpeed: 2
+        knockbackDirection: 1
+        alignVictimOnHit: 0
+        motion: 5
+        presentationIntensity: 1.5
+        advanceDistance: 0.7
+        advanceSpeed: 5
+        advanceStartTime: 0.02
+        advanceDuration: 0.18
+        powerWindupTime: 0.1
+        windupMoveMultiplier: 0.2
+        hitStopDuration: 0.065
+        soundPitch: 0.65
+        overrideTargeting: 0
+        targeting:
+          targetRange: 2.7
+          acquisitionAngle: 50
+          retentionAngle: 70
+          maxTurnAngle: 45
+          turnSpeed: 540
+          approachDistance: 0.3
+          approachSpeed: 4
+          preparationTime: 0.16
+          retentionTime: 1.2
+          maxHeightDifference: 1.4
+          predictionTime: 0.05
+      requiredMovement: -1
+      heavyReaction: 1
+      knockbackKind: 0
+      knockbackDistance: 4
+      knockbackDuration: 0.4
+      outcome: 2
+      air:
+        launchSpeed: 11
+        airGravity: 25
+        apexHoldTime: 0.06
+        airReactionLean: 28
+        usePeakHeight: 0
+        peakHeight: 5.5
+        launchHorizontalDistance: 2.4
+        launchHorizontalDuration: 0.55
+        descendingHorizontalSpeed: 1.2
+        landingSeparationSpeed: 8
+      down:
+        fallSpeed: 12
+        minimumDownTime: 0.45
+        naturalRecoveryTime: 0.85
+        getUpDuration: 0.22
+        downPoseAngle: 85
+        groundCrackEnabled: 1
+        crackRadius: 1.8
+        crackHoldTime: 0.65
+        crackFadeTime: 0.65
+        crackDarkness: 0.85
+    movements:
+    - kind: 0
+      startTime: 0.1
+      duration: 0.16
+      maxDistance: 0.55
+      speed: 5
+      targetRange: 8
+      arrivalDistance: 1.3
+      maxTurnAngle: 50
+      turnSpeed: 360
+      predictionTime: 0.04

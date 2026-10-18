@@ -181,6 +181,10 @@ namespace JJKGame.Shibuya.EditorTools
             data.steps[0].movements = new[] { new ShibuyaMovementDefinition {
                 kind = ShibuyaMovementKind.Forward, maxDistance = .3f, speed = 2, duration = .2f
             } };
+            // Measure only authored forward motion; optional automatic correction has its own budget.
+            foreach(var step in data.steps) foreach(var hit in step.hits) {
+                hit.strike.overrideTargeting=true;hit.strike.targeting.approachDistance=0;hit.strike.targeting.maxTurnAngle=0;
+            }
             p.SetMoveset(data);
             Vector3 p0 = p.transform.position, d0 = d.transform.position;
             Assert.That(p.TryAttack()); yield return Wait(.7f);

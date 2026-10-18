@@ -42,6 +42,19 @@ MonoBehaviour:
     windupMoveMultiplier: 0.2
     hitStopDuration: 0
     soundPitch: 1.05
+    overrideTargeting: 0
+    targeting:
+      targetRange: 2.7
+      acquisitionAngle: 50
+      retentionAngle: 70
+      maxTurnAngle: 45
+      turnSpeed: 540
+      approachDistance: 0.3
+      approachSpeed: 4
+      preparationTime: 0.16
+      retentionTime: 1.2
+      maxHeightDifference: 1.4
+      predictionTime: 0.05
   - damage: 20
     startup: 0.09
     activeTime: 0.07
@@ -63,6 +76,19 @@ MonoBehaviour:
     windupMoveMultiplier: 0.2
     hitStopDuration: 0
     soundPitch: 1.05
+    overrideTargeting: 0
+    targeting:
+      targetRange: 2.7
+      acquisitionAngle: 50
+      retentionAngle: 70
+      maxTurnAngle: 45
+      turnSpeed: 540
+      approachDistance: 0.3
+      approachSpeed: 4
+      preparationTime: 0.16
+      retentionTime: 1.2
+      maxHeightDifference: 1.4
+      predictionTime: 0.05
   - damage: 20
     startup: 0.1
     activeTime: 0.07
@@ -84,6 +110,19 @@ MonoBehaviour:
     windupMoveMultiplier: 0.2
     hitStopDuration: 0
     soundPitch: 1.05
+    overrideTargeting: 0
+    targeting:
+      targetRange: 2.7
+      acquisitionAngle: 50
+      retentionAngle: 70
+      maxTurnAngle: 45
+      turnSpeed: 540
+      approachDistance: 0.3
+      approachSpeed: 4
+      preparationTime: 0.16
+      retentionTime: 1.2
+      maxHeightDifference: 1.4
+      predictionTime: 0.05
   - damage: 25
     startup: 0.18
     activeTime: 0.1
@@ -105,17 +144,40 @@ MonoBehaviour:
     windupMoveMultiplier: 0.2
     hitStopDuration: 0.065
     soundPitch: 0.72
+    overrideTargeting: 0
+    targeting:
+      targetRange: 2.7
+      acquisitionAngle: 50
+      retentionAngle: 70
+      maxTurnAngle: 45
+      turnSpeed: 540
+      approachDistance: 0.3
+      approachSpeed: 4
+      preparationTime: 0.16
+      retentionTime: 1.2
+      maxHeightDifference: 1.4
+      predictionTime: 0.05
   inputBufferTime: 0.16
   comboResetTime: 0.6
+  finishers: {fileID: 11400000, guid: 146cb4b7215ad0241b2c9d504b9a2f5e, type: 2}
+  confirmedLinkEnabled: 1
+  confirmedLinkInputWindow: 0.24
+  confirmedLinkMaxHold: 0.75
+  confirmedLinkMaxSequence: 3
   knockbackDamping: 22
   trackingEnabled: 1
   trackingTargetRange: 2.7
-  trackingConeAngle: 35
-  trackingMaxTurnAngle: 18
-  trackingTurnSpeed: 180
-  trackingAdvanceDistance: 0.16
-  trackingAdvanceSpeed: 3
-  trackingDuration: 0.07
+  trackingConeAngle: 70
+  trackingMaxTurnAngle: 45
+  trackingTurnSpeed: 540
+  trackingAdvanceDistance: 0.3
+  trackingAdvanceSpeed: 4
+  trackingDuration: 0.16
+  firstTargetCone: 50
+  targetRetentionTime: 1.2
+  trackingMaxHeightDifference: 1.4
+  trackingPredictionTime: 0.05
+  showCombatGizmos: 0
   directionalInputOverrideAngle: 60
   victimAlignmentEnabled: 1
   victimAlignmentMaxLateralOffset: 0.65

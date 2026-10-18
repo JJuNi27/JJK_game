@@ -96,7 +96,7 @@ namespace JJKGame.Shibuya
         {
             ShibuyaFighterState state = fighter.State;
             RestorePose();
-            float walk = state == ShibuyaFighterState.Hitstunned || state == ShibuyaFighterState.Dead
+            float walk = state == ShibuyaFighterState.Airborne || fighter.IsDowned || state == ShibuyaFighterState.Hitstunned || state == ShibuyaFighterState.Dead
                 || state == ShibuyaFighterState.Finished ? 0f
                 : Mathf.Sin(fighter.CombatTime * 12f) * Mathf.Clamp01(fighter.PlanarSpeed / 5f) * 30f;
             leftArm.localRotation = Quaternion.Euler(walk, 0, 0);
@@ -125,6 +125,16 @@ namespace JJKGame.Shibuya
                 guardingArm.localRotation = Quaternion.Euler(-28f * phase, 0f, left ? -10f : 10f);
                 visualRoot.localRotation = Quaternion.Euler(0f, (left ? 18f : -18f) * force, 0f);
                 visualRoot.localPosition = Vector3.forward * (0.12f * force);
+                if (strike.motion == ShibuyaStrikeMotion.Uppercut) {
+                    rightArm.localRotation = Quaternion.Euler(-25f - 135f * Mathf.Clamp01(phase), 0, -12f);
+                    leftArm.localRotation = Quaternion.Euler(-35f, 0, 12f);
+                    visualRoot.localRotation = Quaternion.Euler(-12f * phase, -15f * phase, 0);
+                } else if (strike.motion == ShibuyaStrikeMotion.DownSlam) {
+                    float angle = Mathf.Lerp(-165f, -20f, Mathf.Clamp01(phase));
+                    rightArm.localRotation = Quaternion.Euler(angle, 0, -12f);
+                    leftArm.localRotation = Quaternion.Euler(angle, 0, 12f);
+                    visualRoot.localRotation = Quaternion.Euler(20f * Mathf.Clamp01(phase), 0, 0);
+                }
             }
             else if (state == ShibuyaFighterState.Dead)
             {
@@ -132,7 +142,15 @@ namespace JJKGame.Shibuya
                 visualRoot.localPosition = new Vector3(0, 0.28f, -0.4f);
             }
             if (state == ShibuyaFighterState.Dead || state == ShibuyaFighterState.Finished) ClearReaction();
-            else ApplyReactionPose();
+            else if (fighter.IsDowned) {
+                ClearReaction();
+                float weight = fighter.DownPoseWeight;
+                visualRoot.localRotation = Quaternion.Euler(fighter.DownPoseAngle * weight, 0, 0);
+                visualRoot.localPosition = new Vector3(0, .28f * weight, .25f * weight);
+            } else {
+                ApplyReactionPose();
+                if (fighter.IsAirborne) visualRoot.localRotation *= Quaternion.Euler(-fighter.AirReactionLean, 0, 0);
+            }
             bool flash = fighter.CombatTime < fighter.HitFlashUntil;
             foreach (Renderer renderer in renderers)
             {

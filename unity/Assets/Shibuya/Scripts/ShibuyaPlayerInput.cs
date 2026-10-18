@@ -6,6 +6,7 @@ namespace JJKGame.Shibuya
     {
         public Vector2 move, look;
         public bool run, jump, attack;
+        public bool forwardKey, backwardKey;
     }
 
     [DefaultExecutionOrder(-50), RequireComponent(typeof(ShibuyaFighter))]
@@ -49,7 +50,8 @@ namespace JJKGame.Shibuya
                     move = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")),
                     look = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")),
                     run = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift),
-                    jump = Input.GetKeyDown(KeyCode.Space), attack = Input.GetMouseButtonDown(0)
+                    jump = Input.GetKeyDown(KeyCode.Space), attack = Input.GetMouseButtonDown(0),
+                    forwardKey = Input.GetKey(KeyCode.W), backwardKey = Input.GetKey(KeyCode.S)
                 };
             }
             MoveAxes = frame.move; // Keep command intent separate from attack locomotion filtering.
@@ -58,7 +60,8 @@ namespace JJKGame.Shibuya
             Vector3 right = orbitCamera.transform.right; right.y = 0f; right.Normalize();
             fighter.SetIntent(forward * frame.move.y + right * frame.move.x, frame.run, frame.jump);
             // The input boundary consumes presses, never a held button as auto-combo.
-            if (frame.attack && !previousAttack) fighter.TryAttack();
+            if (frame.attack && !previousAttack) fighter.TryAttack(frame.forwardKey == frame.backwardKey
+                ? ShibuyaFinisher.Default : frame.forwardKey ? ShibuyaFinisher.Uppercut : ShibuyaFinisher.Down);
             previousAttack = frame.attack;
         }
         private void Capture(bool value)
