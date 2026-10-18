@@ -106,7 +106,7 @@ namespace JJKGame.Shibuya
             if (state == ShibuyaFighterState.Attacking)
             {
                 ShibuyaStrikeDefinition strike = fighter.CurrentStrike;
-                float elapsed = fighter.AttackElapsed;
+                float elapsed = fighter.PresentationElapsed;
                 // Wind up during startup, snap on active entry, recover only after active ends.
                 float phase = elapsed < strike.Startup ? -0.25f * Mathf.Sin(elapsed / strike.Startup * Mathf.PI * 0.5f)
                     : elapsed <= strike.ActiveEnd ? Mathf.Lerp(0.75f, 1f, Mathf.Clamp01((elapsed - strike.Startup) / 0.025f))

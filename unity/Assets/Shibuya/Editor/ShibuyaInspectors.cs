@@ -8,6 +8,19 @@ namespace JJKGame.Shibuya.EditorTools
     public abstract class ShibuyaInspector : UnityEditor.Editor
     {
         private static readonly Dictionary<string, string> Labels = new Dictionary<string, string> {
+            {"confirmedLinkEnabled", "유효 예약 입력의 확정 연계 사용"},
+            {"confirmedLinkInputWindow", "확정 연계 후속 입력 허용 시간"},
+            {"confirmedLinkMaxHold", "한 연결의 최대 추가 구속 시간"},
+            {"confirmedLinkMaxSequence", "한 콤보의 최대 연결 보장 시간"},
+            {"moveset", "캐릭터 무브셋 (비우면 기존 4타)"},
+            {"steps", "입력별 콤보 단계"}, {"hits", "시간순 타격 이벤트"}, {"movements", "실제 이동 클립"},
+            {"startTime", "단계 시작 후 발동 시간"}, {"strike", "타격 및 시각 모션 설정"},
+            {"requiredMovement", "도착 필수 이동 번호 (-1 없음, 0부터)"}, {"heavyReaction", "강타 피격 모션"},
+            {"knockbackKind", "넉백 이동 방식"}, {"knockbackDistance", "넉백 요청 거리 (충돌 시 감소)"},
+            {"knockbackDuration", "거리 넉백 시간"}, {"kind", "이동 방식"}, {"duration", "이동 제한 시간"},
+            {"maxDistance", "최대 이동 거리"}, {"speed", "이동 속도"}, {"targetRange", "대상 유지 최대 거리"},
+            {"arrivalDistance", "목표 도착 거리"}, {"maxTurnAngle", "최대 누적 회전각"},
+            {"predictionTime", "현재 속도 기반 예측 시간"},
             {"advanceDistance", "타격 전진 최대 거리"}, {"advanceSpeed", "타격 전진 속도"},
             {"advanceStartTime", "타격 전진 시작 시간"}, {"advanceDuration", "타격 전진 지속 시간"},
             {"powerWindupTime", "힘 모으기 시간 (준비 시간에 포함)"}, {"windupMoveMultiplier", "힘 모으기 중 이동 배율"},
@@ -98,8 +111,10 @@ namespace JJKGame.Shibuya.EditorTools
             "attackForwardOffset", "attackHeight", "hitStun", "knockbackSpeed", "knockbackDirection", "motion", "presentationIntensity",
             "advanceDistance", "advanceSpeed", "advanceStartTime", "advanceDuration", "powerWindupTime", "windupMoveMultiplier",
             "hitStopDuration", "soundPitch", "alignVictimOnHit" };
+        private static string[] VisibleFields(SerializedProperty property) => property.propertyPath.Contains(".hits.")
+            ? System.Array.FindAll(Fields, field => !field.StartsWith("advance")) : Fields;
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) =>
-            (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing) * (property.isExpanded ? Fields.Length + 1 : 1);
+            (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing) * (property.isExpanded ? VisibleFields(property).Length + 1 : 1);
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
@@ -108,7 +123,7 @@ namespace JJKGame.Shibuya.EditorTools
             if (property.isExpanded)
             {
                 using (new EditorGUI.IndentLevelScope())
-                    foreach (string field in Fields)
+                    foreach (string field in VisibleFields(property))
                     {
                         position.y += EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
                         EditorGUI.PropertyField(position, property.FindPropertyRelative(field), new GUIContent(ShibuyaInspector.KoreanLabel(field)));

@@ -71,6 +71,11 @@ namespace JJKGame.Shibuya
         };
         [Min(0.01f)] public float inputBufferTime = 0.16f;
         [Min(0.01f)] public float comboResetTime = 0.60f;
+        [Header("예약된 유효 연계만 확정")]
+        public bool confirmedLinkEnabled = true;
+        [Min(0.01f)] public float confirmedLinkInputWindow = 0.24f;
+        [Min(0.01f)] public float confirmedLinkMaxHold = 0.75f;
+        [Min(0.01f)] public float confirmedLinkMaxSequence = 3f;
         [Min(0.1f)] public float knockbackDamping = 22f;
         [Header("직전 적중 대상 준비 구간 보정")]
         public bool trackingEnabled = true;
