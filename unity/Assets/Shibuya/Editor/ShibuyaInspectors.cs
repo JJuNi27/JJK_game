@@ -8,6 +8,22 @@ namespace JJKGame.Shibuya.EditorTools
     public abstract class ShibuyaInspector : UnityEditor.Editor
     {
         private static readonly Dictionary<string, string> Labels = new Dictionary<string, string> {
+            {"aerialHoverEnabled", "공중 공격 중 완전 체공"}, {"aerialMaxHoverTime", "공중 연계 총 체공 상한 (실시간)"},
+            {"aerialLinkInputWindow", "공중 후속 클릭 허용 시간 (0이면 1회만)"}, {"holdVictimOnAirHit", "유효 공중 피격 경직 중 높이 유지"},
+            {"aerialCombat", "공중 추격·체술 설정"}, {"chaseEnabled", "공중 추격 사용"},
+            {"chaseInputWindow", "어퍼컷 적중 후 Space 허용 시간"}, {"chaseInputBuffer", "추격 입력 버퍼 시간"},
+            {"chaseMaxRange", "추격 대상 최대 거리"}, {"chaseMaxTravel", "추격 누적 이동 상한"},
+            {"chaseMaxDuration", "추격 최대 지속 시간"}, {"chaseSpeed", "추격 최고 속도"},
+            {"chaseDeceleration", "도착 접근 감속도"}, {"chaseArrivalDistance", "목표 도착 간격"},
+            {"chaseArrivalTolerance", "도착 간격 추가 허용 오차"},
+            {"chaseVerticalTolerance", "도착 높이 허용 오차"}, {"chasePredictionTime", "추격 위치 예측 시간"},
+            {"chaseMinimumRise", "공중 도착에 필요한 실제 상승 높이"},
+            {"chasePredictionLimit", "추격 예측 이동 상한"}, {"chaseMaxTurnAngle", "추격 누적 회전 상한"},
+            {"chaseTurnSpeed", "추격 회전 속도"}, {"chaseStallTimeout", "충돌 정체 종료 시간"},
+            {"chaseLandingSeparationSpeed", "추격 후 착지 캡슐 분리 속도"},
+            {"aerialInputWindow", "도착 후 공중 체술 입력 시간"}, {"aerialMaxHeightDifference", "공중 타격 허용 높이 차"},
+            {"aerialAirControl", "추격 후 낙하 중 이동 입력 배율"}, {"failureFallSpeedLimit", "추격 실패 직후 낙하 속도 상한"},
+            {"chaseLeanAngle", "추격 자세 기울기"}, {"aerialAttack", "LMB 1회 공중 체술 단계"},
             {"overrideTargeting", "이 타격의 추적 설정 개별 사용"}, {"targeting", "타격별 추적 보정"},
             {"acquisitionAngle", "첫 대상 선정 정면 각도"}, {"retentionAngle", "콤보 대상 유지 각도"},
             {"approachDistance", "추가 접근 최대 거리"}, {"approachSpeed", "추가 접근 속도"},

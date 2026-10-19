@@ -16,6 +16,7 @@ namespace JJKGame.Shibuya
         private ShibuyaFighter fighter;
         private bool captured;
         private bool previousAttack;
+        private bool previousJump;
         public Vector2 MoveAxes { get; private set; }
 #if UNITY_EDITOR
         public System.Func<ShibuyaInputFrame> TestInput;
@@ -58,7 +59,8 @@ namespace JJKGame.Shibuya
             orbitCamera.ApplyLook(frame.look);
             Vector3 forward = orbitCamera.transform.forward; forward.y = 0f; forward.Normalize();
             Vector3 right = orbitCamera.transform.right; right.y = 0f; right.Normalize();
-            fighter.SetIntent(forward * frame.move.y + right * frame.move.x, frame.run, frame.jump);
+            fighter.SetIntent(forward * frame.move.y + right * frame.move.x, frame.run, frame.jump && !previousJump);
+            previousJump=frame.jump;
             // The input boundary consumes presses, never a held button as auto-combo.
             if (frame.attack && !previousAttack) fighter.TryAttack(frame.forwardKey == frame.backwardKey
                 ? ShibuyaFinisher.Default : frame.forwardKey ? ShibuyaFinisher.Uppercut : ShibuyaFinisher.Down);
@@ -71,6 +73,6 @@ namespace JJKGame.Shibuya
             Cursor.visible = !value;
         }
         private void OnApplicationFocus(bool focus) { if (!focus) Capture(false); }
-        private void OnDisable() { MoveAxes = Vector2.zero; previousAttack = false; Capture(false); }
+        private void OnDisable() { MoveAxes = Vector2.zero; previousAttack = previousJump = false; Capture(false); }
     }
 }

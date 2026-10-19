@@ -75,6 +75,7 @@ namespace JJKGame.Shibuya
         [Min(0.01f)] public float inputBufferTime = 0.16f;
         [Min(0.01f)] public float comboResetTime = 0.60f;
         public ShibuyaFinisherSet finishers;
+        public ShibuyaAerialCombatDefinition aerialCombat;
         [Header("예약된 유효 연계만 확정")]
         public bool confirmedLinkEnabled = true;
         [Min(0.01f)] public float confirmedLinkInputWindow = 0.24f;

@@ -160,6 +160,7 @@ MonoBehaviour:
   inputBufferTime: 0.16
   comboResetTime: 0.6
   finishers: {fileID: 11400000, guid: 146cb4b7215ad0241b2c9d504b9a2f5e, type: 2}
+  aerialCombat: {fileID: 11400000, guid: da9964904f774b94c9660c776658a795, type: 2}
   confirmedLinkEnabled: 1
   confirmedLinkInputWindow: 0.24
   confirmedLinkMaxHold: 0.75

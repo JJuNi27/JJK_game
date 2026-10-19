@@ -96,7 +96,7 @@ namespace JJKGame.Shibuya
         {
             ShibuyaFighterState state = fighter.State;
             RestorePose();
-            float walk = state == ShibuyaFighterState.Airborne || fighter.IsDowned || state == ShibuyaFighterState.Hitstunned || state == ShibuyaFighterState.Dead
+            float walk = fighter.IsInAirSession || state == ShibuyaFighterState.Airborne || fighter.IsDowned || state == ShibuyaFighterState.Hitstunned || state == ShibuyaFighterState.Dead
                 || state == ShibuyaFighterState.Finished ? 0f
                 : Mathf.Sin(fighter.CombatTime * 12f) * Mathf.Clamp01(fighter.PlanarSpeed / 5f) * 30f;
             leftArm.localRotation = Quaternion.Euler(walk, 0, 0);
@@ -135,6 +135,10 @@ namespace JJKGame.Shibuya
                     leftArm.localRotation = Quaternion.Euler(angle, 0, 12f);
                     visualRoot.localRotation = Quaternion.Euler(20f * Mathf.Clamp01(phase), 0, 0);
                 }
+            }
+            else if(fighter.IsChasing) {
+                visualRoot.localRotation=Quaternion.Euler(fighter.ChaseLeanAngle,0,0);
+                leftArm.localRotation=rightArm.localRotation=Quaternion.Euler(25,0,0);
             }
             else if (state == ShibuyaFighterState.Dead)
             {

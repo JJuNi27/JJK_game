@@ -3,6 +3,15 @@ using UnityEngine;
 
 namespace JJKGame.Shibuya.EditorTools
 {
+    [CustomEditor(typeof(ShibuyaAerialCombatDefinition)), CanEditMultipleObjects]
+    public sealed class ShibuyaAerialCombatInspector : ShibuyaInspector
+    {
+        public override void OnInspectorGUI() {
+            base.OnInspectorGUI();
+            EditorGUILayout.HelpBox("일반 점프와 어퍼컷 추격 후 LMB는 같은 공중 체술을 사용합니다. 공격 중 체공하며, 새 클릭 연계는 입력 창과 실시간 총 체공 상한 안에서만 가능합니다. 도착만으로 공격하지 않습니다. 피격자 높이는 유효 적중·경직이 이어질 때만 유지합니다. 체공 종료 후 현재 위치에서 자연 낙하합니다.",MessageType.Info);
+            if(!((ShibuyaAerialCombatDefinition)target).IsValid) EditorGUILayout.HelpBox("추격 수치 또는 공중 체술 이벤트가 유효하지 않습니다. 공중 체술의 피격 결과는 일반 피격만 허용합니다.",MessageType.Error);
+        }
+    }
     [CustomEditor(typeof(ShibuyaMovesetDefinition)), CanEditMultipleObjects]
     public sealed class ShibuyaMovesetInspector : ShibuyaInspector
     {

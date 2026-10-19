@@ -29,6 +29,7 @@ namespace JJKGame.Shibuya
             if (Health.IsDead || stopped || hit.outcome == ShibuyaHitOutcome.Normal) return;
             CancelCombo(); ClearVictimAlignment(); ClearIncomingLink(); jumpIntent = false;
             if (hit.outcome == ShibuyaHitOutcome.Launch) {
+                launchVersion++;
                 downed = gettingUp = downLanded = false;
                 airSettings = hit.air;
                 airborne = true; apexVisited = false; apexUntil = 0;
@@ -66,8 +67,9 @@ namespace JJKGame.Shibuya
         // This is finite physical motion through the same controller, never a position assignment.
         private Vector3 SeparateLandingCapsules(Vector3 displacement, float delta)
         {
-            if ((!airborne && !downed) || verticalSpeed > 0) return displacement;
-            float speed = airSettings == null ? profile.walkSpeed : airSettings.landingSeparationSpeed;
+            if ((!airborne && !downed && !airSession) || verticalSpeed > 0 || chasing) return displacement;
+            float speed = airSession && aerialSettings!=null?aerialSettings.chaseLandingSeparationSpeed
+                :airSettings == null ? profile.walkSpeed : airSettings.landingSeparationSpeed;
             float budget = Mathf.Max(0,speed)*delta;
             Vector3 predicted = motor.bounds.center + displacement;
             foreach(var collider in Physics.OverlapSphere(predicted,motor.height+motor.radius,~0,QueryTriggerInteraction.Ignore)) {
@@ -105,6 +107,8 @@ namespace JJKGame.Shibuya
 
         private void UpdateVerticalMotion(float delta, bool actionLocked)
         {
+            if(chasing) {verticalSpeed=0;jumpIntent=false;return;}
+            if(IsAerialHovering || IsHeldByAerialHit) {verticalSpeed=0;jumpIntent=false;return;}
             if (motor.isGrounded && verticalSpeed < 0f && !airborne) verticalSpeed = -2f;
             if (!actionLocked && !attacking && jumpIntent && motor.isGrounded)
                 verticalSpeed = Mathf.Sqrt(2f * Mathf.Max(.1f, profile.gravity) * Mathf.Max(.1f, profile.jumpHeight));
@@ -154,6 +158,7 @@ namespace JJKGame.Shibuya
 
         private void ClearHitOutcome()
         {
+            ReleaseIncomingAirHover();
             airborne = downed = gettingUp = downLanded = apexVisited = false;
             apexUntil = downStartedAt = getUpStartedAt = 0;
             verticalSpeed = 0;

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace JJKGame.Shibuya
 {
-    public enum ShibuyaFighterState { Ready, Attacking, Hitstunned, Dead, Finished, Airborne, Downed, GettingUp }
+    public enum ShibuyaFighterState { Ready, Attacking, Hitstunned, Dead, Finished, Airborne, Downed, GettingUp, AirChasing, AirReady, AirFalling }
 
     // Presentation event: contact direction is independent of knockback and target alignment.
     public readonly struct ShibuyaHitReaction
@@ -71,7 +71,10 @@ namespace JJKGame.Shibuya
             : downed ? (gettingUp ? ShibuyaFighterState.GettingUp : ShibuyaFighterState.Downed)
             : airborne ? ShibuyaFighterState.Airborne
             : IsStunned ? ShibuyaFighterState.Hitstunned
-            : attacking ? ShibuyaFighterState.Attacking : ShibuyaFighterState.Ready;
+            : attacking ? ShibuyaFighterState.Attacking
+            : chasing ? ShibuyaFighterState.AirChasing
+            : airSession ? (CanAirAttack?ShibuyaFighterState.AirReady:ShibuyaFighterState.AirFalling)
+            : ShibuyaFighterState.Ready;
         public bool IsGrounded => motor != null && motor.isGrounded;
         public float PlanarSpeed => motor == null ? 0f : new Vector2(motor.velocity.x, motor.velocity.z).magnitude;
         public ShibuyaStrikeDefinition CurrentStrike => attacking && activeStep != null ? activeStep.hits[presentationEvent].strike : null;
@@ -106,7 +109,8 @@ namespace JJKGame.Shibuya
             motor = GetComponent<CharacterController>();
             health = GetComponent<Health>();
             if (profile == null || stats == null || !profile.HasValidCombo || (moveset != null && !moveset.IsValid)
-                || (profile.finishers != null && !profile.finishers.IsValid))
+                || (profile.finishers != null && !profile.finishers.IsValid)
+                || (AerialDefinition != null && !AerialDefinition.IsValid))
             {
                 Debug.LogError("시부야 전투 설정 / 체력 프로필 연결이 필요합니다.", this);
                 enabled = false;
@@ -123,12 +127,13 @@ namespace JJKGame.Shibuya
             direction.y = 0f;
             moveIntent = Vector3.ClampMagnitude(direction, 1f);
             runIntent = run;
-            jumpIntent |= jump;
+            if(jump && !QueueAirChase()) jumpIntent=true;
         }
 
         public bool TryAttack(ShibuyaFinisher requestedFinisher = ShibuyaFinisher.Default)
         {
             if (!enabled || profile == null || Health.IsDead || stopped || IsActionLocked) return false;
+            if(airSession || !motor.isGrounded) return TryAirAttack();
             if (!motor.isGrounded) requestedFinisher = ShibuyaFinisher.Default;
             if (attacking)
             {
@@ -148,7 +153,7 @@ namespace JJKGame.Shibuya
 
         private void BeginAttack(int index, ShibuyaFinisher selection = ShibuyaFinisher.Default)
         {
-            if (index == 0) { ReleaseOutgoingLink(); ResetComboTarget(); lastHitTarget = null; sequenceStartedAt = combatTime; sequenceToken++; }
+            if (index == 0) { ClearAerialState(); ReleaseOutgoingLink(); ResetComboTarget(); lastHitTarget = null; sequenceStartedAt = combatTime; sequenceToken++; }
             correctionTarget = lastHitTarget;
             initialAttackForward = transform.forward;
             advanceConsumed = correctionConsumed = turnConsumed = 0f;
@@ -175,6 +180,7 @@ namespace JJKGame.Shibuya
                 jumpIntent = false;
                 return;
             }
+            RefreshAerialState();
             // Only this fighter's clock/motor pauses. Other actors and Time.timeScale are untouched.
             double now = Time.unscaledTimeAsDouble;
             double frameStart = now - Time.unscaledDeltaTime;
@@ -183,22 +189,25 @@ namespace JJKGame.Shibuya
             float delta = Time.deltaTime * fraction;
             if (IsInHitStop) { jumpIntent = false; return; }
             combatTime += delta;
+            StartQueuedChase();
             UpdateRecoveryState();
             bool stunned = IsActionLocked;
             if (stunned) CancelCombo();
             Vector3 targetAdvance = !stunned ? AdvanceTargeting(delta) : Vector3.zero;
+            if(!stunned) AimAirAttack(delta);
             if (!stunned) UpdateAttack();
             if (stopped || Health.IsDead) return;
             if (IsInHitStop) return; // The active phase may have started a pause in ResolveHits.
 
             Vector3 advance = Vector3.zero;
             if (!stunned && attacking) {
-                advance = moveset == null && CurrentFinisher == ShibuyaFinisher.Default ? AdvanceAttack(delta) : AdvanceMoveset(delta);
+                advance = !executingAirAttack && moveset == null && CurrentFinisher == ShibuyaFinisher.Default ? AdvanceAttack(delta) : AdvanceMoveset(delta);
 
             }
 
             Vector3 voluntary = stunned ? Vector3.zero : AttackMoveIntent();
-            if (!stunned && !attacking && voluntary.sqrMagnitude > 0.001f)
+            if(airSession) voluntary*=chasing?0:aerialSettings.aerialAirControl;
+            if (!stunned && !attacking && !airSession && voluntary.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation,
                     Quaternion.LookRotation(voluntary), Mathf.Max(0.1f, profile.turnSpeed) * delta);
             float speed = Mathf.Max(0.1f, runIntent ? profile.runSpeed : profile.walkSpeed);
@@ -208,13 +217,17 @@ namespace JJKGame.Shibuya
             Vector3 displacement = (voluntary * speed + knockback + Vector3.up * verticalSpeed) * delta
                 + advance + targetAdvance + AdvanceVictimAlignment(delta) + AdvanceDistanceKnockback(delta)
                 + AdvanceAirHorizontal(delta);
+            Vector3 chaseMove=!stunned?AdvanceAirChase(delta):Vector3.zero;
+            if(chasing) displacement=chaseMove;
             displacement = SeparateLandingCapsules(displacement, delta);
             displacement = ConstrainFighterMovement(displacement);
             // Consume blocked displacement immediately; it must never accumulate behind walls.
             int steps = Mathf.Max(1, Mathf.CeilToInt(displacement.magnitude / Mathf.Max(0.05f, motor.radius * 0.5f)));
             CollisionFlags collisions = CollisionFlags.None;
+            Vector3 beforeMotor=transform.position;
             for (int i = 0; i < steps; i++) collisions |= motor.Move(displacement / steps);
             FinishVerticalMotion(collisions);
+            AfterAerialMotor(beforeMotor,collisions,delta);
             knockback = Vector3.MoveTowards(knockback, Vector3.zero,
                 Mathf.Max(0.1f, profile.knockbackDamping) * delta);
         }
@@ -281,9 +294,13 @@ namespace JJKGame.Shibuya
                     ResolveHits(evt.strike);
                     if (!attacking || token != AcceptedAttackCount || IsInHitStop) return;
                 }
+                if(executingAirAttack && elapsed>evt.ActiveEnd && eventTargets[i].Count==0) {
+                    ReleaseAerialVictimHover(); ReleaseOutgoingLink();
+                }
             }
             if (!attacking) return;
             if (elapsed >= AttackDuration) {
+                if(executingAirAttack) {FinishAirAttack();return;}
                 bool chain = HasBufferedAttack && strikeIndex < StepCount - 1;
                 ShibuyaFinisher nextFinisher = bufferedFinisher;
                 if (!hitThisAttack) { lastHitTarget = null; ReleaseOutgoingLink(); }
@@ -323,6 +340,7 @@ namespace JJKGame.Shibuya
                 if (!attacking || stopped || Health.IsDead) break;
                 ShibuyaFighter other = collider.GetComponentInParent<ShibuyaFighter>();
                 if (other == null || other == this || other.Health.IsDead || other.stopped || hitTargets.Contains(other.Health)) continue;
+                if(executingAirAttack && Mathf.Abs(other.transform.position.y-transform.position.y)>aerialSettings.aerialMaxHeightDifference) continue;
                 Vector3 targetPoint = other.transform.position + Vector3.up * strike.attackHeight;
                 Vector3 flat = other.transform.position - transform.position;
                 flat.y = 0f;
@@ -341,7 +359,7 @@ namespace JJKGame.Shibuya
                 Vector3 direction = strike.knockbackDirection == ShibuyaKnockbackDirection.AttackerForward
                     || flat.sqrMagnitude <= 0.001f ? transform.forward : flat.normalized;
                 other.ApplyHitReaction(direction * Mathf.Max(0f, strike.knockbackSpeed), Mathf.Max(0f, strike.hitStun),
-                    transform.position, transform.forward, moveset == null ? strikeIndex == 3 : activeStep.hits[resolvingEvent].heavyReaction, strike.hitStopDuration > 0f);
+                    transform.position, transform.forward, moveset == null && !executingAirAttack ? strikeIndex == 3 : activeStep.hits[resolvingEvent].heavyReaction, strike.hitStopDuration > 0f);
                 if (conflictingAlignment)
                     other.alignmentConflictUntil = other.combatTime + Mathf.Max(0f, profile.victimAlignmentDuration);
                 else other.BeginVictimAlignment(this, strike);
@@ -426,8 +444,10 @@ namespace JJKGame.Shibuya
         private void ApplyHitReaction(Vector3 impulse, float stunDuration, Vector3 sourcePosition,
             Vector3 strikeDirection, bool isHeavy, bool hasHitStop)
         {
+            ReleaseIncomingAirHover();
             ClearVictimAlignment();
             if (Health.IsDead || stopped) return;
+            InterruptAerial();
             impulse.y = 0f;
             knockback = impulse;
             distanceKnockbackRemaining = 0f;
@@ -445,6 +465,7 @@ namespace JJKGame.Shibuya
         public void StopCombat()
         {
             stopped = true;
+            ClearAerialState();
             ClearHitOutcome();
             ClearIncomingLink(); distanceKnockbackRemaining = 0f;
             CancelCombo();
@@ -456,6 +477,8 @@ namespace JJKGame.Shibuya
 
         private void CancelCombo()
         {
+            CancelAerialHover();
+            executingAirAttack=false;
             ReleaseOutgoingLink();
             CurrentFinisher = bufferedFinisher = ShibuyaFinisher.Default;
             attacking = buffered = false;
@@ -469,15 +492,15 @@ namespace JJKGame.Shibuya
 
         private void OnDamageResolved(Health target, DamageContext context, DamageResolution result)
         {
-            if (result == DamageResolution.Applied) { ClearVictimAlignment(); CancelCombo(); }
+            if (result == DamageResolution.Applied) { ReleaseIncomingAirHover(); damageVersion++; InterruptAerial(); ClearVictimAlignment(); CancelCombo(); }
         }
-        private void OnDied(Health target) { ClearHitOutcome(); ClearIncomingLink(); ClearVictimAlignment(); CancelCombo(); }
+        private void OnDied(Health target) { ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); ClearVictimAlignment(); CancelCombo(); }
         private void OnDestroy()
         {
             if (health == null) return;
             health.DamageResolved -= OnDamageResolved;
             health.Died -= OnDied;
         }
-        private void OnDisable() { ClearHitOutcome(); ClearIncomingLink(); distanceKnockbackRemaining = 0f; ClearVictimAlignment(); moveIntent = knockback = Vector3.zero; jumpIntent = false; hitStopUntil = 0; CancelCombo(); }
+        private void OnDisable() { ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); distanceKnockbackRemaining = 0f; ClearVictimAlignment(); moveIntent = knockback = Vector3.zero; jumpIntent = false; hitStopUntil = 0; CancelCombo(); }
     }
 }

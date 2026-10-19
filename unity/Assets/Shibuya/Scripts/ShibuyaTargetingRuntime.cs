@@ -100,7 +100,7 @@ namespace JJKGame.Shibuya
         }
         private Vector3 AdvanceTargeting(float delta)
         {
-            if(!attacking || !profile.trackingEnabled) return Vector3.zero;
+            if(!attacking || airSession || !profile.trackingEnabled) return Vector3.zero;
             Vector3 result=Vector3.zero;
             for(int i=0;i<activeStep.hits.Length;i++) {
                 var evt=activeStep.hits[i]; var strike=evt.strike; var settings=Targeting(strike);

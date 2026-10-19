@@ -62,11 +62,13 @@ namespace JJKGame.Shibuya
     {
         public ShibuyaMovesetStep[] steps = { new ShibuyaMovesetStep() };
         public ShibuyaFinisherSet finishers;
+        public ShibuyaAerialCombatDefinition aerialCombat;
         [Min(0)] public int finisherStepIndex = 3;
         public bool IsValid {
             get {
                 if (steps == null || steps.Length == 0) return false;
                 if (finishers != null && !finishers.IsValid) return false;
+                if (aerialCombat != null && !aerialCombat.IsValid) return false;
                 foreach (var step in steps) if (!ValidStep(step)) return false;
                 return true;
             }

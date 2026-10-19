@@ -41,7 +41,7 @@ namespace JJKGame.Shibuya
         public bool SetMoveset(ShibuyaMovesetDefinition value)
         {
             if (value != null && !value.IsValid) return false;
-            CancelCombo(); moveset = value; return true;
+            InterruptAerial(); CancelCombo(); moveset = value; return true;
         }
 
         private ShibuyaMovesetStep ResolveStep(int index, ShibuyaFinisher selection, out ShibuyaFinisher resolved)
@@ -62,6 +62,11 @@ namespace JJKGame.Shibuya
         {
             activeStep = ResolveStep(index, selection, out var resolved);
             CurrentFinisher = resolved;
+            PrepareActiveStep();
+        }
+
+        private void PrepareActiveStep()
+        {
             presentationEvent = 0;
             eventVisited = new bool[activeStep.hits.Length];
             eventTargets = new HashSet<JJKGame.Core.Health>[activeStep.hits.Length];
@@ -81,7 +86,8 @@ namespace JJKGame.Shibuya
         private void ReserveLink(ShibuyaFighter victim, float duration)
         {
             if (!profile.confirmedLinkEnabled || victim == null || victim.Health.IsDead || victim.Health.IsInvulnerable
-                || victim.stopped || victim.State != ShibuyaFighterState.Hitstunned
+                || victim.stopped || (victim.State != ShibuyaFighterState.Hitstunned
+                    && !(executingAirAttack && victim.airborne && victim.IsStunned))
                 || (victim.HasConfirmedLink && victim.linkSource != this)) return;
             if (linkVictim != null && linkVictim != victim) ReleaseOutgoingLink();
             linkVictim = victim; victim.linkSource = this; victim.linkToken = sequenceToken;
@@ -110,6 +116,10 @@ namespace JJKGame.Shibuya
                 victim.distanceKnockbackDirection = direction.normalized;
             }
             victim.ApplyHitOutcome(evt, direction);
+            if(executingAirAttack) {
+                if(victim==aerialTarget) offeredDamage=victim.damageVersion;
+                RecordAerialContact(victim);
+            } else OfferAirChase(victim,evt);
             if (resolvingEvent + 1 < activeStep.hits.Length)
                 ReserveLink(victim, activeStep.hits[resolvingEvent + 1].ActiveStart - AttackElapsed + .05f);
             else if (HasBufferedAttack) ReserveNextInput();
