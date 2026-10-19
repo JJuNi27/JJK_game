@@ -1,188 +1,77 @@
-# 현재 작업 — Purple Tempest polish 시각 refinement
+# CURRENT TASK — 시부야 PASS 3D 검증 마무리
 
-작성 기준: **2026-10-02**
+작성 기준: **2026-10-20**  
+브랜치: `feat/shibuya-combat-mvp`  
+마지막 USER VERIFIED 원격 HEAD: `6655f19e7ef64f7a6e6a5c36876057a9d881c3f0` (PASS 3C)
 
-Branch: `feat/gojo-blue-screen-distortion`
+**현재:** PASS 3D LOCAL UNCOMMITTED / 신규 시네마틱 **18 PASS** / 기존 회귀 최신 케이스별 **134 PASS · 1 FAIL** / 전체 CODEX VALIDATED 미완료 / USER VERIFIED 미승인.
 
-Purple code checkpoint: `22cea8ed60ecafdf83ccc76860cd6bd87f7c4df4`
+이 상태는 사용자가 전달한 Codex 로컬 조사 결과다. GitHub 문서 갱신은 PASS 3D 소스나 실제 로컬 상태의 변경·검증을 뜻하지 않는다.
 
-Checkpoint message: `chore(vfx): checkpoint Purple tempest candidates pending visual review`
+## 1. 이번 작업의 범위
 
-상태: **CODEX VALIDATED / PENDING USER VISUAL REVIEW / NOT USER VERIFIED**
+유효한 비치명적 마무리 타격에만 발동하는 **참가자 2인 시네마틱**을 보존하며, 남은 PASS 3C 공중 공격 회귀 실패의 직접 원인과 PASS 3D 신규 회귀 여부를 확인한다. 필요한 최소 수정·검증 후 사용자 Play Mode 검수 준비.
 
-## 현재 핵심
+**금지:** PASS 4 선행 구현, 시각/술식/모델의 범위 외 변경, 기존 공중 타격 값이나 테스트 기대치 임의 완화.
 
-현재 최신 후보는 **`PurpleTempestPolish`**다.
+## 2. 자동검증 현황
 
-- saved default OFF
-- Production/기존 후보/구체 본체 보존
-- historical full-image equality는 **INCONCLUSIVE**
-- targeted validation은 checked scope에서 **7 PASS / 0 FAIL**
-- C#/shader/final console error 0
-- cleanup material/mesh 0/0
-- A/B의 위치·크기·활성 상태 385 sample 동일
-- terminal pixel diff 0
-- full regression / real gameplay damage test는 이 pass에서 재실행하지 않음
+- PASS 3D 신규 시네마틱 18개 고유 PASS; Codex가 원본 XML을 재검토했다고 보고.
+- 기존 회귀 135개: **최신 케이스별 집계 134 PASS / 1 FAIL / 미실행 0**.
+- 첫 135개 실행은 **122 PASS / 13 FAIL**. 이후 실패 중심 재검증을 통해 최신 집계 변경; **단일 135 PASS 실행은 없음**.
+- QA 원본 XML/실행 로그/초기 실패 이력 보존. 현재 PASS 3D 전체 CODEX VALIDATED 불가.
 
-자세한 기술 보고서:
-- `docs/PURPLE_TEMPEST_POLISH_REVIEW.md`
+실패 테스트:  
+`JJKGame.Shibuya.EditorTools.ShibuyaPass3CAirCountTests.ThreeClicksOnHitRequireThreeAcceptedSteps`
 
-## 현재 visual 판단 — 사용자 피드백
+| 항목 | 기대 | 실제 |
+|---|---:|---:|
+| 유효한 공중 LMB 입력 | 3 | 3 |
+| 수락된 단계 | 3 | 3 |
+| 타격 이벤트 | 5 | 5 |
+| 실제 피해 적중 | 5 | **4** |
+| 피해 | 62 | **50** |
 
-이 평가는 USER VERIFIED 승격이 아니다.
+대표 실패의 타격 이벤트별 Z 간격: **1.720 / 2.019 / 2.055 / 2.089 / 2.125m**. 마지막 타격 시 높이 차 약 0.671m, 체공 상한까지 추정 58ms. 별도 계측에서는 Z 약 2.136m/높이 약 0.714m에서 `OverlapSphere` 범위 이탈 (두 기록은 **서로 다른 실행**).
 
-### 전체
+코드 조사 결과: `AdvanceTargeting`은 공중 세션에 지상 자동 추적을 적용하지 않으며, `AimAirAttack`은 회전 보정만 수행한다. 현 공중 기본 공격 이동 시퀀스는 비어 있고 전진거리 0. 피격자의 수평 넉백·어퍼컷 수평 이동은 공격자와의 간격을 늘릴 수 있다.
 
-**CLOSER. 방향은 맞지만 아직 부족.**
+**확인:** 수평 거리 증가로 인한 물리 적중 범위 이탈.  
+**미확정:** PASS 3D 신규 회귀인지, 기존 PASS 3C 잠재 문제인지 (**INCONCLUSIVE**). 관련 11개 파일은 PASS 3C 승인본과 같다고 보고되지만 `ShibuyaFighter`에는 PASS 3D 연결 변경 존재. 동등 조건 A/B 비교 없음. 별도 60FPS 시도는 준비 단계 시간 초과였으므로 마지막 타격 실패 재현 근거 아님.
 
-### Sphere / body
+## 3. 권장 조사·검증 순서
 
-**KEEP.**
+1. 실제 로컬 브랜치/dirty tree와 Unity Editor 상태부터 확인. PASS 3D 미커밋 파일·QA 로그 보호.
+2. 기존 QA XML/물리 계측/프레임 지연 기록을 재활용한다. 증거를 덮어쓰거나 대량 정리하지 않는다.
+3. PASS 3C 승인 기준과 PASS 3D 현재 소스의 실행 차이를 **비파괴적**으로 확인할 A/B 검사 방법을 먼저 검토한다. 새 worktree/강제 checkout/reset/clean은 별도 허락 없이 금지.
+4. 공통 `ShibuyaFighter` 연결·공중 이동·체공/히트 판정 순서를 비교해, 로직·테스트 조건·프레임 지연의 영향을 구분한다.
+5. 원인을 증거로 확인한 뒤 최소 범위만 수정하고 관련 targeted·회귀 검사를 수행한다. 테스트 판정 및 승인값을 완화하지 않는다.
+6. 실제 사용자 확인 사항과 미완료·불확실성을 보고한다.
 
-Purple body는 안정적인 보라 구체가 맞다. 구체 자체를 irregular/jelly 형태로 다시 찢는 방향으로 돌아가지 않는다.
+## 4. PASS 3D 사용자 직접 검수
 
-목표는:
+씬: `unity/Assets/Shibuya/Scenes/ShibuyaCombatMVP.unity`
 
-> Stable Purple sphere + surrounding space unable to withstand it.
+Play Mode ON 메뉴:  
+`JJK Game → 시부야 PASS3D → 시네마틱 예제 ON (Play Mode 전용)`
 
-### Dark cursed energy / 검보라 주력
+테스트:
+1. Play Mode 진입 후 예제 ON.
+2. W/S 없이 일반 LMB 4타를 더미에 실제 적중시킨다.
+3. 약 0.5초의 짧은 **3샷** 시네마틱과 정상 카메라 복귀 확인.
+4. 마지막 타격 미적중·취소·전투 종료에서 잘못된 시네마틱/보호 상태가 유지되지 않는지 확인.
 
-이번 polish에서 이전의 `보라 굵은 띠 + 일정한 검은 stroke` 인상은 줄었다.
+OFF 메뉴:  
+`JJK Game → 시부야 PASS3D → 시네마틱 예제 OFF (Play Mode 전용)`
 
-하지만 trade-off로:
-- 검보라의 무게감이 너무 약해짐
-- 작은 검보라 조각/연기 조각처럼 흩어지는 순간이 있음
-- 먼 시점에서 lethal mass가 약해질 수 있음
+예제 기본 저장 OFF. 사용자 직접 플레이 전까지 USER VERIFIED 미승인. 지금 환경의 1인 플레이+더미 검증이 네트워크 다인전 검증을 뜻하지 않는다.
 
-다음 방향:
-- 검정 외곽선을 다시 두르지 않는다.
-- dark layer의 공간 점유/두께/무게감은 다시 키운다.
-- 검정은 stroke가 아니라 내부 암부, 먹힌 영역, 찢어진 면, 깊이로 존재한다.
-- 선/국수로 돌아가지 않으면서 굵은 cursed-energy mass가 되도록 한다.
+## 5. 안전·완료 보고
 
-### Wind / pressure
+- Unity Game View를 `Play Unfocused`로 바꾼 로컬 설정과 원본 백업은 확인됐으나, 실제 Windows 포커스 문제 해결 여부는 미확정.
+- 마지막 Codex 읽기 전용 보고 당시 staged 0, unstaged 8, untracked 15. `docs/SHIBUYA_PASS3D_REVIEW.md`는 로컬 untracked. 새 세션에서 재확인.
+- 기존 Gojo/VFX 및 PASS 3C USER VERIFIED 기능·데이터·Scene/Prefab/가이드 보존.
+- 무단 staging/commit/push/reset/clean/checkout/worktree 생성, Unity 강제 포커스 전환, 기존 QA 증거 삭제 금지.
+- 종료 보고: 확인된 원인/미확정 사항, 변경 파일, 테스트별 PASS/FAIL/SKIP·근거 위치, 최종 Git 상태, 사용자 Play Mode 확인 사항.
 
-이번 pass의 중요한 성과:
-- Charge 회오리가 projectile에 그대로 붙어서 Travel하는 문제를 줄임
-- Charge와 Travel의 역할을 분리함
-
-아직 남은 문제:
-- 흰/회백 풍압이 깨끗한 원호/리본처럼 보임
-- 공간 자체가 압력으로 밀려나는 질량감이 부족함
-- Charge → Release → Travel 전환이 하나의 흐름이 변형되는 것보다 효과 교체처럼 보일 수 있음
-
-다음 방향:
-
-```text
-Charge/Fusion
-- 캐릭터/구체 하단/주변 공간을 크게 휘감는 white/gray hurricane pressure
-
-Release
-- 회전 흐름이 압축/파열되며 진행 방향으로 전환
-
-Travel
-- 동일 cyclone 유지 금지
-- directional pressure / lateral shear / wake 언어
-```
-
-새로운 travel effect 종류를 무조건 추가하라는 뜻은 아니다. 기존 요소를 먼저 재구성한다.
-
-### Neon discharge
-
-현재 세 outer layer 중 가장 가능성이 높다.
-
-**KEEP + POLISH.**
-
-다음 방향:
-- 기존 white + neon purple/pink 정체성 유지
-- 모든 arc가 같은 길이/굵기/방사형이 되지 않게 함
-- 일부가 body bloom/dark current/wind에 묻혔다 다시 드러나게 함
-- front/back depth와 spatial overlap 강화
-- 너무 긴 clean cable처럼 보이는 arc는 줄임
-
-## 현재 가장 중요한 문제
-
-세 layer의 존재 여부가 아니라 **관계**다.
-
-이미 발생 주기와 움직임 속도 차이는 어느 정도 구현돼 있다.
-
-다음에는:
-- 같은 공간에서 서로 가림
-- 다른 layer를 침범
-- 밝기/암부가 서로 연결
-- 일부가 묻혔다 나타남
-- Charge/Release/Travel에서 역할이 바뀜
-
-이 필요하다.
-
-`풍압 ON + 검보라 ON + 네온 ON`처럼 세 시스템이 분리되어 읽히지 않고 하나의 Purple storm으로 보여야 한다.
-
-## 다음 구현 우선순위
-
-1. **Dark cursed energy 무게감 복구**
-   - stroke/closed noodle 없이 더 크고 무거운 mass
-2. **Wind visual quality + Release transition**
-   - 깨끗한 리본 감소
-   - Charge 흐름이 발사 순간 방향을 바꾸는 연결감
-3. **Neon과 두 layer의 중첩/가림/연결 polish**
-4. Bright Side/Caster + 필요 시 distant Observer에서 재검토
-
-새 시스템을 무작정 추가하기 전에 현재 `PurpleTempestPolish`의 세 layer를 polish한다.
-
-## QA 환경
-
-Purple 시각 QA 기본:
-- 밝은 neutral 환경
-- pure white 배경 금지
-- daylight-like lighting
-- QA 환경 때문에 Purple emission/bloom/color를 별도로 보정하지 않음
-- Side/Caster를 기본 비교
-- 큰 맵에서의 위협감을 보기 위한 distant/Observer를 보조 사용
-
-목표 원거리 인상:
-
-> "와 맞으면 뒤질뻔 했겠네;; 저게 뭐냐.."
-
-안전성과 가독성이 유지된다면 지나치게 소심하게 시작하지 않는다. 큰 wrapper/space occupation을 허용하고 사용자 review에서 줄이는 쪽을 선호한다.
-
-## Reference 해석 잠금
-
-- Purple **body는 sphere가 맞다**.
-- 레퍼런스에서 edge가 불규칙해 보이는 주된 이유는 외부 storm/energy가 겹치고 가리기 때문이다.
-- sphere를 jelly/deformed body로 만드는 방식으로 해결하지 않는다.
-- bright discharge와 dark cursed-energy shape는 역할이 다르지만 spatially overlap한다.
-- dark shape를 전부 lightning으로 해석하지 않는다.
-- white/gray lower wind는 purple ribbon이 아니다.
-- 모든 layer를 같은 방향으로 계속 orbit시키지 않는다.
-
-최종 움직임/presentation authority는 현재 프로젝트의 Gojo Hollow Purple 발사 영상 reference를 따른다. repository의 reference media가 local-only일 수 있으므로 작업 전에 실제 로컬 reference를 확인한다.
-
-## 보호 범위
-
-- 기존 USER VERIFIED 값: `docs/locked/USER_VERIFIED_SETTINGS.md`
-- Production Purple / 이전 후보
-- sphere/body identity 및 크기/궤적
-- fusion/contact/release timing
-- gameplay semantics
-- camera architecture
-- terminal explosion
-- 사용자 Scene / Animator / FBX / LocalModels / LocalAudio
-- unrelated dirty working tree
-
-후보의 technical validation을 USER VERIFIED로 표현하지 않는다.
-
-## Git 상태 주의
-
-2026-10-02 checkpoint에서 Purple 관련 파일만 selective commit/push했다.
-
-원래 로컬에는 checkpoint에서 제외한 tracked/untracked 작업이 남아 있었다. 이후 작업자는 실제 working tree를 먼저 확인하며 이 파일들을 reset/clean/restore하지 않는다. `git add .` 금지.
-
-## Future queue — 현재 작업과 섞지 않음
-
-Gojo 장기 완성 계획:
-- `docs/GOJO_FINALIZATION_PLAN.md`
-
-캐릭터 모델/리깅/평타/양산 문제를 해결하기 위한 zero-budget 3D pipeline:
-- `docs/architecture/CHARACTER_PRODUCTION_PIPELINE.md`
-
-각성/blindfold/model pipeline 구현은 현재 Purple 작업과 동시에 시작하지 않는다.
+관련: `docs/CURRENT_HANDOFF.md`, `docs/SHIBUYA_PASS3C_REVIEW.md`, `docs/locked/USER_VERIFIED_SETTINGS.md`.

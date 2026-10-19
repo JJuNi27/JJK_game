@@ -25,17 +25,17 @@
 5. 오래된 Gate / roadmap 문서
 
 오래된 문서와 최신 handoff가 충돌하면 최신 handoff / current task / locked settings가 우선한다.
+단, GitHub 기록은 로컬 미커밋 작업을 포함하지 않는다. 작업 시작 시 현재 브랜치와 실제 로컬 상태를 확인하고, 서로 다른 시점의 문서를 혼동하지 않는다.
 
 ## 게임 방향
-읽기: `docs/design/GAME_VISION.md`
+읽기: `docs/design/GAME_VISION.md`, `docs/design/SHIBUYA_COMBAT_REBOOT.md`
 
 핵심:
-- 1:1 중심 3D 액션 격투
-- 넓은 JJK 도시형 전투 맵
-- Gojo는 첫 캐릭터일 뿐 주인공 고정이 아님
-- 팬텀 퍼레이드/애니/만화 고증을 최대한 살린 기술
-- 원작 규칙을 Trait / Passive / Domain rule로 시스템화
-- Data-driven / Inspector 튜닝 우선
+- 현재 MVP는 시부야 교차로에서 1:1 공통 전투 엔진을 검증한다. 장기 목표는 캐릭터 선택, 자유 이동·난전, 다인전·멀티플레이로의 확장이다.
+- Gojo는 첫 캐릭터일 뿐 주인공 고정이 아니다. 기존 Gojo/VFX 자산과 승인값을 보존한 뒤 공통 전투 시스템에 통합한다.
+- 넓은 JJK 도시형 전투 맵, 캐릭터별 원작 정체성, 독립적인 무브셋·술식·영역전개를 지향한다.
+- 원작 규칙을 Trait / Passive / Domain rule로 시스템화하되 아직 미구현한 목표를 완료된 기능으로 취급하지 않는다.
+- Data-driven / 한국어 Inspector 튜닝 우선
 
 ## VFX 품질 방향
 읽기: `docs/design/VFX_DIRECTION.md`
@@ -53,12 +53,9 @@
 안전성과 가독성이 유지된다면, 두 선택지 중에서는 더 강한 임팩트 / 아우라 / 타격감 / 깊이 / 움직임이 느껴지는 쪽을 우선한다.
 
 ## 프로젝트 우선순위
-1. 시각적 임팩트 / 아우라
-2. 타격감
-3. 사운드
-4. 프리미엄 VFX
-5. 캐릭터별 원작 정체성
-6. 유지보수성 및 Inspector/Data-driven 튜닝
+현재 시부야 공통 전투 MVP에서는 **조작감·공격/피격/방어 규칙·충돌 안정성·데이터 확장성**을 먼저 검증한다. 고죠 VFX의 품질 기준을 낮추거나 기존 작업을 폐기한다는 뜻은 아니다.
+
+추후 캐릭터별 기술/VFX 제작에는 기존 시각 목표인 강한 임팩트·아우라·타격감·사운드·환경 반응과 가독성 원칙을 적용한다.
 
 ## Combat Data / Inspector 튜닝
 읽기: `docs/architecture/COMBAT_DATA_DRIVEN.md`
@@ -122,7 +119,8 @@ Gameplay Capture Radius / Visual Barrier Radius(or Diameter) / Domain Interior S
 자동 테스트 / static validation은 사용자 Play Mode 시각 검증을 대체하지 않는다.
 
 ## 현재 작업
-읽기: `docs/active/CURRENT_TASK.md`
+읽기: `docs/CURRENT_HANDOFF.md`, `docs/active/CURRENT_TASK.md`.
+현재 작업 여부는 문서 기준일과 실제 브랜치·로컬 변경 상태로 재확인한다. 과거 Gojo Purple 시점의 기록을 현 시부야 작업으로 해석하지 않는다.
 
 ## 비주얼 레퍼런스
 텍스트만으로 설명하기 어려운 시각 방향을 전달하기 위한 이미지/영상은:

@@ -1,273 +1,80 @@
-# Current Project Handoff
+# JJK_game — Current Project Handoff
 
-작성 기준: **2026-10-02**
+작성 기준: **2026-10-20**  
+저장소: `JJuNi27/JJK_game` · 브랜치: `feat/shibuya-combat-mvp`  
+마지막 GitHub 승인 HEAD: `6655f19e7ef64f7a6e6a5c36876057a9d881c3f0` (PASS 3C USER VERIFIED)
 
-Branch: `feat/gojo-blue-screen-distortion`
-
-Purple implementation checkpoint: `22cea8ed60ecafdf83ccc76860cd6bd87f7c4df4`
-
-Commit message: `chore(vfx): checkpoint Purple tempest candidates pending visual review`
-
-현재 상태: **CODEX VALIDATED / PENDING USER VISUAL REVIEW / NOT USER VERIFIED**
-
-> 이 파일은 최신 상태 복구용 요약이다. 9월의 긴 후보 이력은 Git history와 각 `*_REVIEW.md`에 남아 있으므로 여기서는 현재 판단과 다음 행동을 우선한다.
+> **원격/로컬 구분:** PASS 3D는 로컬 미커밋 작업으로 보고되었다. 이 문서의 PASS 3D 세부 상태는 사용자가 가져온 2026-10-20 Codex 보고 기반으로, GitHub의 코드에 존재한다는 뜻이 아니다. 새 세션은 실제 로컬 Git/QA 상태를 확인해야 한다.
 
 ## 1. 프로젝트 방향
 
-Unity 6 URP 기반 넓은 도시형 **1:1 3D 액션 격투**.
+Unity 6 URP 기반 주술회전 3D 자유 이동 격투게임 `JJK_game`.
 
-- Gojo는 첫 production-quality 캐릭터일 뿐 고정 주인공이 아님
-- 원작/팬텀 퍼레이드 계열의 캐릭터 정체성을 살리되 게임 가독성과 타격감을 우선
-- 강한 VFX, camera/screen feedback, audio, environment reaction, aftermath까지 포함
-- Data-driven: **코드는 HOW, Data Asset은 WHAT**
-- 사용자-facing Inspector/Data 설정은 한국어 표시가 기본
+- **현재:** 시부야 교차로 블록아웃·임시 파이터/더미로 공통 전투의 조작감, 피격/추적/공중전, 이동·충돌 시스템 검증. 첫 MVP는 1:1.
+- **장기:** 캐릭터 선택, 개별 무브셋·술식·영역전개·각성, 넓은 시부야 도시 전투, 환경 파괴, 자유 난전과 다인전·멀티플레이.
+- **고죠:** 첫 제작 캐릭터이지 고정 주인공 아님. 기존 고죠 모델·애니메이션, VFXLab, Blue/Red/Purple, 무량공처 및 USER VERIFIED 설정은 보존하고 나중에 새 엔진에 통합.
+- **개발 규칙:** Data Asset에서 게임플레이 튜닝(코드는 HOW, 데이터는 WHAT), Unity Inspector의 실제 사용자 설정 필드는 한국어, 기존 승인 기능 보호.
 
-전체 작업 규칙은 `AGENTS.md`를 따른다.
+상세: `AGENTS.md`, `docs/design/GAME_VISION.md`, `docs/design/SHIBUYA_COMBAT_REBOOT.md`.
 
-## 2. 현재 최우선 — Hollow Purple
+## 2. 2026-10-17 개발 방향 전환
 
-현재 최신 후보:
+이전에는 고죠 1명의 고품질 기술/VFX를 먼저 완성하는 순서였다. 현재는 **누구나 사용할 수 있는 재미있는 공통 전투 엔진을 먼저 만들고**, 그 위에 실제 캐릭터·전용 무브셋·고급 VFX를 결합하는 순서로 바꿨다.
 
-- `PurpleTempestPolish`
-- 기본 OFF
-- Production/이전 후보 보존
-- sphere/body identity 보존
+이는 고죠 VFX를 폐기하거나 품질을 포기한 결정이 아니다. 기존 백업 브랜치 `backup/gojo-vfx-wip-20261017`의 체크포인트 `540272aaf609f7498d01bc9a96ea85ba678ed1cd`와 별도 ZIP 백업이 있다고 이전 Codex가 보고했다. 백업에 모든 QA 원시 로그까지 담겨 있다고 가정하지 않는다.
 
-기술 보고서:
-- `docs/PURPLE_TEMPEST_POLISH_REVIEW.md`
+이 파일을 덮어쓰기 전의 **고죠 Purple 인수인계 원문은 Git 체크포인트 `6655f19`에서의 `docs/CURRENT_HANDOFF.md`** 및 `docs/PURPLE_TEMPEST_POLISH_REVIEW.md`에서 확인한다. 과거 Purple의 시각 승인 대기 상태는 현재 PASS 3D 승인 상태와 별개다.
 
-실행 지침:
-- `docs/active/CURRENT_TASK.md`
+## 3. 승인 완료된 시부야 PASS
 
-### 현재 사용자 판단
+마지막 USER VERIFIED 원격 커밋: `6655f19e7ef64f7a6e6a5c36876057a9d881c3f0`.
 
-- 전체 방향: **CLOSER**
-- Sphere/body: **KEEP**
-- Neon discharge: **KEEP + POLISH**
-- Charge/Travel wind 분리: 유효한 진전
-- Wind visual quality: 아직 부족
-- Dark cursed energy: 검은 국수/stroke 인상은 줄었지만 무게감도 너무 약해짐
-- 승격/Production/USER VERIFIED 아님
+- **PASS 1:** 교차로 전투 씬, 이동/카메라, HP, 승패·재시작.
+- **PASS 2~2.3:** 기본 LMB 4타, 피격·넉백·방향 정렬·국소 히트스톱.
+- **PASS 3A:** 데이터 기반 공통 무브셋, 한 입력 안의 순차 다중 타격, 제한된 넉백 후 접근.
+- **PASS 3B/3B.1:** 마지막 4타에서 W 어퍼컷 / S 다운, 근접 유한 추적, 공중 궤도·착지, 지면 균열.
+- **PASS 3C:** 어퍼컷 적중 후 선택적 Space 공중 추격, 일반 점프와 공통 공중 LMB, 제한된 체공·착지. 공중 LMB 세 번의 최대 2+2+1 이벤트는 서로 다른 공중 기술 데이터 세 개가 아니라 유효 입력으로 공통 단계를 연계하는 구조다.
 
-### 중요한 Purple 해석 잠금
+승인 범위는 `docs/SHIBUYA_PASS3C_REVIEW.md` 및 각 PASS 보고서에 명시된 직접 플레이 범위로 제한한다. 자동 검사 합격은 USER VERIFIED와 다르다. `docs/locked/USER_VERIFIED_SETTINGS.md`는 고죠의 보호값도 포함한다.
 
-**Purple body는 sphere가 맞다.**
+## 4. 현재 작업 — PASS 3D (로컬)
 
-레퍼런스에서 불규칙하게 보이는 것은 sphere 자체를 jelly처럼 찢어서가 아니라 surrounding storm/energy가 edge를 가리고 침범하기 때문이다.
+**LOCAL UNCOMMITTED / CODEX VALIDATED 미완료 / USER VERIFIED 미승인.**
 
-따라서 앞으로:
-- body를 다시 과도하게 deform하지 않는다.
-- stable sphere는 유지한다.
-- wrapper/pressure/bright discharge/dark cursed energy로 위협감을 만든다.
+목표: 실제 피해가 적용된 **비치명적 마무리 적중**에만 짧은 2인 시네마틱. 미적중/무적/치명적 종료에 오작동하지 않고, 제3자 피해·카메라·전투 시간을 전역 정지하지 않는다. 참여자 두 명에게 한정된 카메라 및 보호 상태를 적용하고 취소·전투 종료에 복구한다. 약 0.5초/3샷 예제, 데이터/한국어 Inspector, 저장 기본 OFF, Play Mode 전용 선택.
 
-목표 개념:
+**사용자가 전달한 2026-10-20 Codex 결과:**
+- PASS 3D 신규 시네마틱 **18개 고유 검사 PASS** (기존 XML 재검토 보고).
+- 기존 회귀 135개: **케이스별 최신 134 PASS / 1 FAIL / 미실행 0**. 여러 실행에서 최신 결과를 모은 수치로 **단일 전체 135 PASS 실행이 아니다**.
+- 남은 실패: `ShibuyaPass3CAirCountTests.ThreeClicksOnHitRequireThreeAcceptedSteps`.
+- 입력 3회/수락 단계 3개/타격 이벤트 5개는 정상이나, 실제 적중은 **4/5**, 피해 **50/62**.
+- 대표 실패에서 마지막 이벤트 시 공격자·피격자 Z 간격 약 **2.125m**, 높이 차 약 **0.671m**. 별도 물리 검사에서 `OverlapSphere` 제외도 확인.
+- 확인된 직접 현상은 공중 수평 거리 증가에 따른 물리 사거리 이탈. **PASS 3D 신규 회귀인지, PASS 3C 잠재 문제인지는 INCONCLUSIVE**. 동일 환경 A/B 비교 미수행. PASS 3D 공통 `ShibuyaFighter` 연결 코드는 변경됨.
+- 원본 QA XML·실패 기록을 보존했다고 보고. 실패가 남았으므로 전체 CODEX VALIDATED/USER VERIFIED 선언 금지.
 
-> **Stable purple sphere + surrounding space unable to withstand it.**
+현재 작업 상세: `docs/active/CURRENT_TASK.md`.
+로컬 전용 `docs/SHIBUYA_PASS3D_REVIEW.md`는 untracked라고 보고됐으며 이 GitHub 문서 갱신에 포함하지 않는다.
 
-### 다음 Purple 우선순위
+## 5. 로컬 Git/Unity 상태 (2026-10-20 Codex 읽기 전용 보고)
 
-1. Dark cursed energy의 무게감 복구
-   - 일정한 black outline 금지
-   - closed noodle/띠로 돌아가지 않음
-   - black은 내부 암부/먹힌 영역/깊이/찢어진 면으로 존재
-2. Wind visual polish
-   - Charge의 white/gray hurricane
-   - Release에서 압축/파열/방향 전환
-   - Travel에서 동일 cyclone을 그대로 들고 가지 않음
-3. Neon을 보존하면서 다른 두 layer와 spatial overlap/occlusion 강화
+- 로컬 브랜치 및 이전 원격 추적 ref `feat/shibuya-combat-mvp`, HEAD `6655f19`, ahead/behind 0/0 (fetch 없이 확인한 값).
+- staged **0**, unstaged **8**, untracked **15**. PASS 3D 코드·데이터와 위 보고서 중심.
+- `AGENTS.md`, `docs/CURRENT_HANDOFF.md`, `docs/active/CURRENT_TASK.md`에는 로컬 미커밋 변경 없음.
+- Unity `Play Unfocused` 설정/백업은 확인했으나 실제 Windows 포커스 문제 해결은 아직 미확정.
+- 이 현황은 그때의 로컬 조사 결과다. 새 세션 시작 시 재확인한다.
 
-새 VFX 종류를 계속 추가하기보다 현재 세 layer가 하나의 폭풍으로 읽히게 만드는 것이 핵심이다.
+## 6. 당장 해야 할 일과 이후 후보
 
-## 3. 최신 Purple technical checkpoint
+1. 로컬 dirty tree, QA 증거 및 Unity 프로세스를 읽기 전용으로 확인.
+2. 공중 마지막 타격 실패의 사거리/타이밍/추적 호출 경로를 조사. PASS 3C 승인 기준과 PASS 3D WIP를 동등 조건에서 비교할 **비파괴적 A/B 방법**을 먼저 설계.
+3. 기존 PASS 3C 수치·타격 판정 assertion을 느슨하게 바꾸지 않고 최소 수정·타깃 검증. 원본 실패 이력 보존.
+4. 사용자가 PASS 3D 시네마틱을 Play Mode에서 직접 검수, USER VERIFIED 여부 결정.
+5. 사용자 승인 후에만 별도 Git checkpoint.
 
-`22cea8ed60ecafdf83ccc76860cd6bd87f7c4df4`
+PASS 3D 이후에는 **방향 대시·회피, 가드, 패링, 잡기, 긴급 탈출**, 이후 주력·술식·각성·AI·HUD·캐릭터별 모션·기존 고죠 VFX 통합·다인전 확장이 후보. **세부 PASS 번호와 구현 순서까지 확정된 것은 아니므로 사용자와 토론해 합의한다.**
 
-- Purple 관련 193개 파일 selective checkpoint
-- unrelated tracked/untracked local work는 제외/보존
-- `PurpleTempestLayers` / `PurpleTempestPolish` 및 필요한 Purple 의존 코드·자산·QA 문서 포함
-- standalone Blue/Red, VFXLab Scene, Packages/ProjectSettings, 기타 로컬 작업은 checkpoint에서 제외
+## 7. 중요 보호 및 문서 확인 순서
 
-`PurpleTempestPolish` checked scope:
-- targeted 7 PASS / 0 FAIL
-- C#/shader/final console error 0
-- cleanup material/mesh 0/0
-- A/B pose/scale/active 385 samples 동일
-- terminal pixel diff 0
-- historical full-image comparison: **INCONCLUSIVE**
-- full regression / real gameplay damage test는 해당 pass에서 재실행하지 않음
+문서: `AGENTS.md` → 이 문서 → `docs/active/CURRENT_TASK.md` → 관련 PASS 보고서 → `docs/locked/USER_VERIFIED_SETTINGS.md` → `docs/design/SHIBUYA_COMBAT_REBOOT.md`.
 
-Technical PASS는 visual approval과 다르다.
-
-## 4. QA 원칙
-
-Purple 기본 visual QA는 **밝은 neutral 환경**.
-
-- pure white 배경 금지
-- daylight-like light
-- QA 환경 때문에 Purple 자체 색/emission/bloom을 별도 보정하지 않음
-- Side/Caster 기본
-- distant Observer는 큰 맵에서 위협감 검증용 보조
-
-원거리 목표 감정:
-
-> "와 맞으면 뒤질뻔 했겠네;; 저게 뭐냐.."
-
-실제 플레이에서는 효과가 예상보다 약하게 보일 수 있으므로, 안전성과 가독성이 유지된다면 지나치게 소심하게 시작하지 않는다.
-
-## 5. 레퍼런스 해석
-
-Final moving/presentation authority는 Gojo Hollow Purple 발사 reference 영상.
-
-핵심:
-- Blue: inward suction/vortex/pressure
-- Red: outward pressure/repulsion
-- Fusion/Charge: white/gray hurricane-like pressure가 하단/주변 공간을 휘감음
-- Purple bright layer: white-hot + neon purple/pink discharge
-- Purple dark layer: deep purple/near-black cursed-energy mass/tear/boundary
-- bright와 dark는 concentric ring처럼 깨끗이 분리되지 않고 서로 overlap
-- 모든 요소가 같은 방향으로 constant orbit하지 않음
-- 작은 cross flare는 accent이며 핵심 구조보다 후순위
-
-Reference media는 local-only일 수 있으므로 관련 구현 전 실제 로컬 파일을 확인한다.
-
-## 6. 보호된 기준
-
-다음은 사용자 요청 없이 변경하지 않는다.
-
-- `docs/locked/USER_VERIFIED_SETTINGS.md`
-- Gojo movement USER VERIFIED 값
-- Unlimited Void gameplay/verified visual 기준
-- 기존 Gojo Blue verified baseline
-- 보호된 Purple production/gameplay semantics
-- corrected release origin/axis
-- 사용자 Scene / Animator / FBX / LocalModels / LocalAudio
-- unrelated dirty working tree
-
-자동화/테스트/Codex는 `USER VERIFIED`를 만들 수 없다.
-
-## 7. Git 안전
-
-원래 로컬 working tree는 의도적으로 unrelated dirty work가 존재한다.
-
-- `git reset --hard` 금지
-- `git clean` 금지
-- 사용자 작업을 덮는 checkout/restore 금지
-- dirty tree에서 `git add .` 금지
-- 수정 전 `git status` 확인
-- commit/push는 사용자 승인 후 selective staging
-
-2026-10-02 Purple checkpoint는 위 원칙으로 selective push 완료.
-
-## 8. Gojo 장기 완성 계획
-
-새 문서:
-- `docs/GOJO_FINALIZATION_PLAN.md`
-
-큰 방향:
-
-```text
-Purple refinement
-→ Blue final rework
-→ Red final rework
-→ Skill presentation / audio / camera polish
-→ Gojo combat motion 정리
-→ Awakening
-```
-
-Awakening 계획:
-- 기본 상태 `R = 각성`
-- 컨셉 대사: "진심으로 가볼까"
-- 손으로 blindfold를 실제로 아래로 내리는 Hero Animation
-- Six Eyes reveal
-- 각성 후 `R = Hollow Purple`
-- 각성 Q/E는 Blue/Red를 이용한 타격/콤보형 기술 후보
-
-현재는 future plan이며 Purple과 동시에 구현하지 않는다.
-
-## 9. 캐릭터 모델/모션 생산 문제
-
-새 문서:
-- `docs/architecture/CHARACTER_PRODUCTION_PIPELINE.md`
-
-사용자 조건:
-- 취미 프로젝트
-- 외주/유료 제작 계획 없음
-- 3D 격투 방향 유지
-
-핵심 전략:
-
-> **캐릭터를 매번 새로 만드는 대신 Character Production Pipeline을 만든다.**
-
-구성:
-- Human Base 계열
-- Unity Humanoid 공통 규격
-- shared locomotion/hit/down
-- Fist / Sword archetype base motion
-- 캐릭터별 평타/기술은 base에서 변형
-- Hero animation은 정말 중요한 캐릭터 순간에만 투자
-- 공통 toon/material/style rule로 모델 출처 차이를 줄임
-
-예상 분류:
-- Human/hand: Gojo, Sukuna, Megumi, Choso
-- Human/weapon: Yuta
-- Large/monster: Mahoraga 별도 계열
-
-Gojo 완료 후 곧바로 Yuta 전체를 만들기보다 `Yuta Dummy`/human dummy로 retarget + sword pipeline을 먼저 검증하는 것이 권장된다.
-
-## 10. 모델/모션 현실적 원칙
-
-- 캐릭터별 평타 모션이 완전히 사라지는 것은 아니다.
-- 공통화 목적은 **0부터 만드는 일을 줄이는 것**이다.
-- 모델은 장기적으로 라이선스/스타일이 명확한 공통 human base 계열을 검토한다.
-- VRoid/Blender/free mocap/Mixamo 계열은 후보이며 production 적용 전 검증한다.
-- 현재 Gojo 모델은 이 계획 때문에 교체하지 않는다.
-- 랜덤한 추출 모델을 캐릭터마다 그대로 최종 사용해 스타일을 맞추는 방식을 장기 표준으로 삼지 않는다.
-
-## 11. Blindfold lowering 현실적 구현 방향
-
-단순 mesh ON/OFF가 아닌 실제 lowering을 목표로 할 수 있다.
-
-권장:
-- separate skinned blindfold mesh
-- blindfold bones and/or Blender shape keys
-- hand animation과 deformation 동기화
-- 얼굴 곡면 통과 보정
-- camera framing/hand occlusion로 작은 clipping 숨김
-
-초기 목표에서 full cloth simulation / finger-level cloth physics는 제외한다.
-
-자세한 내용은 `docs/GOJO_FINALIZATION_PLAN.md` 참고.
-
-## 12. AI 작업 분담
-
-권장 routing:
-
-- **Astra High**: reference interpretation, 구조적 VFX 판단, 원인 불명 시각 문제, architecture ambiguity
-- **Sol**: 방향이 확정된 구현, polish, Git-safe execution/review
-- bounded task가 충분히 명확할 때 더 가벼운 실행 모델 사용 가능
-
-구조적 애매함이 생기면 억지 구현보다 `ASTRA ESCALATION`으로 멈춘다.
-
-## 13. 새 세션 시작 시 읽을 순서
-
-1. `AGENTS.md`
-2. `docs/CURRENT_HANDOFF.md`
-3. `docs/active/CURRENT_TASK.md`
-4. `docs/locked/USER_VERIFIED_SETTINGS.md`
-5. Purple이면 `docs/PURPLE_TEMPEST_POLISH_REVIEW.md`
-6. Gojo 장기 계획이면 `docs/GOJO_FINALIZATION_PLAN.md`
-7. 모델/리깅/캐릭터 생산이면 `docs/architecture/CHARACTER_PRODUCTION_PIPELINE.md`
-8. 관련 architecture/design 문서
-
-## 즉시 다음 행동
-
-사용자가 Purple 작업을 계속하라고 요청하면 `PurpleTempestPolish`를 기반으로 **dark cursed energy 무게감 → wind transition/quality → neon overlap** 순서로 진행한다.
-
-사용자 승인 없이:
-- 후보 기본 ON
-- Production 승격
-- USER VERIFIED 선언
-- 각성/모델 파이프라인 동시 착수
-- unrelated local cleanup
-
-을 하지 않는다.
+로컬 선호 경로 `D:\JJK_game` 한 곳. 기존 Gojo/VFX, 승인된 씬·데이터, 로컬 PASS 3D, QA 로그 보호. 사용자 승인 없는 commit/push, reset/clean, 위험한 checkout/restore, worktree 생성, 광범위한 자산 변경 금지.
