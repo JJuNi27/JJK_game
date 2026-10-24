@@ -23,6 +23,7 @@ namespace JJKGame.Shibuya
         [Min(0)] public float chaseTurnSpeed=720f;
         [Min(.01f)] public float chaseStallTimeout=.08f;
         [Min(0)] public float chaseLandingSeparationSpeed=8f;
+        [Min(0)] public float chaseContactHoldTime=.18f;
         [Min(.01f)] public float aerialInputWindow=.55f;
         [Min(0)] public float aerialMaxHeightDifference=1.1f;
         [Range(0,1)] public float aerialAirControl=.25f;
@@ -41,7 +42,7 @@ namespace JJKGame.Shibuya
                 float[] positive={chaseInputWindow,chaseInputBuffer,chaseMaxRange,chaseMaxTravel,chaseMaxDuration,
                     chaseSpeed,chaseDeceleration,chaseArrivalDistance,chaseVerticalTolerance,chaseStallTimeout,aerialInputWindow,aerialMaxHoverTime};
                 float[] nonnegative={chasePredictionTime,chasePredictionLimit,chaseMaxTurnAngle,chaseTurnSpeed,
-                    chaseLandingSeparationSpeed,aerialMaxHeightDifference,aerialAirControl,failureFallSpeedLimit,chaseLeanAngle,chaseMinimumRise,chaseArrivalTolerance,aerialLinkInputWindow};
+                    chaseLandingSeparationSpeed,chaseContactHoldTime,aerialMaxHeightDifference,aerialAirControl,failureFallSpeedLimit,chaseLeanAngle,chaseMinimumRise,chaseArrivalTolerance,aerialLinkInputWindow};
                 foreach(float x in positive) if(float.IsNaN(x)||float.IsInfinity(x)||x<=0) return false;
                 foreach(float x in nonnegative) if(float.IsNaN(x)||float.IsInfinity(x)||x<0) return false;
                 return chaseMaxTurnAngle<=180 && aerialAirControl<=1;

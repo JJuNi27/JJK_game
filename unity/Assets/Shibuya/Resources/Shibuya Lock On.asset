@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 914c93ed6ba60c5478e49b33f38a1d0b, type: 3}
+  m_Name: Shibuya Lock On
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaLockOnProfile
+  acquireRange: 50
+  retainRange: 60
+  screenCenterRadius: 0.22
+  reselectHoldTime: 0.25
+  sightGraceTime: 1.5
+  environmentMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  aimOffset: {x: 0, y: 0, z: 0}
+  attackFacingEnabled: 1
+  attackTurnSpeed: 2400
+  attackMaxTurnAngle: 180
+  attackPreparationTime: 0.12
+  cameraStrength: 0.7
+  cameraSharpness: 5
+  cameraDegreesPerSecond: 100
+  manualLookGrace: 0.8
+  cameraAssistEnabled: 1
+  cameraDeadZone: {x: 0.28, y: 0.22}
+  cameraAcceleration: 180
+  cameraShoulderOffset: 2.2
+  cameraOverlapStrength: 1
+  cameraOverlapOrbitAngle: 32
+  cameraFramingSpeed: 3
+  cameraFramingRange: 12
+  cameraExtraDistance: 1
+  cameraVerticalFocusWeight: 0.2
+  cameraVerticalFocusLimit: 1
+  cameraReturnGrace: 0.5
+  cameraScreenRecoveryEnabled: 1
+  cameraRecoveryMargin: 0.06
+  cameraRecoveryStallTime: 0.3
+  cameraRecoveryStableTime: 0.12
+  cameraRecoveryTimeout: 4
+  showUI: 1
+  lostFeedbackTime: 0.8
+  markerSize: 30
+  candidateColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  lockedColor: {r: 0, g: 1, b: 1, a: 1}
+  occludedColor: {r: 1, g: 0.65, b: 0.2, a: 1}
+  showAimDebug: 0
+  debugAimLength: 8

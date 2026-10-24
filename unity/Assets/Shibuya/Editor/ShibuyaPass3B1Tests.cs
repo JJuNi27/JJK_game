@@ -225,7 +225,7 @@ namespace JJKGame.Shibuya.EditorTools
         private static void Place(ShibuyaFighter f,Vector3 pos) {var cc=f.GetComponent<CharacterController>();cc.enabled=false;f.transform.position=pos;cc.enabled=true;Physics.SyncTransforms();}
         private static IEnumerator Wait(float duration) {float end=Time.time+duration;while(Time.time<end)yield return null;}
         private static IEnumerator Until(Func<bool> test) {float end=Time.realtimeSinceStartup+6;while(!test()&&Time.realtimeSinceStartup<end)yield return null;Assert.That(test(),Is.True,"condition timed out");}
-        private static void Record(string key,string detail) {System.IO.Directory.CreateDirectory("Logs/ShibuyaPass3B1QA");System.IO.File.AppendAllText("Logs/ShibuyaPass3B1QA/metrics.txt",key+": "+detail+Environment.NewLine);}
+        private static void Record(string key,string detail) {System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3B1QA"));System.IO.File.AppendAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3B1QA/metrics.txt"),key+": "+detail+Environment.NewLine);}
         [UnityTearDown] public IEnumerator Leave() {if(EditorApplication.isPlaying)yield return new ExitPlayMode();}
         [TearDown] public void Cleanup() {
             foreach(var data in Resources.FindObjectsOfTypeAll<ScriptableObject>())

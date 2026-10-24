@@ -10,6 +10,15 @@ namespace JJKGame.Shibuya
         private float apexUntil, downStartedAt, getUpStartedAt;
         private Vector3 airDirection;
         private float airDistanceRemaining, airTravelTime;
+        private bool launchMotionActive;
+        private ShibuyaFighter chaseContactSource;
+        private float chaseContactUntil;
+        public bool IsChaseContactHeld => chaseContactSource != null && combatTime < chaseContactUntil
+            && airborne && !downed && !motor.isGrounded && !Health.IsDead && !stopped && !Health.IsInvulnerable
+            && IsLiveTarget(chaseContactSource) && chaseContactSource.airSession && !chaseContactSource.chasing
+            && !chaseContactSource.IsActionLocked && chaseContactSource.aerialTarget == this
+            && chaseContactSource.ValidAerialTarget()
+            && !WorldBlocks(transform.position + Vector3.up, chaseContactSource.transform.position + Vector3.up);
         private ShibuyaGroundImpact groundImpact;
         public bool IsAirborne => airborne;
         public bool IsDowned => downed;
@@ -22,7 +31,28 @@ namespace JJKGame.Shibuya
             : 1f - Mathf.SmoothStep(0, 1, (combatTime - getUpStartedAt) / Mathf.Max(.01f, downSettings.getUpDuration));
         public float DownPoseAngle => downSettings == null ? 0f : downSettings.downPoseAngle;
         public float AirReactionLean => airborne ? airSettings.airReactionLean : 0f;
-        private bool IsActionLocked => IsStunned || airborne || downed;
+        // The finite, actually-hit air relation owns actions only while its height lease is valid.
+        // Ordinary stun timers and all ground combat remain independent of this lease.
+        private bool IsActionLocked => IsStunned || airborne || downed || IsHeldByAerialHit;
+
+        // Ends only the previous launch's motion; the airborne state and gravity remain owned here.
+        private void EndLaunchMotion()
+        {
+            launchMotionActive = false;
+            airDistanceRemaining = airTravelTime = 0;
+            apexVisited = true; apexUntil = 0;
+            verticalSpeed = 0;
+        }
+
+        private void ApplyChaseContact(ShibuyaFighter source, float duration)
+        {
+            EndLaunchMotion();
+            knockback = Vector3.zero; distanceKnockbackRemaining = 0;
+            ClearVictimAlignment();
+            chaseContactSource = duration > 0 ? source : null;
+            chaseContactUntil = combatTime + Mathf.Max(0, duration);
+            stunnedUntil = Mathf.Max(stunnedUntil, chaseContactUntil);
+        }
 
         private void ApplyHitOutcome(ShibuyaHitEvent hit, Vector3 hitDirection)
         {
@@ -30,6 +60,7 @@ namespace JJKGame.Shibuya
             CancelCombo(); ClearVictimAlignment(); ClearIncomingLink(); jumpIntent = false;
             if (hit.outcome == ShibuyaHitOutcome.Launch) {
                 launchVersion++;
+                launchMotionActive = true; chaseContactSource = null;
                 downed = gettingUp = downLanded = false;
                 airSettings = hit.air;
                 airborne = true; apexVisited = false; apexUntil = 0;
@@ -42,6 +73,8 @@ namespace JJKGame.Shibuya
                 LandingSeparationRequested = 0;
                 knockback = Vector3.zero;
             } else {
+                launchMotionActive = false; chaseContactSource = null;
+                airDistanceRemaining = airTravelTime = 0;
                 airborne = false;
                 if (downed) return; // Additional hits must not indefinitely restart the down timer.
                 downSettings = hit.down; downed = true; gettingUp = false;
@@ -53,7 +86,7 @@ namespace JJKGame.Shibuya
 
         private Vector3 AdvanceAirHorizontal(float delta)
         {
-            if (!airborne) return Vector3.zero;
+            if (!airborne || !launchMotionActive) return Vector3.zero;
             float travelDelta = Mathf.Min(delta, Mathf.Max(0, airSettings.launchHorizontalDuration-airTravelTime));
             airTravelTime += delta;
             float amount = Mathf.Min(airDistanceRemaining,
@@ -108,7 +141,8 @@ namespace JJKGame.Shibuya
         private void UpdateVerticalMotion(float delta, bool actionLocked)
         {
             if(chasing) {verticalSpeed=0;jumpIntent=false;return;}
-            if(IsAerialHovering || IsHeldByAerialHit) {verticalSpeed=0;jumpIntent=false;return;}
+            if(IsAerialHovering || IsHeldByAerialHit || IsChaseContactHeld) {verticalSpeed=0;jumpIntent=false;return;}
+            chaseContactSource = null;
             if (motor.isGrounded && verticalSpeed < 0f && !airborne) verticalSpeed = -2f;
             if (!actionLocked && !attacking && jumpIntent && motor.isGrounded)
                 verticalSpeed = Mathf.Sqrt(2f * Mathf.Max(.1f, profile.gravity) * Mathf.Max(.1f, profile.jumpHeight));
@@ -132,6 +166,7 @@ namespace JJKGame.Shibuya
             bool landed = motor.isGrounded || (collisions & CollisionFlags.Below) != 0;
             if (!landed || verticalSpeed > 0 || !TryLandingSurface(out var surface)) return;
             if (airborne) {
+                launchMotionActive = false; chaseContactSource = null;
                 airborne = false; verticalSpeed = -2f;
                 // Ground contact ends this launch; it does not preserve a phantom air stun.
             }
@@ -158,6 +193,7 @@ namespace JJKGame.Shibuya
 
         private void ClearHitOutcome()
         {
+            launchMotionActive = false; chaseContactSource = null; chaseContactUntil = 0;
             ReleaseIncomingAirHover();
             airborne = downed = gettingUp = downLanded = apexVisited = false;
             apexUntil = downStartedAt = getUpStartedAt = 0;

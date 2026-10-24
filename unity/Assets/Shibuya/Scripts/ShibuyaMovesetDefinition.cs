@@ -9,6 +9,7 @@ namespace JJKGame.Shibuya
     [Serializable]
     public sealed class ShibuyaHitEvent
     {
+        public ShibuyaCinematicProfile cinematic;
         [Min(0)] public float startTime;
         public ShibuyaStrikeDefinition strike = new ShibuyaStrikeDefinition();
         [Min(-1)] public int requiredMovement = -1;

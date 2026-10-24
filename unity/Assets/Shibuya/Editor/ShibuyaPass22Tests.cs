@@ -272,8 +272,8 @@ namespace JJKGame.Shibuya.EditorTools
             p.Configure(copy,original); return copy;
         }
         private static void Record(Metric value) {
-            System.IO.Directory.CreateDirectory("Logs/ShibuyaPass22QA");
-            System.IO.File.AppendAllText("Logs/ShibuyaPass22QA/metrics.jsonl",JsonUtility.ToJson(value)+Environment.NewLine);
+            System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass22QA"));
+            System.IO.File.AppendAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass22QA/metrics.jsonl"),JsonUtility.ToJson(value)+Environment.NewLine);
         }
         private static IEnumerator Wait(float seconds) { float end=Time.time+seconds; while(Time.time<end) yield return null; }
         private static IEnumerator Until(Func<bool> condition, string context="") {

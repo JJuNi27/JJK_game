@@ -124,6 +124,7 @@ namespace JJKGame.Shibuya
 
         public void SetIntent(Vector3 direction, bool run, bool jump)
         {
+            if (ConsumeCinematicInput(false, direction)) { if (IsInCinematic && !Cinematic.Profile.holdFacing) moveIntent = direction; return; }
             direction.y = 0f;
             moveIntent = Vector3.ClampMagnitude(direction, 1f);
             runIntent = run;
@@ -132,6 +133,7 @@ namespace JJKGame.Shibuya
 
         public bool TryAttack(ShibuyaFinisher requestedFinisher = ShibuyaFinisher.Default)
         {
+            if (ConsumeCinematicInput(true, Vector3.zero)) return false;
             if (!enabled || profile == null || Health.IsDead || stopped || IsActionLocked) return false;
             if(airSession || !motor.isGrounded) return TryAirAttack();
             if (!motor.isGrounded) requestedFinisher = ShibuyaFinisher.Default;
@@ -180,6 +182,7 @@ namespace JJKGame.Shibuya
                 jumpIntent = false;
                 return;
             }
+            if (IsInCinematic) { UpdateCinematicMotion(); return; }
             RefreshAerialState();
             // Only this fighter's clock/motor pauses. Other actors and Time.timeScale are untouched.
             double now = Time.unscaledTimeAsDouble;
@@ -332,6 +335,9 @@ namespace JJKGame.Shibuya
 
         private void ResolveHits(ShibuyaStrikeDefinition strike)
         {
+            var cinematicHit = activeStep.hits[resolvingEvent];
+            int cinematicActionId = AcceptedAttackCount, cinematicEventId = resolvingEvent;
+            ShibuyaFighter cinematicVictim = null;
             Vector3 origin = transform.position + Vector3.up * strike.attackHeight;
             Vector3 center = origin + transform.forward * strike.attackForwardOffset;
             foreach (Collider collider in Physics.OverlapSphere(center, Mathf.Max(0.1f, strike.attackRadius),
@@ -352,6 +358,10 @@ namespace JJKGame.Shibuya
                 // Two attackers must not tug the same victim toward different attack corridors.
                 bool conflictingAlignment = other.alignmentSource != null && other.alignmentSource != this;
                 if (other.Health.ReceiveDamage(context) != DamageResolution.Applied) continue;
+                float cinematicDistance = (other.transform.position-transform.position).sqrMagnitude;
+                if (cinematicVictim == null || cinematicDistance < (cinematicVictim.transform.position-transform.position).sqrMagnitude
+                    || (Mathf.Approximately(cinematicDistance, (cinematicVictim.transform.position-transform.position).sqrMagnitude)
+                        && other.GetInstanceID() < cinematicVictim.GetInstanceID())) cinematicVictim = other;
                 if (!hitThisAttack || moveset != null) lastHitTarget = other;
                 RecordComboContact(other);
                 hitThisAttack = true;
@@ -372,6 +382,7 @@ namespace JJKGame.Shibuya
                 LastHitSoundPitch = strike.soundPitch;
                 HitConfirmed?.Invoke(targetPoint, strike.presentationIntensity);
             }
+            if (cinematicVictim != null) TryCinematicAfterHit(cinematicVictim, cinematicHit, cinematicActionId, cinematicEventId);
         }
 
         private void BeginVictimAlignment(ShibuyaFighter source, ShibuyaStrikeDefinition strike)
@@ -439,7 +450,10 @@ namespace JJKGame.Shibuya
         }
 
         public void ApplyHitReaction(Vector3 impulse, float stunDuration)
-            => ApplyHitReaction(impulse, stunDuration, transform.position - impulse, impulse, false, false);
+        {
+            if (IsInCinematic) return;
+            ApplyHitReaction(impulse, stunDuration, transform.position - impulse, impulse, false, false);
+        }
 
         private void ApplyHitReaction(Vector3 impulse, float stunDuration, Vector3 sourcePosition,
             Vector3 strikeDirection, bool isHeavy, bool hasHitStop)
@@ -447,6 +461,9 @@ namespace JJKGame.Shibuya
             ReleaseIncomingAirHover();
             ClearVictimAlignment();
             if (Health.IsDead || stopped) return;
+            // This method follows Applied damage in ResolveHits. A new hit owns subsequent motion.
+            chaseContactSource = null;
+            if (airborne) EndLaunchMotion();
             InterruptAerial();
             impulse.y = 0f;
             knockback = impulse;
@@ -464,6 +481,7 @@ namespace JJKGame.Shibuya
 
         public void StopCombat()
         {
+            CancelCinematic("battle-ended");
             stopped = true;
             ClearAerialState();
             ClearHitOutcome();
@@ -475,9 +493,9 @@ namespace JJKGame.Shibuya
             hitStopUntil = 0;
         }
 
-        private void CancelCombo()
+        private void CancelCombo(bool preserveAerialVictim = false)
         {
-            CancelAerialHover();
+            CancelAerialHover(preserveAerialVictim);
             executingAirAttack=false;
             ReleaseOutgoingLink();
             CurrentFinisher = bufferedFinisher = ShibuyaFinisher.Default;
@@ -492,15 +510,16 @@ namespace JJKGame.Shibuya
 
         private void OnDamageResolved(Health target, DamageContext context, DamageResolution result)
         {
+            if (result == DamageResolution.Applied && IsInCinematic && !Cinematic.ApplyingAuthoredDamage) CancelCinematic("external-or-environmental-damage");
             if (result == DamageResolution.Applied) { ReleaseIncomingAirHover(); damageVersion++; InterruptAerial(); ClearVictimAlignment(); CancelCombo(); }
         }
-        private void OnDied(Health target) { ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); ClearVictimAlignment(); CancelCombo(); }
+        private void OnDied(Health target) { CancelCinematic("participant-dead"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); ClearVictimAlignment(); CancelCombo(); }
         private void OnDestroy()
         {
             if (health == null) return;
             health.DamageResolved -= OnDamageResolved;
             health.Died -= OnDied;
         }
-        private void OnDisable() { ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); distanceKnockbackRemaining = 0f; ClearVictimAlignment(); moveIntent = knockback = Vector3.zero; jumpIntent = false; hitStopUntil = 0; CancelCombo(); }
+        private void OnDisable() { CancelCinematic("participant-disabled"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); distanceKnockbackRemaining = 0f; ClearVictimAlignment(); moveIntent = knockback = Vector3.zero; jumpIntent = false; hitStopUntil = 0; CancelCombo(); }
     }
 }

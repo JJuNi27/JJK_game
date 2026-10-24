@@ -247,9 +247,9 @@ namespace JJKGame.Shibuya.EditorTools
             var player = match.Player;
             var input = player.GetComponent<ShibuyaPlayerInput>();
             match.Dummy.Health.SetCurrentHealth(80f); // Runtime fixture, not the user's max HP.
-            System.IO.Directory.CreateDirectory("Logs/ShibuyaPass21QA");
-            System.IO.File.WriteAllText("Logs/ShibuyaPass21QA/resume-forward-trace.jsonl", "");
-            System.Action<string> trace = beat => System.IO.File.AppendAllText("Logs/ShibuyaPass21QA/resume-forward-trace.jsonl",
+            System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass21QA"));
+            System.IO.File.WriteAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass21QA/resume-forward-trace.jsonl"), "");
+            System.Action<string> trace = beat => System.IO.File.AppendAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass21QA/resume-forward-trace.jsonl"),
                 $"{beat}: t={Time.time:F3} step={player.ComboStep} elapsed={player.AttackElapsed:F3} hits={player.ConfirmedHitCount} hp={match.Dummy.Health.CurrentHealth} p={player.transform.position} d={match.Dummy.transform.position} forward={player.transform.forward}\n");
             player.AttackStarted += step => trace("start");
             player.HitConfirmed += (point, force) => trace("hit");

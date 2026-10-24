@@ -202,8 +202,8 @@ namespace JJKGame.Shibuya.EditorTools
             fighter.Configure(copy,AssetDatabase.LoadAssetAtPath<CharacterStatsProfile>(ShibuyaSceneBuilder.Root+"/Data/Dummy Stats.asset")); return copy;
         }
         private static void Record(Metric value) {
-            System.IO.Directory.CreateDirectory("Logs/ShibuyaPass23QA");
-            System.IO.File.AppendAllText("Logs/ShibuyaPass23QA/metrics.jsonl",JsonUtility.ToJson(value)+Environment.NewLine);
+            System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass23QA"));
+            System.IO.File.AppendAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass23QA/metrics.jsonl"),JsonUtility.ToJson(value)+Environment.NewLine);
         }
         private static IEnumerator Wait(float seconds) { float end=Time.time+seconds; while(Time.time<end) yield return null; }
         private static IEnumerator Until(Func<bool> predicate) {

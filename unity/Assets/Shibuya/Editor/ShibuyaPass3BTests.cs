@@ -327,7 +327,7 @@ namespace JJKGame.Shibuya.EditorTools
             var go=GameObject.CreatePrimitive(PrimitiveType.Cube);go.name=name;go.transform.position=position;go.transform.localScale=scale;Physics.SyncTransforms();
         }
         private static void Record(string name,string detail) {
-            System.IO.Directory.CreateDirectory("Logs/ShibuyaPass3BQA");System.IO.File.AppendAllText("Logs/ShibuyaPass3BQA/metrics.txt",name+": "+detail+Environment.NewLine);
+            System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3BQA"));System.IO.File.AppendAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3BQA/metrics.txt"),name+": "+detail+Environment.NewLine);
         }
         private static IEnumerator Wait(float seconds) { float end=Time.time+seconds;while(Time.time<end)yield return null; }
         private static IEnumerator Until(Func<bool> predicate) {

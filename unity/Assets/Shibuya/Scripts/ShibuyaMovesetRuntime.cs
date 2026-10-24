@@ -54,7 +54,8 @@ namespace JJKGame.Shibuya
                 return selection == ShibuyaFinisher.Uppercut ? set.uppercut : set.downFinisher;
             }
             return moveset == null ? new ShibuyaMovesetStep {
-                hits = new[] { new ShibuyaHitEvent { strike = profile.strikes[index] } }
+                hits = new[] { new ShibuyaHitEvent { strike = profile.strikes[index],
+                    cinematic = index == profile.strikes.Length - 1 ? profile.defaultFinisherCinematic : null } }
             } : moveset.steps[index];
         }
 

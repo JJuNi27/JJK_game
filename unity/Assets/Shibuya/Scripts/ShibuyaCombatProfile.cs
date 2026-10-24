@@ -48,6 +48,8 @@ namespace JJKGame.Shibuya
     [CreateAssetMenu(menuName = "JJK Game/시부야/기본 전투 설정", fileName = "Shibuya Combat Profile")]
     public sealed class ShibuyaCombatProfile : ScriptableObject
     {
+        [Tooltip("캐릭터의 최대 주력량 원본입니다. 현재 주력량과 아우라 색상은 이 참조와 별개입니다.")]
+        public JJKGame.Core.CursedEnergyProfile cursedEnergy;
         [Header("이동")]
         [Min(0.1f)] public float walkSpeed = 4.8f;
         [Min(0.1f)] public float runSpeed = 8.5f;
@@ -76,6 +78,7 @@ namespace JJKGame.Shibuya
         [Min(0.01f)] public float comboResetTime = 0.60f;
         public ShibuyaFinisherSet finishers;
         public ShibuyaAerialCombatDefinition aerialCombat;
+        public ShibuyaCinematicProfile defaultFinisherCinematic;
         [Header("예약된 유효 연계만 확정")]
         public bool confirmedLinkEnabled = true;
         [Min(0.01f)] public float confirmedLinkInputWindow = 0.24f;

@@ -232,8 +232,8 @@ namespace JJKGame.Shibuya.EditorTools
             {
                 camera.targetTexture = rt; camera.Render(); RenderTexture.active = rt;
                 texture.ReadPixels(new Rect(0, 0, 960, 600), 0, 0); texture.Apply();
-                System.IO.Directory.CreateDirectory("Logs/ShibuyaPass1QA");
-                System.IO.File.WriteAllBytes("Logs/ShibuyaPass1QA/" + name, texture.EncodeToPNG());
+                System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass1QA"));
+                System.IO.File.WriteAllBytes(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass1QA/") + name, texture.EncodeToPNG());
             }
             finally
             {

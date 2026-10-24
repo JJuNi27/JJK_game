@@ -95,8 +95,8 @@ namespace JJKGame.Shibuya.EditorTools
             for(int i=0;i<3;i++) Assert.That(impulses[i], Is.GreaterThan(0f));
             Assert.That(impulses[3], Is.GreaterThan(impulses[0]));
             Assert.That(positions[2], Is.GreaterThan(positions[0]));
-            System.IO.Directory.CreateDirectory("Logs/ShibuyaPass21QA");
-            System.IO.File.WriteAllText("Logs/ShibuyaPass21QA/impact-metrics.json", JsonUtility.ToJson(new ImpactMetrics {
+            System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass21QA"));
+            System.IO.File.WriteAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass21QA/impact-metrics.json"), JsonUtility.ToJson(new ImpactMetrics {
                 configuredStop=p.Profile.strikes[3].hitStopDuration, observedStop=observed, pausedFrames=frames,
                 sourceAdvance=p.transform.position.z-start, timeScale=Time.timeScale, hits=p.ConfirmedHitCount,
                 thirdPartyDistance=thirdDistanceAtResume, thirdPartyClockAdvance=thirdClockAtResume }, true));

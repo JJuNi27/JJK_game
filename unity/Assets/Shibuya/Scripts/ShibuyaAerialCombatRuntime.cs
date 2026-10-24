@@ -23,6 +23,7 @@ namespace JJKGame.Shibuya
         public ShibuyaFighter AirChaseTarget => ValidAerialTarget()?aerialTarget:null;
         public float AirChaseTravel => chaseTravel;
         public int AirChaseCount {get;private set;}
+        public int AirChaseContactCount {get;private set;}
         public string AirChaseReason {get;private set;}="추격 기회 없음";
         public ShibuyaAerialCombatDefinition AerialDefinition => moveset!=null && moveset.aerialCombat!=null
             ?moveset.aerialCombat:profile==null?null:profile.aerialCombat;
@@ -146,9 +147,13 @@ namespace JJKGame.Shibuya
                 float arrival=Mathf.Max(aerialSettings.chaseArrivalDistance,clearance);
                 if(leftGround && aerialTarget.transform.position.y-launchRootY>=aerialSettings.chaseMinimumRise
                     && difference.magnitude<=arrival+aerialSettings.chaseArrivalTolerance && difference.magnitude>=clearance-.02f
-                    && vertical<=aerialSettings.chaseVerticalTolerance) {
-                    chasing=false;arrivedAt=combatTime;verticalSpeed=aerialTarget.verticalSpeed;
-                    AirChaseReason="도착: LMB 공중 체술 가능";
+                    && vertical<=aerialSettings.chaseVerticalTolerance
+                    && !IsInCinematic && !aerialTarget.IsInCinematic
+                    && !WorldBlocks(transform.position+Vector3.up,aerialTarget.transform.position+Vector3.up)) {
+                    chasing=false;arrivedAt=combatTime;
+                    aerialTarget.ApplyChaseContact(this,aerialSettings.chaseContactHoldTime);
+                    verticalSpeed=0; AirChaseContactCount++;
+                    AirChaseReason="도착: 무피해 접촉 후 LMB 공중 체술 가능";
                 } else {
                     float requested=chaseFrameRequest.magnitude;
                     float actual=Vector3.Distance(before,transform.position);
@@ -187,13 +192,17 @@ namespace JJKGame.Shibuya
 
         private void AimAirAttack(float delta)
         {
-            var aim=airContactTarget!=null?airContactTarget:aerialTarget;
-            if(!executingAirAttack || !IsLiveTarget(aim) || aim.Health.IsInvulnerable) return;
+            if(!executingAirAttack) return;
             for(int i=0;i<activeStep.hits.Length;i++) {
                 var evt=activeStep.hits[i];float elapsed=AttackElapsed-evt.startTime;
-                if(elapsed<0 || elapsed>evt.strike.Startup) continue;
+                if(elapsed<0) continue;
+                if(!aimStarted[i]) SnapshotEventAim(i);
+                if(aimIsExplicit[i]) { TurnLockedAttack(i,evt.strike,elapsed,delta); continue; }
+                if(elapsed>evt.strike.Startup) continue;
+                var selected=evt.requiredMovement>=0?correctionTarget:eventAim[i];
+                if(!IsLiveTarget(selected) || selected.Health.IsInvulnerable) continue;
                 var settings=Targeting(evt.strike);
-                Vector3 flat=aim.transform.position-transform.position;flat.y=0;
+                Vector3 flat=selected.transform.position-transform.position;flat.y=0;
                 if(flat.sqrMagnitude<.000001f || Vector3.Angle(initialAttackForward,flat)>settings.retentionAngle) continue;
                 float dt=Mathf.Min(delta,Mathf.Max(0,elapsed));
                 float turn=Mathf.Min(Mathf.Max(0,settings.maxTurnAngle-aimTurns[i]),settings.turnSpeed*dt);
@@ -209,7 +218,7 @@ namespace JJKGame.Shibuya
             }
             bool grace=hitThisAttack && WithinAirHoverBudget && aerialSettings.aerialLinkInputWindow>0
                 && LegalAerialContact(airContactTarget);
-            CancelCombo();
+            CancelCombo(grace);
             if(grace) {airGrace=true;airGraceUntil=combatTime+aerialSettings.aerialLinkInputWindow;verticalSpeed=0;}
             AirChaseReason=grace?"공중 체술 종료: 짧은 후속 클릭 대기":"공중 체술 종료: 자연 낙하";
         }

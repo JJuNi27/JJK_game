@@ -1,0 +1,138 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c35079956e73ae4ca24edb19cbf678c, type: 3}
+  m_Name: Cursed Energy Aura
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.CursedEnergyAuraProfile
+  auraEnabled: 1
+  visualPrefab: {fileID: 2801020905521888719, guid: 3d2cc6c3152919049bb33d53fcdba9b5, type: 3}
+  fadeIn: 0.12
+  fadeOut: 0.24
+  scale: 1
+  intensity: 1.25
+  offset: {x: 0, y: 0, z: 0}
+  suppressWhenHit: 1
+  suppressDuringCinematic: 1
+  mainColor: {r: 0.02, g: 0.75, b: 1, a: 1}
+  overrideSupportingColors: 0
+  accentColor: {r: 0.4, g: 1, b: 1, a: 1}
+  rimColor: {r: 0.02, g: 0.8, b: 1, a: 1}
+  particleColor: {r: 0.4, g: 1, b: 1, a: 1}
+  inkColor: {r: 0.004, g: 0.007, b: 0.018, a: 1}
+  mainAura:
+    enabled: 1
+    intensity: 1.6
+    opacity: 0.84
+  ink:
+    enabled: 1
+    intensity: 1
+    opacity: 1
+  wisps:
+    enabled: 0
+    intensity: 2.2
+    opacity: 0.8
+  bodyRim:
+    enabled: 1
+    intensity: 1.4
+    opacity: 0.55
+  motes:
+    enabled: 1
+    intensity: 1.5
+    opacity: 0.8
+  height: 2.4
+  width: 0.75
+  motionSpeed: 1.2
+  irregularity: 0.85
+  particleRate: 22
+  fieldThickness: 0.14
+  fieldDensity: 0.9
+  detailScale: 0.55
+  referenceMaxEnergy: 100
+  baselineExpansion: 1.25
+  maxEnergySizeCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.5
+      value: 0.85
+      inSlope: 0.3
+      outSlope: 0.3
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0.3
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1.5
+      value: 1.5
+      inSlope: 1
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 2
+      value: 2
+      inSlope: 1
+      outSlope: 0.4
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 2.5
+      value: 2.2
+      inSlope: 0.4
+      outSlope: 0.2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 3
+      value: 2.3
+      inSlope: 0.2
+      outSlope: 0.2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  minimumSizeMultiplier: 0.5
+  maximumSizeMultiplier: 3
+  sizeResponseTime: 0.2
+  verticalSizeResponse: 0.5
+  innerFlowVisibility: 0.65
+  innerFlowDensity: 1
+  preserveLocalFlameShape: 1
+  extraFieldReach: 0.65
+  inkBoundaryScale: 1.3
+  inkInteriorArea: 0.8
+  detachedTips: 1
+  tipCycleRate: 0.7
+  upperFieldConnection: 1
+  lowerFieldConnection: 1
+  detailFlowCount: 24
+  surfaceOffset: 0.012
+  lowerBodyWeight: 1.5
+  outwardFlow: 0.45
+  upwardFlow: 0.85

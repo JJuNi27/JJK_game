@@ -347,8 +347,8 @@ namespace JJKGame.Shibuya.EditorTools
             m.Player.transform.rotation = Quaternion.identity;
         }
         private static void Record(string scenario, string details) {
-            System.IO.Directory.CreateDirectory("Logs/ShibuyaPass3AQA");
-            System.IO.File.AppendAllText("Logs/ShibuyaPass3AQA/metrics.txt", scenario + ": " + details + Environment.NewLine);
+            System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3AQA"));
+            System.IO.File.AppendAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3AQA/metrics.txt"), scenario + ": " + details + Environment.NewLine);
         }
         private static IEnumerator Wait(float seconds) { float end = Time.time + seconds; while (Time.time < end) yield return null; }
         private static IEnumerator Until(Func<bool> predicate, Func<string> diagnostic = null) {

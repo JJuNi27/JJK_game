@@ -34,16 +34,18 @@ namespace JJKGame.Core
         private float noticeUntil;
         private string noticeText = string.Empty;
         private bool profileApplied;
+        private float reportedMaximum;
 
         public event Action<CursedEnergyController, float> EnergyChanged;
 
         public CursedEnergyProfileId ActiveProfile => activeProfile;
         public CursedEnergyProfile Profile => profile;
         public string ProfileLabel => profileLabel;
-        public float MaxEnergy => maxEnergy;
+        public bool UsesHoldCharge => profile != null && profile.RecoveryMode == CursedEnergyRecoveryMode.HoldCharge;
+        public float MaxEnergy => UsesHoldCharge ? profile.MaxEnergy : maxEnergy;
         public float CurrentEnergy { get; private set; }
-        public float Normalized => maxEnergy > 0f
-            ? Mathf.Clamp01(CurrentEnergy / maxEnergy)
+        public float Normalized => MaxEnergy > 0f
+            ? Mathf.Clamp01(CurrentEnergy / MaxEnergy)
             : 0f;
         public string NoticeText => Time.time <= noticeUntil ? noticeText : string.Empty;
 
@@ -80,6 +82,7 @@ namespace JJKGame.Core
                 nextProfile.CostMultiplier, nextProfile.MinimumTechniqueCost, nextProfile.ProfileLabel);
             noticeDuration = nextProfile.NoticeDuration;
             profileApplied = true;
+            reportedMaximum = MaxEnergy;
             if (refill)
             {
                 CurrentEnergy = startingEnergy;
@@ -90,6 +93,18 @@ namespace JJKGame.Core
 
         private void Update()
         {
+            if (UsesHoldCharge)
+            {
+                // Opt-in only: old scenes retain their automatic recovery and cached legacy values.
+                // Maximum belongs to the profile; publish capacity changes even if current is unchanged.
+                bool changed = !Mathf.Approximately(reportedMaximum, MaxEnergy);
+                reportedMaximum = MaxEnergy;
+                float previous = CurrentEnergy;
+                SetEnergy(CurrentEnergy);
+                if (changed && Mathf.Approximately(previous, CurrentEnergy))
+                    EnergyChanged?.Invoke(this, CurrentEnergy);
+                return;
+            }
             if (
                 health == null
                 || health.IsDead
@@ -191,7 +206,7 @@ namespace JJKGame.Core
 
         public void Restore(float amount)
         {
-            if (amount > 0f)
+            if (amount > 0f && !float.IsNaN(amount) && !float.IsInfinity(amount))
             {
                 SetEnergy(CurrentEnergy + amount);
             }
@@ -207,7 +222,7 @@ namespace JJKGame.Core
 
         public void ResetEnergy()
         {
-            SetCurrentEnergy(Mathf.Clamp(startingEnergy, 0f, maxEnergy));
+            SetCurrentEnergy(UsesHoldCharge ? profile.StartingEnergy : Mathf.Clamp(startingEnergy, 0f, maxEnergy));
         }
 
         private void ConfigureValues(
@@ -233,7 +248,8 @@ namespace JJKGame.Core
 
         private void SetEnergy(float value)
         {
-            float clamped = Mathf.Clamp(value, 0f, maxEnergy);
+            if (float.IsNaN(value) || float.IsInfinity(value)) return;
+            float clamped = Mathf.Clamp(value, 0f, MaxEnergy);
             if (Mathf.Approximately(clamped, CurrentEnergy))
             {
                 return;

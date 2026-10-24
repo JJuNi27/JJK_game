@@ -2,6 +2,12 @@ using UnityEngine;
 
 namespace JJKGame.Core
 {
+    public enum CursedEnergyRecoveryMode
+    {
+        [InspectorName("자동 회복 (기존 전투)")] Automatic,
+        [InspectorName("홀드 충전")] HoldCharge
+    }
+
     [CreateAssetMenu(menuName = "JJK Game/Combat/Cursed Energy Profile", fileName = "Cursed Energy Profile")]
     public sealed class CursedEnergyProfile : ScriptableObject
     {
@@ -9,6 +15,9 @@ namespace JJKGame.Core
         [SerializeField, InspectorName("표시 이름"), Tooltip("HUD에 표시할 주력 프로필 이름입니다.")] private string profileLabel = "STANDARD";
         [SerializeField, InspectorName("최대 주력"), Min(1f)] private float maxEnergy = 100f;
         [SerializeField, InspectorName("시작 주력"), Min(0f)] private float startingEnergy = 100f;
+        [SerializeField] private CursedEnergyRecoveryMode recoveryMode;
+        [SerializeField, Range(0f, 1f)] private float startingRatio = 1f;
+        [SerializeField] private bool chargingEnabled = true;
         [Header("주력 회복")]
         [SerializeField, InspectorName("초당 회복량"), Min(0f)] private float regenerationPerSecond = 12f;
         [SerializeField, InspectorName("사용 후 회복 지연"), Min(0f)] private float regenerationDelayAfterSpend = 0.8f;
@@ -19,7 +28,11 @@ namespace JJKGame.Core
 
         public string ProfileLabel => string.IsNullOrWhiteSpace(profileLabel) ? name : profileLabel;
         public float MaxEnergy => Mathf.Max(1f, maxEnergy);
-        public float StartingEnergy => Mathf.Clamp(startingEnergy, 0f, MaxEnergy);
+        public CursedEnergyRecoveryMode RecoveryMode => recoveryMode;
+        public float StartingRatio => Mathf.Clamp01(startingRatio);
+        public bool ChargingEnabled => chargingEnabled;
+        public float StartingEnergy => recoveryMode == CursedEnergyRecoveryMode.HoldCharge
+            ? MaxEnergy * StartingRatio : Mathf.Clamp(startingEnergy, 0f, MaxEnergy);
         public float RegenerationPerSecond => Mathf.Max(0f, regenerationPerSecond);
         public float RegenerationDelayAfterSpend => Mathf.Max(0f, regenerationDelayAfterSpend);
         public float CostMultiplier => Mathf.Max(0f, costMultiplier);

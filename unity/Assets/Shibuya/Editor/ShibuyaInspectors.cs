@@ -8,8 +8,18 @@ namespace JJKGame.Shibuya.EditorTools
     public abstract class ShibuyaInspector : UnityEditor.Editor
     {
         private static readonly Dictionary<string, string> Labels = new Dictionary<string, string> {
+            {"cursedEnergy", "캐릭터 주력 능력치"},
+            {"cinematic", "유효 적중 시 시네마틱 설정"}, {"defaultFinisherCinematic", "기본 마지막 타격 시네마틱 (선택)"},
+            {"cinematicEnabled", "시네마틱 사용"}, {"triggers", "발동 가능한 마무리 종류"}, {"shots", "카메라 샷 순서"},
+            {"anchor", "샷 시점 기준"}, {"distance", "카메라 거리"}, {"height", "카메라 높이"}, {"angle", "카메라 수평 각도"},
+            {"positionOffset", "기준 로컬 위치 보정"}, {"lookOffset", "주시점 로컬 보정"}, {"rotationOffset", "카메라 회전 보정"},
+            {"fieldOfView", "카메라 시야각"}, {"blendTime", "샷 전환 시간"}, {"blendIn", "시작 블렌딩 시간"}, {"blendOut", "복귀 블렌딩 시간"},
+            {"maximumSeparation", "참가자 최대 간격 (초과 시 취소)"}, {"holdMotion", "연출 중 기존 이동·물리 정지"},
+            {"holdFacing", "참가자 방향 유지"}, {"blockThirdPartyDamage", "연출 외 피해·경직·넉백 차단"},
+            {"allowAuthoredDamage", "명시적인 참가자 연출 피해 허용"}, {"cancelOnAttackInput", "새 공격 입력으로 연출 취소 (입력 재실행 없음)"},
+            {"cancelOnMoveInput", "이동 입력으로 연출 취소"}, {"cancelOnObstruction", "참가자 사이 지형 차단 시 취소"},
             {"aerialHoverEnabled", "공중 공격 중 완전 체공"}, {"aerialMaxHoverTime", "공중 연계 총 체공 상한 (실시간)"},
-            {"aerialLinkInputWindow", "공중 후속 클릭 허용 시간 (0이면 1회만)"}, {"holdVictimOnAirHit", "유효 공중 피격 경직 중 높이 유지"},
+            {"aerialLinkInputWindow", "공중 후속 클릭 허용 시간 (0이면 1회만)"}, {"holdVictimOnAirHit", "유효 공중 연계 중 피격자 높이 유지"},
             {"aerialCombat", "공중 추격·체술 설정"}, {"chaseEnabled", "공중 추격 사용"},
             {"chaseInputWindow", "어퍼컷 적중 후 Space 허용 시간"}, {"chaseInputBuffer", "추격 입력 버퍼 시간"},
             {"chaseMaxRange", "추격 대상 최대 거리"}, {"chaseMaxTravel", "추격 누적 이동 상한"},
@@ -21,6 +31,7 @@ namespace JJKGame.Shibuya.EditorTools
             {"chasePredictionLimit", "추격 예측 이동 상한"}, {"chaseMaxTurnAngle", "추격 누적 회전 상한"},
             {"chaseTurnSpeed", "추격 회전 속도"}, {"chaseStallTimeout", "충돌 정체 종료 시간"},
             {"chaseLandingSeparationSpeed", "추격 후 착지 캡슐 분리 속도"},
+            {"chaseContactHoldTime", "추격 도착 무피해 접촉 경직·높이 유지 시간"},
             {"aerialInputWindow", "도착 후 공중 체술 입력 시간"}, {"aerialMaxHeightDifference", "공중 타격 허용 높이 차"},
             {"aerialAirControl", "추격 후 낙하 중 이동 입력 배율"}, {"failureFallSpeedLimit", "추격 실패 직후 낙하 속도 상한"},
             {"chaseLeanAngle", "추격 자세 기울기"}, {"aerialAttack", "LMB 1회 공중 체술 단계"},

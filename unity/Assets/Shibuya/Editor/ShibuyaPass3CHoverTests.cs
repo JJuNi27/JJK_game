@@ -86,19 +86,24 @@ namespace JJKGame.Shibuya.EditorTools
             Assert.That(Time.unscaledTimeAsDouble-began,Is.LessThan(1.04));Assert.That(P.TryAttack(),Is.False);
             Assert.That(P.AirChaseCount,Is.EqualTo(1));Assert.That(P.AcceptedAttackCount,Is.EqualTo(count+1));yield return Land();
         }
-        [UnityTest] public IEnumerator SuccessfulAttackGraceIsShortAndDoesNotHoldRecoveredDefender() {Open();yield return new EnterPlayMode();yield return Grace();yield return new ExitPlayMode();}
+        [UnityTest] public IEnumerator SuccessfulAttackGraceHoldsConfirmedVictimThenReleasesBoth() {Open();yield return new EnterPlayMode();yield return Grace();yield return new ExitPlayMode();}
         private IEnumerator Grace() {
             yield return Setup();yield return Pursuit();Assert.That(P.TryAttack());yield return Until(()=>!P.IsAirAttacking);
-            Assert.That(P.IsAerialHovering);float y=P.transform.position.y;Assert.That(D.IsHeldByAerialHit,Is.False);
+            Assert.That(P.IsAerialHovering);float y=P.transform.position.y,dy=D.transform.position.y;Assert.That(D.IsHeldByAerialHit);
             yield return Wait(.04f);Assert.That(P.transform.position.y,Is.EqualTo(y).Within(.001f));
-            yield return Wait(.13f);Assert.That(!P.IsAerialHovering&&!P.CanAirAttack);Assert.That(P.TryAttack(),Is.False);yield return Land();
+            Assert.That(D.transform.position.y,Is.EqualTo(dy).Within(.001f));Assert.That(D.IsHeldByAerialHit);
+            yield return Wait(.13f);Assert.That(!P.IsAerialHovering&&!P.CanAirAttack&&!D.IsHeldByAerialHit);
+            Assert.That(P.TryAttack(),Is.False);Assert.That(D.transform.position.y,Is.LessThan(dy));yield return Land();
         }
-        [UnityTest] public IEnumerator StunExpiryReleasesVictimWhileAttackerRecoveryStillHovers() {Open();yield return new EnterPlayMode();yield return Stun();yield return new ExitPlayMode();}
+        [UnityTest] public IEnumerator StunExpiryKeepsConfirmedAirHeightUntilLinkWindowEnds() {Open();yield return new EnterPlayMode();yield return Stun();yield return new ExitPlayMode();}
         private IEnumerator Stun() {
             yield return Setup();P.AerialDefinition.aerialAttack.hits=new[]{P.AerialDefinition.aerialAttack.hits[0]};
             var s=P.AerialDefinition.aerialAttack.hits[0].strike;s.hitStun=.025f;s.recovery=.3f;s.hitStopDuration=0;
             yield return Pursuit();Assert.That(P.TryAttack());yield return Until(()=>D.IsHeldByAerialHit);float y=D.transform.position.y;
-            yield return Until(()=>!D.IsHeldByAerialHit);Assert.That(P.IsAirAttacking);Assert.That(P.IsAerialHovering);
+            // PASS 3C.1 explicitly separates short hit-stun from the finite, actual-hit air relation.
+            yield return Wait(.08f);Assert.That(P.IsAirAttacking);Assert.That(P.IsAerialHovering);
+            Assert.That(D.IsHeldByAerialHit);Assert.That(D.transform.position.y,Is.EqualTo(y).Within(.001f));
+            yield return Until(()=>!P.IsAerialHovering);yield return null;Assert.That(D.IsHeldByAerialHit,Is.False);
             yield return Wait(.06f);Assert.That(D.transform.position.y,Is.LessThan(y-.01f));yield return Land();
         }
         [UnityTest] public IEnumerator ImmunityReleasesVictimAndPreventsFollowingDamage() {Open();yield return new EnterPlayMode();yield return Immunity();yield return new ExitPlayMode();}
@@ -173,7 +178,7 @@ namespace JJKGame.Shibuya.EditorTools
         private static IEnumerator Wait(float seconds){float end=Time.time+seconds;while(Time.time<end)yield return null;}
         private static IEnumerator Until(Func<bool> test){float end=Time.realtimeSinceStartup+7;while(!test()&&Time.realtimeSinceStartup<end)yield return null;Assert.That(test(),Is.True,"air hover scenario timed out");}
         [Serializable] private sealed class Metric {public string scenario;public float startY,minY,maxY,other;}
-        private static void Record(string name,float start,float min,float max,float other){System.IO.Directory.CreateDirectory("Logs/ShibuyaPass3CHoverQA");System.IO.File.AppendAllText("Logs/ShibuyaPass3CHoverQA/metrics.jsonl",JsonUtility.ToJson(new Metric {scenario=name,startY=start,minY=min,maxY=max,other=other})+Environment.NewLine);}
+        private static void Record(string name,float start,float min,float max,float other){System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3CHoverQA"));System.IO.File.AppendAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3CHoverQA/metrics.jsonl"),JsonUtility.ToJson(new Metric {scenario=name,startY=start,minY=min,maxY=max,other=other})+Environment.NewLine);}
         [UnityTearDown] public IEnumerator Leave(){if(EditorApplication.isPlaying)yield return new ExitPlayMode();}
         [TearDown] public void Cleanup(){foreach(var obj in Resources.FindObjectsOfTypeAll<ScriptableObject>())if(obj.name.StartsWith("PASS3CHover QA",StringComparison.Ordinal)&&!AssetDatabase.Contains(obj))Object.DestroyImmediate(obj);}
     }

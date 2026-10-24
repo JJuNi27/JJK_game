@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adc8d60e4cb8cbd44a223bab4d2ab737, type: 3}
   m_Name: Shibuya Combat Profile
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaCombatProfile
+  cursedEnergy: {fileID: 11400000, guid: 17ee697916fee58429378ee6e35e5dc9, type: 2}
   walkSpeed: 4.8
   runSpeed: 8.5
   turnSpeed: 720

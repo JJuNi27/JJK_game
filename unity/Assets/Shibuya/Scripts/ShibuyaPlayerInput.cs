@@ -5,7 +5,7 @@ namespace JJKGame.Shibuya
     public struct ShibuyaInputFrame
     {
         public Vector2 move, look;
-        public bool run, jump, attack;
+        public bool run, jump, attack, lockHeld, auraHeld;
         public bool forwardKey, backwardKey;
     }
 
@@ -18,12 +18,28 @@ namespace JJKGame.Shibuya
         private bool previousAttack;
         private bool previousJump;
         public Vector2 MoveAxes { get; private set; }
+        public ShibuyaLockOn LockOn { get; private set; }
+        public CursedEnergyAuraController Aura {get;private set;}
+        public ShibuyaEnergyCharge EnergyCharge { get; private set; }
 #if UNITY_EDITOR
         public System.Func<ShibuyaInputFrame> TestInput;
 #endif
         public void Configure(ShibuyaOrbitCamera camera) => orbitCamera = camera;
         private void Awake() => fighter = GetComponent<ShibuyaFighter>();
-        private void Start() => Capture(true);
+        private void Start()
+        {
+            Aura=GetComponent<CursedEnergyAuraController>()??gameObject.AddComponent<CursedEnergyAuraController>();
+            EnergyCharge = GetComponent<ShibuyaEnergyCharge>() ?? gameObject.AddComponent<ShibuyaEnergyCharge>();
+            var settings = Resources.Load<ShibuyaLockOnProfile>("Shibuya Lock On");
+            if (orbitCamera != null && settings != null) {
+                LockOn = GetComponent<ShibuyaLockOn>() ?? gameObject.AddComponent<ShibuyaLockOn>();
+                LockOn.Configure(fighter, orbitCamera.GetComponent<Camera>(), settings);
+                fighter.BindLockOn(LockOn); orbitCamera.BindLockOn(LockOn);
+                var ui = GetComponent<ShibuyaLockOnPresentation>() ?? gameObject.AddComponent<ShibuyaLockOnPresentation>();
+                ui.Configure(LockOn, orbitCamera.GetComponent<Camera>());
+            }
+            Capture(true);
+        }
         private void Update()
         {
             if (fighter.State == ShibuyaFighterState.Dead || fighter.State == ShibuyaFighterState.Finished)
@@ -31,6 +47,7 @@ namespace JJKGame.Shibuya
                 MoveAxes = Vector2.zero;
                 Capture(false);
                 fighter.SetIntent(Vector3.zero, false, false);
+                if(Aura!=null)Aura.Clear();
                 return;
             }
             ShibuyaInputFrame frame;
@@ -45,6 +62,8 @@ namespace JJKGame.Shibuya
                     MoveAxes = Vector2.zero;
                     if (Input.GetMouseButtonDown(0)) Capture(true);
                     fighter.SetIntent(Vector3.zero, false, false);
+                    if(Aura!=null)Aura.SetHeld(false);
+                    if(EnergyCharge!=null)EnergyCharge.CancelCharge();
                     return;
                 }
                 frame = new ShibuyaInputFrame {
@@ -52,10 +71,14 @@ namespace JJKGame.Shibuya
                     look = new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")),
                     run = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift),
                     jump = Input.GetKeyDown(KeyCode.Space), attack = Input.GetMouseButtonDown(0),
-                    forwardKey = Input.GetKey(KeyCode.W), backwardKey = Input.GetKey(KeyCode.S)
+                    forwardKey = Input.GetKey(KeyCode.W), backwardKey = Input.GetKey(KeyCode.S),
+                    lockHeld = Input.GetMouseButton(2), auraHeld=Input.GetKey(KeyCode.F)
                 };
             }
             MoveAxes = frame.move; // Keep command intent separate from attack locomotion filtering.
+            if(Aura!=null)Aura.SetHeld(frame.auraHeld);
+            if(EnergyCharge!=null)EnergyCharge.SetHeld(frame.auraHeld);
+            if (LockOn != null) LockOn.HandleButton(frame.lockHeld, Time.unscaledTimeAsDouble);
             orbitCamera.ApplyLook(frame.look);
             Vector3 forward = orbitCamera.transform.forward; forward.y = 0f; forward.Normalize();
             Vector3 right = orbitCamera.transform.right; right.y = 0f; right.Normalize();
@@ -68,11 +91,14 @@ namespace JJKGame.Shibuya
         }
         private void Capture(bool value)
         {
+            if(!value&&Aura!=null)Aura.SetHeld(false);
+            if(!value&&EnergyCharge!=null)EnergyCharge.CancelCharge();
+            if (!value && LockOn != null) LockOn.CancelSearch();
             captured = value;
             Cursor.lockState = value ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !value;
         }
         private void OnApplicationFocus(bool focus) { if (!focus) Capture(false); }
-        private void OnDisable() { MoveAxes = Vector2.zero; previousAttack = previousJump = false; Capture(false); }
+        private void OnDisable() { MoveAxes = Vector2.zero; previousAttack = previousJump = false; Capture(false); if (LockOn != null) LockOn.Clear(); }
     }
 }

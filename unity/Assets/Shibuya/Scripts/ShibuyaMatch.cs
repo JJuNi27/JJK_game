@@ -11,6 +11,9 @@ namespace JJKGame.Shibuya
         private Font font;
         public ShibuyaFighter Player => player;
         public ShibuyaFighter Dummy => dummy;
+        // Deliberately owner-specific: never enumerate opponents' resource controllers for HUD.
+        public ShibuyaEnergyCharge PlayerCharge => player != null ? player.GetComponent<ShibuyaEnergyCharge>() : null;
+        public CursedEnergyController PlayerEnergy => PlayerCharge != null ? PlayerCharge.Resource : null;
         public bool Finished { get; private set; }
         public bool Victory { get; private set; }
         public void Configure(ShibuyaFighter playerActor, ShibuyaFighter dummyActor) { player = playerActor; dummy = dummyActor; }
@@ -62,9 +65,10 @@ namespace JJKGame.Shibuya
             float scale = Mathf.Clamp(Screen.height / 900f, 0.75f, 1.5f);
             GUIStyle label = new GUIStyle(GUI.skin.label) { font = font, fontSize = Mathf.RoundToInt(18 * scale) };
             DrawHealth(new Rect(24, Screen.height - 80 * scale, 280 * scale, 28 * scale), player.Health, "플레이어", new Color(0.15f, 0.8f, 0.28f), label);
+            DrawEnergy(new Rect(24, Screen.height - 46 * scale, 280 * scale, 26 * scale), label);
             DrawHealth(new Rect(24, 24, 240 * scale, 24 * scale), dummy.Health, "훈련 더미", new Color(0.9f, 0.36f, 0.2f), label);
             GUI.Label(new Rect(24, 58 * scale, Screen.width - 48, 70 * scale),
-                "WASD 이동 · Shift 달리기 · Space 점프 · 마우스 시점 · 좌클릭 타격\nESC 마우스 해제 · 화면 클릭으로 조작 재개", label);
+                "WASD 이동 · Shift 달리기 · Space 점프 · 마우스 시점 · 좌클릭 타격\nF 홀드 주력 충전 · ESC 마우스 해제 · 화면 클릭으로 조작 재개", label);
             if (!Finished) return;
             Rect panel = new Rect(Screen.width * 0.5f - 200, Screen.height * 0.5f - 90, 400, 180);
             GUI.Box(panel, GUIContent.none);
@@ -81,6 +85,18 @@ namespace JJKGame.Shibuya
             GUI.DrawTexture(new Rect(rect.x + 2, rect.y + 2, (rect.width - 4) * health.CurrentHealth / health.MaxHealth, rect.height - 4), Texture2D.whiteTexture);
             GUI.color = old;
             GUI.Label(rect, $" {title}  {health.CurrentHealth:0} / {health.MaxHealth:0}", label);
+        }
+        private void DrawEnergy(Rect rect, GUIStyle label)
+        {
+            var energy = PlayerEnergy;
+            if (energy == null) return;
+            Color old = GUI.color;
+            GUI.color = new Color(.06f, .07f, .09f, .9f); GUI.DrawTexture(rect, Texture2D.whiteTexture);
+            GUI.color = new Color(.12f, .42f, .95f);
+            GUI.DrawTexture(new Rect(rect.x + 2, rect.y + 2, (rect.width - 4) * energy.Normalized, rect.height - 4), Texture2D.whiteTexture);
+            GUI.color = old;
+            string status = PlayerCharge.IsCharging ? energy.Normalized >= 1 ? " · 최대 유지" : " · 충전 중" : "";
+            GUI.Label(rect, $" 주력 {energy.CurrentEnergy:0} / {energy.MaxEnergy:0}{status}", label);
         }
     }
 }

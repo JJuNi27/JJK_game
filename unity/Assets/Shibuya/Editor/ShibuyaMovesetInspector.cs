@@ -36,6 +36,7 @@ namespace JJKGame.Shibuya.EditorTools
     }
 
     [CustomPropertyDrawer(typeof(ShibuyaMovesetStep))]
+    [CustomPropertyDrawer(typeof(ShibuyaCinematicShot))]
     [CustomPropertyDrawer(typeof(ShibuyaMovementDefinition))]
     [CustomPropertyDrawer(typeof(ShibuyaHitEvent))]
     [CustomPropertyDrawer(typeof(ShibuyaAirSettings))]

@@ -30,6 +30,7 @@ MonoBehaviour:
   chaseTurnSpeed: 720
   chaseStallTimeout: 0.08
   chaseLandingSeparationSpeed: 8
+  chaseContactHoldTime: 0.18
   aerialInputWindow: 0.55
   aerialMaxHeightDifference: 1.1
   aerialAirControl: 0.25

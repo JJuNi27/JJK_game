@@ -1,80 +1,77 @@
 # JJK_game — Current Project Handoff
 
-작성 기준: **2026-10-20**  
-저장소: `JJuNi27/JJK_game` · 브랜치: `feat/shibuya-combat-mvp`  
-마지막 GitHub 승인 HEAD: `6655f19e7ef64f7a6e6a5c36876057a9d881c3f0` (PASS 3C USER VERIFIED)
+작성 기준: **2026-10-25 KST**
+저장소: `JJuNi27/JJK_game` · 브랜치: `feat/shibuya-combat-mvp`
+이번 체크포인트의 부모 기준: `42833ebfec9a176056ae983096c41c1ef4d8fb24`.
+마지막 이전 USER VERIFIED 구현 원격 기준은 `6655f19`(PASS 3C)였다. 이번에는 그 이후 미커밋 의존성을 포함해 PASS 4B.4a까지 함께 저장한다. 체크포인트 SHA와 원격 반영 여부는 실제 Git HEAD/origin을 확인한다. 로컬 QA 원본/미디어까지 GitHub에 올라간 것으로 해석하지 않는다.
 
-> **원격/로컬 구분:** PASS 3D는 로컬 미커밋 작업으로 보고되었다. 이 문서의 PASS 3D 세부 상태는 사용자가 가져온 2026-10-20 Codex 보고 기반으로, GitHub의 코드에 존재한다는 뜻이 아니다. 새 세션은 실제 로컬 Git/QA 상태를 확인해야 한다.
+## 1. 게임 방향과 보호
 
-## 1. 프로젝트 방향
+Unity 6 URP 기반 3D 자유 이동 격투게임. 현재는 ShibuyaCombatMVP의 블록 플레이어/더미로 1:1 공통 전투를 검증한다. 장기 목표는 넓은 도시, 캐릭터 선택, 독립 무브셋·술식·영역전개, 자유 난전·다인전·멀티플레이다.
 
-Unity 6 URP 기반 주술회전 3D 자유 이동 격투게임 `JJK_game`.
+Gojo는 첫 캐릭터이며 전용 VFX·모델·애니메이션·승인값은 동결 보존한다. 과거 Gojo 백업 기준은 `backup/gojo-vfx-wip-20261017`의 `540272a`; 모든 로컬 QA가 백업에 포함됐다고 가정하지 않는다. 과거 Purple 인수인계는 `6655f19` 시점 문서 및 Purple 보고서를 참조한다.
 
-- **현재:** 시부야 교차로 블록아웃·임시 파이터/더미로 공통 전투의 조작감, 피격/추적/공중전, 이동·충돌 시스템 검증. 첫 MVP는 1:1.
-- **장기:** 캐릭터 선택, 개별 무브셋·술식·영역전개·각성, 넓은 시부야 도시 전투, 환경 파괴, 자유 난전과 다인전·멀티플레이.
-- **고죠:** 첫 제작 캐릭터이지 고정 주인공 아님. 기존 고죠 모델·애니메이션, VFXLab, Blue/Red/Purple, 무량공처 및 USER VERIFIED 설정은 보존하고 나중에 새 엔진에 통합.
-- **개발 규칙:** Data Asset에서 게임플레이 튜닝(코드는 HOW, 데이터는 WHAT), Unity Inspector의 실제 사용자 설정 필드는 한국어, 기존 승인 기능 보호.
+실제 로컬 작업 상태 → 최신 handoff/current task → locked settings → 관련 설계/보고서 순으로 확인한다. 사용자-facing Inspector는 한국어, 코드는 HOW/Data Asset은 WHAT. D:\JJK_game 하나를 사용하며 사용자 승인 없이 새 worktree·reset/clean/덮어쓰기/commit/push를 하지 않는다.
 
-상세: `AGENTS.md`, `docs/design/GAME_VISION.md`, `docs/design/SHIBUYA_COMBAT_REBOOT.md`.
+## 2. 체크포인트 구현 범위
 
-## 2. 2026-10-17 개발 방향 전환
+- 기존 PASS 1~3C: 자유 이동/점프/카메라, 기본4타, W 업/S 다운, 제한 추적·정렬·방향 피격, 국소 히트스톱, 데이터 기반 무브셋, Space 공중 추격, 공중 LMB 2+2+1과 유한 체공.
+- PASS 3D/공중 접촉: 유효 마무리 적중 후 참가자2명 세션·외부 간섭 차단·참가자 카메라, 무피해 추격 도착·자연 낙하, 새 피격의 이동 소유권.
+- PASS 3C.1: 공중 후속 입력 유예 동안 피격자 높이 유지 관계. 거리·시간·피격 소유권 경계를 유지하며 전체18건 회귀를 해결했다고 선언하지 않는다.
+- PASS 4A/4A.1/4A.2/4A.2.1: MMB 선택/해제, 신규50m/유지60m·시야 상실1.5초 유예, 락온 공격 방향, 3D 조준 제공, 수동 카메라 우선·시네마틱 소유권·최고 pitch 화면 밖 복구.
+- PASS 4B~4B.3c: 공통 전신 혼령 아우라, 청록/핑크/초록, 먹물/Interior/분리 화염, 국소 형태 보존과 상하 연결, 최대 주력량 기반 크기.
+- PASS 4B.4: 기존 CursedEnergyProfile/Controller 재사용, F 홀드 충전·현재 주력·소비/회복 API·변경 이벤트, 본인 파란 HUD, 최대치에서도 홀드 시간, 정상 해제/중단 이벤트 구분.
+- PASS 4B.4a: 승인 후보를 저장 기본·Pink·Green에 직렬화. **QA 메뉴 없이 일반 F에서 최신 표현**.
 
-이전에는 고죠 1명의 고품질 기술/VFX를 먼저 완성하는 순서였다. 현재는 **누구나 사용할 수 있는 재미있는 공통 전투 엔진을 먼저 만들고**, 그 위에 실제 캐릭터·전용 무브셋·고급 VFX를 결합하는 순서로 바꿨다.
+## 3. USER VERIFIED 범위
 
-이는 고죠 VFX를 폐기하거나 품질을 포기한 결정이 아니다. 기존 백업 브랜치 `backup/gojo-vfx-wip-20261017`의 체크포인트 `540272aaf609f7498d01bc9a96ea85ba678ed1cd`와 별도 ZIP 백업이 있다고 이전 Codex가 보고했다. 백업에 모든 QA 원시 로그까지 담겨 있다고 가정하지 않는다.
+기존 PASS 1~3C의 직접 승인 범위를 유지한다. 2026-10-22 직접 승인: W 어퍼컷→Space 무피해 접촉·자연 낙하, 추격 후 공중3클릭, 시네마틱 발동·카메라 복귀. 캐릭터 세부 모션과 시네마틱 구도·연출 품질은 승인에서 제외한다.
 
-이 파일을 덮어쓰기 전의 **고죠 Purple 인수인계 원문은 Git 체크포인트 `6655f19`에서의 `docs/CURRENT_HANDOFF.md`** 및 `docs/PURPLE_TEMPEST_POLISH_REVIEW.md`에서 확인한다. 과거 Purple의 시각 승인 대기 상태는 현재 PASS 3D 승인 상태와 별개다.
+PASS 4A의 기본 선택/거리/시야 해제, PASS 4A.1 공격 방향 전환의 속도·자연스러움은 사용자가 직접 확인한 범위다. 자동 검사만 통과한 카메라 경계·모든 해상도·다인전 품질을 승인으로 확대하지 않는다.
 
-## 3. 승인 완료된 시부야 PASS
+**2026-10-25 현재 요청에서 사용자가 확인·승인한 항목:**
+- 전신 혼령 주력 아우라의 시각적 방향.
+- 별도 QA 메뉴 없이 일반 F 홀드에서 최신 아우라가 출력됨.
+- 실제 F 홀드 주력 충전 동작.
+- 현재까지의 관련 시부야 구현을 하나의 Git 체크포인트로 저장.
 
-마지막 USER VERIFIED 원격 커밋: `6655f19e7ef64f7a6e6a5c36876057a9d881c3f0`.
+극단적 충돌·무적·입력·저프레임·리소스 경계, 픽셀 비교 등 자동 검증 세부는 CODEX VALIDATED로 구분한다.
 
-- **PASS 1:** 교차로 전투 씬, 이동/카메라, HP, 승패·재시작.
-- **PASS 2~2.3:** 기본 LMB 4타, 피격·넉백·방향 정렬·국소 히트스톱.
-- **PASS 3A:** 데이터 기반 공통 무브셋, 한 입력 안의 순차 다중 타격, 제한된 넉백 후 접근.
-- **PASS 3B/3B.1:** 마지막 4타에서 W 어퍼컷 / S 다운, 근접 유한 추적, 공중 궤도·착지, 지면 균열.
-- **PASS 3C:** 어퍼컷 적중 후 선택적 Space 공중 추격, 일반 점프와 공통 공중 LMB, 제한된 체공·착지. 공중 LMB 세 번의 최대 2+2+1 이벤트는 서로 다른 공중 기술 데이터 세 개가 아니라 유효 입력으로 공통 단계를 연계하는 구조다.
+## 4. 저장 설정과 미구현 사항
 
-승인 범위는 `docs/SHIBUYA_PASS3C_REVIEW.md` 및 각 PASS 보고서에 명시된 직접 플레이 범위로 제한한다. 자동 검사 합격은 USER VERIFIED와 다르다. `docs/locked/USER_VERIFIED_SETTINGS.md`는 고죠의 보호값도 포함한다.
+- 기본 지상 피해20/20/20/25, Dummy HP1000, Player HP100 유지.
+- 주력 최대치 단일 원천: Shibuya Combat Profile → Shibuya Cursed Energy.MaxEnergy. 현재 저장 최대100, 시작 비율1, 홀드 충전 가능, 초당12. 기존 Gojo의 자동 회복은 별도 기본 모드로 보존.
+- 아우라 저장 곡선 **100→1.0 / 150→1.5 / 200→2.0**, 최소0.5/최대3.0. 현재 잔량은 크기에 영향 없음.
+- Details OFF, 국소 형태 보존 ON, 추가 확장0.65, 먹물 경계1.30/내부 비중0.80, 분리 화염 ON, 상하 연결1/1. Interior0.65/밀도1, 분리 교체속도0.7 유지.
+- **2.7/3.0/3.5/4.0은 비교용 실험이며 최종 기본 배율 미선택.** 기존4.0 임시 미리보기/Inspector 조절 경로 유지.
+- 시네마틱 예제는 저장 기본 OFF.
+- **신체 강화 패시브는 사용자 결정으로 보류.** 준비 상태·임팩트 프레임·F 해제 버프·강화 아우라 지속·공격/이속 강화·W+F 대시는 구현하지 않음. 홀드/해제 API만 존재.
 
-## 4. 현재 작업 — PASS 3D (로컬)
+## 5. 검증 근거와 남은 이력
 
-**LOCAL UNCOMMITTED / CODEX VALIDATED 미완료 / USER VERIFIED 미승인.**
+| 범위 | 기록 |
+|---|---|
+| PASS3D 기존 회귀135 + 시네마틱18 | 단일153 PASS / 0 FAIL / 0 SKIP, `unity/Logs/ShibuyaPass3DAirContactQA/20261022/final-regression-153/results.xml` |
+| 공중 접촉·이동 신규 | 별도 복수 실행의 최신 고유18 PASS |
+| PASS4A | 최초190개171 PASS/19 FAIL, 후속 조사 후 기존 회귀18건 미해결 기록 유지 |
+| PASS4B.4 | 별도 실행9 PASS + 6 PASS, 관련2건 재확인. 최신 고유15 PASS |
+| PASS4B.4a | 최초5 PASS/2 FAIL, 후속0 PASS/3 FAIL, 검사 구성 보완 후3 PASS. 현행 최신 고유8 PASS, 폐기된 복합 재진입 timeout도 원본 보존 |
+| 일반F/승인미리보기 | 같은 설정/위상/카메라의 정지30쌍 RGB 차이0, 전체 움직임 픽셀 보증 아님 |
 
-목표: 실제 피해가 적용된 **비치명적 마무리 적중**에만 짧은 2인 시네마틱. 미적중/무적/치명적 종료에 오작동하지 않고, 제3자 피해·카메라·전투 시간을 전역 정지하지 않는다. 참여자 두 명에게 한정된 카메라 및 보호 상태를 적용하고 취소·전투 종료에 복구한다. 약 0.5초/3샷 예제, 데이터/한국어 Inspector, 저장 기본 OFF, Play Mode 전용 선택.
+마지막4B.4a compile 성공, Console 현재 error0/warning1(기존 font reference). 과거 오류·실패 XML은 보존했다. 이번 체크포인트는 파일/참조/이전 증거 검토이며 전체 회귀를 다시 실행하지 않는다.
 
-**사용자가 전달한 2026-10-20 Codex 결과:**
-- PASS 3D 신규 시네마틱 **18개 고유 검사 PASS** (기존 XML 재검토 보고).
-- 기존 회귀 135개: **케이스별 최신 134 PASS / 1 FAIL / 미실행 0**. 여러 실행에서 최신 결과를 모은 수치로 **단일 전체 135 PASS 실행이 아니다**.
-- 남은 실패: `ShibuyaPass3CAirCountTests.ThreeClicksOnHitRequireThreeAcceptedSteps`.
-- 입력 3회/수락 단계 3개/타격 이벤트 5개는 정상이나, 실제 적중은 **4/5**, 피해 **50/62**.
-- 대표 실패에서 마지막 이벤트 시 공격자·피격자 Z 간격 약 **2.125m**, 높이 차 약 **0.671m**. 별도 물리 검사에서 `OverlapSphere` 제외도 확인.
-- 확인된 직접 현상은 공중 수평 거리 증가에 따른 물리 사거리 이탈. **PASS 3D 신규 회귀인지, PASS 3C 잠재 문제인지는 INCONCLUSIVE**. 동일 환경 A/B 비교 미수행. PASS 3D 공통 `ShibuyaFighter` 연결 코드는 변경됨.
-- 원본 QA XML·실패 기록을 보존했다고 보고. 실패가 남았으므로 전체 CODEX VALIDATED/USER VERIFIED 선언 금지.
+체크포인트 staged `git diff --check`는 기존 Unity 생성 빈 YAML/meta 필드와 테스트 마지막 빈 줄 때문에 형식 경고60건(24파일)을 냈다. 의미상 문제/충돌 표식은 없고, 원본 자산 바이트 보존을 위해 공백을 자동 정리하지 않았다. 해당2종 공백 규칙만 명령 단위로 제외한 추가 검사는 통과했으며 Git 설정은 변경하지 않았다.
 
-현재 작업 상세: `docs/active/CURRENT_TASK.md`.
-로컬 전용 `docs/SHIBUYA_PASS3D_REVIEW.md`는 untracked라고 보고됐으며 이 GitHub 문서 갱신에 포함하지 않는다.
+**과거 PASS4A의18건은 해결됐다고 취급하지 않는다.** 후속 targeted PASS로 전체 원인을 소급 확정하지 않는다. 과거 공중 사거리 실패의 PASS3D 유발 여부도 INCONCLUSIVE 유지. 상세: `SHIBUYA_PASS4A_REVIEW.md`, 각 후속 PASS 보고서.
 
-## 5. 로컬 Git/Unity 상태 (2026-10-20 Codex 읽기 전용 보고)
+검증 보고서는 Git에 포함하지만 Logs의 원본 XML/trace/이미지/영상은 로컬 전용이다. Library/Temp/UserSettings/LocalModels/LocalAudio/레퍼런스도 제외·보존한다. 아우라 레거시 설정은 `docs/archive/CURSED_ENERGY_AURA_PRE_4B4A.json`에 별도 보존한다.
 
-- 로컬 브랜치 및 이전 원격 추적 ref `feat/shibuya-combat-mvp`, HEAD `6655f19`, ahead/behind 0/0 (fetch 없이 확인한 값).
-- staged **0**, unstaged **8**, untracked **15**. PASS 3D 코드·데이터와 위 보고서 중심.
-- `AGENTS.md`, `docs/CURRENT_HANDOFF.md`, `docs/active/CURRENT_TASK.md`에는 로컬 미커밋 변경 없음.
-- Unity `Play Unfocused` 설정/백업은 확인했으나 실제 Windows 포커스 문제 해결은 아직 미확정.
-- 이 현황은 그때의 로컬 조사 결과다. 새 세션 시작 시 재확인한다.
+## 6. 재현과 후속 작업
 
-## 6. 당장 해야 할 일과 이후 후보
+씬: `unity/Assets/Shibuya/Scenes/ShibuyaCombatMVP.unity`.
+- 일반 F: 메뉴 없이 홀드→최신 아우라/충전/본인 HUD, 해제→중단. 기본 시작은 최대치이므로 런타임 ShibuyaEnergyCharge 메뉴의 현재 주력 비우기로 회복을 확인할 수 있다.
+- W+4타→새 Space→도착 후 새 LMB3회. 클릭이 없으면 접촉 후 자연 낙하.
+- 시네마틱: `JJK Game → 시부야 PASS3D → 시네마틱 예제 ON (Play Mode 전용)`; OFF 또는 Play 종료로 해제.
+- 아우라4배 비교: `JJK Game → 시부야 PASS4B3c`의 임시 배율/200기준 곡선 메뉴. 사용 후 저장 프로필 복귀.
 
-1. 로컬 dirty tree, QA 증거 및 Unity 프로세스를 읽기 전용으로 확인.
-2. 공중 마지막 타격 실패의 사거리/타이밍/추적 호출 경로를 조사. PASS 3C 승인 기준과 PASS 3D WIP를 동등 조건에서 비교할 **비파괴적 A/B 방법**을 먼저 설계.
-3. 기존 PASS 3C 수치·타격 판정 assertion을 느슨하게 바꾸지 않고 최소 수정·타깃 검증. 원본 실패 이력 보존.
-4. 사용자가 PASS 3D 시네마틱을 Play Mode에서 직접 검수, USER VERIFIED 여부 결정.
-5. 사용자 승인 후에만 별도 Git checkpoint.
-
-PASS 3D 이후에는 **방향 대시·회피, 가드, 패링, 잡기, 긴급 탈출**, 이후 주력·술식·각성·AI·HUD·캐릭터별 모션·기존 고죠 VFX 통합·다인전 확장이 후보. **세부 PASS 번호와 구현 순서까지 확정된 것은 아니므로 사용자와 토론해 합의한다.**
-
-## 7. 중요 보호 및 문서 확인 순서
-
-문서: `AGENTS.md` → 이 문서 → `docs/active/CURRENT_TASK.md` → 관련 PASS 보고서 → `docs/locked/USER_VERIFIED_SETTINGS.md` → `docs/design/SHIBUYA_COMBAT_REBOOT.md`.
-
-로컬 선호 경로 `D:\JJK_game` 한 곳. 기존 Gojo/VFX, 승인된 씬·데이터, 로컬 PASS 3D, QA 로그 보호. 사용자 승인 없는 commit/push, reset/clean, 위험한 checkout/restore, worktree 생성, 광범위한 자산 변경 금지.
+다음 기능은 별도 사용자 지시 대기. 지상 방향 대시·회피는 후보이고, 신체 강화는 보류다. 캐릭터 모션/시네마틱 구도, 과거18건 QA 원인, 다인전·성능·복잡한 맵 경계는 후속 범위다. 자동으로 구현하거나 승인 범위를 늘리지 않는다.

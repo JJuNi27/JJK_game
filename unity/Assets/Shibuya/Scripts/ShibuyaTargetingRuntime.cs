@@ -26,7 +26,7 @@ namespace JJKGame.Shibuya
         private float targetLastHitAt;
         private bool comboHasContact;
         private ShibuyaFighter[] eventAim;
-        private bool[] aimStarted, aimStopped;
+        private bool[] aimStarted, aimStopped, aimIsExplicit;
         private float[] aimTurns, aimDistances;
         private Vector3[] aimForward;
         public ShibuyaFighter ComboTarget => IsLiveTarget(comboTarget) ? comboTarget : null;
@@ -49,7 +49,30 @@ namespace JJKGame.Shibuya
         {
             int n=activeStep.hits.Length;
             eventAim=new ShibuyaFighter[n]; aimStarted=new bool[n]; aimStopped=new bool[n];
+            aimIsExplicit=new bool[n];
             aimTurns=new float[n]; aimDistances=new float[n]; aimForward=new Vector3[n];
+            // Snapshot events that begin with the accepted attack before another input can
+            // reselect the lock. Delayed events snapshot at their own preparation start.
+            for (int i=0;i<n;i++) if (activeStep.hits[i].startTime<=0) SnapshotEventAim(i);
+        }
+        private void SnapshotEventAim(int i)
+        {
+            aimStarted[i]=true; aimForward[i]=transform.forward;
+            var evt=activeStep.hits[i];
+            if(evt.requiredMovement>=0) return; // Authored movement owns its target.
+            if(executingAirAttack) {
+                // A legal ongoing air contact/pursuit owns the sequence before a new lock.
+                var owned=LegalAerialContact(airContactTarget)?airContactTarget:
+                    ValidAerialTarget()?aerialTarget:null;
+                if(owned!=null) { eventAim[i]=owned; return; }
+            }
+            eventAim[i]=LockedMeleeTarget(evt.strike,transform.forward);
+            aimIsExplicit[i]=eventAim[i]!=null;
+            if(executingAirAttack || eventAim[i]!=null) return;
+            var settings=Targeting(evt.strike);
+            if(comboHasContact) {
+                if(combatTime-targetLastHitAt<=settings.retentionTime) eventAim[i]=ComboTarget;
+            } else eventAim[i]=AcquireTarget(evt.strike,settings);
         }
         private static bool IsLiveTarget(ShibuyaFighter value) => value != null && value.isActiveAndEnabled
             && !value.Health.IsDead && !value.stopped;
@@ -100,7 +123,7 @@ namespace JJKGame.Shibuya
         }
         private Vector3 AdvanceTargeting(float delta)
         {
-            if(!attacking || airSession || !profile.trackingEnabled) return Vector3.zero;
+            if(!attacking || airSession) return Vector3.zero;
             Vector3 result=Vector3.zero;
             for(int i=0;i<activeStep.hits.Length;i++) {
                 var evt=activeStep.hits[i]; var strike=evt.strike; var settings=Targeting(strike);
@@ -108,18 +131,17 @@ namespace JJKGame.Shibuya
                 if(elapsed<0 || aimStopped[i]) continue;
                 // Authored ApproachLastHit owns its turn and travel, never stack two movement budgets.
                 if(evt.requiredMovement>=0) continue;
-                if(!aimStarted[i]) {
-                    aimStarted[i]=true; aimForward[i]=transform.forward;
-                    if(comboHasContact) {
-                        if(combatTime-targetLastHitAt<=settings.retentionTime) eventAim[i]=ComboTarget;
-                    } else eventAim[i]=AcquireTarget(strike,settings);
-                }
+                if(!aimStarted[i]) SnapshotEventAim(i);
+                if(aimIsExplicit[i]) TurnLockedAttack(i,strike,elapsed,delta);
+                if(!profile.trackingEnabled) continue;
                 var target=eventAim[i];
                 if(target==null) { TargetingReason="유효 대상 없음"; aimStopped[i]=true; continue; }
                 bool overrideInput=moveIntent.sqrMagnitude>.001f
                     && Vector3.Angle(moveIntent,initialAttackForward)>profile.directionalInputOverrideAngle;
-                if(overrideInput || !ValidAim(target,strike,settings,aimForward[i],false)
-                    || (comboHasContact && combatTime-targetLastHitAt>settings.retentionTime)) {
+                if((!aimIsExplicit[i] && overrideInput) || (aimIsExplicit[i]
+                    ? !ValidLockedAttackTarget(target,strike)
+                    : !ValidAim(target,strike,settings,aimForward[i],false))
+                    || (!aimIsExplicit[i] && comboHasContact && combatTime-targetLastHitAt>settings.retentionTime)) {
                     if(overrideInput) TargetingReason="명시적 방향 입력 우선";
                     aimStopped[i]=true; continue;
                 }
@@ -130,10 +152,12 @@ namespace JJKGame.Shibuya
                 Vector3 velocity=target.motor.velocity; velocity.y=0;
                 Vector3 predicted=flat+Vector3.ClampMagnitude(velocity*settings.predictionTime,settings.approachDistance);
                 if(predicted.sqrMagnitude<.000001f) continue;
-                var old=transform.rotation;
-                float turn=Mathf.Min(Mathf.Max(0,settings.maxTurnAngle-aimTurns[i]),settings.turnSpeed*dt);
-                transform.rotation=Quaternion.RotateTowards(old,Quaternion.LookRotation(predicted),turn);
-                float applied=Quaternion.Angle(old,transform.rotation); aimTurns[i]+=applied; turnConsumed+=applied;
+                if(!aimIsExplicit[i]) {
+                    var old=transform.rotation;
+                    float turn=Mathf.Min(Mathf.Max(0,settings.maxTurnAngle-aimTurns[i]),settings.turnSpeed*dt);
+                    transform.rotation=Quaternion.RotateTowards(old,Quaternion.LookRotation(predicted),turn);
+                    float applied=Quaternion.Angle(old,transform.rotation); aimTurns[i]+=applied; turnConsumed+=applied;
+                } else if(!ValidAim(target,strike,settings,transform.forward,true)) continue;
                 float clearance=motor.radius+target.motor.radius+motor.skinWidth;
                 float amount=Mathf.Min(Mathf.Max(0,settings.approachDistance-aimDistances[i]),
                     Mathf.Min(settings.approachSpeed*dt,Mathf.Max(0,flat.magnitude-clearance)));

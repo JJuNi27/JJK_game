@@ -106,6 +106,9 @@ namespace JJKGame.EditorTools
                 ["defenseMultiplier"] = "방어 배율",
                 ["maxEnergy"] = "최대 주력",
                 ["startingEnergy"] = "시작 주력",
+                ["recoveryMode"] = "주력 회복 방식",
+                ["startingRatio"] = "시작 주력 비율",
+                ["chargingEnabled"] = "홀드 충전 가능",
                 ["regenerationPerSecond"] = "초당 회복량",
                 ["regenerationDelayAfterSpend"] = "사용 후 회복 지연",
                 ["costMultiplier"] = "주력 소모 배율",
@@ -461,7 +464,51 @@ namespace JJKGame.EditorTools
     internal sealed class CharacterStatsProfileEditor : KoreanSerializedObjectEditor { }
 
     [CustomEditor(typeof(CursedEnergyProfile)), CanEditMultipleObjects]
-    internal sealed class CursedEnergyProfileEditor : KoreanSerializedObjectEditor { }
+    internal sealed class CursedEnergyProfileEditor : KoreanSerializedObjectEditor
+    {
+        public override void OnInspectorGUI()
+        {
+            serializedObject.UpdateIfRequiredOrScript();
+            var mode = serializedObject.FindProperty("recoveryMode");
+            Field("profileLabel", "표시 이름");
+            Field("maxEnergy", "최대 주력량");
+            Field("recoveryMode", "주력 회복 방식");
+            bool hold = mode.enumValueIndex == (int)CursedEnergyRecoveryMode.HoldCharge;
+            // Multi-edit with different modes shows both policies; each asset still owns only one.
+            if (hold || mode.hasMultipleDifferentValues) {
+                Field("startingRatio", "시작 주력 비율");
+                Field("chargingEnabled", "홀드 충전 가능");
+            }
+            if (!hold || mode.hasMultipleDifferentValues) Field("startingEnergy", "시작 주력량 (자동 회복)");
+            Field("regenerationPerSecond", hold ? "초당 주력 충전량" : "초당 회복량");
+            if (!hold || mode.hasMultipleDifferentValues) Field("regenerationDelayAfterSpend", "사용 후 회복 지연");
+            Field("costMultiplier", "주력 소모 배율");
+            Field("minimumTechniqueCost", "최소 술식 소모량");
+            Field("noticeDuration", "알림 표시 시간");
+            serializedObject.ApplyModifiedProperties();
+        }
+        private void Field(string name, string label) => EditorGUILayout.PropertyField(
+            serializedObject.FindProperty(name), new GUIContent(label), true);
+    }
+
+    [CustomEditor(typeof(CursedEnergyController)), CanEditMultipleObjects]
+    internal sealed class CursedEnergyControllerEditor : KoreanSerializedObjectEditor
+    {
+        public override void OnInspectorGUI()
+        {
+            var energy = (CursedEnergyController)target;
+            if (!energy.UsesHoldCharge) { base.OnInspectorGUI(); return; }
+            serializedObject.UpdateIfRequiredOrScript();
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("profile"), new GUIContent("주력 능력치 원본"));
+            serializedObject.ApplyModifiedProperties();
+            EditorGUILayout.HelpBox("홀드 충전 수치는 연결된 Data Asset이 소유합니다. 기존 자동 회복용 캐시 필드는 이 모드에서 편집하지 않습니다.", MessageType.Info);
+            using (new EditorGUI.DisabledScope(true)) {
+                EditorGUILayout.FloatField("현재 주력량", energy.CurrentEnergy);
+                EditorGUILayout.FloatField("최대 주력량", energy.MaxEnergy);
+            }
+            if (Application.isPlaying) Repaint();
+        }
+    }
 
     [CustomEditor(typeof(BasicAttackProfile)), CanEditMultipleObjects]
     internal sealed class BasicAttackProfileEditor : KoreanSerializedObjectEditor { }

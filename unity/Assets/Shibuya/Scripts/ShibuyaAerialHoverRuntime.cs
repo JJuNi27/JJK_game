@@ -9,12 +9,17 @@ namespace JJKGame.Shibuya
         private double airHoverDeadline;
         private float airGraceUntil, airBufferedUntil;
         private ShibuyaFighter airContactTarget, heldAirVictim, airHoldSource;
+        private int airHoldToken;
+        private double airHoldDeadline;
         private bool WithinAirHoverBudget => !airHoverStarted || Time.unscaledTimeAsDouble < airHoverDeadline;
         public bool IsAerialHovering => airSession && !chasing && aerialSettings != null
             && aerialSettings.aerialHoverEnabled && WithinAirHoverBudget && !Health.IsDead && !stopped
             && (executingAirAttack || (airGrace && combatTime <= airGraceUntil));
-        public bool IsHeldByAerialHit => airHoldSource != null && !Health.IsDead && !stopped && !downed
-            && !motor.isGrounded && !Health.IsInvulnerable && IsStunned
+        public bool IsHeldByAerialHit => airHoldSource != null && isActiveAndEnabled && !Health.IsDead && !stopped && !downed
+            && !motor.isGrounded && !Health.IsInvulnerable
+            && airHoldSource.isActiveAndEnabled && airHoldSource.sequenceToken == airHoldToken
+            && Time.unscaledTimeAsDouble < airHoldDeadline
+            && airHoldSource.aerialSettings != null && airHoldSource.aerialSettings.holdVictimOnAirHit
             && airHoldSource.IsAerialHovering && airHoldSource.heldAirVictim == this
             && airHoldSource.LegalAerialContact(this);
         public bool HasBufferedAirAttack => airBuffered && combatTime <= airBufferedUntil && WithinAirHoverBudget;
@@ -34,7 +39,9 @@ namespace JJKGame.Shibuya
 
         private void BeginCommonAirStep(bool successor)
         {
-            if(!successor) CancelCombo();
+            // A fresh click inside the existing grace continues the same confirmed relation.
+            // Do not discard its victim between grace and the next step's preparation.
+            if(!successor) CancelCombo(airGrace);
             if(!airHoverStarted) {
                 airHoverStarted = true;
                 airHoverDeadline = Time.unscaledTimeAsDouble + aerialSettings.aerialMaxHoverTime;
@@ -70,6 +77,7 @@ namespace JJKGame.Shibuya
                 || victim.downed || !victim.IsStunned || !LegalAerialContact(victim)) return;
             victim.ReleaseIncomingAirHover();
             heldAirVictim = victim; victim.airHoldSource = this;
+            victim.airHoldToken = sequenceToken; victim.airHoldDeadline = airHoverDeadline;
             victim.verticalSpeed = 0;
         }
 
@@ -85,24 +93,25 @@ namespace JJKGame.Shibuya
             }
         }
 
-        private void CancelAerialHover()
+        private void CancelAerialHover(bool preserveVictim = false)
         {
             if(executingAirAttack || airGrace) verticalSpeed = 0;
             airGrace = airBuffered = false;
-            ReleaseAerialVictimHover();
+            if(!preserveVictim) ReleaseAerialVictimHover();
         }
 
         private void ReleaseAerialVictimHover()
         {
             var victim = heldAirVictim; heldAirVictim = null;
             if(victim != null && victim.airHoldSource == this) {
-                victim.airHoldSource = null; victim.verticalSpeed = 0;
+                victim.airHoldSource = null; victim.airHoldToken = 0; victim.airHoldDeadline = 0; victim.verticalSpeed = 0;
             }
         }
 
         private void ReleaseIncomingAirHover()
         {
             var source = airHoldSource; airHoldSource = null;
+            airHoldToken = 0; airHoldDeadline = 0;
             if(source == null) return;
             if(source.heldAirVictim == this) source.heldAirVictim = null;
             verticalSpeed = 0;

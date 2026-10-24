@@ -253,7 +253,7 @@ namespace JJKGame.Shibuya.EditorTools
         private static void Cube(Vector3 pos,Vector3 scale){var go=GameObject.CreatePrimitive(PrimitiveType.Cube);go.transform.position=pos;go.transform.localScale=scale;Physics.SyncTransforms();}
         private static IEnumerator Wait(float seconds){float end=Time.time+seconds;while(Time.time<end)yield return null;}
         private static IEnumerator Until(Func<bool> predicate){float end=Time.realtimeSinceStartup+6;while(!predicate()&&Time.realtimeSinceStartup<end)yield return null;Assert.That(predicate(),Is.True,"timed out: "+(P==null?"no fighter":P.AirChaseReason));}
-        private static void Record(string name,string value){System.IO.Directory.CreateDirectory("Logs/ShibuyaPass3CQA");System.IO.File.AppendAllText("Logs/ShibuyaPass3CQA/metrics.txt",name+": "+value+Environment.NewLine);}
+        private static void Record(string name,string value){System.IO.Directory.CreateDirectory(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3CQA"));System.IO.File.AppendAllText(ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3CQA/metrics.txt"),name+": "+value+Environment.NewLine);}
         [UnityTearDown] public IEnumerator Leave(){if(EditorApplication.isPlaying)yield return new ExitPlayMode();}
         [TearDown] public void Cleanup(){foreach(var obj in Resources.FindObjectsOfTypeAll<ScriptableObject>())if(obj.name.StartsWith("PASS3C QA",StringComparison.Ordinal)&&!AssetDatabase.Contains(obj))Object.DestroyImmediate(obj);}
     }

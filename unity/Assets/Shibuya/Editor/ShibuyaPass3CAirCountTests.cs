@@ -15,7 +15,7 @@ namespace JJKGame.Shibuya.EditorTools
     // Read-only gameplay diagnostics: only transient profile clones and simulated press edges.
     public sealed class ShibuyaPass3CAirCountTests
     {
-        private const string Root = "Logs/ShibuyaPass3CAirCountQA";
+        private static string Root => ShibuyaPass3CTestRunner.OutputPath("Logs/ShibuyaPass3CAirCountQA");
         private static ShibuyaMatch Match => Object.FindFirstObjectByType<ShibuyaMatch>();
         private static ShibuyaFighter P => Match.Player;
         private static ShibuyaFighter D => Match.Dummy;
