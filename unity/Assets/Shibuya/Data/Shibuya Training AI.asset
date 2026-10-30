@@ -29,3 +29,5 @@ MonoBehaviour:
   maximumAttackHeightDifference: 1.4
   useFixedSeed: 0
   randomSeed: 1729
+  initialMode: 0
+  defense: {fileID: 11400000, guid: db7675ebffb64953bd333dc31ab4d6af, type: 2}

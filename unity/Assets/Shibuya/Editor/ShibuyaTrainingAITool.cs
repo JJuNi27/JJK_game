@@ -20,6 +20,18 @@ namespace JJKGame.Shibuya.EditorTools
             if(ai==null){ai=match.Dummy.gameObject.AddComponent<ShibuyaTrainingAI>();ai.Configure(AssetDatabase.LoadAssetAtPath<ShibuyaTrainingAIProfile>(ProfilePath),match.Player);}
             ai.SetTrainingEnabled(!ai.Running);
         }
+        public static void SelectMode(ShibuyaTrainingMode mode)
+        {
+            if(!EditorApplication.isPlaying)return;var match=Object.FindFirstObjectByType<ShibuyaMatch>();if(match==null||match.Finished)return;
+            var ai=match.Dummy.GetComponent<ShibuyaTrainingAI>();
+            if(ai==null){ai=match.Dummy.gameObject.AddComponent<ShibuyaTrainingAI>();ai.Configure(AssetDatabase.LoadAssetAtPath<ShibuyaTrainingAIProfile>(ProfilePath),match.Player);}
+            ai.SetMode(mode);
+        }
+        [MenuItem("JJK Game/시부야 PASS4F/모드/공격형")] public static void Offensive()=>SelectMode(ShibuyaTrainingMode.Offensive);
+        [MenuItem("JJK Game/시부야 PASS4F/모드/가드 연습")] public static void Guard()=>SelectMode(ShibuyaTrainingMode.GuardPractice);
+        [MenuItem("JJK Game/시부야 PASS4F/모드/회피 연습")] public static void Dodge()=>SelectMode(ShibuyaTrainingMode.DodgePractice);
+        [MenuItem("JJK Game/시부야 PASS4F/모드/패링 연습")] public static void Parry()=>SelectMode(ShibuyaTrainingMode.ParryPractice);
+        [MenuItem("JJK Game/시부야 PASS4F/모드/종합")] public static void Mixed()=>SelectMode(ShibuyaTrainingMode.Mixed);
         [MenuItem("JJK Game/시부야 PASS4F/공격형 훈련 AI ON·OFF",true)]
         private static bool CanToggle()=>EditorApplication.isPlaying&&!EditorApplication.isCompiling;
         private void OnDisable(){if(bound!=null)bound.SetTrainingEnabled(false);if(profileEditor!=null)DestroyImmediate(profileEditor);profileEditor=null;}
@@ -38,7 +50,7 @@ namespace JJKGame.Shibuya.EditorTools
                     bound.SetTrainingEnabled(!bound.Running);
                 }
             }
-            if(bound!=null)ShibuyaTrainingAIInspector.DrawRuntime(bound);
+            if(bound!=null){ShibuyaTrainingAIInspector.DrawMode(bound);ShibuyaTrainingAIInspector.DrawRuntime(bound);}
             if(settings!=null){EditorGUILayout.Space();EditorGUILayout.LabelField("판단 설정 (기존 전투 수치는 변경하지 않음)",EditorStyles.boldLabel);UnityEditor.Editor.CreateCachedEditor(settings,null,ref profileEditor);profileEditor.OnInspectorGUI();}
         }
     }

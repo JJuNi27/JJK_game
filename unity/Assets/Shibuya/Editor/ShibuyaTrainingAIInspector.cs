@@ -13,7 +13,8 @@ namespace JJKGame.Shibuya.EditorTools
             {"reactionDelay","정렬 후 공격 반응 지연"},{"minimumRest","공격 묶음 후 최소 휴식"},{"maximumRest","공격 묶음 후 최대 휴식"},
             {"oneHitWeight","1타 종료 가중치"},{"twoHitWeight","2타 종료 가중치"},{"threeHitWeight","3타 종료 가중치"},{"fourHitWeight","4타 종료 가중치"},
             {"useRunning","접근 시 달리기 사용"},{"maximumAttackHeightDifference","지상 공격 허용 높이 차"},
-            {"useFixedSeed","QA 고정 난수 사용"},{"randomSeed","QA 난수 시드 (다음 ON부터 적용)"}
+            {"useFixedSeed","QA 고정 난수 사용"},{"randomSeed","공격·방어 난수 시드 (다음 ON부터 적용)"},
+            {"initialMode","새 훈련 세션의 초기 모드"},{"defense","방어 판단 설정"}
         };
         public override void OnInspectorGUI(){
             serializedObject.UpdateIfRequiredOrScript();var it=serializedObject.GetIterator();bool child=true;
@@ -35,6 +36,10 @@ namespace JJKGame.Shibuya.EditorTools
                 case ShibuyaTrainingAIState.Recovery:return "묶음 후 휴식";
                 case ShibuyaTrainingAIState.UnableToAct:return "기존 전투 상태로 행동 불가";
                 case ShibuyaTrainingAIState.Blocked:return "직선 경로 막힘";
+                case ShibuyaTrainingAIState.DefenseReaction:return "관측 후 방어 반응 대기";
+                case ShibuyaTrainingAIState.GuardDefense:return "가드 유지 중";
+                case ShibuyaTrainingAIState.EvadeDefense:return "회피 진행 중";
+                case ShibuyaTrainingAIState.DefenseWait:return "다음 방어 판단 대기";
                 default:return "AI OFF";
             }
         }
@@ -43,8 +48,10 @@ namespace JJKGame.Shibuya.EditorTools
             using(new EditorGUI.DisabledScope(true))EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Script"),new GUIContent("스크립트"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("profile"),new GUIContent("훈련 AI 판단 설정"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("target"),new GUIContent("훈련 상대"));serializedObject.ApplyModifiedProperties();
-            if(Application.isPlaying&&targets.Length==1){var ai=(ShibuyaTrainingAI)target;bool on=EditorGUILayout.Toggle("실제 런타임 AI ON",ai.Running);if(on!=ai.Running)ai.SetTrainingEnabled(on);DrawRuntime(ai);}
+            if(Application.isPlaying&&targets.Length==1){var ai=(ShibuyaTrainingAI)target;DrawMode(ai);bool on=EditorGUILayout.Toggle("실제 런타임 AI ON",ai.Running);if(on!=ai.Running)ai.SetTrainingEnabled(on);DrawRuntime(ai);}
         }
+        public static readonly string[] ModeNames={"공격형","가드 연습","회피 연습","패링 연습","종합"};
+        public static void DrawMode(ShibuyaTrainingAI ai){int mode=EditorGUILayout.Popup("실제 훈련 모드",(int)ai.Mode,ModeNames);if(mode!=(int)ai.Mode)ai.SetMode((ShibuyaTrainingMode)mode);}
         public static void DrawRuntime(ShibuyaTrainingAI ai)
         {
             using(new EditorGUI.DisabledScope(true)){
@@ -55,6 +62,13 @@ namespace JJKGame.Shibuya.EditorTools
                 EditorGUILayout.IntField("중단한 공격 묶음",ai.InterruptedGroupCount);EditorGUILayout.IntField("거절된 공격 요청",ai.RejectedRequestCount);
                 EditorGUILayout.IntField("이번 묶음 목표 타수",ai.CurrentGroupLength);EditorGUILayout.IntField("이번 묶음 실제 시작 타수",ai.CurrentGroupStartedSteps);
                 EditorGUILayout.IntField("현재 Fighter 공격 단계",ai.Owner!=null?ai.Owner.ComboStep:0);
+                EditorGUILayout.TextField("마지막 방어 선택",ai.LastDefenseChoice==ShibuyaTrainingDefenseAction.Guard?"가드":ai.LastDefenseChoice==ShibuyaTrainingDefenseAction.Parry?"패링 시도":ai.LastDefenseChoice==ShibuyaTrainingDefenseAction.Dodge?"방향 회피":"무반응/없음");
+                EditorGUILayout.TextField("마지막 실제 결과",ai.LastDefenseResult);
+                EditorGUILayout.IntField("실제 공격 관측",ai.ThreatObservationCount);
+                EditorGUILayout.IntField("일반 가드 요청",ai.GuardAttemptCount);EditorGUILayout.IntField("실제 가드 성공",ai.DefenseGuardSuccessCount);
+                EditorGUILayout.IntField("패링 선택 요청",ai.ParryRequestCount);EditorGUILayout.IntField("실제 열린 패링 창 (새 가드 포함)",ai.DefenseParryWindowCount);EditorGUILayout.IntField("실제 패링 성공",ai.DefenseParrySuccessCount);
+                EditorGUILayout.IntField("방향 회피 요청",ai.DodgeAttemptCount);EditorGUILayout.IntField("실제 대시 시작",ai.DodgeStartedCount);EditorGUILayout.IntField("회피 무적 구간 실제 피해 차단",ai.DodgeDamageBlockedCount);
+                EditorGUILayout.IntField("무반응 선택",ai.NoResponseCount);EditorGUILayout.IntField("반응 전 피격·취소·이탈",ai.ReactionFailureCount);EditorGUILayout.IntField("거절/막힌 방어",ai.DefenseRejectedCount);
             }
         }
     }

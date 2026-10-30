@@ -21,5 +21,7 @@ namespace JJKGame.Shibuya
         [Min(0)] public float maximumAttackHeightDifference=1.4f;
         public bool useFixedSeed;
         public int randomSeed=1729;
+        public ShibuyaTrainingMode initialMode=ShibuyaTrainingMode.Offensive;
+        public ShibuyaTrainingDefenseProfile defense;
     }
 }

@@ -2,9 +2,9 @@
 using UnityEngine;
 namespace JJKGame.Shibuya
 {
-    public enum ShibuyaTrainingAIState { Disabled, Idle, Approach, FaceTarget, Attack, Recovery, UnableToAct, Blocked }
+    public enum ShibuyaTrainingAIState { Disabled, Idle, Approach, FaceTarget, Attack, Recovery, UnableToAct, Blocked, DefenseReaction, GuardDefense, EvadeDefense, DefenseWait }
     [DisallowMultipleComponent,RequireComponent(typeof(ShibuyaFighter)),DefaultExecutionOrder(-40)]
-    public sealed class ShibuyaTrainingAI : MonoBehaviour
+    public sealed partial class ShibuyaTrainingAI : MonoBehaviour
     {
         [SerializeField] private ShibuyaTrainingAIProfile profile;
         [SerializeField] private ShibuyaFighter target;
@@ -33,15 +33,16 @@ namespace JJKGame.Shibuya
         public int CurrentGroupLength {get;private set;}
         public int CurrentGroupStartedSteps=>groupSteps;
         private void Awake(){owner=GetComponent<ShibuyaFighter>();}
-        private void OnEnable(){if(owner==null)owner=GetComponent<ShibuyaFighter>();owner.AttackStarted+=OnAttackStarted;}
-        private void OnDisable(){SetTrainingEnabled(false);if(owner!=null)owner.AttackStarted-=OnAttackStarted;}
+        private void OnEnable(){if(owner==null)owner=GetComponent<ShibuyaFighter>();owner.AttackStarted+=OnAttackStarted;BindDefenseEvents();}
+        private void OnDisable(){SetTrainingEnabled(false);UnbindDefenseEvents();if(owner!=null)owner.AttackStarted-=OnAttackStarted;}
         public void Configure(ShibuyaTrainingAIProfile settings,ShibuyaFighter opponent)
         {
-            SetTrainingEnabled(false);profile=settings;target=opponent;
+            SetTrainingEnabled(false);profile=settings;target=opponent;Mode=settings!=null?settings.initialMode:ShibuyaTrainingMode.Offensive;
         }
         public bool SetTrainingEnabled(bool value)
         {
             if(!value){
+                ResetDefense();
                 if(running){WithdrawOwnQueue();ClearIntent();}
                 running=groupActive=approaching=reactionScheduled=false;State=ShibuyaTrainingAIState.Disabled;LastReason="AI OFF";return true;
             }
@@ -50,6 +51,7 @@ namespace JJKGame.Shibuya
             if(running)return true;
             activeProfile=profile;random=new System.Random(profile.useFixedSeed?profile.randomSeed:unchecked(Environment.TickCount^owner.GetInstanceID()));
             running=true;groupActive=approaching=reactionScheduled=false;nextDecisionAt=nextAttackAt=restUntil=0;submittedAction=queuedFromAction=-1;
+            InitializeDefense();
             State=ShibuyaTrainingAIState.Idle;LastReason="AI ON";return true;
         }
         private bool LivePair()=>owner!=null&&target!=null&&target!=owner&&owner.isActiveAndEnabled&&target.isActiveAndEnabled
@@ -99,6 +101,7 @@ namespace JJKGame.Shibuya
             if(profile!=activeProfile||profile==null||!profile.trainingAllowed||!LivePair()){SetTrainingEnabled(false);LastReason="대상/전투 종료 또는 설정 변경";return;}
             double now=Time.timeAsDouble;
             targetDelta=target.transform.position-owner.transform.position;TargetDistance=targetDelta.magnitude;
+            if(UpdateDefense(now))return;
             if(owner.IsInHitStop){ClearIntent();State=ShibuyaTrainingAIState.UnableToAct;LastReason="국소 히트스톱 대기 (예약 보존)";return;}
             if(!owner.CanAcceptGroundCombatIntent){
                 if(groupActive)Rest("피격·다운·행동 소유권으로 묶음 중단",false);
