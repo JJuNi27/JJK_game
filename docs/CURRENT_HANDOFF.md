@@ -1,5 +1,39 @@
 # JJK_game — Current Project Handoff
 
+## 현재 — PASS4D.2 + PASS4E USER VERIFIED 체크포인트 / 훈련 AI 설계 합의 대기
+
+2026-10-30. 브랜치 `feat/shibuya-combat-mvp`. 이전 원격 기준은 `bd5acdcb22c35002317a438a2b0fd28986b53607`이며, 이 문서가 포함된 새 저장 커밋의 SHA는 현재 브랜치 Git 이력에서 확인한다. 이번 요청은 관련 파일의 선택적 commit/push와 문서 정리만 수행한다.
+
+사용자 직접 승인: **잡기 입력·조작감/성공·실패 기본 동작/기존 전투 연계**, **다운 후 방향 기상 기본 기능·방향 입력·조작**. 잡기15 HP/1.4m는 공통 MVP 초기값이지 모든 캐릭터의 고정 규칙이 아니다. 캐릭터별 잡기 성공 연출, 후속 타격 횟수·피해, 밀쳐내기/던지기, 시네마틱 여부, 짧은 즉시 실행형은 후속 설계 대상이다. 잡기 최종 모션·카메라와 기상 최종 애니메이션/VFX, 자동 검사만 한 극단적 경계 조건은 USER VERIFIED로 확대하지 않는다. 정확한 승인 범위는 locked/USER_VERIFIED_SETTINGS의 이번 승인 절을 따른다.
+
+PASS4D.2 최신 고유41 PASS/0 FAIL/0 SKIP는4회 실행, PASS4E 최신 고유37 PASS/0 FAIL/0 SKIP는7회 실행의 케이스별 집계다. 기존 XML을 확인하고 재사용했으며 이번 저장을 위해 Unity를 실행하거나 테스트를 반복하지 않았다. 최초 실패·컴파일 수정·플랫폼 중단 보완·API 응답 시간 초과를 보존한다. 초기 쿨타임0 관측의 근본 원인은 미확정이며 이후 계측/재검증 통과와 구분한다. PASS4A 과거 미해결18건은 그대로다.
+
+기존 PASS4C.2/4D.1 승인, 임시 MVP 가드 원통, 가드 체력 HUD 비공개, F 아우라·카메라·고죠 자산과 잠금값을 유지한다. QA 원본/영상/이미지/XML/trace, 로컬 모델·오디오·레퍼런스, Library/Temp/Cache는 로컬 보존이며 이번 커밋 대상이 아니다. `unity/unity.slnx`는 기존2개 프로젝트 순서만 바뀐 자동 생성 변경으로, 기능에 필요하지 않아 staging하지 않고 그대로 보존한다.
+
+**다음 후보는 훈련 AI 설계**다. 사용자와 행동 규칙을 합의한 뒤 별도 PASS로 진행한다. 이번 체크포인트에서 훈련 AI나 신규 전투 기능을 구현하지 않는다. 아래는 이전 구현·검증 당시의 기록이며 LOCAL UNCOMMITTED/검수 대기/Console 상태를 현재 체크포인트 승인과 혼동하지 않는다.
+
+## 최신 로컬 — PASS4E 방향 긴급 탈출 / 사용자 검수 대기
+
+2026-10-30. `feat/shibuya-combat-mvp`, HEAD `bd5acdcb22c35002317a438a2b0fd28986b53607` 유지. PASS4D.2와 새 PASS4E는 LOCAL UNCOMMITTED이며 staging·commit·push 없음. 사용자는 이번 요청에서 **잡기 구조·조작감 정상**을 확인했다. 잡기 캐릭터별 연출·피해 구성·밀려남·모션의 최종 승인은 포함하지 않는다. 아래4D.2 검수 대기 표시는 이전 작성 시점이다.
+
+PASS4E는 CODEX VALIDATED(targeted) / USER VERIFIED 대기. 실제 다운 착지 후 기존 minimumDownTime0.45초부터 자연 기상 전 새 WASD+Space로 카메라 기준 방향 탈출을 한다. 기존 자연 기상0.85초·기상0.22초는 유지했다. 새 Quick Recovery Data는2.5m/0.30초, 지면에서0.04~0.18초 회피, 종료·중단 후 쿨타임1.0초다. 조기/홀드/단독 Space는 저장하지 않으며 점프·공중 추격에 중복 전달하지 않는다. 지상에서 시작한 유한 수평 동작은 가장자리에서도 기존 중력과 함께 마치며, 공중 시작/체공/지면 스냅은 없다. 무적 밖의 피격·잡기·시네마틱·사망·포커스 상실 등은 취소한다.
+
+최신 고유37 PASS(신규20+선택 회귀17)는 7회 실행의 케이스별 집계다. 단일 전체 성공 실행이 아니다. 초기 입력 Up 관측/쿨타임 관측 실패와 플랫폼 중단 문제·검증의 중간 높이 가정을 구분해 원본 XML과 계측을 남겼다. 플랫폼 중력 인계를 보완했고, 초기 쿨타임0 관측의 정확한 원인은 미확정으로 유지한다. PASS4A 과거18건은 별도 미해결 이력이다.
+
+보고서 `docs/SHIBUYA_PASS4E_REVIEW.md`, 원본 `unity/Logs/ShibuyaPass4EQA/20261030-quick-recovery/`, 원속도3비교 `media/`. 최종 Editor Console error0/warning0, Pipeline 누적 error4(과거 컴파일2+API 시작 응답 timeout2)는 별도다. Play stopped/씬 clean/fps -1/Time.timeScale1/AutoTick true16ms/PlayUnfocused, runtime Mesh/Material0/0. 기존 Grab QA55개 해시, 승인 다운/대시/카메라/아우라·씬·GUID·고죠 자산 보존. Unity가 unity.slnx 두 Project 줄 순서만 자동 변경한 것은 별도 보존했다.
+
+직접 검수: Play → `JJK Game/시부야 PASS4E/긴급 탈출 검수 도구` → 실제 다운 공격 예약 → Game View에서 직접 WASD+새 Space. 조기 홀드/무입력 자연 기상, 락온/고각, 벽·체술·잡기를 비교한다. 이후 추가 기능이나 Git 저장을 자동 진행하지 않는다. 아래는 이전 기록이다.
+
+## 최신 로컬 — PASS4D.2 공통 잡기 MVP / 사용자 검수 대기
+
+2026-10-30. 실제 HEAD `bd5acdcb22c35002317a438a2b0fd28986b53607`, `feat/shibuya-combat-mvp`. PASS4C~4D.1 체크포인트는 일반 push 완료 상태이며 아래1202e940 표기는 이전 기준이다. 이번 잡기는 LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기이고 staging·commit·push하지 않았다.
+
+실제 가드 중 새 LMB로 잡기, 동시 RMB+LMB 잡기 우선, 패링 성공 후 RMB 유지 LMB는 기존 평타 반격이다. 전방1.55m/반각50도, 준비0.18+유효0.08초, 짧은 접촉0.10초 후 피해15/밀려남1.4m/경직0.40초, 성공 회복0.25·실패 회복0.50초다. `Shibuya Grab.asset`과 한국어 Inspector로 조절한다. 가드·패링만 제한적으로 우회하고 대시 무적·Infinity·Health 판정을 유지한다. 강제 위치 스냅/별도 이동 모터/시네마틱/주력 소모 없음. 기존 승인 카메라·대시·패링·아우라 설정·피해·HP·GUID·씬은 보존했다.
+
+최신 고유41 PASS(신규23+선택 회귀18)는 4회 실행 집계이지 단일 전체 성공 실행이 아니다. 원본 실행13/0, 7/1, 18/0, 5/0을 보존했다. 실패1은 QA Vector3 JSON 순환 기록으로 좌표 배열로 수정 후 통과했다. 테스트 컴파일 오류2건도 수정·원본 보존. 최종 Editor Console error0/warning1(font), Pipeline 버퍼의 과거 error2는 별도다. Play stopped/씬 clean/fps -1/Time.timeScale1/AutoTick true16ms/PlayUnfocused 유지, runtime Mesh/Material0/0. 기존 PASS4A18건을 해결로 소급하지 않는다.
+
+보고서 `docs/SHIBUYA_PASS4D2_REVIEW.md`, 원본 `unity/Logs/ShibuyaPass4D2QA/20261030-grab/`, 원속도3비교 `media-final/`. 직접 확인: Play → `JJK Game/시부야 PASS4D/잡기 검수 도구` → 상황 선택 → Game View 복귀 → 직접 RMB 유지+새 LMB. 최종 손 맞춤/캐릭터 모션/VFX·조작감은 사용자 검수 대기다. 반전술식·새 후속 기능은 시작하지 않는다. 아래는 이전 체크포인트/구현 당시 기록이다.
+
 작성 기준: **2026-10-30 KST**
 저장소: `JJuNi27/JJK_game` · 브랜치: `feat/shibuya-combat-mvp`
 USER VERIFIED 체크포인트: `1202e940176daec9fbb0b8027702f600b2f677d4` (PASS 4B.4a까지, 10-25 일반 push 완료).

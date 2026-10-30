@@ -15,6 +15,8 @@ MonoBehaviour:
   cursedEnergy: {fileID: 11400000, guid: 17ee697916fee58429378ee6e35e5dc9, type: 2}
   groundDash: {fileID: 11400000, guid: 6752c33832b9252449c40967531531eb, type: 2}
   guard: {fileID: 11400000, guid: 75efdf04213f4a00b2e5cb1bd4319080, type: 2}
+  grab: {fileID: 11400000, guid: 01f15e2c21294ab98c2e3e2ed63b4a30, type: 2}
+  quickRecovery: {fileID: 11400000, guid: 138ac566a0634d8fa40ca99dea7584c3, type: 2}
   walkSpeed: 4.8
   runSpeed: 8.5
   turnSpeed: 720

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f14746fbd386498ab80fff6f57d4e7d8, type: 3}
+  m_Name: Shibuya Grab
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaGrabProfile
+  grabEnabled: 1
+  range: 1.55
+  halfAngle: 50
+  startup: 0.18
+  activeTime: 0.08
+  damage: 15
+  contactDuration: 0.1
+  pushDistance: 1.4
+  victimStun: 0.4
+  successRecovery: 0.25
+  failureRecovery: 0.5
+  motionStrength: 1

@@ -1,4 +1,39 @@
-# CURRENT TASK — PASS4C~4D.1 체크포인트 / 추가 구현 대기
+# CURRENT TASK — 잡기·긴급 탈출 USER VERIFIED 체크포인트 / 훈련 AI 설계 합의 대기
+
+2026-10-30. `feat/shibuya-combat-mvp`. 이전 기준 `bd5acdcb22c35002317a438a2b0fd28986b53607`; 이 문서가 포함된 새 체크포인트는 Git 이력에서 확인한다. 사용자 승인에 따라 PASS4D.2+4E 코드/데이터/meta/테스트/보고서만 선택적으로 저장한다.
+
+USER VERIFIED는 잡기의 입력·조작감/성공·실패 기본 동작/전투 연계와 긴급 탈출의 기본 방향 기상·입력·조작이다. 잡기15 HP/1.4m는 공통 MVP 초기값이다. 캐릭터별 잡기 모션·후속 피해/던지기·카메라/시네마틱 정책 및 기상 최종 애니메이션/VFX는 후속 설계다. 자동 검사 경계까지 사용자 수동 검증으로 확대하지 않는다.
+
+기존 결과를 확인해 재사용했다: Grab 최신 고유41 PASS(4회 실행), Recovery 최신 고유37 PASS(7회 실행). 단일 전체 회귀 성공으로 합산하지 않는다. 원본 실패·플랫폼 수정·초기 쿨타임0 원인 미확정·이후 계측 통과와 PASS4A 미해결18건을 보존한다. 이번 저장 작업에서는 Unity 실행/전체 재검증/게임플레이 수치 변경을 하지 않는다.
+
+자동 생성 `.slnx` 프로젝트 순서 변경은 저장 대상에서 제외해 로컬에 보존한다. QA 원본과 대용량 미디어/모델/오디오/레퍼런스/캐시는 커밋하지 않는다. 기존 F 아우라·카메라·고죠 자산, 대시·패링 승인과 가드 체력 비공개 정책을 유지한다.
+
+**다음 작업 후보: 훈련 AI 설계.** 행동 규칙을 사용자와 합의하고 별도 PASS로 승인받은 뒤 구현한다. 체크포인트 저장 후 신규 기능은 시작하지 않는다. 아래는 이전 PASS 작성 당시 기록이다.
+
+## 이전 PASS4E 구현·검증 기록
+
+2026-10-30. `feat/shibuya-combat-mvp`, HEAD `bd5acdcb22c35002317a438a2b0fd28986b53607`. PASS4D.2와4E 모두 LOCAL UNCOMMITTED, staging·commit·push 없음.
+
+PASS4E CODEX VALIDATED(targeted) / USER VERIFIED 대기. 기존 실제 다운·착지/minimum0.45/natural0.85/getup0.22를 재사용한다. 새 방향+Space만2.5m/0.30초 회피 기상, 지면0.04~0.18초 무적, 종료·중단 후 쿨타임1.0초. 카메라 수평 방향을 시작 시 고정하고 기존 Fighter motor에서 이동한다. 조기 입력/홀드는 버퍼링하지 않고 점프·추격과 분리한다. 이미 시작한 유한 수평 동작은 중력과 함께 끝나며 공중에서 새로 시작하지 못한다.
+
+최신 고유37 PASS/0 FAIL/0 SKIP(신규20+선택 회귀17)는7회 실행 집계다. 원본 실패·계측·API 응답 시간 초과를 보존했다. 플랫폼 가장자리 중단을 보완했으며 임의 중간 높이 가정 대신 실제 중력/컨트롤러 이동 한도를 검증했다. 초기 쿨타임0 관측은 정확한 원인 미확정으로 남기고 이후 계측 통과와 구분한다. PASS4A18건은 해결로 소급하지 않는다.
+
+현재 Console0/0, 과거 Pipeline error4는 별도. Play stopped/씬 clean/fps -1/Time.timeScale1/AutoTick true16ms/PlayUnfocused/runtime Mesh·Material0/0. 기존 미커밋 잡기/승인 기능/QA 보존, unity.slnx 자동 줄 순서 변경은 임의 복구하지 않았다.
+
+사용자는 PASS4D.2 **구조·조작감**을 승인했다. 잡기 최종 연출/피해 구성/밀려남/모션과 PASS4E 시각·조작감은 새로 승인된 것이 아니다. `docs/SHIBUYA_PASS4E_REVIEW.md`, `unity/Logs/ShibuyaPass4EQA/20261030-quick-recovery/` 참조. 직접 Play 후 `JJK Game/시부야 PASS4E/긴급 탈출 검수 도구`에서 검수한다. 사용자 피드백을 기다리며 추가 구현/Git 저장은 시작하지 않는다.
+
+## 이전 PASS4D.2 기록 (작성 당시 상태)
+
+2026-10-30. `feat/shibuya-combat-mvp`, 실제 HEAD `bd5acdcb22c35002317a438a2b0fd28986b53607`.
+LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기. 이번 사용자 요청으로 공통 잡기를 구현했으며 Git staging·commit·push는 하지 않았다.
+
+유효 가드+새 LMB로만 잡기, 동시 버튼 우선, 패링 성공 후 RMB 유지 LMB 기본 반격 보존. 짧은 몸 전방 판정→접촉→피해1회→기존 motor 밀려남/경직→성공·실패 회복. 가드·패링만 우회하고 대시 무적/특수 방어를 존중한다. 기존 카메라·전투·아우라·잠금 데이터·씬·GUID 보존.
+
+최신 고유41 PASS/0 FAIL/0 SKIP는 신규23+선택 회귀18의 4회 실행 집계다. 최초 캡처 기록 실패1건과 테스트 컴파일 오류2건은 수정됐고 원본을 보존했다. 전체41개 단일 성공 실행으로 표현하지 않는다. 최종 Console 현재 error0/warning1, 버퍼 과거 error2. Play stopped/씬 clean/fps -1/Time.timeScale1/AutoTick true16ms/PlayUnfocused, runtime Mesh/Material0/0. PASS4A 과거18건은 별도 미해결 이력이다.
+
+`docs/SHIBUYA_PASS4D2_REVIEW.md`, `unity/Logs/ShibuyaPass4D2QA/20261030-grab/` 참조. 직접 Play 후 `JJK Game/시부야 PASS4D/잡기 검수 도구`에서 상황을 준비하고 Game View에서 직접 RMB 홀드+LMB로 검수한다. 손 접촉·모션/최종 VFX 품질은 USER VERIFIED 아님. 사용자 피드백을 기다리며 추가 기능/반전술식/Git 저장은 시작하지 않는다.
+
+## 이전 체크포인트 및 PASS4D.1 기록 (작성 당시 상태)
 
 2026-10-30. `feat/shibuya-combat-mvp`, 이전 기준 `1202e940176daec9fbb0b8027702f600b2f677d4`.
 이번 체크포인트는 대시·가드·패링 관련 코드/데이터/meta/테스트/문서를 함께 보존한다. 새 HEAD는 Git 이력에서 확인한다. QA 영상·원본 로그/캐시·로컬 모델·오디오·레퍼런스는 로컬에 보존하며 커밋하지 않는다.

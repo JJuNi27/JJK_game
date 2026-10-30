@@ -46,7 +46,7 @@ namespace JJKGame.Shibuya
             var state = owner != null ? owner.State : ShibuyaFighterState.Finished;
             bool eligible = held && owner != null && owner.isActiveAndEnabled && resource != null && resource.isActiveAndEnabled
                 && profile != null && profile.RecoveryMode == CursedEnergyRecoveryMode.HoldCharge
-                && profile.ChargingEnabled && !owner.IsInCinematic && !owner.IsGuarding && !owner.IsGuardBroken && !owner.IsParryRecovering
+                && profile.ChargingEnabled && !owner.IsInCinematic && !owner.IsGuarding && !owner.IsGuardBroken && !owner.IsParryRecovering && !owner.IsGrabBusy && !owner.IsQuickRecovering
                 && state != ShibuyaFighterState.Dead && state != ShibuyaFighterState.Finished
                 && state != ShibuyaFighterState.Hitstunned && !owner.IsDowned
                 && !owner.IsAirborne && !owner.IsHeldByAerialHit;

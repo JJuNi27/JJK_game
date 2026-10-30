@@ -68,6 +68,7 @@ namespace JJKGame.Shibuya
         }
         private DamageGuardDecision EvaluateHeldGuard(DamageContext context)
         {
+            if(receivingGrabFrom!=null)return DamageGuardDecision.NoDecision;
             EnsureGuard();
             if(!guarding||guardSettings==null||!guardSettings.guardEnabled||Health.IsDead||stopped||!IsGrounded
                 ||IsActionLocked||IsInHitStop||IsInCinematic||context.Source==null

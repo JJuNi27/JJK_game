@@ -23,7 +23,7 @@ namespace JJKGame.Shibuya
         internal void ConsumeCinematicEvent(int action, int evt) { if (cinematicAction != action) { cinematicEvents.Clear(); cinematicAction = action; } cinematicEvents.Add(evt); }
         internal void EnterCinematic(ShibuyaCinematicSession session)
         {
-            CancelGuardInput(); CancelGroundDash();
+            CancelQuickRecovery(); ResetGrab(); CancelGuardInput(); CancelGroundDash();
             Cinematic = session; cinematicFacing = transform.rotation;
             buffered = airBuffered = chaseQueued = jumpIntent = false; moveIntent = Vector3.zero;
             ReleaseOutgoingLink(); ClearIncomingLink();
@@ -33,6 +33,8 @@ namespace JJKGame.Shibuya
         public DamageGuardDecision EvaluateDamage(DamageContext context)
         {
             if(IsInCinematic)return Cinematic.Evaluate(this,context);
+            var recovery=EvaluateQuickRecoveryDamage(context);
+            if(recovery!=DamageGuardDecision.NoDecision)return recovery;
             var evade=EvaluateGroundDashDamage(context);
             return evade==DamageGuardDecision.NoDecision?EvaluateHeldGuard(context):evade;
         }

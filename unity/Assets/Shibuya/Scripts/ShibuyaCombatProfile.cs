@@ -55,6 +55,8 @@ namespace JJKGame.Shibuya
         public JJKGame.Core.CursedEnergyProfile cursedEnergy;
         public ShibuyaGroundDashProfile groundDash;
         public ShibuyaGuardProfile guard;
+        public ShibuyaGrabProfile grab;
+        public ShibuyaQuickRecoveryProfile quickRecovery;
         [Header("이동")]
         [Min(0.1f)] public float walkSpeed = 4.8f;
         [Min(0.1f)] public float runSpeed = 8.5f;

@@ -78,17 +78,22 @@ namespace JJKGame.Shibuya
             }
             MoveAxes = frame.move; // Keep command intent separate from attack locomotion filtering.
             fighter.SetGuardHeld(frame.guardHeld);
-            bool focusHeld = frame.auraHeld && !fighter.IsGuarding && !fighter.IsGuardBroken && !fighter.IsParryRecovering;
-            if(Aura!=null)Aura.SetHeld(focusHeld);
-            if(EnergyCharge!=null)EnergyCharge.SetHeld(focusHeld);
+            // Use actual guard state, not the held button (a successful parry consumes that hold).
+            bool grabPress = frame.attack && !previousAttack && fighter.IsGuarding;
+            if(grabPress)fighter.TryGrab();
             if (LockOn != null) LockOn.HandleButton(frame.lockHeld, Time.unscaledTimeAsDouble);
             orbitCamera.ApplyLook(frame.look);
             Vector3 forward = orbitCamera.transform.forward; forward.y = 0f; forward.Normalize();
             Vector3 right = orbitCamera.transform.right; right.y = 0f; right.Normalize();
-            fighter.SetIntent(forward * frame.move.y + right * frame.move.x, frame.run, frame.jump && !previousJump);
+            bool downSpace=fighter.IsDowned||fighter.IsQuickRecovering;
+            if(frame.jump&&!previousJump&&downSpace)fighter.TryQuickRecovery(frame.move,orbitCamera.transform.forward,orbitCamera.transform.right);
+            fighter.SetIntent(forward * frame.move.y + right * frame.move.x, frame.run, frame.jump && !previousJump && !downSpace);
             previousJump=frame.jump;
+            bool focusHeld = frame.auraHeld && !fighter.IsGuarding && !fighter.IsGuardBroken && !fighter.IsParryRecovering && !fighter.IsGrabBusy && !fighter.IsQuickRecovering;
+            if(Aura!=null)Aura.SetHeld(focusHeld);
+            if(EnergyCharge!=null)EnergyCharge.SetHeld(focusHeld);
             // The input boundary consumes presses, never a held button as auto-combo.
-            if (frame.attack && !previousAttack) fighter.TryAttack(frame.forwardKey == frame.backwardKey
+            if (frame.attack && !previousAttack && !grabPress) fighter.TryAttack(frame.forwardKey == frame.backwardKey
                 ? ShibuyaFinisher.Default : frame.forwardKey ? ShibuyaFinisher.Uppercut : ShibuyaFinisher.Down);
             previousAttack = frame.attack;
             if (frame.dash && !previousDash) fighter.TryGroundDash(frame.move, forward, right);
@@ -96,7 +101,7 @@ namespace JJKGame.Shibuya
         }
         private void Capture(bool value)
         {
-            if (!value) { previousDash = false; if(fighter!=null)fighter.CancelGuardInput(); }
+            if (!value) { previousDash = false; if(fighter!=null){fighter.CancelGuardInput();fighter.CancelGrabInput();fighter.CancelQuickRecovery();} }
             if(!value&&Aura!=null)Aura.SetHeld(false);
             if(!value&&EnergyCharge!=null)EnergyCharge.CancelCharge();
             if (!value && LockOn != null) LockOn.CancelSearch();

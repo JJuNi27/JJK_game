@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace JJKGame.Shibuya
 {
-    public enum ShibuyaFighterState { Ready, Attacking, Hitstunned, Dead, Finished, Airborne, Downed, GettingUp, AirChasing, AirReady, AirFalling, GroundDashing, Guarding }
+    public enum ShibuyaFighterState { Ready, Attacking, Hitstunned, Dead, Finished, Airborne, Downed, GettingUp, AirChasing, AirReady, AirFalling, GroundDashing, Guarding, QuickRecovering }
 
     // Presentation event: contact direction is independent of knockback and target alignment.
     public readonly struct ShibuyaHitReaction
@@ -71,6 +71,7 @@ namespace JJKGame.Shibuya
             : downed ? (gettingUp ? ShibuyaFighterState.GettingUp : ShibuyaFighterState.Downed)
             : airborne ? ShibuyaFighterState.Airborne
             : IsStunned ? ShibuyaFighterState.Hitstunned
+            : quickRecovering ? ShibuyaFighterState.QuickRecovering
             : guarding ? ShibuyaFighterState.Guarding
             : groundDashing ? ShibuyaFighterState.GroundDashing
             : attacking ? ShibuyaFighterState.Attacking
@@ -133,7 +134,7 @@ namespace JJKGame.Shibuya
             direction.y = 0f;
             moveIntent = Vector3.ClampMagnitude(direction, 1f);
             runIntent = run;
-            if (groundDashing || guarding || IsGuardBroken || IsParryRecovering) { jumpIntent = false; return; }
+            if (downed || quickRecovering || groundDashing || guarding || IsGuardBroken || IsParryRecovering || IsGrabBusy) { jumpIntent = false; return; }
             if(jump && !QueueAirChase()) jumpIntent=true;
         }
 
@@ -199,11 +200,13 @@ namespace JJKGame.Shibuya
             float delta = Time.deltaTime * fraction;
             if (IsInHitStop) { jumpIntent = false; return; }
             combatTime += delta;
+            UpdateGrab();
             UpdateGuard(delta);
             StartQueuedChase();
             UpdateRecoveryState();
             bool stunned = IsActionLocked;
             bool dashFrame = groundDashing;
+            bool recoveryFrame = quickRecovering;
             if (stunned) CancelCombo();
             Vector3 targetAdvance = !stunned ? AdvanceTargeting(delta) : Vector3.zero;
             if(!stunned) AimAirAttack(delta);
@@ -233,6 +236,7 @@ namespace JJKGame.Shibuya
                 + advance + targetAdvance + AdvanceVictimAlignment(delta) + AdvanceDistanceKnockback(delta)
                 + AdvanceAirHorizontal(delta);
             if (dashFrame) displacement += AdvanceGroundDash();
+            if (recoveryFrame) displacement += AdvanceQuickRecovery();
             Vector3 chaseMove=!stunned?AdvanceAirChase(delta):Vector3.zero;
             if(chasing) displacement=chaseMove;
             displacement = SeparateLandingCapsules(displacement, delta);
@@ -474,6 +478,8 @@ namespace JJKGame.Shibuya
         private void ApplyHitReaction(Vector3 impulse, float stunDuration, Vector3 sourcePosition,
             Vector3 strikeDirection, bool isHeavy, bool hasHitStop)
         {
+            CancelQuickRecovery();
+            InterruptGrab();
             EndGuard();
             CancelGroundDash();
             ReleaseIncomingAirHover();
@@ -499,6 +505,8 @@ namespace JJKGame.Shibuya
 
         public void StopCombat()
         {
+            CancelQuickRecovery();
+            ResetGrab();
             CancelGuardInput(); guardLockedUntil=0;
             CancelGroundDash();
             CancelCinematic("battle-ended");
@@ -530,17 +538,19 @@ namespace JJKGame.Shibuya
 
         private void OnDamageResolved(Health target, DamageContext context, DamageResolution result)
         {
+            if(result==DamageResolution.Applied)CancelQuickRecovery();
+            if(result==DamageResolution.Applied&&receivingGrabFrom==null)InterruptGrab();
             if (result == DamageResolution.Applied) { CancelGroundDash(); EndGuard(); }
             if (result == DamageResolution.Applied && IsInCinematic && !Cinematic.ApplyingAuthoredDamage) CancelCinematic("external-or-environmental-damage");
             if (result == DamageResolution.Applied) { ReleaseIncomingAirHover(); damageVersion++; InterruptAerial(); ClearVictimAlignment(); CancelCombo(); }
         }
-        private void OnDied(Health target) { CancelGuardInput(); guardLockedUntil=0; CancelGroundDash(); CancelCinematic("participant-dead"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); ClearVictimAlignment(); CancelCombo(); }
+        private void OnDied(Health target) { CancelQuickRecovery(); ResetGrab(); CancelGuardInput(); guardLockedUntil=0; CancelGroundDash(); CancelCinematic("participant-dead"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); ClearVictimAlignment(); CancelCombo(); }
         private void OnDestroy()
         {
             if (health == null) return;
             health.DamageResolved -= OnDamageResolved;
             health.Died -= OnDied;
         }
-        private void OnDisable() { CancelGuardInput(); guardLockedUntil=0; CancelGroundDash(); CancelCinematic("participant-disabled"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); distanceKnockbackRemaining = 0f; ClearVictimAlignment(); moveIntent = knockback = Vector3.zero; jumpIntent = false; hitStopUntil = 0; CancelCombo(); }
+        private void OnDisable() { CancelQuickRecovery(); ResetGrab(); CancelGuardInput(); guardLockedUntil=0; CancelGroundDash(); CancelCinematic("participant-disabled"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); distanceKnockbackRemaining = 0f; ClearVictimAlignment(); moveIntent = knockback = Vector3.zero; jumpIntent = false; hitStopUntil = 0; CancelCombo(); }
     }
 }

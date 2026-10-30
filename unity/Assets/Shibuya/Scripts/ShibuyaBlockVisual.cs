@@ -136,6 +136,17 @@ namespace JJKGame.Shibuya
                     visualRoot.localRotation = Quaternion.Euler(20f * Mathf.Clamp01(phase), 0, 0);
                 }
             }
+            else if (fighter.IsGrabBusy) {
+                float strength=fighter.GrabSettings!=null?fighter.GrabSettings.motionStrength:1;
+                bool whiff=fighter.GrabPhase==ShibuyaGrabPhase.FailureRecovery;
+                float reach=fighter.GrabPhase==ShibuyaGrabPhase.Startup?Mathf.Clamp01(fighter.GrabElapsed/Mathf.Max(.01f,fighter.GrabSettings.startup)):1;
+                if(fighter.IsGrabbed){visualRoot.localRotation=rootRotation*Quaternion.Euler(-12,0,0);}
+                else {
+                    leftArm.localRotation=Quaternion.Euler((-35-50*reach)*strength,0,-12);
+                    rightArm.localRotation=Quaternion.Euler((-35-50*reach)*strength,0,12);
+                    visualRoot.localRotation=rootRotation*Quaternion.Euler((whiff?18:8)*strength,0,0);
+                }
+            }
             else if (fighter.IsParryRecovering) {
                 float weight=Mathf.Sin((1-fighter.ParryMotionProgress)*Mathf.PI*.5f)*fighter.ParrySettings.motionStrength;
                 leftArm.localRotation=Quaternion.Euler(-80-30*weight,-50*weight,-20);
@@ -168,6 +179,15 @@ namespace JJKGame.Shibuya
                 float weight = fighter.DownPoseWeight;
                 visualRoot.localRotation = Quaternion.Euler(fighter.DownPoseAngle * weight, 0, 0);
                 visualRoot.localPosition = new Vector3(0, .28f * weight, .25f * weight);
+            } else if(fighter.IsQuickRecovering) {
+                ClearReaction();
+                float weight=fighter.QuickRecoveryPoseWeight;
+                Vector3 direction=transform.InverseTransformDirection(fighter.QuickRecoveryDirection);
+                float tilt=Mathf.Sin(fighter.QuickRecoveryProgress*Mathf.PI)*25*fighter.QuickRecoveryPoseStrength;
+                visualRoot.localRotation=rootRotation*Quaternion.Euler(fighter.QuickRecoveryPoseAngle*weight+direction.z*tilt,0,-direction.x*tilt);
+                visualRoot.localPosition=rootPosition+new Vector3(0,.28f*weight,.25f*weight);
+                leftArm.localRotation=Quaternion.Euler(-50*weight,0,-25*weight);
+                rightArm.localRotation=Quaternion.Euler(-50*weight,0,25*weight);
             } else {
                 ApplyReactionPose();
                 if(fighter.IsGuardBroken && fighter.GuardSettings!=null)visualRoot.localRotation*=Quaternion.Euler(fighter.GuardSettings.breakLeanAngle,0,0);
