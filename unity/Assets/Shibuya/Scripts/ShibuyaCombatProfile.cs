@@ -16,6 +16,9 @@ namespace JJKGame.Shibuya
     public sealed class ShibuyaStrikeDefinition
     {
         [Min(0.1f)] public float damage = 20f;
+        [Min(0f)] public float guardDamage = 16f;
+        public bool guardable = true;
+        public bool parryable = true;
         [Min(0.01f)] public float startup = 0.10f;
         [Min(0.01f)] public float activeTime = 0.08f;
         [Min(0.01f)] public float recovery = 0.22f;
@@ -50,6 +53,8 @@ namespace JJKGame.Shibuya
     {
         [Tooltip("캐릭터의 최대 주력량 원본입니다. 현재 주력량과 아우라 색상은 이 참조와 별개입니다.")]
         public JJKGame.Core.CursedEnergyProfile cursedEnergy;
+        public ShibuyaGroundDashProfile groundDash;
+        public ShibuyaGuardProfile guard;
         [Header("이동")]
         [Min(0.1f)] public float walkSpeed = 4.8f;
         [Min(0.1f)] public float runSpeed = 8.5f;

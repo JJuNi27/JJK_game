@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83ad7f42facc47b3b7f7577864c828a0, type: 3}
+  m_Name: Shibuya Parry
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaParryProfile
+  parryEnabled: 1
+  windowDuration: 0.12
+  retryInterval: 0.5
+  halfAngle: 60
+  attackerStun: 0.35
+  pushDistance: 1.2
+  successMotionDuration: 0.1
+  localHitStop: 0
+  effectShader: {fileID: 4800000, guid: 77ab5d9a0e7d49ef9bf3055a4946efa0, type: 3}
+  effectColor: {r: 0.5, g: 0.95, b: 1, a: 1}
+  effectIntensity: 2.8
+  effectSize: 0.9
+  effectDuration: 0.22
+  motionStrength: 1

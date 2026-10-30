@@ -1,9 +1,49 @@
 # JJK_game — Current Project Handoff
 
-작성 기준: **2026-10-25 KST**
+작성 기준: **2026-10-30 KST**
 저장소: `JJuNi27/JJK_game` · 브랜치: `feat/shibuya-combat-mvp`
-이번 체크포인트의 부모 기준: `42833ebfec9a176056ae983096c41c1ef4d8fb24`.
-마지막 이전 USER VERIFIED 구현 원격 기준은 `6655f19`(PASS 3C)였다. 이번에는 그 이후 미커밋 의존성을 포함해 PASS 4B.4a까지 함께 저장한다. 체크포인트 SHA와 원격 반영 여부는 실제 Git HEAD/origin을 확인한다. 로컬 QA 원본/미디어까지 GitHub에 올라간 것으로 해석하지 않는다.
+USER VERIFIED 체크포인트: `1202e940176daec9fbb0b8027702f600b2f677d4` (PASS 4B.4a까지, 10-25 일반 push 완료).
+위 커밋은 이번 PASS4C~4D.1 체크포인트의 이전 기준이다. 이 문서가 포함된 새 체크포인트의 SHA는 현재 브랜치 Git 이력에서 확인한다. QA 원본/미디어와 로컬 모델·오디오·레퍼런스는 별도 로컬 보존이며 GitHub에 포함된 것으로 해석하지 않는다.
+
+## 현재 — PASS4C~4D.1 체크포인트 / 후속 요청 대기
+
+2026-10-30 사용자가 체크포인트 저장을 승인했다. PASS4C 지상 대시,4C.1 거리·쿨타임 튜닝,4C.2 카메라 기준 방향 통일,4D.0 가드·비공개 체력·파괴·임시 방어막,4D.1 패링·취소/반동·연습 도구와 필요한 코드/데이터/meta/테스트/보고서를 함께 보존한다.
+
+USER VERIFIED는 **4C.2 방향 대시·조작감**, **4D.1 패링 구조·조작감**이다. 가드 원통은 임시 MVP 수용이며 최종 방어 VFX 승인이 아니다. 패링 최종 VFX와 캐릭터별 모션도 후속 작업이다. 가드 전체·자동 경계 검사까지 사용자 수동 검증으로 확대하지 않는다. 정확한 승인 범위는 `docs/locked/USER_VERIFIED_SETTINGS.md`의 이번 승인 절을 따른다.
+
+기존 검증 결과를 재사용했으며 체크포인트를 위해 Unity를 실행하거나 전체 회귀를 다시 돌리지 않았다. 최신4D.1 고유30 PASS는 복수 실행 집계이고 단일 전체 성공 실행이 아니다. 최초 실패 XML/원인과 PASS4A 과거 미해결18건을 유지한다. 대용량 QA/Library/Temp/로컬 전용 자산은 커밋 대상에서 제외한다.
+
+저장 후 추가 구현은 하지 않는다. **잡기는 다음 PASS에서 별도 승인 후 진행**한다. 패링/가드 최종 연출, 반전술식, 신체 강화 등도 자동 착수하지 않는다.
+
+아래는 각 PASS 구현·자동 검증 당시의 기록이다. 당시의 LOCAL UNCOMMITTED/검수 대기/Console 상태를 최신 승인과 혼동하지 않는다.
+
+## 0. 현재 — PASS 4D.1 타이밍 패링 MVP 검수 대기
+
+우클릭 새 가드 진입 시0.12초 패링 창, 시작 사이0.50초 제한, 몸 정면120도. 실패/쿨타임은 일반 가드 유지. 성공은 가드를 종료하고0.10초 동작 후 수동 후속 행동 선택(자동 반격/홀드 재가드 없음), 공격자에게 가짜 HP 피해 없이0.35초 경직/1.2m 거리 넉백/현재·예약 공격 취소. Core Health 수정 없이 Guarded+전용 ParrySucceeded 이벤트로 구분한다. 가드/패링 가능 플래그는 독립이다. 기존 방어막/F 아우라/카메라/승인 대시 수치 보존.
+
+LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기. 최신 고유30 PASS는 복수 실행 집계이며 단일30개 실행이 아니다. 최초 순변위 측정 실패는 준비 전진0.52m를 분리한 실제 반동1.20000017m로 확인했으며 원본을 보존했다. 보고서 `docs/SHIBUYA_PASS4D1_REVIEW.md`, QA/원속도3비교 `unity/Logs/ShibuyaPass4D1QA/20261030-parry/`. 기존 PASS4D 검수 메뉴의 반복 패링 연습/실제 공격 예고를 사용한다. 현재 Console error0/warning1, Play stopped/씬 clean/fps -1/Time.timeScale1/패링 리소스0. commit/push 없음.
+
+PASS4C.2는 사용자 직접 승인. PASS4D.0 전체는 CODEX VALIDATED, 원통 외형만 임시 MVP 수용이며 새 패링의 승인으로 확대하지 않는다. 잡기/반전술식/주력 회복 보너스/신체 강화는 미구현이다. 아래는 이전4D.0 기록이다.
+
+PASS4C.2 카메라 기준 대시 방향·속도는 사용자 직접 승인(LOCAL UNCOMMITTED)이다. 새 PASS4D.0은 우클릭 홀드/전방120도/독립 가드 체력100/회복1.2초 후20/s/파괴0.8초/타격별 가드 피해16·16·18·35와 별도 위험 방어막을 구현했다. 게임 HUD에는 가드 잔량을 표시하지 않는다. 기존 Health 방어 확장 재사용, 이동은 Fighter 단독 소유. F 아우라/카메라/대시 수치 보존. CODEX VALIDATED(targeted) / USER VERIFIED 대기. 최신 고유33 PASS는 복수 실행 집계이며 단일33개 성공 실행이 아니다. 원본 실패/테스트 관측 오류/수정한 프로필 생명주기 예외를 모두 보존했다.
+
+상세·실제 피격 검수 메뉴·영상: `docs/SHIBUYA_PASS4D_REVIEW.md`. QA `unity/Logs/ShibuyaPass4DQA/20261030-guard/`. 메뉴 `JJK Game/시부야 PASS4D/가드 피격 검수 도구`는 Play Mode에서만2초 지연 실제 더미 공격을 제공한다. 현재 Console error0/warning1, 보존 버퍼 error6의 원인은 보고서에 구분했다. Play stopped/씬 clean/fps -1/Time.timeScale1. 패링/잡기/반전술식/신체 강화는 미구현. commit/push 없음.
+
+아래는 PASS4C.2 구현 당시 기록이며 사용자 승인은 위 최신 기록을 따른다.
+
+최신 PASS4C.2: 락온·비락온 모두 시작 시 카메라의 수평 WASD 방향을 저장해 대시한다. 타깃 위치는 이동 벡터에 사용하지 않으며 기존 몸 바라보기는 별도 유지한다. PASS4C.1 거리/지속시간/쿨타임/무적/Curve, 락온 선택·공격·카메라 코드는 보존했다. 단일 targeted20 PASS/0 FAIL/0 SKIP. 보고서·원속도5영상: `docs/SHIBUYA_PASS4C2_REVIEW.md`. LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기. 사용자는4C.1 거리·속도·쿨타임/비락온 방향에 만족한다고 피드백했지만 새4C.2 방향은 직접 검수 전이다. 최종 Play stopped/씬 clean/fps -1, 현재 Console error0/warning1(font), 이전 timeout은 버퍼 보존.
+
+아래 PASS4C.1/4C 수치·검증·Console은 당시의 이력이다.
+
+최신 PASS4C.1: 전방5.25m, 좌우3.60m, 후방3.30m, 종료/중단 후 쿨타임0.45s. 지속시간0.22/0.18/0.20s와 무적0.04~0.14s, 속도Curve·방향·락온·카메라·전투 런타임은 보존했다. 실제 Data Asset 네 값만 변경. 단일16 PASS/0 FAIL/0 SKIP와 별도 원거리 촬영1 PASS. 상세/원속도 자료: `docs/SHIBUYA_PASS4C1_REVIEW.md`. CODEX VALIDATED(targeted) / USER VERIFIED 대기 / LOCAL UNCOMMITTED. 아래4C 수치와20케이스·Console 기록은 이전 실행 이력이다.
+
+CODEX VALIDATED(targeted 범위) / USER VERIFIED 대기. C KeyDown 방향 스텝, 기존 Fighter 단일 motor, 시작 방향 스냅샷, 짧은 일반 체술 회피 guard, 한국어 공통 Data Asset을 구현했다. 전방3.5m/0.22s, 측면2.4m/0.18s, 후방2.2m/0.20s, 측면·후방0.04~0.14s 회피, 종료 후0.65s 공통 쿨타임은 **실험값**이다. 전방 성분 대각선은 무적 없다.
+
+공격/경직/다운/공중/추격/히트스톱/시네마틱에서는 시작하지 않는다. F 홀드 중 C를 차단하고, 진행 중 새 F는 대시를 종료해 기존 충전을 우선한다. 주력 소모/공격 캔슬/공중 대시/신체 강화는 없다. 기존 승인된 아우라·크기 곡선·충전/HUD·카메라/전투값을 보존했다.
+
+최신 고유20케이스 PASS(복수 실행, 미디어 포함). 최초 시네마틱 API 반환형 검사 오류1건을 수정했고 원본 XML을 보존했다. 과거 PASS4A 회귀18건 전체 해결을 선언하지 않는다. 상세·원속도 영상·파일 목록: `docs/SHIBUYA_PASS4C_REVIEW.md`. 코드/설정 commit·push는 이번 작업에서 실행하지 않았다. 아래 USER VERIFIED 기록은 기존 승인 기능이며 새로운 C 기능까지 승인한 것이 아니다.
+
+최종 Console은 error1/warning1. 오류는 검증 종료 후 Pipeline 복합 상태 조회의5초 timeout이며 작은 조회로 연결/Play 종료·씬 clean·프레임률 -1 복구를 확인했다. 테스트 중 게임 예외와 구분하고 로그를 지우지 않았다. 아래4B.4a의 Console 기록은 당시의 별도 시점이다.
 
 ## 1. 게임 방향과 보호
 
@@ -74,4 +114,4 @@ PASS 4A의 기본 선택/거리/시야 해제, PASS 4A.1 공격 방향 전환의
 - 시네마틱: `JJK Game → 시부야 PASS3D → 시네마틱 예제 ON (Play Mode 전용)`; OFF 또는 Play 종료로 해제.
 - 아우라4배 비교: `JJK Game → 시부야 PASS4B3c`의 임시 배율/200기준 곡선 메뉴. 사용 후 저장 프로필 복귀.
 
-다음 기능은 별도 사용자 지시 대기. 지상 방향 대시·회피는 후보이고, 신체 강화는 보류다. 캐릭터 모션/시네마틱 구도, 과거18건 QA 원인, 다인전·성능·복잡한 맵 경계는 후속 범위다. 자동으로 구현하거나 승인 범위를 늘리지 않는다.
+현재 지상 방향 대시·회피 PASS4C는 로컬 구현 후 사용자 검수 대기다. 신체 강화는 계속 보류한다. 가드/패링/잡기 등 다음 기능, 캐릭터 모션/시네마틱 구도, 과거18건 QA 원인, 다인전·성능·복잡한 맵 경계는 별도 사용자 지시를 기다린다. 자동으로 구현하거나 승인 범위를 늘리지 않는다.

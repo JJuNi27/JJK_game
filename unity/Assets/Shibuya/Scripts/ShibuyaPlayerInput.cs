@@ -5,7 +5,7 @@ namespace JJKGame.Shibuya
     public struct ShibuyaInputFrame
     {
         public Vector2 move, look;
-        public bool run, jump, attack, lockHeld, auraHeld;
+        public bool run, jump, attack, lockHeld, auraHeld, dash, guardHeld;
         public bool forwardKey, backwardKey;
     }
 
@@ -17,6 +17,7 @@ namespace JJKGame.Shibuya
         private bool captured;
         private bool previousAttack;
         private bool previousJump;
+        private bool previousDash;
         public Vector2 MoveAxes { get; private set; }
         public ShibuyaLockOn LockOn { get; private set; }
         public CursedEnergyAuraController Aura {get;private set;}
@@ -72,12 +73,14 @@ namespace JJKGame.Shibuya
                     run = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift),
                     jump = Input.GetKeyDown(KeyCode.Space), attack = Input.GetMouseButtonDown(0),
                     forwardKey = Input.GetKey(KeyCode.W), backwardKey = Input.GetKey(KeyCode.S),
-                    lockHeld = Input.GetMouseButton(2), auraHeld=Input.GetKey(KeyCode.F)
+                    lockHeld = Input.GetMouseButton(2), auraHeld=Input.GetKey(KeyCode.F), dash=Input.GetKeyDown(KeyCode.C), guardHeld=Input.GetMouseButton(1)
                 };
             }
             MoveAxes = frame.move; // Keep command intent separate from attack locomotion filtering.
-            if(Aura!=null)Aura.SetHeld(frame.auraHeld);
-            if(EnergyCharge!=null)EnergyCharge.SetHeld(frame.auraHeld);
+            fighter.SetGuardHeld(frame.guardHeld);
+            bool focusHeld = frame.auraHeld && !fighter.IsGuarding && !fighter.IsGuardBroken && !fighter.IsParryRecovering;
+            if(Aura!=null)Aura.SetHeld(focusHeld);
+            if(EnergyCharge!=null)EnergyCharge.SetHeld(focusHeld);
             if (LockOn != null) LockOn.HandleButton(frame.lockHeld, Time.unscaledTimeAsDouble);
             orbitCamera.ApplyLook(frame.look);
             Vector3 forward = orbitCamera.transform.forward; forward.y = 0f; forward.Normalize();
@@ -88,9 +91,12 @@ namespace JJKGame.Shibuya
             if (frame.attack && !previousAttack) fighter.TryAttack(frame.forwardKey == frame.backwardKey
                 ? ShibuyaFinisher.Default : frame.forwardKey ? ShibuyaFinisher.Uppercut : ShibuyaFinisher.Down);
             previousAttack = frame.attack;
+            if (frame.dash && !previousDash) fighter.TryGroundDash(frame.move, forward, right);
+            previousDash = frame.dash;
         }
         private void Capture(bool value)
         {
+            if (!value) { previousDash = false; if(fighter!=null)fighter.CancelGuardInput(); }
             if(!value&&Aura!=null)Aura.SetHeld(false);
             if(!value&&EnergyCharge!=null)EnergyCharge.CancelCharge();
             if (!value && LockOn != null) LockOn.CancelSearch();
@@ -99,6 +105,6 @@ namespace JJKGame.Shibuya
             Cursor.visible = !value;
         }
         private void OnApplicationFocus(bool focus) { if (!focus) Capture(false); }
-        private void OnDisable() { MoveAxes = Vector2.zero; previousAttack = previousJump = false; Capture(false); if (LockOn != null) LockOn.Clear(); }
+        private void OnDisable() { MoveAxes = Vector2.zero; previousAttack = previousJump = previousDash = false; Capture(false); if (LockOn != null) LockOn.Clear(); }
     }
 }

@@ -136,6 +136,23 @@ namespace JJKGame.Shibuya
                     visualRoot.localRotation = Quaternion.Euler(20f * Mathf.Clamp01(phase), 0, 0);
                 }
             }
+            else if (fighter.IsParryRecovering) {
+                float weight=Mathf.Sin((1-fighter.ParryMotionProgress)*Mathf.PI*.5f)*fighter.ParrySettings.motionStrength;
+                leftArm.localRotation=Quaternion.Euler(-80-30*weight,-50*weight,-20);
+                rightArm.localRotation=Quaternion.Euler(-45,25*weight,20);
+                visualRoot.localRotation=rootRotation*Quaternion.Euler(0,25*weight,0);
+            }
+            else if (fighter.IsGuarding) {
+                float angle=fighter.GuardSettings.guardArmAngle;
+                leftArm.localRotation=Quaternion.Euler(-angle,0,-20);
+                rightArm.localRotation=Quaternion.Euler(-angle,0,20);
+            }
+            else if (fighter.IsGroundDashing) {
+                Vector3 step = transform.InverseTransformDirection(fighter.GroundDashDirection);
+                float lean = fighter.GroundDashLeanAngle * Mathf.Sin(fighter.GroundDashProgress * Mathf.PI);
+                visualRoot.localRotation = rootRotation * Quaternion.Euler(step.z * lean, 0, -step.x * lean);
+                leftArm.localRotation = rightArm.localRotation = Quaternion.Euler(25, 0, 0);
+            }
             else if(fighter.IsChasing) {
                 visualRoot.localRotation=Quaternion.Euler(fighter.ChaseLeanAngle,0,0);
                 leftArm.localRotation=rightArm.localRotation=Quaternion.Euler(25,0,0);
@@ -153,6 +170,7 @@ namespace JJKGame.Shibuya
                 visualRoot.localPosition = new Vector3(0, .28f * weight, .25f * weight);
             } else {
                 ApplyReactionPose();
+                if(fighter.IsGuardBroken && fighter.GuardSettings!=null)visualRoot.localRotation*=Quaternion.Euler(fighter.GuardSettings.breakLeanAngle,0,0);
                 if (fighter.IsAirborne) visualRoot.localRotation *= Quaternion.Euler(-fighter.AirReactionLean, 0, 0);
             }
             bool flash = fighter.CombatTime < fighter.HitFlashUntil;

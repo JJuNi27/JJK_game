@@ -9,6 +9,9 @@ namespace JJKGame.Shibuya.EditorTools
     {
         private static readonly Dictionary<string, string> Labels = new Dictionary<string, string> {
             {"cursedEnergy", "캐릭터 주력 능력치"},
+            {"groundDash", "지상 방향 대시·회피 설정"},
+            {"guard", "공통 가드 설정"}, {"guardDamage", "가드 체력 피해"}, {"guardable", "일반 가드로 방어 가능"},
+            {"parryable", "타이밍 패링 가능"},
             {"cinematic", "유효 적중 시 시네마틱 설정"}, {"defaultFinisherCinematic", "기본 마지막 타격 시네마틱 (선택)"},
             {"cinematicEnabled", "시네마틱 사용"}, {"triggers", "발동 가능한 마무리 종류"}, {"shots", "카메라 샷 순서"},
             {"anchor", "샷 시점 기준"}, {"distance", "카메라 거리"}, {"height", "카메라 높이"}, {"angle", "카메라 수평 각도"},
@@ -157,7 +160,7 @@ namespace JJKGame.Shibuya.EditorTools
     [CustomPropertyDrawer(typeof(ShibuyaStrikeDefinition))]
     public sealed class ShibuyaStrikeDrawer : PropertyDrawer
     {
-        private static readonly string[] Fields = { "damage", "startup", "activeTime", "recovery", "attackRadius",
+        private static readonly string[] Fields = { "damage", "guardDamage", "guardable", "parryable", "startup", "activeTime", "recovery", "attackRadius",
             "attackForwardOffset", "attackHeight", "hitStun", "knockbackSpeed", "knockbackDirection", "motion", "presentationIntensity",
             "advanceDistance", "advanceSpeed", "advanceStartTime", "advanceDuration", "powerWindupTime", "windupMoveMultiplier",
             "hitStopDuration", "soundPitch", "alignVictimOnHit", "overrideTargeting", "targeting" };
@@ -196,7 +199,16 @@ namespace JJKGame.Shibuya.EditorTools
         }
     }
     [CustomEditor(typeof(ShibuyaCombatProfile)), CanEditMultipleObjects] public sealed class ShibuyaCombatProfileEditor : ShibuyaInspector { }
-    [CustomEditor(typeof(ShibuyaFighter)), CanEditMultipleObjects] public sealed class ShibuyaFighterEditor : ShibuyaInspector { }
+    [CustomEditor(typeof(ShibuyaFighter)), CanEditMultipleObjects] public sealed class ShibuyaFighterEditor : ShibuyaInspector {
+        public override void OnInspectorGUI() {
+            base.OnInspectorGUI();
+            if(Application.isPlaying&&targets.Length==1&&target is ShibuyaFighter fighter&&fighter.GuardSettings!=null)
+                using(new EditorGUI.DisabledScope(true)) {
+                    EditorGUILayout.FloatField("개발용 현재 가드 체력 (HUD 비공개)",fighter.CurrentGuard);
+                    EditorGUILayout.FloatField("개발용 최대 가드 체력",fighter.MaximumGuard);
+                }
+        }
+    }
     [CustomEditor(typeof(ShibuyaPlayerInput)), CanEditMultipleObjects] public sealed class ShibuyaPlayerInputEditor : ShibuyaInspector { }
     [CustomEditor(typeof(ShibuyaOrbitCamera)), CanEditMultipleObjects] public sealed class ShibuyaOrbitCameraEditor : ShibuyaInspector { }
     [CustomEditor(typeof(ShibuyaBlockVisual)), CanEditMultipleObjects] public sealed class ShibuyaBlockVisualEditor : ShibuyaInspector { }

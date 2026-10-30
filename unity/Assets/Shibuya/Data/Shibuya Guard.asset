@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7303875cbf949748ef7432ca60ad53c, type: 3}
+  m_Name: Shibuya Guard
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaGuardProfile
+  guardEnabled: 1
+  parry: {fileID: 11400000, guid: eb2f3c93be254297bdc853e34352a45d, type: 2}
+  shieldShader: {fileID: 4800000, guid: 084bb11a4c3d4c4fbd5a6f15ccea566a, type: 3}
+  maximumGuard: 100
+  halfAngle: 60
+  movementMultiplier: 0.4
+  recoveryDelay: 1.2
+  recoveryPerSecond: 20
+  breakLockDuration: 0.8
+  fallbackGuardDamage: 16
+  stableThreshold: 0.7
+  criticalThreshold: 0.4
+  stableColor: {r: 0.2, g: 0.85, b: 1, a: 0.18}
+  strainedColor: {r: 0.4, g: 0.75, b: 1, a: 0.23}
+  criticalColor: {r: 0.75, g: 0.65, b: 1, a: 0.3}
+  impactStrength: 0.12
+  criticalInstability: 0.4
+  crackStrength: 1
+  impactDuration: 0.18
+  breakVisualDuration: 0.45
+  breakVisualStrength: 0.7
+  shieldRadius: 0.8
+  shieldHeight: 1.45
+  shieldCenterHeight: 1.1
+  guardArmAngle: 80
+  breakLeanAngle: 25

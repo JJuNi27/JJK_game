@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Shibuya Combat Profile
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaCombatProfile
   cursedEnergy: {fileID: 11400000, guid: 17ee697916fee58429378ee6e35e5dc9, type: 2}
+  groundDash: {fileID: 11400000, guid: 6752c33832b9252449c40967531531eb, type: 2}
+  guard: {fileID: 11400000, guid: 75efdf04213f4a00b2e5cb1bd4319080, type: 2}
   walkSpeed: 4.8
   runSpeed: 8.5
   turnSpeed: 720
@@ -23,6 +25,9 @@ MonoBehaviour:
   attackBackwardInputMultiplier: 0
   strikes:
   - damage: 20
+    guardDamage: 16
+    guardable: 1
+    parryable: 1
     startup: 0.1
     activeTime: 0.08
     recovery: 0.22
@@ -57,6 +62,9 @@ MonoBehaviour:
       maxHeightDifference: 1.4
       predictionTime: 0.05
   - damage: 20
+    guardDamage: 16
+    guardable: 1
+    parryable: 1
     startup: 0.09
     activeTime: 0.07
     recovery: 0.18
@@ -91,6 +99,9 @@ MonoBehaviour:
       maxHeightDifference: 1.4
       predictionTime: 0.05
   - damage: 20
+    guardDamage: 18
+    guardable: 1
+    parryable: 1
     startup: 0.1
     activeTime: 0.07
     recovery: 0.18
@@ -125,6 +136,9 @@ MonoBehaviour:
       maxHeightDifference: 1.4
       predictionTime: 0.05
   - damage: 25
+    guardDamage: 35
+    guardable: 1
+    parryable: 1
     startup: 0.18
     activeTime: 0.1
     recovery: 0.32
@@ -162,6 +176,7 @@ MonoBehaviour:
   comboResetTime: 0.6
   finishers: {fileID: 11400000, guid: 146cb4b7215ad0241b2c9d504b9a2f5e, type: 2}
   aerialCombat: {fileID: 11400000, guid: da9964904f774b94c9660c776658a795, type: 2}
+  defaultFinisherCinematic: {fileID: 0}
   confirmedLinkEnabled: 1
   confirmedLinkInputWindow: 0.24
   confirmedLinkMaxHold: 0.75

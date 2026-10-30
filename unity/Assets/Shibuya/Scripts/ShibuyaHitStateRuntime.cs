@@ -33,7 +33,7 @@ namespace JJKGame.Shibuya
         public float AirReactionLean => airborne ? airSettings.airReactionLean : 0f;
         // The finite, actually-hit air relation owns actions only while its height lease is valid.
         // Ordinary stun timers and all ground combat remain independent of this lease.
-        private bool IsActionLocked => IsStunned || airborne || downed || IsHeldByAerialHit;
+        private bool IsActionLocked => IsStunned || airborne || downed || IsHeldByAerialHit || IsParryRecovering;
 
         // Ends only the previous launch's motion; the airborne state and gravity remain owned here.
         private void EndLaunchMotion()
