@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a8dad19744e4005ae84c6651265c626, type: 3}
+  m_Name: Shibuya Training AI
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaTrainingAIProfile
+  trainingAllowed: 1
+  detectionRange: 10
+  approachStartDistance: 2.3
+  approachStopDistance: 1.55
+  decisionInterval: 0.15
+  facingTolerance: 20
+  reactionDelay: 0.2
+  minimumRest: 0.9
+  maximumRest: 1.5
+  oneHitWeight: 25
+  twoHitWeight: 35
+  threeHitWeight: 25
+  fourHitWeight: 15
+  useRunning: 0
+  maximumAttackHeightDifference: 1.4
+  useFixedSeed: 0
+  randomSeed: 1729

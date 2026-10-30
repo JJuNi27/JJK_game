@@ -1,5 +1,21 @@
 # JJK_game — Current Project Handoff
 
+## PASS4F.0 사용자 승인 체크포인트 — 2026-10-30
+
+브랜치 `feat/shibuya-combat-mvp`, 이전 기준 `0cbaed7ea07a254a252e09e36d3072a7913da678`. 이번 문서를 포함하는 체크포인트 SHA는 Git 이력에서 확인한다.
+
+사용자가 공격형 AI의 **플레이어 접근, 방향 정렬, 기존 Fighter의 1~4타 공격, 공격 후 휴식·재접근, 기본 조작감**을 직접 플레이하고 승인했다. 이 범위는 USER VERIFIED다. 장애물 우회, 장시간 안정성, 전체 경계 조건, 최종 난이도는 승인 범위가 아니다.
+
+기본 OFF, 10m 탐색, 2.3→1.55m 접근, 20도 정렬, 반응0.20초, 묶음1~4타 가중치25/35/25/15, 휴식0.9~1.5초다. 기존 Fighter가 이동·회전·충돌·피해를 소유한다. OFF는 AI 소유 후속 예약만 철회하고 현재 타격·피격은 강제로 취소하지 않는다. 새 Play/재시작은 수동 더미다.
+
+자동 검증은 **최신 고유34 PASS/0 FAIL/0 SKIP(신규18+선택 회귀16), 7회 실행 집계**다. 단일 전체34개 실행이 아니다. 최초 버퍼 만료 경계 결함과 재검증, 촬영 중 실제 사망에 따른 준비 실패, QA 탐색 오류를 원본 XML/trace/영상/로그와 함께 보존했다. PASS4A 과거 미해결18건은 그대로다.
+
+이전 Pipeline 누적 오류1928건은 CLI 명령 호환19건(`script recompile`2, `script recompile_status`17)과 테스트 discovery 콜백 예외 반복1909건이다. 게임플레이/컴파일 오류가 아니며, 미시작 탐색은 성공 검사 수에 넣지 않았다. 마지막 Editor Console error0/warning1(font), Play stopped/씬 clean/fps -1/Time.timeScale1/AutoTick true16ms/PlayUnfocused/런타임 Shibuya Mesh·Material0/0 기록을 재사용했다. 미확인 장시간 안정성을 해결 완료로 확대하지 않는다.
+
+보고서 `docs/SHIBUYA_PASS4F0_REVIEW.md`, 로컬 원본 `unity/Logs/ShibuyaPass4F0QA/20261030-training-ai/`. Play 메뉴는 `JJK Game/시부야 PASS4F/공격형 훈련 AI ON·OFF`, 상태 창은 같은 경로의 `훈련 AI 현재 상태·설정`이다. 상태 창을 닫으면 연결 AI OFF다.
+
+기존 Gojo/VFX·아우라·카메라·전투값·Scene/Prefab/Packages/ProjectSettings와 사용자 `.slnx` 변경을 보존한다. `.slnx`, QA 원본, 미디어와 로컬 자산은 이번 커밋에서 제외한다. PASS4F.1 방어형 AI는 이 체크포인트 push 확인 후 별도 LOCAL UNCOMMITTED로 구현하며 사용자 승인은 아직 없다. 아래는 이전 시점의 기록이다.
+
 ## 현재 — PASS4D.2 + PASS4E USER VERIFIED 체크포인트 / 훈련 AI 설계 합의 대기
 
 2026-10-30. 브랜치 `feat/shibuya-combat-mvp`. 이전 원격 기준은 `bd5acdcb22c35002317a438a2b0fd28986b53607`이며, 이 문서가 포함된 새 저장 커밋의 SHA는 현재 브랜치 Git 이력에서 확인한다. 이번 요청은 관련 파일의 선택적 commit/push와 문서 정리만 수행한다.

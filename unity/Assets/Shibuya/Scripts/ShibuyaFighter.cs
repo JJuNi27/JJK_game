@@ -227,6 +227,7 @@ namespace JJKGame.Shibuya
             if (!stunned && !attacking && !airSession && voluntary.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation,
                     Quaternion.LookRotation(voluntary), Mathf.Max(0.1f, profile.turnSpeed) * delta);
+            else ApplyFacingIntent(delta);
             float speed = Mathf.Max(0.1f, runIntent ? profile.runSpeed : profile.walkSpeed);
             if (attacking) speed *= Mathf.Clamp01(profile.attackMoveMultiplier);
             if (guarding) speed = profile.walkSpeed * Mathf.Clamp01(guardSettings.movementMultiplier);
