@@ -7,7 +7,7 @@ namespace JJKGame.Shibuya.EditorTools
     public sealed class ShibuyaGrabInspector : UnityEditor.Editor
     {
         public static readonly Dictionary<string,string> Labels=new Dictionary<string,string>{
-            {"grabEnabled","공통 잡기 사용"},{"range","최대 사거리 (몸 중심 간 m)"},{"halfAngle","정면 반각 (도)"},
+            {"attack","공격 분류 (잡기는 기본 등급 비허용)"},{"grabEnabled","공통 잡기 사용"},{"range","최대 사거리 (몸 중심 간 m)"},{"halfAngle","정면 반각 (도)"},
             {"startup","잡기 준비 시간"},{"activeTime","유효 판정 시간"},{"damage","성공 HP 피해"},
             {"contactDuration","붙잡기 순간 표현 시간"},{"pushDistance","상대 밀려남 목표 거리"},{"victimStun","상대 경직·밀려남 시간"},
             {"successRecovery","성공 후 행동 회복 시간"},{"failureRecovery","실패·중단 후 행동 회복 시간"},{"motionStrength","블록 잡기 모션 강도"}

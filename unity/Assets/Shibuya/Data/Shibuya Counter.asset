@@ -1,0 +1,109 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a58ae89109e54322a8537ad1af63df7a, type: 3}
+  m_Name: Shibuya Counter
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaCounterProfile
+  counterEnabled: 1
+  counterName: "\uD328\uB9C1 \uBC18\uACA9"
+  inputOpportunity: 0.5
+  maximumStartRange: 4
+  maximumStartAngle: 120
+  maximumReservationTime: 3
+  counterBlackFlashConditional: 50
+  counterStep:
+    hits:
+    - cinematic: {fileID: 0}
+      startTime: 0
+      strike:
+        attack:
+          reach: 1
+          nature: 1
+          origin: 3
+          criticalAllowed: 1
+          blackFlashAllowed: 1
+          directHybridHit: 0
+        damage: 20
+        guardDamage: 16
+        guardable: 1
+        parryable: 1
+        startup: 0.18
+        activeTime: 0.04
+        recovery: 0.25
+        attackRadius: 0.85
+        attackForwardOffset: 1.1
+        attackHeight: 1
+        hitStun: 0.3
+        knockbackSpeed: 6
+        knockbackDirection: 1
+        alignVictimOnHit: 1
+        motion: 3
+        presentationIntensity: 1
+        advanceDistance: 0
+        advanceSpeed: 5
+        advanceStartTime: 0.02
+        advanceDuration: 0.18
+        powerWindupTime: 0
+        windupMoveMultiplier: 0.2
+        hitStopDuration: 0.06
+        soundPitch: 1.05
+        overrideTargeting: 0
+        targeting:
+          targetRange: 2.7
+          acquisitionAngle: 50
+          retentionAngle: 70
+          maxTurnAngle: 45
+          turnSpeed: 540
+          approachDistance: 0.3
+          approachSpeed: 4
+          preparationTime: 0.16
+          retentionTime: 1.2
+          maxHeightDifference: 1.4
+          predictionTime: 0.05
+      requiredMovement: -1
+      heavyReaction: 1
+      knockbackKind: 0
+      knockbackDistance: 4
+      knockbackDuration: 0.4
+      outcome: 0
+      air:
+        launchSpeed: 11
+        airGravity: 25
+        apexHoldTime: 0.06
+        airReactionLean: 28
+        usePeakHeight: 0
+        peakHeight: 5.5
+        launchHorizontalDistance: 2.4
+        launchHorizontalDuration: 0.55
+        descendingHorizontalSpeed: 1.2
+        landingSeparationSpeed: 8
+      down:
+        fallSpeed: 12
+        minimumDownTime: 0.45
+        naturalRecoveryTime: 0.85
+        getUpDuration: 0.22
+        downPoseAngle: 85
+        groundCrackEnabled: 1
+        crackRadius: 1.8
+        crackHoldTime: 0.65
+        crackFadeTime: 0.65
+        crackDarkness: 0.85
+    movements:
+    - kind: 1
+      startTime: 0
+      duration: 0.2
+      maxDistance: 1.2
+      speed: 8
+      targetRange: 6
+      arrivalDistance: 1.3
+      maxTurnAngle: 90
+      turnSpeed: 720
+      predictionTime: 0.04

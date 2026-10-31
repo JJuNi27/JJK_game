@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1fb54a42e334b67af75f88e746e173f, type: 3}
+  m_Name: Shibuya Attack Grades
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaAttackGradeProfile
+  criticalChance: 25
+  criticalMultiplier: 1.5
+  allowCriticalModifiers: 1
+  blackFlashCapable: 0
+  normalConditional: 15
+  zoneConditional: 24
+  stackConditional: 4
+  normalFinalCap: 15
+  zoneFinalCap: 20
+  blackFlashMultiplier: 2.5
+  blackFlashEnergy: 10
+  zoneDuration: 12
+  zoneDamageBonus: 10
+  zoneCostReduction: 15
+  zoneChargeBonus: 20

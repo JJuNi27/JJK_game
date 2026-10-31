@@ -58,6 +58,7 @@ namespace JJKGame.Shibuya
         private void SnapshotEventAim(int i)
         {
             aimStarted[i]=true; aimForward[i]=transform.forward;
+            if(executingCounter){eventAim[i]=counterLeaseTarget;return;}
             var evt=activeStep.hits[i];
             if(evt.requiredMovement>=0) return; // Authored movement owns its target.
             if(executingAirAttack) {
@@ -123,7 +124,7 @@ namespace JJKGame.Shibuya
         }
         private Vector3 AdvanceTargeting(float delta)
         {
-            if(!attacking || airSession) return Vector3.zero;
+            if(!attacking || airSession || executingCounter) return Vector3.zero;
             Vector3 result=Vector3.zero;
             for(int i=0;i<activeStep.hits.Length;i++) {
                 var evt=activeStep.hits[i]; var strike=evt.strike; var settings=Targeting(strike);

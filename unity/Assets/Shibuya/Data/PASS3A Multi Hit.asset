@@ -14,9 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaMovesetDefinition
   steps:
   - hits:
-    - startTime: 0
+    - cinematic: {fileID: 0}
+      startTime: 0
       strike:
+        attack:
+          reach: 1
+          nature: 1
+          origin: 1
+          criticalAllowed: 1
+          blackFlashAllowed: 1
+          directHybridHit: 0
         damage: 7
+        guardDamage: 16
+        guardable: 1
+        parryable: 1
         startup: 0.1
         activeTime: 0.06
         recovery: 0.25
@@ -37,14 +48,61 @@ MonoBehaviour:
         windupMoveMultiplier: 0.2
         hitStopDuration: 0
         soundPitch: 1.05
+        overrideTargeting: 0
+        targeting:
+          targetRange: 2.7
+          acquisitionAngle: 50
+          retentionAngle: 70
+          maxTurnAngle: 45
+          turnSpeed: 540
+          approachDistance: 0.3
+          approachSpeed: 4
+          preparationTime: 0.16
+          retentionTime: 1.2
+          maxHeightDifference: 1.4
+          predictionTime: 0.05
       requiredMovement: -1
       heavyReaction: 0
       knockbackKind: 0
       knockbackDistance: 4
       knockbackDuration: 0.4
-    - startTime: 0.23
+      outcome: 0
+      air:
+        launchSpeed: 11
+        airGravity: 25
+        apexHoldTime: 0.06
+        airReactionLean: 28
+        usePeakHeight: 0
+        peakHeight: 5.5
+        launchHorizontalDistance: 2.4
+        launchHorizontalDuration: 0.55
+        descendingHorizontalSpeed: 1.2
+        landingSeparationSpeed: 8
+      down:
+        fallSpeed: 12
+        minimumDownTime: 0.45
+        naturalRecoveryTime: 0.85
+        getUpDuration: 0.22
+        downPoseAngle: 85
+        groundCrackEnabled: 1
+        crackRadius: 1.8
+        crackHoldTime: 0.65
+        crackFadeTime: 0.65
+        crackDarkness: 0.85
+    - cinematic: {fileID: 0}
+      startTime: 0.23
       strike:
+        attack:
+          reach: 1
+          nature: 1
+          origin: 1
+          criticalAllowed: 1
+          blackFlashAllowed: 1
+          directHybridHit: 0
         damage: 11
+        guardDamage: 16
+        guardable: 1
+        parryable: 1
         startup: 0.08
         activeTime: 0.06
         recovery: 0.25
@@ -65,9 +123,48 @@ MonoBehaviour:
         windupMoveMultiplier: 0.2
         hitStopDuration: 0
         soundPitch: 1.05
+        overrideTargeting: 0
+        targeting:
+          targetRange: 2.7
+          acquisitionAngle: 50
+          retentionAngle: 70
+          maxTurnAngle: 45
+          turnSpeed: 540
+          approachDistance: 0.3
+          approachSpeed: 4
+          preparationTime: 0.16
+          retentionTime: 1.2
+          maxHeightDifference: 1.4
+          predictionTime: 0.05
       requiredMovement: -1
       heavyReaction: 0
       knockbackKind: 0
       knockbackDistance: 4
       knockbackDuration: 0.4
+      outcome: 0
+      air:
+        launchSpeed: 11
+        airGravity: 25
+        apexHoldTime: 0.06
+        airReactionLean: 28
+        usePeakHeight: 0
+        peakHeight: 5.5
+        launchHorizontalDistance: 2.4
+        launchHorizontalDuration: 0.55
+        descendingHorizontalSpeed: 1.2
+        landingSeparationSpeed: 8
+      down:
+        fallSpeed: 12
+        minimumDownTime: 0.45
+        naturalRecoveryTime: 0.85
+        getUpDuration: 0.22
+        downPoseAngle: 85
+        groundCrackEnabled: 1
+        crackRadius: 1.8
+        crackHoldTime: 0.65
+        crackFadeTime: 0.65
+        crackDarkness: 0.85
     movements: []
+  finishers: {fileID: 0}
+  aerialCombat: {fileID: 0}
+  finisherStepIndex: 3

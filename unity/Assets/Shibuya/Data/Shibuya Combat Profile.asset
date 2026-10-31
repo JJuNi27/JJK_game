@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: Shibuya Combat Profile
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaCombatProfile
   cursedEnergy: {fileID: 11400000, guid: 17ee697916fee58429378ee6e35e5dc9, type: 2}
+  attackGrades: {fileID: 11400000, guid: 77c839e5de74e3944853622b2abfde92, type: 2}
+  counter: {fileID: 11400000, guid: 45811fed6063ce442be8a120f2e68569, type: 2}
+  auraCapacityReference: 200
   groundDash: {fileID: 11400000, guid: 6752c33832b9252449c40967531531eb, type: 2}
   guard: {fileID: 11400000, guid: 75efdf04213f4a00b2e5cb1bd4319080, type: 2}
   grab: {fileID: 11400000, guid: 01f15e2c21294ab98c2e3e2ed63b4a30, type: 2}
@@ -26,7 +29,14 @@ MonoBehaviour:
   attackLateralInputMultiplier: 0
   attackBackwardInputMultiplier: 0
   strikes:
-  - damage: 20
+  - attack:
+      reach: 1
+      nature: 1
+      origin: 1
+      criticalAllowed: 1
+      blackFlashAllowed: 1
+      directHybridHit: 0
+    damage: 20
     guardDamage: 16
     guardable: 1
     parryable: 1
@@ -63,7 +73,14 @@ MonoBehaviour:
       retentionTime: 1.2
       maxHeightDifference: 1.4
       predictionTime: 0.05
-  - damage: 20
+  - attack:
+      reach: 1
+      nature: 1
+      origin: 1
+      criticalAllowed: 1
+      blackFlashAllowed: 1
+      directHybridHit: 0
+    damage: 20
     guardDamage: 16
     guardable: 1
     parryable: 1
@@ -100,7 +117,14 @@ MonoBehaviour:
       retentionTime: 1.2
       maxHeightDifference: 1.4
       predictionTime: 0.05
-  - damage: 20
+  - attack:
+      reach: 1
+      nature: 1
+      origin: 1
+      criticalAllowed: 1
+      blackFlashAllowed: 1
+      directHybridHit: 0
+    damage: 20
     guardDamage: 18
     guardable: 1
     parryable: 1
@@ -137,7 +161,14 @@ MonoBehaviour:
       retentionTime: 1.2
       maxHeightDifference: 1.4
       predictionTime: 0.05
-  - damage: 25
+  - attack:
+      reach: 1
+      nature: 1
+      origin: 1
+      criticalAllowed: 1
+      blackFlashAllowed: 1
+      directHybridHit: 0
+    damage: 25
     guardDamage: 35
     guardable: 1
     parryable: 1

@@ -321,6 +321,8 @@ namespace JJKGame.Shibuya.EditorTools
         private static IEnumerator Setup() {
             Application.runInBackground=true; yield return Wait(.1f);
             var m=Object.FindFirstObjectByType<ShibuyaMatch>();m.Player.GetComponent<ShibuyaPlayerInput>().TestInput=()=>default;
+            // These legacy scenarios verify base damage, not the independent random grade layer.
+            m.Player.SetCombatRandom(new ShibuyaGradeTestRandom());m.Dummy.SetCombatRandom(new ShibuyaGradeTestRandom());
             Place(m.Player,new Vector3(0,.03f,-1.4f));Place(m.Dummy,new Vector3(0,.03f,0));m.Player.transform.rotation=Quaternion.identity;
         }
         private static void Cube(string name,Vector3 position,Vector3 scale) {

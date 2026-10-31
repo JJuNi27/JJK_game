@@ -17,6 +17,9 @@ namespace JJKGame.Shibuya.EditorTools
 {
     public abstract class ShibuyaPass4B3Fixture
     {
+        // Legacy compatibility tests assert authored base damage, independently of the new random grade layer.
+        // Grade-specific tests explicitly inject their own draws after this setup.
+        sealed class BaselineGradeRandom : IShibuyaCombatRandom { public float Next01()=>.99999f; }
         protected ShibuyaFighter player,dummy;
         protected ShibuyaPlayerInput input;
         protected ShibuyaInputFrame frame;
@@ -30,6 +33,7 @@ namespace JJKGame.Shibuya.EditorTools
             frame=default;EditorSceneManager.OpenScene(ShibuyaSceneBuilder.ScenePath);
             yield return new EnterPlayMode();yield return null;
             var match=Object.FindFirstObjectByType<ShibuyaMatch>();player=match.Player;dummy=match.Dummy;
+            player.SetCombatRandom(new BaselineGradeRandom());dummy.SetCombatRandom(new BaselineGradeRandom());
             input=player.GetComponent<ShibuyaPlayerInput>();input.TestInput=()=>frame;
             aura=input.Aura;settings=Clone(aura.Profile);aura.Configure(settings);
             combat=Clone(player.Profile);player.Configure(combat,AssetDatabase.LoadAssetAtPath<CharacterStatsProfile>(ShibuyaSceneBuilder.Root+"/Data/Player Stats.asset"));

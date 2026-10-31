@@ -63,8 +63,12 @@ namespace JJKGame.Shibuya
         // Shared DamageContext/Health and unrelated combat systems are unchanged.
         public DamageResolution ReceiveStrike(DamageContext context,ShibuyaStrikeDefinition strike)
         {
+            return ReceiveStrike(context,strike,out _);
+        }
+        public DamageResolution ReceiveStrike(DamageContext context,ShibuyaStrikeDefinition strike,out float appliedHealthLoss)
+        {
             var previous=incomingGuardStrike;incomingGuardStrike=strike;
-            try{return Health.ReceiveDamage(context);}finally{incomingGuardStrike=previous;}
+            try{return Health.ReceiveDamage(context,out appliedHealthLoss);}finally{incomingGuardStrike=previous;}
         }
         private DamageGuardDecision EvaluateHeldGuard(DamageContext context)
         {

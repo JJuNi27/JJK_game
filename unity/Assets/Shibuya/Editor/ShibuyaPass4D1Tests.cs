@@ -19,7 +19,7 @@ namespace JJKGame.Shibuya.EditorTools
             var p=Object.Instantiate(c.guard.parry);
             try {
                 Assert.That(p.windowDuration,Is.EqualTo(.12f));Assert.That(p.retryInterval,Is.EqualTo(.5f));Assert.That(p.halfAngle,Is.EqualTo(60));
-                Assert.That(p.attackerStun,Is.EqualTo(.35f));Assert.That(p.pushDistance,Is.EqualTo(1.2f));Assert.That(p.successMotionDuration,Is.EqualTo(.1f));
+                Assert.That(p.attackerStun,Is.EqualTo(.5f));Assert.That(p.pushDistance,Is.EqualTo(1.2f));Assert.That(p.successMotionDuration,Is.EqualTo(.1f));
                 Assert.That(p.localHitStop,Is.Zero);Assert.That(p.effectShader,Is.Not.Null);Assert.That(ShaderUtil.ShaderHasError(p.effectShader),Is.False);
                 Assert.That(c.strikes.All(s=>s.parryable&&s.guardable),Is.True);
                 var so=new SerializedObject(p);var it=so.GetIterator();bool child=true;
@@ -116,7 +116,7 @@ namespace JJKGame.Shibuya.EditorTools
             Assert.That(dummy.GuardBlockCount,Is.Zero);Assert.That(dummy.GuardBreakCount,Is.Zero);Assert.That(player.ConfirmedHitCount,Is.Zero);Assert.That(player.HasBufferedAttack,Is.False);
             Assert.That(player.State,Is.EqualTo(ShibuyaFighterState.Hitstunned));Assert.That(dummy.IsParryRecovering,Is.True);Assert.That(dummy.TryAttack(),Is.False);
             float stunRemaining=(float)typeof(ShibuyaFighter).GetField("stunnedUntil",Private).GetValue(player)-player.CombatTime;
-            Assert.That(stunRemaining,Is.InRange(.30f,.3501f));
+            Assert.That(stunRemaining,Is.InRange(.45f,.5001f));
             yield return Wait(.5f);
             float moved=Vector3.Distance(atParry,player.transform.position);
             Assert.That(moved,Is.EqualTo(1.2f).Within(.04f));Assert.That(events,Is.EqualTo(1));Assert.That(player.AcceptedAttackCount,Is.EqualTo(1));

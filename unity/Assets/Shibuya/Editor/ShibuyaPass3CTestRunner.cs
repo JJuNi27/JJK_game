@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -98,7 +98,7 @@ namespace JJKGame.Shibuya.EditorTools
         {
             if (EditorApplication.isPlaying || EditorSceneManager.GetActiveScene().isDirty)
                 throw new InvalidOperationException("Play Mode를 종료하고 씬 저장 상태를 먼저 확인하세요.");
-            if((!outputDirectory.StartsWith("Logs/ShibuyaPass3C",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass3D",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4A",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4B",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4C",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4D",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4E",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4F",StringComparison.Ordinal)) || outputDirectory.Contains(".."))
+            if((!outputDirectory.StartsWith("Logs/ShibuyaPass3C",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass3D",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4A",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4B",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4C",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4D",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4E",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4F",StringComparison.Ordinal) && !outputDirectory.StartsWith("Logs/ShibuyaPass4G",StringComparison.Ordinal)) || outputDirectory.Contains(".."))
                 throw new ArgumentException("QA 출력 경로가 유효하지 않습니다.");
             SessionState.SetString(Key+".Root",outputDirectory);
             Directory.CreateDirectory(Root);

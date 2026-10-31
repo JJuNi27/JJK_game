@@ -46,7 +46,7 @@ namespace JJKGame.Shibuya
             var state = owner != null ? owner.State : ShibuyaFighterState.Finished;
             bool eligible = held && owner != null && owner.isActiveAndEnabled && resource != null && resource.isActiveAndEnabled
                 && profile != null && profile.RecoveryMode == CursedEnergyRecoveryMode.HoldCharge
-                && profile.ChargingEnabled && !owner.IsInCinematic && !owner.IsGuarding && !owner.IsGuardBroken && !owner.IsParryRecovering && !owner.IsGrabBusy && !owner.IsQuickRecovering
+                && profile.ChargingEnabled && !owner.IsCounterBusy && !owner.HasCounterReservation && !owner.IsInCinematic && !owner.IsGuarding && !owner.IsGuardBroken && !owner.IsParryRecovering && !owner.IsGrabBusy && !owner.IsQuickRecovering
                 && state != ShibuyaFighterState.Dead && state != ShibuyaFighterState.Finished
                 && state != ShibuyaFighterState.Hitstunned && !owner.IsDowned
                 && !owner.IsAirborne && !owner.IsHeldByAerialHit;
@@ -54,7 +54,7 @@ namespace JJKGame.Shibuya
             if (!IsCharging) { IsCharging = true; HoldDuration = 0; ChargeStarted?.Invoke(this); }
             // Scaled game time, not a fighter's local hit-stop clock. Full reserves still count holds.
             HoldDuration += Time.deltaTime;
-            resource.Restore(profile.RegenerationPerSecond * Time.deltaTime);
+            resource.Restore(profile.RegenerationPerSecond * owner.EnergyChargeFactor * Time.deltaTime);
         }
         private void StopCharge(bool released = false)
         {

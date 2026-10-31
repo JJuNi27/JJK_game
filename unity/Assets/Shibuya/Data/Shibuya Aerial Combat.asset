@@ -42,9 +42,20 @@ MonoBehaviour:
   holdVictimOnAirHit: 1
   aerialAttack:
     hits:
-    - startTime: 0
+    - cinematic: {fileID: 0}
+      startTime: 0
       strike:
+        attack:
+          reach: 1
+          nature: 1
+          origin: 1
+          criticalAllowed: 1
+          blackFlashAllowed: 1
+          directHybridHit: 0
         damage: 12
+        guardDamage: 16
+        guardable: 1
+        parryable: 1
         startup: 0.08
         activeTime: 0.08
         recovery: 0.14
@@ -106,9 +117,20 @@ MonoBehaviour:
         crackHoldTime: 0.65
         crackFadeTime: 0.65
         crackDarkness: 0.85
-    - startTime: 0.16
+    - cinematic: {fileID: 0}
+      startTime: 0.16
       strike:
+        attack:
+          reach: 1
+          nature: 1
+          origin: 1
+          criticalAllowed: 1
+          blackFlashAllowed: 1
+          directHybridHit: 0
         damage: 13
+        guardDamage: 16
+        guardable: 1
+        parryable: 1
         startup: 0.08
         activeTime: 0.08
         recovery: 0.14

@@ -9,6 +9,14 @@ namespace JJKGame.Shibuya.EditorTools
     {
         private static readonly Dictionary<string, string> Labels = new Dictionary<string, string> {
             {"cursedEnergy", "캐릭터 주력 능력치"},
+            {"attackGrades", "치명타·흑섬·Zone 설정"},
+            {"counter", "캐릭터 패링 반격 설정"}, {"counterEnabled", "패링 반격 사용"}, {"counterName", "반격 명칭"},
+            {"inputOpportunity", "패링 성공 후 반격 입력 기회 (초)"}, {"maximumStartRange", "반격 시작 최대 거리"},
+            {"maximumStartAngle", "반격 시작 최대 각도"}, {"maximumReservationTime", "반격 대상 예약 상한 (초)"},
+            {"counterBlackFlashConditional", "반격 조건부 흑섬 확률 (%)"}, {"counterStep", "캐릭터 반격 타격·이동 시퀀스"},
+            {"auraCapacityReference", "캐릭터 아우라 기준 최대 주력 (0은 VFX 프로필 기준)"},
+            {"attack", "공격 분류·등급 허용"}, {"reach", "공격 도달 방식"}, {"nature", "공격 피해 성격"}, {"origin", "공격 출처"},
+            {"criticalAllowed", "이 타격 치명타 허용"}, {"blackFlashAllowed", "이 타격 흑섬 허용"}, {"directHybridHit", "복합 공격의 직접 타격 여부"},
             {"groundDash", "지상 방향 대시·회피 설정"},
             {"grab", "공통 근접 잡기 설정"},
             {"quickRecovery", "다운 방향 긴급 탈출 설정"},
@@ -162,7 +170,7 @@ namespace JJKGame.Shibuya.EditorTools
     [CustomPropertyDrawer(typeof(ShibuyaStrikeDefinition))]
     public sealed class ShibuyaStrikeDrawer : PropertyDrawer
     {
-        private static readonly string[] Fields = { "damage", "guardDamage", "guardable", "parryable", "startup", "activeTime", "recovery", "attackRadius",
+        private static readonly string[] Fields = { "attack", "damage", "guardDamage", "guardable", "parryable", "startup", "activeTime", "recovery", "attackRadius",
             "attackForwardOffset", "attackHeight", "hitStun", "knockbackSpeed", "knockbackDirection", "motion", "presentationIntensity",
             "advanceDistance", "advanceSpeed", "advanceStartTime", "advanceDuration", "powerWindupTime", "windupMoveMultiplier",
             "hitStopDuration", "soundPitch", "alignVictimOnHit", "overrideTargeting", "targeting" };

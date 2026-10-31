@@ -14,9 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaFinisherSet
   uppercut:
     hits:
-    - startTime: 0
+    - cinematic: {fileID: 0}
+      startTime: 0
       strike:
+        attack:
+          reach: 1
+          nature: 1
+          origin: 1
+          criticalAllowed: 1
+          blackFlashAllowed: 1
+          directHybridHit: 0
         damage: 25
+        guardDamage: 16
+        guardable: 1
+        parryable: 1
         startup: 0.18
         activeTime: 0.1
         recovery: 0.32
@@ -91,9 +102,20 @@ MonoBehaviour:
       predictionTime: 0.04
   downFinisher:
     hits:
-    - startTime: 0
+    - cinematic: {fileID: 0}
+      startTime: 0
       strike:
+        attack:
+          reach: 1
+          nature: 1
+          origin: 1
+          criticalAllowed: 1
+          blackFlashAllowed: 1
+          directHybridHit: 0
         damage: 25
+        guardDamage: 16
+        guardable: 1
+        parryable: 1
         startup: 0.18
         activeTime: 0.1
         recovery: 0.32

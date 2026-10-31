@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Shibuya Cursed Energy
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Core.CursedEnergyProfile
   profileLabel: STANDARD
-  maxEnergy: 100
-  startingEnergy: 100
+  maxEnergy: 200
+  startingEnergy: 200
   recoveryMode: 1
   startingRatio: 1
   chargingEnabled: 1

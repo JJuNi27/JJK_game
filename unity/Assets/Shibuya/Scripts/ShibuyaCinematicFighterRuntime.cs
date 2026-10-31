@@ -23,6 +23,7 @@ namespace JJKGame.Shibuya
         internal void ConsumeCinematicEvent(int action, int evt) { if (cinematicAction != action) { cinematicEvents.Clear(); cinematicAction = action; } cinematicEvents.Add(evt); }
         internal void EnterCinematic(ShibuyaCinematicSession session)
         {
+            CancelCounter("cinematic-ownership");CancelIncomingCounter("target-cinematic-ownership");
             CancelQuickRecovery(); ResetGrab(); CancelGuardInput(); CancelGroundDash();
             Cinematic = session; cinematicFacing = transform.rotation;
             buffered = airBuffered = chaseQueued = jumpIntent = false; moveIntent = Vector3.zero;

@@ -1,4 +1,48 @@
-# CURRENT TASK — PASS4F.1 MVP 임시 수용 체크포인트 / AI 개선 보류
+# CURRENT TASK — PASS4G 사용자 승인 체크포인트
+
+## 최신 상태 — USER VERIFIED / MVP 수준 (2026-10-31)
+
+사용자가 직접 확인한 범위는 **치명타·흑섬 발동, Zone 진입/스택/버프, 패링 후 반격·흑섬 연계, 데미지 숫자 및 누락 수정 후 기본 콤보의 타격별 출력**이다. 세부 확률 통계·모든 분류 예외·극단적 다단/복수 대상·반격 취소/사망/벽·특수 방어/무하한 전체 회귀·장시간 성능·화면 밖/문구 겹침은 사용자 승인으로 확대하지 않는다. 고급 흑섬/Zone VFX와 캐릭터별 모션·최종 밸런스는 미승인이다.
+
+`feat/shibuya-combat-mvp`의 기준 `ce6626ba6148c34e9ea4b98024a47556f9645854` 다음 PASS4G 체크포인트에 필요한 파일만 선택적으로 commit/push한다. SHA는 Git 이력/완료 보고를 따른다. `unity.slnx` 기존 사용자 변경·QA 원본·로컬 모델/오디오/레퍼런스·캐시는 저장 대상에서 제외하고 보존한다. 새 게임플레이/VFX 작업과 Unity 재검증을 시작하지 않는다. 전체 경로 목록 및 저장 점검은 `docs/SHIBUYA_PASS4G_CHECKPOINT.md`.
+
+G0~G2 최신 고유58 PASS(5회 실행 이력, 마지막27 PASS), G3 최신 고유33 PASS(6회 실행 이력, 기존 회귀 단일14 PASS), 누락 수정 최신 고유13 PASS(최신 PASS 출처6회)를 각각 유지한다. 단일104 PASS로 합산하지 않는다. 최초 FAIL·폰트 경고·Pipeline timeout·PASS4A 미해결18건 보존.
+
+다음 후보는 **흑섬 VFX/Zone 시각 피드백**이며 별도 승인 대기다. 향후 **특수 방어·술식 중화 공통 시스템**은 CURRENT_HANDOFF의 기획 메모를 논의한 뒤 별도 PASS로 진행한다. 무하한·영역전연·간이영역·신카게류 발도·천역모/흑승은 이번 구현 대상이 아니며, 확정 적중과 특수 방어 관통을 혼동하지 않는다.
+
+## 아래는 구현 및 자동 검증 당시 기록
+
+## 최신 수정 — 연속 피해 숫자 누락 (2026-10-31)
+
+**LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기**. HEAD `ce6626ba6148c34e9ea4b98024a47556f9645854`. 실제 HP 감소4/표시1 결함을 재현하고, 등급 commit에 콤보 전체 token 대신 accepted action ID를 전달하도록 `ShibuyaFighter.ResolveHits`를 최소 수정했다. 기본4타4/4, 공중5/5, 이동/등급 혼합/OFF/차단/중복/재시작을 확인했다. 확률·피해 기본값·Zone/반격 데이터·표시 수명/크기/32슬롯은 변경하지 않았다.
+
+추가 최신 고유13 PASS는6회 실행 집계이며 아래33개 당시 결과와 합쳐 단일 전체 성공으로 취급하지 않는다. 원본 실패와 QA 기록을 보존했다. `docs/SHIBUYA_PASS4G3_DELIVERY_REVIEW.md` 및 새 `unity/Logs/ShibuyaPass4G3DeliveryQA/20261031-missing-numbers/` 참고. 일반4클릭/W어퍼컷→Space→공중3클릭과 숫자ON/OFF를 직접 재검수한다. 기존 미커밋 작업과 사용자 자산 보존, staging/commit/push/추가 PASS 없음.
+
+## 아래는 최초 PASS4G.3 검증 당시 기록
+
+## 최신 완료 (2026-10-31)
+
+LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기. `feat/shibuya-combat-mvp`, HEAD `ce6626ba6148c34e9ea4b98024a47556f9645854`. 실제 HP 차감 측정→확정 등급의 immutable 결과→로컬 카메라별 재사용 숫자 표시를 연결했다. Health 원래 API/방어/알림 순서와 기존4G 확률·Zone·반격·주력200·아우라 외형은 유지했다. 숫자 OFF는 표시만 즉시 비우며 전투·타격음/VFX를 끄지 않는다.
+
+최신 고유33 PASS/0 FAIL/0 SKIP는6회 실행 집계(신규19+관련 회귀14)이며 단일 전체33개 실행이 아니다. 초기 렌더 폰트 결함·QA 패링 복귀 입력·Destroy 관측 실패를 보존하고 수정했다. 최종 컴파일 정상/Editor Console error0·font warning2, Play stopped/씬 clean/AutoTick true16ms/PlayUnfocused. 이전4G QA164개·미커밋 작업·`.slnx`·Data/Meta/Scene/Prefab/Gojo/VFX/잠금 문서 불변. Git tracked dirty34/untracked47/staged0. 기존4A 미해결18건과4G.0~4G.2 검수 대기는 그대로다.
+
+직접 확인: Play → `JJK Game/시부야 PASS4G/공격 등급·반격 검수` → 현재 플레이어 연결 → 일반/치명타/명시적 QA 흑섬 허용과 추첨 선택 → LMB → 숫자 OFF/재ON. 이 버튼은 다음 한 타 예약이 아니라 이후 타격 RNG 교체다. 한글 Inspector 설정은 `Assets/Shibuya/Resources/Shibuya Damage Numbers.asset`. 보고서 `docs/SHIBUYA_PASS4G3_REVIEW.md`의 최종 PNG/원속도 영상을 참고한다. 사용자 직접 시각 승인을 기다리며 staging/commit/push/추가 PASS를 진행하지 않는다.
+
+## 아래는 이전 PASS4G.0~4G.2 구현 당시 기록
+
+## 최신 작업 (2026-10-31)
+
+`feat/shibuya-combat-mvp`, 시작 HEAD `ce6626ba6148c34e9ea4b98024a47556f9645854`. 공격 분류→시부야 주력200/동일 아우라→치명타·흑섬·Zone→패링 반격을 순서대로 구현·targeted 검증한다. LOCAL UNCOMMITTED, staging/commit/push 금지. 기존4F.1 승인·QA·`.slnx`와 USER VERIFIED 자산을 보존한다.
+
+기본 치명25%/1.5배, 흑섬2.5배, 능력 기본OFF. 흑섬 보상10/스택1/Zone12초는 Applied 후1회만 확정한다. 일반15%/Zone20% 최종 상한, 반격만 확정 치명/조건부 흑섬50%. Zone은 피해+10%·실제 소비-15%·실제 F 회복+20%, 버프 중첩 없음. 스택은 새 대전에서0이다.
+
+패링 상대 경직0.5초·밀려남1.2m·성공자 자세0.1초.0.5초 내 fresh LMB로만 전용 반격을 선택한다. 대상 예약은 독립 수명으로 긴 준비를 수용하고 다른 대상 자동 타격/순간이동을 하지 않는다. 특수 방어·벽·시네마틱·죽음/종료·입력 캡처 상실은 취소·복구한다.
+
+완료 상태: **CODEX VALIDATED(targeted) / USER VERIFIED 대기**. 초기 게이트는 G0 최신 고유11 PASS(2회 실행, 최초 데이터 검사1 FAIL 보존), G1 단일24 PASS, G2 초기 단일12 PASS. 최종 `final-targeted`는 단일27 PASS/0 FAIL/0 SKIP. 전체 최신 고유58 PASS는5회 실행 집계이며 단일 전체 성공으로 합산하지 않는다. 기존 기본 피해 검사는 일반 등급 RNG로 독립시키고 실게임 치명타25%는 유지했다. 컴파일 정상/Editor Console error0·font warning1, 수정한 테스트 컴파일 오류1건은 세션에 보존했다. PASS4A 과거18 FAIL 미해결 기록도 유지한다.
+
+검수 메뉴: `JJK Game/시부야 PASS4G/공격 등급·반격 검수`; 실제 패링 공격 연습은 `JJK Game/시부야 PASS4D/가드 피격 검수 도구`. QA 창은 런타임 프로필 사본만 바꾸고 닫으면 복원한다. 기본 흑섬OFF와 승인된 F 아우라/카메라/전투값을 임의 재튜닝하지 않는다. 이번 기술 검증 완료 후 사용자 Play Mode 피드백을 기다리며 추가 PASS를 시작하지 않는다.
+
+## 아래는 이전 PASS4F.1 체크포인트 당시 기록
 
 ## PASS4F.1 체크포인트 — USER VERIFIED / MVP 임시 수용 (2026-10-31)
 

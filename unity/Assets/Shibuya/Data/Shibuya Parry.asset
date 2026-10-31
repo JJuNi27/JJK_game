@@ -16,13 +16,13 @@ MonoBehaviour:
   windowDuration: 0.12
   retryInterval: 0.5
   halfAngle: 60
-  attackerStun: 0.35
+  attackerStun: 0.5
   pushDistance: 1.2
   successMotionDuration: 0.1
   localHitStop: 0
   effectShader: {fileID: 4800000, guid: 77ab5d9a0e7d49ef9bf3055a4946efa0, type: 3}
   effectColor: {r: 0.5, g: 0.95, b: 1, a: 1}
   effectIntensity: 2.8
+  motionStrength: 1
   effectSize: 0.9
   effectDuration: 0.22
-  motionStrength: 1

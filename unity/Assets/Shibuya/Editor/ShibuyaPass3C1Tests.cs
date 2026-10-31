@@ -31,6 +31,7 @@ namespace JJKGame.Shibuya.EditorTools
             EditorSceneManager.OpenScene(ShibuyaSceneBuilder.ScenePath);
             yield return new EnterPlayMode();yield return null;
             var match=Object.FindFirstObjectByType<ShibuyaMatch>();p=match.Player;d=match.Dummy;
+            p.SetCombatRandom(new ShibuyaGradeTestRandom());d.SetCombatRandom(new ShibuyaGradeTestRandom());
             var profile=Object.Instantiate(p.Profile);profile.name="PASS3C1 QA Profile";
             profile.aerialCombat=Object.Instantiate(profile.aerialCombat);profile.aerialCombat.name="PASS3C1 QA Air";
             p.Configure(profile,AssetDatabase.LoadAssetAtPath<CharacterStatsProfile>("Assets/Shibuya/Data/Player Stats.asset"));

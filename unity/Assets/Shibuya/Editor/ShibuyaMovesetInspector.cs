@@ -42,6 +42,7 @@ namespace JJKGame.Shibuya.EditorTools
     [CustomPropertyDrawer(typeof(ShibuyaAirSettings))]
     [CustomPropertyDrawer(typeof(ShibuyaDownSettings))]
     [CustomPropertyDrawer(typeof(ShibuyaTargetingSettings))]
+    [CustomPropertyDrawer(typeof(ShibuyaAttackMetadata))]
     public sealed class ShibuyaMovesetDrawer : PropertyDrawer
     {
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)

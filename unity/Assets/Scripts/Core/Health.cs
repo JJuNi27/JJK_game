@@ -49,6 +49,14 @@ namespace JJKGame.Core
 
         public DamageResolution ReceiveDamage(DamageContext context)
         {
+            return ReceiveDamage(context, out _);
+        }
+
+        // Read-only transaction measurement, captured before notification callbacks can heal,
+        // kill, or apply a nested hit. Existing callers and notification order are unchanged.
+        public DamageResolution ReceiveDamage(DamageContext context, out float appliedHealthLoss)
+        {
+            appliedHealthLoss = 0f;
             if (IsDead)
             {
                 return Resolve(context, DamageResolution.TargetDead);
@@ -83,7 +91,9 @@ namespace JJKGame.Core
                 }
             }
 
+            float before = CurrentHealth;
             CurrentHealth = Mathf.Max(0f, CurrentHealth - context.Amount);
+            appliedHealthLoss = before - CurrentHealth;
             HealthChanged?.Invoke(this, CurrentHealth);
             DamageResolved?.Invoke(this, context, DamageResolution.Applied);
 

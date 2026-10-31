@@ -13,6 +13,13 @@ MonoBehaviour:
   m_Name: Shibuya Grab
   m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaGrabProfile
   grabEnabled: 1
+  attack:
+    reach: 1
+    nature: 1
+    origin: 5
+    criticalAllowed: 0
+    blackFlashAllowed: 0
+    directHybridHit: 0
   range: 1.55
   halfAngle: 50
   startup: 0.18

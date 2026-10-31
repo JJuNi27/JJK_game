@@ -1,5 +1,55 @@
 # JJK_game — Current Project Handoff
 
+## 최신 체크포인트 — PASS4G 사용자 승인 / MVP 수준 (2026-10-31)
+
+사용자가 Unity Play Mode에서 **치명타·흑섬 발동, Zone 진입·스택·버프 적용, 패링 이후 반격과 흑섬 연계, 데미지 숫자 표시, 누락 수정 후 기본 콤보의 타격별 숫자 출력**을 직접 확인하고 MVP 수준으로 승인했다. 이 범위만 USER VERIFIED다. 흑섬 VFX·Zone 전용 연출·캐릭터별 반격 모션과 최종 전투 밸런스의 승인이 아니다.
+
+공격 분류의 모든 예외·확률 통계 경계·다수 대상/극단적 다단·반격 취소/사망/벽·특수 방어/무하한 전체 회귀·장시간 자원/성능·화면 밖 숫자·다단 흑섬 문구 겹침은 자동 검증/미검증 한계를 그대로 유지한다. CODEX VALIDATED를 사용자 직접 승인으로 확대하지 않는다. 현재 캐릭터 흑섬 기본OFF/QA 명시 허용 정책도 그대로다.
+
+이번 문서가 포함되는 체크포인트는 `feat/shibuya-combat-mvp`의 `ce6626ba6148c34e9ea4b98024a47556f9645854` 다음 커밋이다. 정확한 SHA는 이 문서를 포함한 Git 이력과 완료 보고에서 확인한다. 아래 LOCAL UNCOMMITTED·검수 대기·옛 HEAD는 각 구현 당시 기록이며 삭제하지 않는다. 이번 작업은 관련 파일의 선택적 commit/push와 문서 정리만 수행한다.
+
+기존 근거를 재사용했다. **G0~G2 최신 고유58 PASS는5회 실행 이력(마지막 targeted27 PASS), G3 최신 고유33 PASS는6회 실행 이력(선택 회귀 단일14 PASS), 누락 수정 최신 고유13 PASS는6개 최신 PASS 출처 실행**이다. 서로 다른 범위·중복 케이스가 있으므로 합계104개의 단일 전체 회귀 성공으로 표현하지 않는다. 최초 FAIL/XML/trace·폰트 경고·Pipeline 타임아웃을 보존하고 PASS4A 과거 미해결18건을 해결 처리하지 않는다. 이번 Git 저장에서 Unity 실행/재컴파일/테스트를 추가하지 않는다. 상세 파일 목록·제외·정적 검증은 `docs/SHIBUYA_PASS4G_CHECKPOINT.md`.
+
+다음 개발 후보는 **흑섬 VFX 및 Zone 시각 피드백**이며 별도 승인 후 시작한다. **특수 방어·술식 중화 공통 시스템**은 향후 논의할 초안이다. 무하한 상시 방어(차단 시 피해·피격 모션·경직 없음), 영역전연 자격 패시브/선택 태세 및 활성 중 생득술식 제한·주력 소모, 간이영역의 영역 필중 대응, 신카게류 발도의 조건부 반응, 천역모·흑승의 장비 기반 무효화/교란을 논의할 수 있다. 확정 적중과 특수 방어 관통은 별개이며 `대상 추적 → 적중 판정 → 특수 방어 → 실제 피해·피격·보상` 경계를 검토한다. 이는 확정 명세나 구현 완료 기록이 아니다. 이번 저장 후 추가 기능을 시작하지 않는다.
+
+## 최신 로컬 — PASS4G.3 연속 피해 숫자 누락 수정 (2026-10-31)
+
+**LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기**. HEAD `ce6626ba6148c34e9ea4b98024a47556f9645854` 유지. 아래33 PASS는 수정 전 당시 이력이다. `ResolveHits`가 콤보 전체 sequenceToken을 등급/결과 중복 키로 전달해 정상 후속 타격의 commit/숫자가 생략됐다. 개별 `AcceptedAttackCount`로 호출 인자만 수정했다. 피해4회/결과1/생성1 →4/4/4, 공중 부분5/5/5. 같은 이벤트 재전송은 계속 차단한다. 같은 버그로 억제되던 정상 흑섬 보상 commit도 복구되지만 확률·배율·보상량·Zone 데이터는 조정하지 않았다.
+
+최신 고유13 PASS/0 FAIL/0 SKIP는6회 실행 집계(신규9+기존 targeted4), 단일 전체 실행 아님. 초기 새 QA 입력/재시작/직렬화 실패를 보존했다. 공중 QA 클릭은 Editor continuation과 실제 Player Update를 구분해 입력 소비를 관측하도록 보완했다. QA 창의 Missing 참조와 독립적으로 재시작 후 새 표시가 작동함을 확인했다. 상세 `docs/SHIBUYA_PASS4G3_DELIVERY_REVIEW.md`, 원본 `unity/Logs/ShibuyaPass4G3DeliveryQA/20261031-missing-numbers/`, `latest-unique-results.json`.
+
+기존 QA437개·사용자 데이터·아우라·Gojo/VFX·Scene/Prefab·Packages/ProjectSettings·잠금 문서·`.slnx` 보존. 최종 컴파일 정상/Editor Console0 error·5 warning(기존4F 테스트 경고3+폰트 경고2), 도구 세션에는 Pipeline timeout5건 이력이 있어 전체 세션 오류0은 아니다. Play stopped/씬 clean/fps -1/TimeScale1/AutoTick true16ms/PlayUnfocused/표시 observer0. 표시 기본32슬롯·0.85초·색상·문구·화면 밖 숨김 정책 불변. Git tracked dirty34/untracked50/staged0. 사용자 재검수 전 승격/commit/push하지 않는다.
+
+## 최신 로컬 — PASS4G.3 데미지 표시 / 사용자 검수 대기 (2026-10-31)
+
+**LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기**. 브랜치 `feat/shibuya-combat-mvp`, HEAD `ce6626ba6148c34e9ea4b98024a47556f9645854` 유지. 아래4G.0~4G.2와4F 기록은 이전 시점이며 삭제하지 않는다.
+
+실제 HP 차감 순간을 읽기 전용 out 값으로 캡처해 회복/중첩 피해/사망 callback과 분리했다. 기존 Health API·방어 판정·알림 순서는 유지한다. 시부야 표시 결과는 이미 확정된 일반/치명/흑섬과 실제 HP 감소를 전달하며 재추첨·추가 피해·보상을 만들지 않는다. 일반 흰색/치명 금색·CRITICAL!/흑섬 붉은 숫자+검은 외곽·흑섬!, 작은 Zone 보조 문구, 다단 개별 표기,32개 재사용 슬롯을 제공한다. 기존 카메라별 IMGUI stack과 호환하고 Camera/LockOn/HUD·Scene/Prefab을 교체하지 않았다.
+
+Play에서 기본ON. 기존 `JJK Game/시부야 PASS4G/공격 등급·반격 검수` → 현재 플레이어 연결 → 숫자 ON/OFF. OFF는 현재 표시를 즉시 비우며 이후 피해·흑섬·Zone·주력·hit-stop·사운드/VFX는 계속 진행한다. QA 추첨 버튼은 이후 타격용 RNG 교체이며 다음 한 타 예약이 아니다. 능력 기본OFF·반격 확정 치명 같은 원래 규칙은 우회하지 않는다. 설정은 새 `Assets/Shibuya/Resources/Shibuya Damage Numbers.asset`의 한글 Inspector다. 정식 설정 저장/메뉴·고급 흑섬 VFX는 미구현이다.
+
+**최신 고유33 PASS/0 FAIL/0 SKIP는6회 실행 집계**(신규19+선택 회귀14)다. 관련 회귀는 단일14 PASS, 최종12 HP/OFF 재촬영2 PASS. 초기 폰트 이름 변경에 따른 렌더 결함·반복 경고와 QA 입력/Destroy 관측 실패를 원본 로그/XML/PNG로 보존했다. 수정 후 실제 숫자·한글,12 HP 표시, ON/OFF 동일 피해·보상을 재확인했다. 기존4G.0~4G.2의58개를 이번33개에 더하지 않으며 PASS4A 과거18건도 해결 처리하지 않는다.
+
+최종 컴파일 정상/Editor Console error0·font warning2. 초기 신규 font family 경고3340회는 수정 이후 추가0, 현재2개는 원래도 있던 `Deleting invalid font reference.` 유형이지만 모두 기존 것이라고 단정하지 않는다. Play stopped/씬 clean/fps -1/Time.timeScale1/AutoTick true16ms/PlayUnfocused, 표시 observer/component 잔류0. 기존 Data/Meta/Gojo/VFX/아우라/씬/프리팹/패키지/설정/잠금 문서/`.slnx`와 이전4G QA164개를 보존했다. Git tracked dirty34/untracked47/staged0, commit/push 없음.
+
+보고서 `docs/SHIBUYA_PASS4G3_REVIEW.md`, 원본 `unity/Logs/ShibuyaPass4G3QA/20261031-damage-display/`. 최종 영상은 `disposal-and-spacing-check/legacy/ShibuyaPass4B3QA/4G3-damage-overlay-original-speed-padded.mp4`. 시각 크기·다단 밀도·마무리 결과 패널과의 순간 겹침은 사용자 검수 대기다. 추가 PASS를 시작하지 않는다.
+
+## 최신 로컬 — PASS4G.0~4G.2 구현 / 사용자 검수 대기 (2026-10-31)
+
+브랜치 `feat/shibuya-combat-mvp`, 작업 시작 로컬·원격 HEAD `ce6626ba6148c34e9ea4b98024a47556f9645854`. 아래4F 체크포인트는 이전 시점이다. 이번 변경은 LOCAL UNCOMMITTED이며 staging/commit/push하지 않는다. 기존 dirty `unity/unity.slnx`는 바이트 그대로 보존한다.
+
+공격 분류(도달/피해 성격/출처/타격별 등급 허용), 시부야 주력200, 치명타25%·1.5배, 흑섬2.5배와 Applied-only 보상, Zone12초/대전 수명 스택, 패링 후 새 LMB 반격을 추가했다. 기존 캐릭터 흑섬 능력은 기본OFF다. 치명타가 흑섬으로 올라가며1.5×2.5로 중복 곱하지 않는다. 일반 최종 흑섬 상한15%/Zone20%를 조건부 추첨에 환산한다. 반격만 치명타100%·흑섬 조건부50%의 예외다.
+
+명시 승인된 기존 수치 변경은 시부야 주력100→200과 패링 공격자 경직0.35→0.5초다. F 기본12/초·소비 배율1·패링 밀려남1.2m·성공자 자세0.1초·기본 피해20/20/20/25·HP1000/100을 보존한다. 캐릭터 아우라 기준 용량200으로 이전100과 동일 크기를 유지하며 공유 VFX Profile/Curve/Shader/Geometry를 바꾸지 않는다. 동일 시점 PNG·정점이 일치했다. Zone은 실제 비용과 F 회복 경로에 연결되며 신체 강화 패시브·주력 대쉬·각성·고급 흑섬 VFX는 구현하지 않았다.
+
+완료 상태는 **CODEX VALIDATED(targeted) / USER VERIFIED 대기**다. 4G.0 최초10 PASS/1 FAIL(새 데이터 검사 배열 접근), 테스트 수정 후 해당1 PASS. 4G.1 최초 단일24 PASS, 4G.2 최초 단일12 PASS, 최종 targeted 단일27 PASS/0 FAIL/0 SKIP. **최신 고유58 PASS/0 FAIL/0 SKIP는5회 실행 집계**이며 단일58개 실행이 아니다. G1 최신 고유25, G2 최신 고유16이며 기존 회귀와 G0를 중복 합산하지 않는다. 실행별 XML·수정한 테스트 컴파일 CS0535 1건·최초 실패는 `unity/Logs/ShibuyaPass4GQA/20261031-combat-grades/`에 보존했다. 과거 PASS4A 미해결18건은 해결 처리하지 않는다.
+
+최종 컴파일 정상, Editor Console error0/font warning1, Pipeline 세션에는 수정한 테스트 컴파일 error1이 남아 있다. Play stopped/씬 clean/fps -1/Time.timeScale1/AutoTick true16ms/PlayUnfocused, 새 QA 프로필·소유 Mesh/Material 잔류0. 기존 자산/Scene/Prefab/Packages/ProjectSettings/GUID·잠금 문서는 불변이다. 최종 검사/한계는 각 PASS 보고서를 우선한다. 원속도 반격 영상은 `final-targeted/legacy/ShibuyaPass4B3QA/4G2-parry-counter-original-speed-60fps.mp4`다.
+
+검수: Play → `JJK Game/시부야 PASS4G/공격 등급·반격 검수`. QA 흑섬 허용/시드/강제 추첨은 런타임 사본만 수정한다. 패링 연습은 기존 `JJK Game/시부야 PASS4D/가드 피격 검수 도구`에서 시작한다. 패링 후0.5초 안의 새 LMB가 반격이며 입력하지 않으면 자동 공격하지 않는다. 벽·특수 무적·다른 시네마틱·사망·종료는 예약 반격의 명시적 취소 예외다. 캐릭터별 최종 모션/카메라/VFX 품질은 미승인이다.
+
+보고서: `SHIBUYA_PASS4G0_REVIEW.md`, `SHIBUYA_PASS4G1_REVIEW.md`, `SHIBUYA_PASS4G2_REVIEW.md`. 표준 명칭은 `design/COMBAT_ACTION_VOCABULARY.md`. 새 기능을 USER VERIFIED로 승격하지 않는다. 기존 USER VERIFIED 문서는 과거 승인 기록을 유지한다.
+
 ## PASS4F.1 체크포인트 — USER VERIFIED / MVP 임시 수용 (2026-10-31)
 
 브랜치 `feat/shibuya-combat-mvp`. 이전 공격형 AI 체크포인트는 `9568855d806c29ad66375ac470a6d69c3482205c`다. 이번 문서가 포함된 새 방어형 AI 체크포인트의 SHA는 현재 브랜치 Git 이력에서 확인한다. 이번 작업은 관련 파일의 선택적 commit/push와 문서 정리만 수행하며 게임플레이·AI·밸런스는 수정하지 않는다.

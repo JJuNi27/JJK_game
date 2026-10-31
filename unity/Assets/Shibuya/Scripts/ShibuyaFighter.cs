@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using JJKGame.Core;
 using UnityEngine;
@@ -66,6 +66,7 @@ namespace JJKGame.Shibuya
         public event Action<ShibuyaHitReaction> HitReacted;
         public Health Health => health != null ? health : GetComponent<Health>();
         public ShibuyaCombatProfile Profile => profile;
+        public CharacterStatsProfile StatsProfile => stats;
         public ShibuyaFighterState State => Health.IsDead ? ShibuyaFighterState.Dead
             : stopped ? ShibuyaFighterState.Finished
             : downed ? (gettingUp ? ShibuyaFighterState.GettingUp : ShibuyaFighterState.Downed)
@@ -140,6 +141,7 @@ namespace JJKGame.Shibuya
 
         public bool TryAttack(ShibuyaFinisher requestedFinisher = ShibuyaFinisher.Default)
         {
+            if(IsCounterBusy)return false;
             if (ConsumeCinematicInput(true, Vector3.zero)) return false;
             if (groundDashing || guarding || IsGuardBroken) return false;
             if (!enabled || profile == null || Health.IsDead || stopped || IsActionLocked) return false;
@@ -181,6 +183,7 @@ namespace JJKGame.Shibuya
 
         private void Update()
         {
+            UpdateCounter();
             if (State == ShibuyaFighterState.Dead || stopped)
             {
                 CancelCombo();
@@ -207,7 +210,7 @@ namespace JJKGame.Shibuya
             bool stunned = IsActionLocked;
             bool dashFrame = groundDashing;
             bool recoveryFrame = quickRecovering;
-            if (stunned) CancelCombo();
+            if (stunned && !counterPending) CancelCombo();
             Vector3 targetAdvance = !stunned ? AdvanceTargeting(delta) : Vector3.zero;
             if(!stunned) AimAirAttack(delta);
             if (!stunned) UpdateAttack();
@@ -218,7 +221,7 @@ namespace JJKGame.Shibuya
 
             Vector3 advance = Vector3.zero;
             if (!stunned && attacking) {
-                advance = !executingAirAttack && moveset == null && CurrentFinisher == ShibuyaFinisher.Default ? AdvanceAttack(delta) : AdvanceMoveset(delta);
+                advance = !executingCounter && !executingAirAttack && moveset == null && CurrentFinisher == ShibuyaFinisher.Default ? AdvanceAttack(delta) : AdvanceMoveset(delta);
 
             }
 
@@ -255,6 +258,7 @@ namespace JJKGame.Shibuya
 
         private Vector3 AttackMoveIntent()
         {
+            if(executingCounter)return Vector3.zero;
             if (!attacking) return moveIntent;
             float forward = Vector3.Dot(moveIntent, transform.forward);
             float sideways = Vector3.Dot(moveIntent, transform.right);
@@ -321,6 +325,7 @@ namespace JJKGame.Shibuya
             }
             if (!attacking) return;
             if (elapsed >= AttackDuration) {
+                if(executingCounter){FinishCounter();return;}
                 if(executingAirAttack) {FinishAirAttack();return;}
                 bool chain = HasBufferedAttack && strikeIndex < StepCount - 1;
                 ShibuyaFinisher nextFinisher = bufferedFinisher;
@@ -358,8 +363,10 @@ namespace JJKGame.Shibuya
             ShibuyaFighter cinematicVictim = null;
             Vector3 origin = transform.position + Vector3.up * strike.attackHeight;
             Vector3 center = origin + transform.forward * strike.attackForwardOffset;
-            foreach (Collider collider in Physics.OverlapSphere(center, Mathf.Max(0.1f, strike.attackRadius),
-                ~0, QueryTriggerInteraction.Ignore))
+            bool counterHit=executingCounter;
+            Collider[] candidates=counterHit?(counterLeaseTarget!=null?new Collider[]{counterLeaseTarget.motor}:System.Array.Empty<Collider>())
+                :Physics.OverlapSphere(center,Mathf.Max(.1f,strike.attackRadius),~0,QueryTriggerInteraction.Ignore);
+            foreach (Collider collider in candidates)
             {
                 if (!attacking || stopped || Health.IsDead) break;
                 ShibuyaFighter other = collider.GetComponentInParent<ShibuyaFighter>();
@@ -368,14 +375,22 @@ namespace JJKGame.Shibuya
                 Vector3 targetPoint = other.transform.position + Vector3.up * strike.attackHeight;
                 Vector3 flat = other.transform.position - transform.position;
                 flat.y = 0f;
-                if (Vector3.Dot(transform.forward, flat.normalized) < 0.1f || WorldBlocks(origin, targetPoint)) continue;
+                if ((!counterHit&&Vector3.Dot(transform.forward, flat.normalized) < 0.1f) || WorldBlocks(origin, targetPoint)) continue;
                 hitTargets.Add(other.Health);
                 // CharacterStatsProfile attack/defense multipliers remain unused, as in PASS 1.
-                DamageContext context = new DamageContext(Mathf.Max(0.1f, strike.damage), gameObject,
+                // Combo/hover linkage shares sequenceToken across accepted steps. Damage transactions must
+                // instead identify the accepted action, otherwise every later step's event 0 aliases the first.
+                var gradeTicket=PrepareGradedDamage(strike,other,AcceptedAttackCount,resolvingEvent,counterHit,counterHit?activeCounter.counterBlackFlashConditional:0);
+                DamageContext context = new DamageContext(gradeTicket.Damage, gameObject,
                     DamageDeliveryType.PhysicalStrike, DamageTraits.None, "SHIBUYA STRIKE", targetPoint);
                 // Two attackers must not tug the same victim toward different attack corridors.
                 bool conflictingAlignment = other.alignmentSource != null && other.alignmentSource != this;
-                var resolution=other.ReceiveStrike(context,strike);
+                var resolution=other.ReceiveStrike(context,strike,out float appliedHealthLoss);
+                CommitGradedDamage(gradeTicket,resolution,appliedHealthLoss,targetPoint);
+                if(counterHit){
+                    if(resolution==DamageResolution.Applied){CounterAppliedCount++;LastCounterReason="applied";}
+                    else {CancelCounter("damage-rejected-"+resolution);return;}
+                }
                 // Parry can synchronously cancel this attack. Do not visit another collider/event or start a saved cinematic.
                 if(!attacking||stopped||Health.IsDead)return;
                 if (resolution != DamageResolution.Applied) continue;
@@ -506,6 +521,7 @@ namespace JJKGame.Shibuya
 
         public void StopCombat()
         {
+            CancelCounter("battle-ended");CancelIncomingCounter("target-battle-ended");
             CancelQuickRecovery();
             ResetGrab();
             CancelGuardInput(); guardLockedUntil=0;
@@ -524,6 +540,7 @@ namespace JJKGame.Shibuya
 
         private void CancelCombo(bool preserveAerialVictim = false)
         {
+            if(executingCounter||counterPending){executingCounter=false;ReleaseCounterTarget();}
             CancelAerialHover(preserveAerialVictim);
             executingAirAttack=false;
             ReleaseOutgoingLink();
@@ -539,19 +556,20 @@ namespace JJKGame.Shibuya
 
         private void OnDamageResolved(Health target, DamageContext context, DamageResolution result)
         {
+            if(result==DamageResolution.Applied)CancelCounter("damage-interrupted");
             if(result==DamageResolution.Applied)CancelQuickRecovery();
             if(result==DamageResolution.Applied&&receivingGrabFrom==null)InterruptGrab();
             if (result == DamageResolution.Applied) { CancelGroundDash(); EndGuard(); }
             if (result == DamageResolution.Applied && IsInCinematic && !Cinematic.ApplyingAuthoredDamage) CancelCinematic("external-or-environmental-damage");
             if (result == DamageResolution.Applied) { ReleaseIncomingAirHover(); damageVersion++; InterruptAerial(); ClearVictimAlignment(); CancelCombo(); }
         }
-        private void OnDied(Health target) { CancelQuickRecovery(); ResetGrab(); CancelGuardInput(); guardLockedUntil=0; CancelGroundDash(); CancelCinematic("participant-dead"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); ClearVictimAlignment(); CancelCombo(); }
+        private void OnDied(Health target) { CancelCounter("source-dead"); CancelIncomingCounter("target-dead"); CancelQuickRecovery(); ResetGrab(); CancelGuardInput(); guardLockedUntil=0; CancelGroundDash(); CancelCinematic("participant-dead"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); ClearVictimAlignment(); CancelCombo(); }
         private void OnDestroy()
         {
             if (health == null) return;
             health.DamageResolved -= OnDamageResolved;
             health.Died -= OnDied;
         }
-        private void OnDisable() { CancelQuickRecovery(); ResetGrab(); CancelGuardInput(); guardLockedUntil=0; CancelGroundDash(); CancelCinematic("participant-disabled"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); distanceKnockbackRemaining = 0f; ClearVictimAlignment(); moveIntent = knockback = Vector3.zero; jumpIntent = false; hitStopUntil = 0; CancelCombo(); }
+        private void OnDisable() { CancelCounter("source-disabled"); CancelIncomingCounter("target-disabled"); CancelQuickRecovery(); ResetGrab(); CancelGuardInput(); guardLockedUntil=0; CancelGroundDash(); CancelCinematic("participant-disabled"); ClearAerialState(); ClearHitOutcome(); ClearIncomingLink(); distanceKnockbackRemaining = 0f; ClearVictimAlignment(); moveIntent = knockback = Vector3.zero; jumpIntent = false; hitStopUntil = 0; CancelCombo(); }
     }
 }

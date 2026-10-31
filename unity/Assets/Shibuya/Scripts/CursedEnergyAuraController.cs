@@ -54,7 +54,10 @@ namespace JJKGame.Shibuya
             float duration=profile==null?.1f:wanted?profile.fadeIn:profile.fadeOut;
             envelope=Mathf.MoveTowards(envelope,wanted?1:0,Time.unscaledDeltaTime/Mathf.Max(.01f,duration));
             if(profile!=null) {
-                float target=profile.SizeMultiplier(MaximumEnergy);
+                // Character-owned capacity normalization leaves the shared visual/curve untouched.
+                float reference=owner.Profile.auraCapacityReference;
+                float visualCapacity=reference>0&&float.IsFinite(reference)?MaximumEnergy*profile.ReferenceMaxEnergy/reference:MaximumEnergy;
+                float target=profile.SizeMultiplier(visualCapacity);
                 if(!sizeInitialized||(!wanted&&envelope<=.001f)){sizeMultiplier=target;sizeInitialized=true;}
                 else {
                     float response=profile.sizeResponseTime;

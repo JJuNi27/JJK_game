@@ -5,6 +5,7 @@ namespace JJKGame.Shibuya
     public sealed class ShibuyaGrabProfile : ScriptableObject
     {
         public bool grabEnabled=true;
+        public ShibuyaAttackMetadata attack=ShibuyaAttackMetadata.Grab();
         [Min(.1f)] public float range=1.55f;
         [Range(0,90)] public float halfAngle=50;
         [Min(.01f)] public float startup=.18f;

@@ -15,6 +15,7 @@ namespace JJKGame.Shibuya
     [System.Serializable]
     public sealed class ShibuyaStrikeDefinition
     {
+        public ShibuyaAttackMetadata attack = new ShibuyaAttackMetadata();
         [Min(0.1f)] public float damage = 20f;
         [Min(0f)] public float guardDamage = 16f;
         public bool guardable = true;
@@ -53,6 +54,9 @@ namespace JJKGame.Shibuya
     {
         [Tooltip("캐릭터의 최대 주력량 원본입니다. 현재 주력량과 아우라 색상은 이 참조와 별개입니다.")]
         public JJKGame.Core.CursedEnergyProfile cursedEnergy;
+        public ShibuyaAttackGradeProfile attackGrades;
+        public ShibuyaCounterProfile counter;
+        [Min(0)] public float auraCapacityReference;
         public ShibuyaGroundDashProfile groundDash;
         public ShibuyaGuardProfile guard;
         public ShibuyaGrabProfile grab;

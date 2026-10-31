@@ -92,8 +92,10 @@ namespace JJKGame.Shibuya
             var t=grabTarget;var p=activeGrab;var context=GrabDamageContext(t);
             ReleaseGrabTarget(); // Health/death/match callbacks must never retain paired ownership.
             GrabPhase=ShibuyaGrabPhase.SuccessRecovery;grabRecoverUntil=combatTime+Mathf.Max(0,p.successRecovery);
-            var previous=t.receivingGrabFrom;t.receivingGrabFrom=this;DamageResolution result;
-            try{result=t.Health.ReceiveDamage(context);}finally{t.receivingGrabFrom=previous;}
+            var previous=t.receivingGrabFrom;t.receivingGrabFrom=this;DamageResolution result;float appliedHealthLoss;
+            var displayKey=new ShibuyaDamageResultKey(GetInstanceID(),t.GetInstanceID(),GrabAttemptCount,0,ShibuyaDamageAction.Grab);
+            try{result=t.Health.ReceiveDamage(context,out appliedHealthLoss);}finally{t.receivingGrabFrom=previous;}
+            ShibuyaCombatDamageResults.Publish(new ShibuyaCombatDamageResult(this,t,displayKey,result,appliedHealthLoss,ShibuyaAttackGrade.Normal,context.HitPoint));
             if(result!=DamageResolution.Applied){FailGrab();return;}GrabSuccessCount++;
             if(IsLiveTarget(t)){
                 Vector3 away=Vector3.ProjectOnPlane(t.transform.position-transform.position,Vector3.up).normalized;

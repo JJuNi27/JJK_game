@@ -44,6 +44,7 @@ namespace JJKGame.Shibuya
                 +ParryContactNormal*GuardSettings.shieldRadius*.5f;
             ParrySuccessCount++;
             attacker.ApplyParryRecoil(this,p);
+            OfferCounter(attacker);
             if(p.localHitStop>0){ApplyLocalHitStop(p.localHitStop);attacker.ApplyLocalHitStop(p.localHitStop);}
             ParrySucceeded?.Invoke(this);return true;
         }

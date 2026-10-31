@@ -22,6 +22,7 @@ namespace JJKGame.Shibuya
         public ShibuyaLockOn LockOn { get; private set; }
         public CursedEnergyAuraController Aura {get;private set;}
         public ShibuyaEnergyCharge EnergyCharge { get; private set; }
+        public ShibuyaDamageNumbers DamageNumbers {get;private set;}
 #if UNITY_EDITOR
         public System.Func<ShibuyaInputFrame> TestInput;
 #endif
@@ -31,6 +32,11 @@ namespace JJKGame.Shibuya
         {
             Aura=GetComponent<CursedEnergyAuraController>()??gameObject.AddComponent<CursedEnergyAuraController>();
             EnergyCharge = GetComponent<ShibuyaEnergyCharge>() ?? gameObject.AddComponent<ShibuyaEnergyCharge>();
+            var damageNumbers=Resources.Load<ShibuyaDamageNumberProfile>("Shibuya Damage Numbers");
+            if(orbitCamera!=null&&damageNumbers!=null){
+                DamageNumbers=orbitCamera.GetComponent<ShibuyaDamageNumbers>()??orbitCamera.gameObject.AddComponent<ShibuyaDamageNumbers>();
+                DamageNumbers.Configure(fighter,orbitCamera.GetComponent<Camera>(),damageNumbers);
+            }
             var settings = Resources.Load<ShibuyaLockOnProfile>("Shibuya Lock On");
             if (orbitCamera != null && settings != null) {
                 LockOn = GetComponent<ShibuyaLockOn>() ?? gameObject.AddComponent<ShibuyaLockOn>();
@@ -89,11 +95,11 @@ namespace JJKGame.Shibuya
             if(frame.jump&&!previousJump&&downSpace)fighter.TryQuickRecovery(frame.move,orbitCamera.transform.forward,orbitCamera.transform.right);
             fighter.SetIntent(forward * frame.move.y + right * frame.move.x, frame.run, frame.jump && !previousJump && !downSpace);
             previousJump=frame.jump;
-            bool focusHeld = frame.auraHeld && !fighter.IsGuarding && !fighter.IsGuardBroken && !fighter.IsParryRecovering && !fighter.IsGrabBusy && !fighter.IsQuickRecovering;
+            bool focusHeld = frame.auraHeld && !fighter.IsCounterBusy && !fighter.HasCounterReservation && !fighter.IsGuarding && !fighter.IsGuardBroken && !fighter.IsParryRecovering && !fighter.IsGrabBusy && !fighter.IsQuickRecovering;
             if(Aura!=null)Aura.SetHeld(focusHeld);
             if(EnergyCharge!=null)EnergyCharge.SetHeld(focusHeld);
             // The input boundary consumes presses, never a held button as auto-combo.
-            if (frame.attack && !previousAttack && !grabPress) fighter.TryAttack(frame.forwardKey == frame.backwardKey
+            if (frame.attack && !previousAttack && !grabPress && !fighter.TryCounterInput()) fighter.TryAttack(frame.forwardKey == frame.backwardKey
                 ? ShibuyaFinisher.Default : frame.forwardKey ? ShibuyaFinisher.Uppercut : ShibuyaFinisher.Down);
             previousAttack = frame.attack;
             if (frame.dash && !previousDash) fighter.TryGroundDash(frame.move, forward, right);
@@ -101,7 +107,7 @@ namespace JJKGame.Shibuya
         }
         private void Capture(bool value)
         {
-            if (!value) { previousDash = false; if(fighter!=null){fighter.CancelGuardInput();fighter.CancelGrabInput();fighter.CancelQuickRecovery();} }
+            if (!value) { previousDash = false; if(fighter!=null){fighter.CancelCounter("input-capture-lost");fighter.CancelGuardInput();fighter.CancelGrabInput();fighter.CancelQuickRecovery();} }
             if(!value&&Aura!=null)Aura.SetHeld(false);
             if(!value&&EnergyCharge!=null)EnergyCharge.CancelCharge();
             if (!value && LockOn != null) LockOn.CancelSearch();

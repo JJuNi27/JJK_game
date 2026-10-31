@@ -3,6 +3,8 @@ using UnityEngine;
 
 namespace JJKGame.Core
 {
+    // Optional actor-local modifier. Legacy actors without one preserve the existing cost path.
+    public interface ICursedEnergyCostModifier { float EnergyCostFactor { get; } }
     public enum CursedEnergyProfileId
     {
         Standard,
@@ -172,7 +174,11 @@ namespace JJKGame.Core
                 return 0f;
             }
 
-            float adjusted = Mathf.Ceil(baseCost * Mathf.Max(0f, costMultiplier) - 0.001f);
+            float factor=1f;
+            foreach(var component in GetComponents<MonoBehaviour>())
+                if(component.isActiveAndEnabled&&component is ICursedEnergyCostModifier modifier)
+                    factor*=Mathf.Clamp01(modifier.EnergyCostFactor);
+            float adjusted = Mathf.Ceil(baseCost * Mathf.Max(0f, costMultiplier) * factor - 0.001f);
             return Mathf.Max(minimumTechniqueCost, adjusted);
         }
 
