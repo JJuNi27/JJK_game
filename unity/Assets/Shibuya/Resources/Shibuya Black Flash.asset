@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 322bbaa542554c6e8a37f22d275af3d8, type: 3}
+  m_Name: Shibuya Black Flash
+  m_EditorClassIdentifier: Assembly-CSharp::JJKGame.Shibuya.ShibuyaBlackFlashProfile
+  effectEnabled: 1
+  scale: 1
+  intensity: 1
+  coreSize: 0.62
+  coreExpansion: 1.65
+  lightningColor: {r: 3.2, g: 0.012, b: 0.025, a: 1}
+  branchWidth: 0.14
+  branchLength: 2.25
+  branchCount: 11
+  forksPerBranch: 2
+  forwardBias: 0.32
+  flashIntensity: 5
+  flashDuration: 0.045
+  coreDuration: 0.19
+  branchDuration: 0.28
+  pressureSize: 2.1
+  pressureSpeed: 11
+  smokeCount: 12
+  smokeSize: 0.24
+  residueDuration: 0.62
+  duration: 0.75
+  simultaneousLimit: 8
+  primaryBranchCount: 4
+  coreDensity: 0.42
+  ruptureGrowthTime: 0.095
+  silhouetteChange: 0.32
+  dischargeInterval: 0.045
+  residualDischargeTime: 0.38
+  smokeSpread: 1.8
+  inkShader: {fileID: 4800000, guid: d384b727a71c4e9b80466e84087bd5f7, type: 3}
+  lightShader: {fileID: 4800000, guid: b91c599c4be44844bd823fdc6129f5f2, type: 3}

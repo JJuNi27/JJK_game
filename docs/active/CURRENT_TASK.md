@@ -1,4 +1,61 @@
-# CURRENT TASK — PASS4G 사용자 승인 체크포인트
+# CURRENT TASK — PASS4H.0 공통 흑섬 월드 VFX
+
+## PASS4H WIP 체크포인트 보존 범위 (2026-11-02)
+
+**시각적 최종 승인 아님. 실제 전투는 REV1 유지.** A/B/C, BASE/T/S/TS 및 새 L2/L3는 독립 QA 시제품이며 실제 전투를 대체하지 않았다. 새 L2/L3의 기술 검증은 단일3 PASS/0 FAIL/0 SKIP이고 시각 품질은 USER VERIFIED가 아니다.
+
+저장 범위·전체 파일 목록·제외 자료는 [PASS4H WIP 체크포인트 기록](../SHIBUYA_PASS4H_WIP_CHECKPOINT.md)과 최신 [L2/L3 검증 보고서](../SHIBUYA_BLACK_FLASH_ART_DIRECTED_CORE_REVIEW.md)에서 확인한다. QA 원본/레퍼런스/사용자 `.slnx`는 로컬 보존하며, 기존 잠금값·전투 규칙·Gojo 자산은 변경하지 않는다. 아래 LOCAL UNCOMMITTED·commit 미수행 표기는 각 작업 당시의 이력이다. 다음 단계는 별도 통합 인수인계 문서 정리이며 새 구현을 시작하지 않는다.
+
+## 최신 — Visual R&D 시제품 비교 / 사용자 판단 대기 (2026-11-01)
+
+**LOCAL UNCOMMITTED / 기술 CODEX VALIDATED / USER VERIFIED 대기.** 정식 REV1은 그대로 두고 A(입체 파열면)/B(자체 먹물 flipbook)/C(굽힌 다층+3D 조각)를 Editor QA 도구에서 비교하도록 구현했다. 단순 REV2 승격이나 기본 VFX 교체가 아니다.
+
+`docs/SHIBUYA_BLACK_FLASH_VISUAL_RND.md`에 원본 연속 변화·반례·분석 한계·제작 방식·실패/촬영 이력을 기록했다. 최종 최신 고유5 PASS는5회 케이스별 최신 집계다. 최종 영상 `unity/Logs/ShibuyaBlackFlashVisualRndQA/20261101/evidence-final/`: 원속도/0.5/0.25배속 비교와 정면/측면/45도/회전, 설명 없는 P/Q/R. 영상 직접 시청의 주관적 인상과 독립 심사는 사용자 검수로 남긴다.
+
+Play → **JJK Game/시부야 PASS4H/흑섬 시각 R&D**. 실제 피해·주력·Zone은 발생하지 않는다. A/B/C 중 최종안을 자동 선택하지 않고 피드백을 기다린다. 기존 REV1/프로필/미커밋 작업/`.slnx`/QA는 보호하며 Git staging/commit/push와 후속 PASS는 진행하지 않는다. 아래는 이전 구현 이력이다.
+
+## 최신 — PASS4H.0 VISUAL REV1 / 사용자 시각 재검수 대기 (2026-11-01)
+
+기존 H0를 보존하며 방향성 있는 파열·GPU 가지 성장/교체·독립 잔류를 구현했다. **LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기.** 최신 고유14 PASS/0 FAIL/0 SKIP는 마지막3회 케이스별 최신 집계이며 단일 최종 전체 실행이 아니다. 최초 Geometry FAIL과 수정 전후 캡처를 보존했다. 기존 확률/피해/Zone/전투/카메라/Gojo/F aura/`.slnx`는 그대로다.
+
+상세 `docs/SHIBUYA_PASS4H0_VISUAL_REV1_REVIEW.md`, QA `unity/Logs/ShibuyaPass4H0REV1QA/20261101/evidence-final/`. 같은 시드 PNG·실제 피해 A/B·원속도60/30fps 영상이 있다. 정면 가림과 약한 검은 면, 기하학적 가지/연기 경계는 남아 최종 시각 품질은 사용자 판단이다.
+
+Play → **JJK Game/시부야 PASS4H/흑섬 VFX 미리보기 (무피해)** 또는 기존 PASS4G 검수창의 QA 흑섬 허용 후 실제 적중으로 검수한다. H1 및 추가 자동 polish는 시작하지 않고 피드백을 기다린다. staging/commit/push 없음. 아래는 이전 H0 상태 이력이다.
+
+## 최신 로컬 — CODEX VALIDATED(targeted) / 사용자 시각 검수 대기 (2026-11-01)
+
+**LOCAL UNCOMMITTED / PENDING USER VISUAL REVIEW**. 브랜치/HEAD `feat/shibuya-combat-mvp` / `891064067834bc26f3a1afc6a37b84bb5e1e79c1` 유지. 아래 설계 준비는 이전 기록이며 이번 H0는 별도 사용자 요청으로 구현 승인됐다.
+
+흑섬 Profile/입체 Geometry/Ink+Light Shader/scene-local 피해 observer/한국어 Inspector/무피해 검수 도구를 추가했다. Match 시작부1줄 부착 외 전투/카메라 런타임은 바꾸지 않는다. 실제 Applied BF 결과만 재생하며 피해·확률·주력·Zone은 그대로다. 숫자OFF·마지막 사망 타격에도 독립적이다. 기존 Scene/Prefab/Data/GUID·Gojo/F aura·`.slnx`·QA를 보존한다.
+
+최신 고유11 PASS/0 FAIL/0 SKIP는6회 실행 집계(신규8+기존 선택3), 단일 전체 성공 아님. 초기화/정리 실패 기록을 보존했다. 보고서 `docs/SHIBUYA_PASS4H0_REVIEW.md`, 원본 XML·최신 집계 `unity/Logs/ShibuyaPass4H0QA/20261101/`, 비교 PNG/원속도 카메라 영상 `evidence-final/`. 프레임 지연·음향/IMGUI 미포함·근접 각진 파열면·연기 질감 한계는 보고서에 남긴다.
+
+Play → **JJK Game/시부야 PASS4H/흑섬 VFX 미리보기 (무피해)**. 실제 피해는 **시부야 PASS4G/공격 등급·반격 검수**에서 QA 흑섬 허용 후 공격. 일반 전투 기본 프로필은 Resources의 `Shibuya Black Flash.asset`다. 사용자 시각 검수를 기다린다.
+
+H0에서 멈춘다. USER VERIFIED 승격/staging/commit/push 금지. 화면 반전·카메라 충격·음향 동기화·특별 등급·Zone 표현은 후속 승인 전 시작하지 않는다. 일반 흑섬마다 짧은 화면 반전이라는 최종 합의는 필수로 유지한다.
+
+## 아래는 이전 레퍼런스 분석 단계
+
+## 최신 완료 — 문서/레퍼런스 분석만 (2026-11-01)
+
+**LOCAL DOCUMENTATION / REFERENCE ANALYZED / IMPLEMENTATION NOT STARTED**. `feat/shibuya-combat-mvp` / HEAD `891064067834bc26f3a1afc6a37b84bb5e1e79c1`. PASS4G는 USER VERIFIED MVP 체크포인트에 저장됐다. 이번 단계에서는 영상 디코드·인접 프레임 분석과 문서 정리만 수행했다. Unity 실행/테스트·새 VFX 코드/Shader/Particle·Scene/Prefab/전투 값 변경·staging/commit/push는 하지 않는다. 기존 `.slnx` 변경과 QA 원본을 보존한다.
+
+### 구현 전에 직접 확인할 로컬 레퍼런스
+
+- `_local_refs/videos/blackflash_refs/로블_흑섬.mp4`:20.467초/30fps. Manji 흑섬 약00:00.9~00:02.7, 반복00:06~00:09.3, Divergent Fist finisher00:09.4~00:15.2. counter00:02.9~00:05.7은 주황 충격/반격 리듬의 보조 참고이며 모두 흑섬으로 간주하지 않는다.
+- `_local_refs/videos/blackflash_refs/주팬퍼_흑섬.mp4`:113.733초/30fps. 유지00:00~00:51, 나나미01:05.8~01:14, 고죠01:20.5~01:43, 말미 장발 캐릭터01:47~01:53.3. 영상의 메뉴/소개/긴 암전과 실제 impact를 구분한다. 마지막 캐릭터는 외형상 마히토 추론이며 이름 확인 미완료다.
+
+영상 원본은 보존하고 Git/Assets에 넣지 않는다. 현재 로컬 ignore만 적용돼 있으므로 사용 전 `git check-ignore`를 재확인한다. 상세 관찰/인접 시간/근거 시트/설계 제안은 `docs/design/BLACK_FLASH_VFX.md`, 레퍼런스 정책은 `docs/references/README.md`.
+
+### 확정 방향 / 후속 후보
+
+검은 충돌핵과 굵은 붉은 분기의 입체 silhouette, 강한 흰 접촉광, 공간 압력/왜곡, 검은 연기·붉은 잔광을 조합한다. **일반 흑섬마다 짧은 화면 반전**, 특별 흑섬은 더 강한 Presentation만 선택하며 확률·피해를 자동 변경하지 않는다. 연속 발생마다 월드 VFX/유효 이벤트를 보존하고 화면/카메라/정지의 지속 중첩만 제한한다. 시각 결과는 아직 USER VERIFIED가 아니다.
+
+H0 본체 → H1 화면/카메라/기존소리·hit-stop 동기화 → H2 연속/특별/반격 확장 → H3 Zone 시각 피드백을 제안한다. H0부터 정확한 이벤트 중복 방지·연속 발생 수락은 필수다. 권장 이벤트는 Resolved의 Applied+BlackFlash+실제 양수 감소이며 숫자 표시 옵션과 독립한다. 치명적 타격의 선행 StopCombat, Resolved→HitConfirmed 순서, 시네마틱 우선권과 기존 음향 중복을 다뤄야 한다. 시간·규모·URP 화면층·카메라 영향 범위·Zone 외형은 미확정이다.
+
+**다음 행동은 별도 H0 구현 요청 대기**다. 이번 분석을 근거로 자동 구현/테스트를 시작하지 않는다. 보호값과 기존 PASS4A 미해결18건·QA 실패/폰트/Pipeline 이력은 그대로다.
+
+## 아래는 이전 PASS4G 체크포인트 당시 기록
 
 ## 최신 상태 — USER VERIFIED / MVP 수준 (2026-10-31)
 

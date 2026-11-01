@@ -19,6 +19,7 @@ namespace JJKGame.Shibuya
         public void Configure(ShibuyaFighter playerActor, ShibuyaFighter dummyActor) { player = playerActor; dummy = dummyActor; }
         private void Start()
         {
+            ShibuyaBlackFlashPresentation.Attach(this);
             player.Health.Died += OnDeath;
             dummy.Health.Died += OnDeath;
             font = Font.CreateDynamicFontFromOSFont("Malgun Gothic", 18);

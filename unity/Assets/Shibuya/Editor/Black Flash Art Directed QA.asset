@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec25a3def7d74ae79929dac099a4d384, type: 3}
+  m_Name: Black Flash Art Directed QA
+  atlas: {fileID: 2800000, guid: 46213eb43ee8440cbc7cb39f6817254d, type: 3}
+  poseOrder: 01000000000000000200000003000000
+  worldSize: 5
+  curvature: 0.45
+  sideScale: 0.86
+  firstEnd: 0.035
+  peakEnd: 0.105
+  tearEnd: 0.19
+  duration: 0.3
+  red: {r: 5, g: 0.012, b: 0.008, a: 1}
+  edgePixels: 2.4
+  haloPixels: 7
+  edgeCoverage: 0.72
+  discharges: 1

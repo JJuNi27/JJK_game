@@ -1,5 +1,57 @@
 # JJK_game — Current Project Handoff
 
+## PASS4H WIP 체크포인트 보존 범위 (2026-11-02)
+
+**시각적 최종 승인 아님. 실제 전투는 REV1 유지.** A/B/C, BASE/T/S/TS 및 새 L2/L3는 독립 QA 시제품이며 실제 전투를 대체하지 않았다. 새 L2/L3의 기술 검증은 단일3 PASS/0 FAIL/0 SKIP이고 시각 품질은 USER VERIFIED가 아니다.
+
+저장 범위·전체 파일 목록·제외 자료는 [PASS4H WIP 체크포인트 기록](SHIBUYA_PASS4H_WIP_CHECKPOINT.md)과 최신 [L2/L3 검증 보고서](SHIBUYA_BLACK_FLASH_ART_DIRECTED_CORE_REVIEW.md)에서 확인한다. QA 원본/레퍼런스/사용자 `.slnx`는 로컬 보존하며, 기존 잠금값·전투 규칙·Gojo 자산은 변경하지 않는다. 아래 LOCAL UNCOMMITTED·commit 미수행 표기는 각 작업 당시의 이력이다. 다음 단계는 별도 통합 인수인계 문서 정리이며 새 구현을 시작하지 않는다.
+
+## 최신 로컬 — PASS4H.0 Visual R&D / 제작 방식 비교 (2026-11-01)
+
+**LOCAL UNCOMMITTED / 기술 CODEX VALIDATED(targeted) / 사용자 시각 평가 대기.** REV1을 유지하고 Editor QA 전용 A(넓은 입체 파열면)/B(자체16프레임 먹물 flipbook)/C(굽힌 다층+3D 조각)를 만들었다. 실제 전투 기본 VFX·프로필·기존 미커밋 코드를 교체하지 않았다. 보고서 `docs/SHIBUYA_BLACK_FLASH_VISUAL_RND.md`.
+
+최신 고유5 PASS/0 FAIL/0 SKIP는5회 케이스별 집계(신규4+기존 실제 이벤트1)다. 최초 atlas 마스크 실패·불완전 촬영 이력을 보존한다. 최종16개 촬영은 각59~60개 고유 runtime frame/초, 최대 간격38.54ms. 분석·영상 `unity/Logs/ShibuyaBlackFlashVisualRndQA/20261101/evidence-final/`, XML 원본 `unity/Logs/ShibuyaPass4HVisualRndQA/20261101/`. 원본/후보1·0.5·0.25배속 비교, 정면/측면/45도/회전, P/Q/R 설명 없는 영상이 있다.
+
+AI는 시간순 전체 프레임과 메타데이터를 확인했지만 사람과 같은 실시간 연속 시청·독립 블라인드 심사를 완료했다고 하지 않는다. 원본에는 넓은 면의 갑작스러운 교체와 함께 유지되는 긴 획/짧은 hold도 있어 단순한 한 가지 가설로 확정하지 않았다. A는 두꺼운 조각, B는 스티커/방사 패턴, C는 교차 면의 한계가 남는다. 하나를 자동 최종 선정하지 않았다.
+
+검수 메뉴 **JJK Game/시부야 PASS4H/흑섬 시각 R&D**. QA 전용 무피해이며 실제 전투는 REV1 유지. 기존 `.slnx`/REV1/전투/카메라/Gojo/F aura/QA 원본을 보존했고 staging/commit/push 및 후속 PASS는 없다. 아래는 REV1 당시 기록이다.
+
+## 최신 로컬 — PASS4H.0 VISUAL REV1 (2026-11-01)
+
+**LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기.** 기존 H0의 가시 공 형태를 작은 압축핵+분리된 파열면, 전방 주가지4개와 작은 방전, GPU 성장·형상 교체·개별 연기 이동으로 개선했다. H0의 기존 프로필 값/피해 observer/카메라/전투/Gojo/F aura는 보존했다. 새 presentation 설정7개와 한국어 Inspector를 추가했다. 상세 `docs/SHIBUYA_PASS4H0_VISUAL_REV1_REVIEW.md`.
+
+중간 단일14 PASS 후 정면 가시성/녹화 보완 관련 검사만 재실행했으며, **최종 최신 고유14 PASS/0 FAIL/0 SKIP는 마지막3개 실행 집계**다. 최초 잔여 방전 끝단 삼각형1건 FAIL과 모든 XML을 보존했다. QA `unity/Logs/ShibuyaPass4H0REV1QA/20261101/`, 최종 `evidence-final/`의 동일 시드 비교 PNG·실제 피해 A/B·원속도60/30fps 출력. async 원본은1.05초63개 고유 runtime frame, 평균16.8ms/최대29.7ms이며 고정60fps 보장은 아니다.
+
+측면 방향성은 개선됐지만 정면 가림/검은 면의 존재감 부족 가능성, 각진 큰 가지와 둥근 연기 경계는 남는다. 최종 시각 합격은 선언하지 않는다. 소유 리소스 정리0/Shader 오류0, 기존 누적 도구·폰트 경고 이력은 별도 보존했다. `.slnx`/보호 자산/기존 QA를 유지한다. H1 화면 반전·카메라·새 히트스톱 및 Git staging/commit/push는 진행하지 않았다. 아래는 이전 H0 기록이다.
+
+## 최신 로컬 — PASS4H.0 흑섬 월드 본체 (2026-11-01)
+
+**LOCAL UNCOMMITTED / CODEX VALIDATED(targeted) / USER VERIFIED 대기**. 브랜치/HEAD `feat/shibuya-combat-mvp` / `891064067834bc26f3a1afc6a37b84bb5e1e79c1` 유지. 기존 미커밋 레퍼런스 문서와 사용자 `.slnx`를 보존하고 중단된 구현을 이어갔다. 상세 `docs/SHIBUYA_PASS4H0_REVIEW.md`.
+
+`ShibuyaMatch.Start`1줄로 scene-local observer를 부착한다. Resolved의 Applied+BlackFlash+양수 HP 감소+유한 좌표만 수락하며 action/event/target 키로 중복을 막는다. 숫자OFF와 마지막 사망 타격에도 독립적으로 재생한다. 전투 계산·카메라·Gojo/F aura·기존 Scene/Prefab/데이터/패키지/잠금값은 변경하지 않는다. 새 Resources `Shibuya Black Flash.asset`에 한국어 Inspector를 제공한다.
+
+흰 접촉광/검은 찢긴 핵/검붉은 입체 가지/끊긴 압력 호/검은 연기·잔여 방전을 구현했다. 핵은 alpha blend+깊이 기록으로 검정을 보존하며 연기는 별도 공유 재질이다. 기본8슬롯, 인스턴스5메시/6,252정점, scene당3재질. 포화 시 오래된 잔류를 교체하고 새 타격을 재생한다. 가까이서는 각진 파열면/메시 연기 질감이 남고 앞선 캐릭터가 핵과 접촉광 일부를 가릴 수 있다. 최종 시각 합격은 사용자 판단이다.
+
+**최신 고유11 PASS/0 FAIL/0 SKIP는6회 실행 집계**(신규8+선택 기존 회귀3)이며 단일 전체 실행이 아니다. 최초7개2 PASS/5 FAIL, 초기화 수정 후5개4 PASS/1 FAIL, 후속7 PASS, 연기 보완4 PASS, 접촉광/압력 촬영2 PASS, 회피/특수 방어 보완1 PASS를 각각 보존한다. MaterialPropertyBlock 생성 시점을 Initialize로 수정했고 정리 검사는 실제 Destroy 완료 후 동일0개 기준으로 통과했다. PASS4A 과거18건·폰트/Pipeline 실패는 해결 처리하지 않는다.
+
+QA `unity/Logs/ShibuyaPass4H0QA/20261101/`, 최종 `evidence-final/stages-and-angles.png`와 `normal-critical-blackflash-original-speed.mp4`/grade0·1·2 영상. 실제 unscaled 타임스탬프에 맞춰60fps로 프레임을 반복한 카메라 출력이며 실제60fps·음향/HUD 포함 녹화라고 주장하지 않는다. 무피해 같은 시드/나이 캡처와 실제 피해 영상은 구분한다.
+
+검수: **JJK Game/시부야 PASS4H/흑섬 VFX 미리보기 (무피해)**. 실제 적중은 기존 **시부야 PASS4G/공격 등급·반격 검수**의 QA 흑섬 허용 후 확인한다. 추첨 버튼은 이후 타격용 RNG 교체이며 다음 한 타 예약이 아니다. 일반 흑섬마다 짧은 화면 반전 합의는 유지하지만 H0에 화면/새 카메라/추가 정지/소리/Zone 연출은 없다. 후속 PASS·staging/commit/push는 진행하지 않는다. 아래는 이전 단계 기록이다.
+
+## 최신 로컬 — PASS4H 흑섬 레퍼런스 등록·설계 준비 (2026-11-01)
+
+**LOCAL DOCUMENTATION / REFERENCE ANALYZED / IMPLEMENTATION NOT STARTED**. 실제 브랜치 `feat/shibuya-combat-mvp`, HEAD `891064067834bc26f3a1afc6a37b84bb5e1e79c1`로 PASS4G 사용자 승인 체크포인트가 저장돼 있다. 시작 Git 변경은 기존 `unity/unity.slnx`1개뿐이며 보존한다. 이번 요청은 영상 분석과 문서만 허용하며 VFX/Shader/Particle·Scene/Prefab·게임플레이 구현과 staging/commit/push를 하지 않는다.
+
+실제 로컬 `_local_refs/videos/blackflash_refs/로블_흑섬.mp4`(20.467초), `주팬퍼_흑섬.mp4`(113.733초)를 디코드해 개요 및 주요 인접 프레임을 직접 확인했다. 두 파일은30fps이며 녹화 시간과 원 게임 hit-stop/배속을 혼동하지 않는다. 원본을 이동·변환하지 않고 분석용 시트만 `unity/Logs/ShibuyaPass4HReferenceReview/20261101/`에 생성했다. 영상 Git 추적0, 현재 로컬 `.git/info/exclude`의 `_local_refs/` 규칙으로 제외되며 다른 clone의 공유 ignore까지 보장하지 않는다. 자세한 타임스탬프/확인 범위/미확정은 `docs/design/BLACK_FLASH_VFX.md`, 등록은 `docs/references/README.md`.
+
+확인된 핵심은 **검은 충돌 질량 → 굵게 찢긴 검붉은 가지 → 짧은 흰 압력 → 검은 잔류·붉은 가는 분기**다. 로블 Manji01.500~01.600의 검정/흑백 후01.633~01.800 붉은 peak,01.833 전장 색 복귀를 확인했다. counter의 주황 충격·청록 선행 기술·상태 연출은 흑섬 필수색으로 혼합하지 않는다. 주팬퍼 유지/나나미/고죠는 공통 family와 타격 limb/무기 방향의 차이를 보인다. 말미 장발 캐릭터는 외형상 마히토로 추론하나 이름 텍스트 확인은 미완료다. 긴 대사 암전/인물 컷인과 단발 impact-frame을 구분한다.
+
+**사용자 확정 표현 방향:** 강한 충격광·검은 주력핵·굵은 붉은 분기·공간 왜곡 충격파·검은 연기/붉은 잔광·짧은 화면 반전·기존 소리/hit-stop/카메라 동기화. 일반 유효 흑섬마다 짧은 화면 변화를 사용한다. 특별 흑섬은 더 강한 Presentation 등급이며 확률/피해를 자동 변경하지 않는다. 연속 흑섬은 각 월드 impact를 보존하고 화면 pulse/카메라/국소 정지의 장시간 중첩만 제한한다. 완성 VFX의 USER VERIFIED가 아니다.
+
+성공 기준점은 `ShibuyaCombatDamageResults.Resolved`의 Applied+BlackFlash+실제 양수 HP 감소다. 개별 action/event/target 키를 보존하고 숫자 표시 ON/OFF와 독립시킨다. `ResolveHits`는 결과 발행 후 일반 hit-stop/HitConfirmed를 실행하므로 동기화 순서·중복 음향·치명타의 선행 StopCombat을 주의한다. Scene 전용 레거시 ProductionCombatFeedbackDirector를 Shibuya 카메라에 바로 연결하지 않는다. Shibuya 카메라 shake/화면 반전의 구체적 구현은 미정이며 카메라 소유권을 보호해야 한다.
+
+후속 후보는 H0 공통 월드 본체, H1 화면/카메라/소리 동기화, H2 연속/특별/반격 확장, H3 Zone 진입/지속/갱신이다. 이벤트 정확성·최소 연속 예산은 H0부터 필요하다. 구체적 시간/규모·특별 치명타 종료 정책·URP 방식·Zone 외형은 제안/미확정으로 남기며 **별도 구현 승인 전에는 시작하지 않는다**. 기존4G 확률/배율/보상/Zone·F 승인 아우라·Gojo/VFX·카메라/HUD·잠금값·QA 실패 이력은 그대로다. 아래는 과거 체크포인트/구현 당시 기록이다.
+
 ## 최신 체크포인트 — PASS4G 사용자 승인 / MVP 수준 (2026-10-31)
 
 사용자가 Unity Play Mode에서 **치명타·흑섬 발동, Zone 진입·스택·버프 적용, 패링 이후 반격과 흑섬 연계, 데미지 숫자 표시, 누락 수정 후 기본 콤보의 타격별 숫자 출력**을 직접 확인하고 MVP 수준으로 승인했다. 이 범위만 USER VERIFIED다. 흑섬 VFX·Zone 전용 연출·캐릭터별 반격 모션과 최종 전투 밸런스의 승인이 아니다.
